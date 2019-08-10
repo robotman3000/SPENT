@@ -1,6 +1,6 @@
 /*
 * FooTable v3 - FooTable is a jQuery plugin that aims to make HTML tables on smaller devices look awesome.
-* @version 3.1.6
+* @version 3.1.5
 * @link http://fooplugins.com
 * @copyright Steven Usher & Brad Vincent 2015
 * @license Released under the GPLv3 license.
@@ -2800,9 +2800,7 @@
 		 * @protected
 		 */
 		draw: function(){
-			if (this.current){
-				this.ft.$el.removeClass(this._classNames).addClass('breakpoint-' + this.current.name);
-			}
+			this.ft.$el.removeClass(this._classNames).addClass('breakpoint-' + this.current.name);
 		},
 
 		/* PUBLIC */
@@ -2828,7 +2826,6 @@
 			}
 			hidden.push(current.name);
 			self.hidden = hidden.join(' ');
-			self.current = current;
 			return current;
 		},
 		/**
@@ -5570,9 +5567,7 @@
 					this.detached = false;
 				}
 				if (F.is.jq(this.$cell)){
-					if (this.enabled){
-						this.$cell.attr('colspan', this.ft.columns.visibleColspan);
-					}
+					this.$cell.attr('colspan', this.ft.columns.visibleColspan);
 				}
 				this._createLinks();
 				this._setVisible(this.current, this.current > this.previous);
@@ -6404,11 +6399,7 @@
 		 * Performs the drawing of the component.
 		 */
 		draw: function(){
-			/*if(this.$cell){*/
-				this.$cell.attr('colspan', this.ft.columns.visibleColspan);
-			/*} else {
-				console.log("Debug: this.$cell was undefined; Line 6407 in footable.js");
-			}*/
+			this.$cell.attr('colspan', this.ft.columns.visibleColspan);
 		},
 		/**
 		 * Handles the edit button click event.
@@ -7336,12 +7327,10 @@
 		return value + "";
 	};
 
-	if (F.is.defined(F.DateColumn)){
-		// override the base method for DateColumns
-		F.DateColumn.prototype.stringify = function(value, options, rowData){
-			return F.is.object(value) && F.is.boolean(value._isAMomentObject) && value.isValid() ? value.format(this.formatString) : '';
-		};
-	}
+	// override the base method for DateColumns
+	F.DateColumn.prototype.stringify = function(value, options, rowData){
+		return F.is.object(value) && F.is.boolean(value._isAMomentObject) && value.isValid() ? value.format(this.formatString) : '';
+	};
 
 	// override the base method for ObjectColumns
 	F.ObjectColumn.prototype.stringify = function(value, options, rowData){

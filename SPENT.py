@@ -44,7 +44,7 @@ class AccountManager(DatabaseWrapper):
 		self.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
 		self.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
 		self.registerVirtualColumn("Buckets", "Children", getBucketChildren)
-		self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
+		#self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
 		
 	def createBucket(self, name, parent):
 		#TODO: Verify the data is valid
@@ -232,7 +232,7 @@ class Bucket(SQL_RowMutable):
 		
 		query = "SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) %s)" % (idStr, statusStr, idStr, statusStr)
 		column = "Amount"
-		print("Balance Query: %s" % query)
+		#print("Balance Query: %s" % query)
 		result = self.database._rawSQL_(query)
 		rows = self.database.parseRows(result, [column], "Transactions")
 		if len(rows) > 0:

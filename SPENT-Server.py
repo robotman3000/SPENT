@@ -5,13 +5,26 @@ import mimetypes
 import traceback
 from SPENT import *
 import json
+import time
 
 FILE = 'index.html'
+
+def getTimeStr(timeMS):
+	if timeMS > 1000:
+		return "%s sec" % (timeMS / 1000)
+	return "%s ms" % (timeMS)
+	
+def time_it(f, *args):
+	start = time.time_ns()
+	result = f(*args)
+	return [result, (getTimeStr((time.time_ns() - start) / 1000000))]
 
 class SPENTServer():
 	def __init__(self, port=8080):
 		self.unimp = {"successful": False, "message": "Unimplemented!"}
 		self.accountMan = AccountManager()
+		self.showAPIData = False
+		self.accountMan.printDebug = False
 		
 		properties = {
 			"Buckets":
@@ -24,14 +37,14 @@ class SPENTServer():
 			"Transactions": 
 				{
 					"ID": {"title": "ID", "type": "number", "visible": False, "filterable":False},
-					"Status": {"title": "Status", "type": "enum"},
-					"TransDate": {"title": "Date", "type": "date", "breakpoints":"xs sm md","formatString":"YYYY-MM-DD", "required": True},
+					"Status": {"title": "Status", "type": "enum", "breakpoints":"xs sm md"},
+					"TransDate": {"title": "Date", "type": "date", "breakpoints":"xs","formatString":"YYYY-MM-DD", "required": True},
 					"PostDate": {"title": "Posted", "type": "date", "breakpoints":"xs sm md", "formatString":"YYYY-MM-DD"},
-					"Amount": {"title": "Amount", "type": "number", "required": True},
-					"SourceBucket": {"title": "Source", "type": "mapping", "required": True},
-					"DestBucket": {"title": "Destination", "type": "mapping", "required": True},
-					"Memo": {"title": "Memo", "type": "string"},
-					"Payee": {"title": "Payee", "type": "string"},
+					"Amount": {"title": "Amount", "type": "number", "breakpoints":"", "required": True},
+					"SourceBucket": {"title": "Source", "type": "mapping", "breakpoints":"xs sm md", "required": True},
+					"DestBucket": {"title": "Destination", "type": "mapping", "breakpoints":"xs sm md", "required": True},
+					"Memo": {"title": "Memo", "type": "string", "breakpoints":""},
+					"Payee": {"title": "Payee", "type": "string", "breakpoints":"xs sm"},
 				},
 		}
 
@@ -62,7 +75,7 @@ class SPENTServer():
 		self.apiTree["transaction"] = {"get": self.getTransaction, "create": self.createTransaction, "update": self.updateTransaction, "delete": self.deleteTransaction}
 		self.apiTree["property"] = {"get": self.getProperty, "update": self.updateProperty}
 		self.apiTree["enum"] = {"get": self.getEnum}
-		
+
 	def handleRequest(self, environ, start_response):
 		print("\n--------------------------------------------------------------------------------\n")
 		#resp = self.handler.get
@@ -81,11 +94,15 @@ class SPENTServer():
 					try:
 						request_body_size = int(environ['CONTENT_LENGTH'])
 						request_body = environ['wsgi.input'].read(request_body_size)
-						print("POST Request Body: \n%s" % json.dumps(json.loads(request_body), indent=2))
+						#response = time_it(delegate, queryStr, request_body_size, request_body)
+						if self.showAPIData:
+							print("POST Request Body: \n%s" % json.dumps(json.loads(request_body), indent=2))
 					except (TypeError, ValueError):
 						request_body = "0"
+						
 					response = delegate(queryStr, request_body_size, request_body)
 				else:
+					#response = time_it(delegate, queryStr)
 					response = delegate(queryStr)
 			else:
 				response = self.handler.fileHandler(queryStr, path)
@@ -103,10 +120,12 @@ class SPENTServer():
 			response = ServerResponse(status, headers, response_body)
 			start_response(response.getStatus(), response.getHeaders())
 		
-		if not skipResponse:
-			print("Server Response: %s" % response)
-		else:
-			print("Server Response: -File-")
+		if self.showAPIData:
+			if not skipResponse:
+				print("Server Response: %s" % response)
+			else:
+				print("Server Response: -File-")
+				
 		self.accountMan.save()
 		return [response.getBody()]
 		
@@ -116,31 +135,35 @@ class SPENTServer():
 		
 		typeDict = self.apiTree.get(request["type"], {})
 		if typeDict is not None:
+			print("API Request: %s %s" % (request["action"], request["type"]))
 			handlerFunc = typeDict.get(request["action"], self.invalidHandler)
 		
 		requestedColumns = self.getRequestedColumns(request)
-		result = handlerFunc(request, requestedColumns)
-		if result is None:
-			result = self.unimp
+		result = time_it(handlerFunc, request, requestedColumns)
+		print("API Request Handler Ran For: %s" % result[1])
+		#result = handlerFunc(request, requestedColumns)
+		if result[0] is None:
+			result[0] = self.unimp
 			
-		responseBody = json.dumps(result)
+		responseBody = time_it(json.dumps, result[0])
+		print("Serialization Took: %s" % responseBody[1])
 		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
+				   ('Content-Length', str(len(responseBody[0])))]
+		return ServerResponse("200 OK", headers, responseBody[0])
 	
 	def getRequestedColumns(self, request):
 		#TODO: Make this look at more than one row
 		data = request.get("data", None)
-		result = []
+		result = set()
 		if data is not None:
 			for i in data:
 				for j in i.items():
 					# We make a special allowance for the ID column here becuase
 					# it is a special colum. Without it the response is difficult/imposible to parse
-					# correctly in some cases
+					# correctly in most cases
 					if j[1] is None or j[0] == "ID":
 						#print("Requested Column: %s" % j[0])
-						result.append(j[0])
+						result.add(j[0])
 		return result
 	
 	def invalidHandler(self, request, requestedColumns):
@@ -172,9 +195,14 @@ class SPENTServer():
 	def formToDict(self, form):
 		return self.qsToDict(form.decode("utf-8"))
 		
-	def SQLRowsToArray(self, rows, columns=[]):
+	def SQLRowsToArray(self, rows, columns):
+		time = time_it(self.SQLRowsToArray_, rows, columns)
+		print("Rows to Array ran for: " + time[1])
+		return time[0]
+	
+	def SQLRowsToArray_(self, rows, columns=[]):
 		records = []
-		#print("Rows: %s, Columns: %s" % (rows, columns))
+		print("Rows: %s, Columns: %s" % (rows, columns))
 		for i in rows:
 			if i is not None:
 				record = {}

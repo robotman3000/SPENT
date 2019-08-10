@@ -188,6 +188,11 @@ function apiTableSchemaToColumns(data, tableName){
 		if(props){
 			var obj = {"name": item.name, "title": props.title, "visible": props.visible};
 			
+			if(props.breakpoints){
+				//alert(props.breakpoints)
+				obj.breakpoints = props.breakpoints;
+			}
+			
 			if (props.type == "enum" || props.type == "mapping"){
 				obj.type = "number";
 				obj.formatter = function(value, options, rowData){
@@ -366,7 +371,9 @@ function initTable(tableName, apiDataType){
 			$("#" + tableName).on('ready.ft.table', function(e, table){
 				onTableReady(tableName, table);
 			});
-			
+			$("#" + tableName).on('before.ft.breakpoints', function(e, table, curr, next){
+				console.log("Breakpoint Changed: " + curr + " to " + next)
+			});
 			//var unlockKey = tables[tableName].lockTable();
 			$("#" + tableName).footable({
 				columns: getTableData(tableName).columns,
@@ -574,6 +581,9 @@ function onDocumentReady() {
 	});
 	$('#accountTree').jstree({
 		core: {
+			themes: {
+				variant: "large"	
+			},
 			animation: false,
 			data: {
 				method: "POST",
@@ -631,12 +641,13 @@ function onDocumentReady() {
 			//"state",
 			//"types",
 			"unique",
-			//"wholerow",
+			"wholerow",
 			//"changed",
 			"conditionalselect",
 			"grid"
 		],
 		grid: {
+			width: "100%",
 			columns: [{
 				tree: true,
 				header: "Accounts"

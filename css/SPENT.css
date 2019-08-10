@@ -68,7 +68,7 @@
 	margin: 0.5em;
 }
 
-div.scrollmenu {
+scrollmenu {
   overflow: auto;
   white-space: nowrap;
 	width:100%;
@@ -119,5 +119,16 @@ ul.button-stack li button {
 }
 
 #transactionTable > tbody> tr:nth-child(even) {
-  background-color: #f2f2f2
+  /*background-color: #f2f2f2*/
 }
+
+ul.nav {
+    white-space: nowrap;
+    overflow-x: auto;
+}
+
+ul.nav li {
+    display: inline-block;
+    float: none;
+}
+	

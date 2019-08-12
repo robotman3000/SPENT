@@ -64,17 +64,31 @@ class DatabaseWrapper():
 	def parseRows(self, rows, columnNames=["*"], tableName=None):
 		names = columnNames
 		parsedRows = []
+		
 		if not (rows is None and columnNames is None):
-			if((len(columnNames) == 1 and columnNames[0] == "*") and tableName is not None):
-				temp = self._rawSQL_("PRAGMA table_info(%s)" % tableName)
-				temp2 = [""] * len(temp)
-				for i in temp:
-					# i[0] is the column index
-					# i[1] is the column name
-					temp2[i[0]] = i[1]
+			if (len(columnNames) == 1 and columnNames[0] =="*"):
+				tableSchema = self.getTableSchema(tableName)
+				if len(tableSchema) > 0:
+					# Use the declared columns
+					temp = []
+					for i in tableSchema:
+						n = i.get("name", None)
+						if n is not None:
+							temp.append(n)
+					names = temp
+				else:
+					#TODO: Should pragma even be allowed here?
+					# Use pragma to get the column names
+					temp = self._rawSQL_("PRAGMA table_info(%s)" % tableName)
+					temp2 = [""] * len(temp)
+					for i in temp:
+						# i[0] is the column index
+						# i[1] is the column name
+						temp2[i[0]] = i[1]
 
-				names = temp2
+					names = temp2
 
+			#print("Names: %s" % names)
 			for i in rows:
 				columns = {}
 				for x in range(0, len(names)):
@@ -297,10 +311,10 @@ class SQL_Row():
 	def getColumnIndex(self, columnName):
 		names = self.getColumnNames()
 		for i in range(len(names)):
-			if self.database.printDebug:
-				print("Debug: Names: %s, Index: %s" % (names, i))
 			if names[i] is not None and names[i] == columnName:
-					return i
+				if self.database.printDebug:
+					print("Debug: SQL_Row.getColumnIndex: Names: %s, Index: %s, Name: %s" % (names, i, columnName))
+				return i
 				
 		print("Error: SQL_Row.getColumnIndex: Invalid column name: %s" % columnName)
 		traceback.print_stack()
@@ -408,7 +422,7 @@ class SQL_RowMutable(SQL_Row):
 		return oldValue
 	
 	def getColumnsRemapped(self):
-		#TODO: Verify ther are no None's where there shouldn't be
+		#TODO: Verify there are no None's where there shouldn't be
 		result = {}
 		for i in self.columns.items():
 			result[i[0]] = self.getValueRemapped(i[0])

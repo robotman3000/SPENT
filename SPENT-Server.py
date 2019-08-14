@@ -6,6 +6,20 @@ import traceback
 from SPENT import *
 import json
 import time
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument("--file", dest="dbpath",
+                    default="SPENT.db")
+parser.add_argument("--debug",
+                    action="store_true", dest="debugCore", default=False,
+                    help="don't print status messages to stdout")
+parser.add_argument("--debug-API",
+                    action="store_true", dest="debugAPI", default=False,
+                    help="don't print status messages to stdout")
+
+args = parser.parse_args()
+
 
 FILE = 'index.html'
 
@@ -22,9 +36,9 @@ def time_it(f, *args):
 class SPENTServer():
 	def __init__(self, port=8080):
 		self.unimp = {"successful": False, "message": "Unimplemented!"}
-		self.accountMan = AccountManager()
-		self.showAPIData = False
-		self.accountMan.printDebug = False
+		self.accountMan = AccountManager(args.dbpath)
+		self.showAPIData = args.debugAPI
+		self.accountMan.printDebug = args.debugCore
 		
 		properties = {
 			"Buckets":
@@ -195,7 +209,7 @@ class SPENTServer():
 	def formToDict(self, form):
 		return self.qsToDict(form.decode("utf-8"))
 		
-	def SQLRowsToArray(self, rows, columns):
+	def SQLRowsToArray(self, rows, columns=[]):
 		time = time_it(self.SQLRowsToArray_, rows, columns)
 		print("Rows to Array ran for: " + time[1])
 		return time[0]
@@ -677,6 +691,9 @@ class RequestHandler:
 		print("Searching for endpoint handler for: %s - %s" % (method, path))
 		return self.handlers.get("%s;%s" % (method, path), None)
 
-server = SPENTServer(8080)
-#server.open_browser()
-server.start_server()
+if sys.hexversion >= 0x30001f0:
+	server = SPENTServer(8080)
+	#server.open_browser()
+	server.start_server()
+else:
+	print("Sorry, your version of python is too old")

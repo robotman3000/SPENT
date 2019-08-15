@@ -39,53 +39,17 @@ class SPENTServer():
 		self.accountMan = AccountManager(args.dbpath)
 		self.showAPIData = args.debugAPI
 		self.accountMan.printDebug = args.debugCore
-		
-		properties = {
-			"Buckets":
-				{
-					"ID": {"title": "ID", "type": "number", "visible": False},
-				 	"Name": {"title": "Name", "type": "string", "required": True},
-				 	"Parent": {"title": "Parent", "type": "number", "required": True},
-				 	"Category": {"title": "Category", "type": "number"},
-				},
-			"Transactions": 
-				{
-					"ID": {"title": "ID", "type": "number", "visible": False, "filterable":False},
-					"Status": {"title": "Status", "type": "enum", "breakpoints":"xs sm md"},
-					"TransDate": {"title": "Date", "type": "date", "breakpoints":"xs","formatString":"YYYY-MM-DD", "required": True},
-					"PostDate": {"title": "Posted", "type": "date", "breakpoints":"xs sm md", "formatString":"YYYY-MM-DD"},
-					"Amount": {"title": "Amount", "type": "formatter", "breakpoints":"", "required": True},
-					#"SourceBucket": {"title": "Type", "type": "formatter", "breakpoints":"xs sm md", "required": True},
-					"SourceBucket": {"title": "Source", "type": "mapping", "breakpoints":"xs sm md", "required": True},
-					#"DestBucket": {"title": "Bucket", "type": "formatter", "breakpoints":"xs sm md", "required": True},
-					"DestBucket": {"title": "Destination", "type": "mapping", "breakpoints":"xs sm md", "required": True},
-					"Memo": {"title": "Memo", "type": "string", "breakpoints":""},
-					"Payee": {"title": "Payee", "type": "string", "breakpoints":"xs sm"},
-				},
-		}
-
-		for table in properties.items():
-			tableName = table[0]
-			for column in table[1].items():
-				columnName = column[0]
-				for props in column[1].items():
-					propertyName = props[0]
-					self.accountMan.registerTableSchemaColumnProperty(tableName, columnName, propertyName, props[1])
 					
 		def getAllBucketChildren(source, tableName, columnName):
 			return source.getAllChildrenID()
 		
 		self.accountMan.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
 		
-		##self.accountMan.registerVirtualColumn("Transactions", "Type", None)
-		#self.accountMan.registerVirtualColumn("Transactions", "Bucket", None)
-		
 		self.accountMan.connect()
 		
 		self.port = port
 		
 		self.handler = RequestHandler()
-		self.handler.registerRequestHandler("GET", "/database/schema/columns", self.getTableSchema)
 		self.handler.registerRequestHandler("POST", "/database/apiRequest", self.apiRequest)
 	
 		self.apiTree = {}
@@ -187,14 +151,7 @@ class SPENTServer():
 	
 	def invalidHandler(self, request, requestedColumns):
 		return {"successful": False, "message": "Invalid action or type: (Action: %s, Type: %s)" % (request["action"], request["type"])}
-		
-	def open_browser(self):
-		"""Start a browser after waiting for half a second."""
-		def _open_browser():
-			webbrowser.open('http://localhost:%s/%s' % (self.port, FILE))
-		thread = threading.Timer(0.5, _open_browser)
-		thread.start()
-
+	
 	def start_server(self):
 		"""Start the server."""
 		self.httpd = make_server("", self.port, self.handleRequest)
@@ -296,15 +253,6 @@ class SPENTServer():
 		self.accountMan.disconnect()
 		self.running = False
 
-	
-	def getTableSchema(self, query):
-		#TODO: remove this
-		tableNames = {"transactionTable": "Transactions", "bucketTable": "Buckets", "accountTable": "Buckets"}
-		tableName = tableNames.get(query["tableName"], None)
-		responseBody = json.dumps(self.accountMan.getTableSchema(tableName))
-		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
 		
 	def getAccount(self, request, columns):
 		rows = []

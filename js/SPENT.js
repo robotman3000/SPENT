@@ -1,23 +1,23 @@
+var tables = {}
+var tableSchema = {}
+var enums = {}
+
+/*
+title
+breakpoints
+required
+options
+formatter
+type
+formType
+visible
+formVisible
+*/
+
 // ############################## Utility Functions ##############################
 
 function getOrDefault(object, property, def){
 	return (object[property] ? object[property] : def);
-}
-
-function formGetOrDefault(object, property, def){
-	//alert("done0")
-	var result = def;
-	object.forEach(function(item, index){
-		if(item.name == property && item.value){
-			result = item.value;
-		}
-	});
-	//alert("done0.1")
-	return result;
-}
-
-function clearTable(tableName){
-	console.log("Clearing Table " + tableName + " (Not; Reason; Unimplemented)")
 }
 
 function addTableRows(tableName, rows, accessKey, appendRows){
@@ -30,14 +30,18 @@ function addTableRows(tableName, rows, accessKey, appendRows){
 
 function deleteTableRows(tableName, rows, accessKey){
 	// TODO: rows is actually a single row object but should be an array of rows
-	rows.delete();
+	if(_isTableSafe_(tableName, accessKey)){
+		rows.delete();
+	}
 }
 
 function updateTableRows(tableName, rows, accessKey){
-	console.log("Updating: [Rows] in " + tableName)
-	rows.forEach(function(item, index){
-		item.row.val(item.data)
-	});
+	if(_isTableSafe_(tableName, accessKey)){
+		console.log("Updating: [Rows] in " + tableName)
+		rows.forEach(function(item, index){
+			item.row.val(item.data)
+		});
+	}
 }
 
 function _isTableSafe_(tableName, accessKey){
@@ -65,17 +69,7 @@ function getTableData(tableName){
 	return table;
 }
 
-function getEnumValue(value, tableName, columnName){
-	if (value < 0){
-		return "N/A";
-	}
-	console.log("Loading enum value: " + tableName + "." + columnName + ".[" + value + "]")
-	//return enums[tableName][columnName][value];
-	return value;
-}
-// ############################## API Logic ##############################
-tables = {}
-enums = {}
+// ########################## #### API Logic ##############################
 
 function apiRequest(requestObj, callback){
 	return $.ajax({
@@ -121,7 +115,6 @@ function apiRequestSuccessful(response){
 	return false;
 }
 
-
 function apiResponseToJSTree(response){
 	var results = []
 	var data = response.data;
@@ -146,156 +139,49 @@ function responseToJSTreeNode(data){
 	return results
 }
 
-
-function apiTableSchemaToColumnsOld(data, tableName){
+function apiTableSchemaToColumns(tableName){
+	//TODO: Consider removing the need for this function by using the tableSchema object as the columns
 	var columns = []
+	tableSchema[tableName].columns.forEach(function(item, index){
+		var obj = {"name": (item.name ? item.name : item.title ), "title": item.title};
 
-	data.forEach(function(item, index){
-		var props = item.properties;
-		if(props){
-			var obj = {"data": item.name, "title": props.title, "visible": props.visible};
-			
-			if (props.type == "enum" || props.type == "mapping"){
-				obj.type = "number";
-				obj.formatter = function(value, options, rowData){
-					if (value < 0){
-						return "N/A";
-					}
-					console.log("Loading enum value: " + tableName + "." + item.name + ".[" + value + "]")
-					return enums[tableName][item.name][value];
-				};
-			} else {
-				obj.type = props.type;
-			}
-			
-			//TODO: This is a quick fix for a larger issue
-			if(tableName == "accountTable" && item.name == "Parent"){
-				//Do nothing
-			} else {
-				columns.push(obj);
-			}
+		if(item.visible != undefined){
+		   obj.visible = item.visible
 		}
-	});
-	columns.push({"title": "Actions", "data":null, "defaultContent":getTableRowActionButtons(tableName, columns), "visible": false})
-	return columns;
-}
-
-colData = {
-	transactionTable: {
-		Amount: {
-			formatter: function(value, options, rowData){
-				return value * -1;
-			},
-			type: "number"
-		},
-		DestBucket: {
-			formatter: function(value, options, rowData){
-				return value + 100
-			},
-			type: "number"
-		},
-		SourceBucket: {
-			formatter: function(value, options, rowData){
-				return "A"
-			},
-			type: "string"
-		}
-	}
-}
-
-function apiTableSchemaToColumns(data, tableName){
-	var columns = []
-
-	data.forEach(function(item, index){
-		var props = item.properties;
-		if(props){
-			var obj = {"name": item.name, "title": props.title, "visible": props.visible};
-			
-			if(props.breakpoints){
-				//alert(props.breakpoints)
-				obj.breakpoints = props.breakpoints;
-			}
-			
-			if (props.type == "enum" || props.type == "mapping"){
-				obj.type = "number";
-				obj.formatter = function(value, options, rowData){
-					return getEnumValue(value, tableName, item.name);
-				};
-			} else if (props.type == "formatter"){
-				obj.type = colData[tableName][item.name].type
-				obj.formatter = colData[tableName][item.name].formatter
-
-			} else {
-				obj.type = props.type;
-			}
-			
-			columns.push(obj);
-		}
-	});
-	return columns;
-}
-
-/*function getTableRowActionButtons(tableName, columns){
-    var del = $('<button>', {class: '', text: "Delete", onclick: "_onRowDelete_(this, \'" + tableName + "\')"});
-    var edit = $('<button>', {class: '', text: "Edit", onclick: "_onRowEdit_(this, \'" + tableName + "\')"});
-    return edit.prop('outerHTML') + del.prop('outerHTML');
-}*/
- 
-/*function _onRowDelete_(self, tableName){
-    var table = getTableData(tableName).table;
-    var data = getRowData(self, tableName);
-    if(confirm("Delete Row?\n" + JSON.stringify(data))){
-        getTableData(tableName).deleteCallback(getRow(self, tableName));
-    }
-}
- 
-function _onRowEdit_(self, tableName){
-    var data = getRowData(self, tableName);
-    showFormModal(tableName, data);
-}*/
-
-function apiTableSchemaToSettings(data, tableName){
-	var settings = {
-		"onUpdate": function(updatedCell, updatedRow, oldValue){
-			onTableCellUpdate(tableName, updatedCell, updatedRow, oldValue);
-		},
-		"inputCss":'table-input-box',
-		"confirmationButton": { 
-			"confirmCss": 'table-confirm-class',
-			"cancelCss": 'table-cancel-class'
-		},
-		"allowNulls": {
-			"columns": [],
-			"errorClass": 'table-input-error'
-		},
-		"inputTypes": []
-	}
-
-	data.forEach(function(item, index){
-		var props = item.properties;
-		
-		if (!item.PreventNull){
-			settings.allowNulls.columns.push(index)
+		   
+		if(item.breakpoints){
+			obj.breakpoints = item.breakpoints;
 		}
 		
-		//alert(item.name + " - " + tableName + "[" + index + "].type" + " = " + props.type);
-		if (props.type == "enum" || props.type == "mapping"){
-			settings.inputTypes.push({"column": index, "type": "list", "options": []})
-			// Now we start the api request to actually populate the list
-			// This occurs async
-			//{ "value": "1", "display": "Beaty" },
-		} else if (props.type == "date"){
-			settings.inputTypes.push({"column": index, "type": "date", "options": null})
+		if(item.formatString){
+			obj.formatString = item.formatString;	
 		}
-		//Else: Go with the default
+
+		switch(item.type){
+			case "enum":
+				obj.type = "string"
+				obj.formatter = function(value, options, rowData){
+					return enums[tableName][value];
+				};
+				break;
+			case "formatter":
+				obj.type = "string"
+				obj.formatter = item.formatter;
+				break;
+			default:
+				obj.type = item.type;
+				break;
+		}
+
+		columns.push(obj);
 	});
-	return settings;
+	return columns;
 }
 
 function apiTableSchemaToEditForm(data, tableName){
 	var columns = []
 
-	data.forEach(function(item, index){
+	/*tableSchema[tableName].columns.forEach(function(item, index){
 		var props = item.properties;
 		var titleStr = (props ? props.title : item.name); 
 		
@@ -324,7 +210,7 @@ function apiTableSchemaToEditForm(data, tableName){
 		div.append(input)
 
 		columns.push(div);
-	});
+	});*/
 	
 	var form = $("<form id=\"" + tableName + "EditForm\" onsubmit='return onFormSubmit(this, \"" + tableName + "\")' method='GET'></form>")
 	columns.forEach(function(item, index){
@@ -338,126 +224,92 @@ function apiTableSchemaToEditForm(data, tableName){
 // ############################## GUI Control ##############################
 
 function initTable(tableName, apiDataType){
-	$.get({
-		url: "/database/schema/columns?tableName=" + tableName,
-		success: function(data) {
-			console.log("Initializing Table: " + tableName);
-			tables[tableName] = {
-				apiDataType: apiDataType,
-				columns: apiTableSchemaToColumns(data, tableName),
-				//settings: apiTableSchemaToSettings(data, tableName),
-				table: {
-					loadRows: function(a, b){
-						console.log("Warning: loadRows called before table was ready");
-					}
-				},
-				lockID: 0,
-				lockTable: function(){
-					// Do table locking
-					this.table.isLocked = true;
-					
-					// Return the "key"
-					this.lockID += 1;
-					console.log("Locking " + tableName + " with key " + this.lockID)
-					return this.lockID;
-				},
-				unlockTable: function(lockID){
-					// Do table unlocking if id matches
-					if(this.lockID == lockID){
-						console.log("Unlocking " + tableName + " with key " + lockID)
-						this.table.isLocked = false;
-					} else {
-						console.log("Error: Lock " + lockID + " attempted to unlock " + this.lockID + " on " + tableName)
-					}
-				},
-				isLocked: function(lockID){
-					var result = this.table.isLocked;
-					if (lockID && lockID == this.lockID){
-						console.log("Table " + tableName + " can be accessed by " + lockID);
-						result = false;
-					}
-						
-					console.log("Table " + tableName + " is " + (result ? "locked with key " + this.lockID : "not locked"))
-					//return false;
-					return result;
-				},
-				formCallback: function(tableRow, data){
-					if(tableRow){
-						onUpdateRow(tableName, tableRow, data);
-					} else {
-						onCreateRow(tableName, data);
-					}
-					refreshBalanceDisplay();
-					refreshSidebarAccountSelect();
-					//TODO: make this actually reflect whether the callback completed sucessfully
-					return true;
-				},
-				deleteCallback: function(tableRow){
-					//alert("Delete Callback");
-					onDeleteRow(tableName, tableRow);
-					
-					return true;
-				}
-			};
-			
-			$("#" + tableName).on('ready.ft.table', function(e, table){
-				onTableReady(tableName, table);
-			});
-			$("#" + tableName).on('before.ft.breakpoints', function(e, table, curr, next){
-				console.log("Breakpoint Changed: " + curr + " to " + next)
-			});
-			//var unlockKey = tables[tableName].lockTable();
-			$("#" + tableName).footable({
-				columns: getTableData(tableName).columns,
-				editing: {
-					enabled: true,
-					addRow: function(){
-						showFormModal(tableName, null)
-					},
-					editRow: function(row){
-						showFormModal(tableName, row);
-					},
-					deleteRow: function(row){
-						var table = getTableData(tableName).table;
-						if(confirm("Delete Row?")){
-							getTableData(tableName).deleteCallback(row);
-						}
-					}
-				}
-			});
-			
-			// Now create the edit toolbar
-			var toolbar = $("#" + tableName + "EditToolbar");
-			if(toolbar){
-				//initTableEditBar(toolbar, tableName);
-				//disableTableEdit(tableName);
+	console.log("Initializing Table: " + tableName);
+	tables[tableName] = {
+		apiDataType: apiDataType,
+		columns: apiTableSchemaToColumns(tableName),
+		table: null,
+		lockID: 0,
+		lockTable: function(){
+			// Do table locking
+			this.table.isLocked = true;
+
+			// Return the "key"
+			this.lockID += 1;
+			console.log("Locking " + tableName + " with key " + this.lockID)
+			return this.lockID;
+		},
+		unlockTable: function(lockID){
+			// Do table unlocking if id matches
+			if(this.lockID == lockID){
+				console.log("Unlocking " + tableName + " with key " + lockID)
+				this.table.isLocked = false;
+			} else {
+				console.log("Error: Lock " + lockID + " attempted to unlock " + this.lockID + " on " + tableName)
 			}
-			
-			// Followed by the row edit form
-			var editForm = $("#" + tableName + "EditFormDiv");
-			if(editForm){
-				initTableEditForm(editForm, apiTableSchemaToEditForm(data, tableName), tableName);
+		},
+		isLocked: function(lockID){
+			var result = this.table.isLocked;
+			if (lockID && lockID == this.lockID){
+				console.log("Table " + tableName + " can be accessed by " + lockID);
+				result = false;
 			}
-			//tables[tableName].unlockTable(unlockKey)
+
+			console.log("Table " + tableName + " is " + (result ? "locked with key " + this.lockID : "not locked"))
+			//return false;
+			return result;
+		},
+		formCallback: function(tableRow, data){
+			if(tableRow){
+				onUpdateRow(tableName, tableRow, data);
+			} else {
+				onCreateRow(tableName, data);
+			}
+			refreshBalanceDisplay();
+			refreshSidebarAccountSelect();
+			//TODO: make this actually reflect whether the callback completed sucessfully
+			return true;
+		},
+		deleteCallback: function(tableRow){
+			//alert("Delete Callback");
+			onDeleteRow(tableName, tableRow);
+
+			return true;
+		}
+	};
+
+	$("#" + tableName).on('ready.ft.table', function(e, table){
+		onTableReady(tableName, table);
+	});
+
+	$("#" + tableName).footable({
+		columns: getTableData(tableName).columns,
+		editing: {
+			enabled: true,
+			addRow: function(){
+				showFormModal(tableName, null)
+			},
+			editRow: function(row){
+				showFormModal(tableName, row);
+			},
+			deleteRow: function(row){
+				var table = getTableData(tableName).table;
+				if(confirm("Delete Row?")){
+					getTableData(tableName).deleteCallback(row);
+				}
+			}
 		}
 	});
-}
 
-/*function initTableEditBar(toolbar, tableName){
-    toolbar.append($('<button>', {id: tableName + "SelectToggleButton", class: '', text: "Edit", onclick: "enableTableEdit(\'" + tableName + "\')"}))
-    toolbar.append($('<button>', {id: tableName + "ConfirmEditButton", class: '', text: "Done", onclick: "confirmTableEdit(\'" + tableName + "\')"}))
-     
-    toolbar.append($('<button>', {id: tableName + "AddRowButton", class: '', text: "Add Row"}).click(function(e){
-        showFormModal(tableName, {})
-    }))
-}*/
+	// Create the row edit form
+	var editForm = $("#" + tableName + "EditFormDiv");
+	if(editForm){
+		initTableEditForm(editForm, apiTableSchemaToEditForm(tableName), tableName);
+	}
+}
 
 function initTableEditForm(editFormDiv, editForm, tableName){
 	editFormDiv.append(editForm)
-}
-
-function drawTable(tableName){
-	getTableData(tableName).table.draw()
 }
 
 function refreshTable(tableName){
@@ -465,7 +317,6 @@ function refreshTable(tableName){
 	if(getTableData(tableName).table){
 		console.log("Refreshing Table: " + tableName);
 		if(!getTableData(tableName).isLocked()){
-			clearTable(tableName);
 			//TODO: This chained "if" should be replaced with something less... static
 			if(tableName == "transactionTable" || tableName == "bucketTable"){
 				var accountID = (tableName == "transactionTable" ? getSelectedAccount() : getSelectedBucketTableAccount())
@@ -557,41 +408,6 @@ function getSelectedBucketTableAccount(){
 	
 }
 
-/*function toggleTableEditToolbar(tableName, state){
-	//alert("Table Toggle " + state);
-	$("#" + tableName + "SelectToggleButton").toggle(!state)
-
-	$("#" + tableName + "CancelEditButton").toggle(state)
-	$("#" + tableName + "ConfirmEditButton").toggle(state)
-
-	$("#" + tableName + "AddRowButton").toggle(state)
-	$("#" + tableName + "DeleteSelectedButton").toggle(state)
-}
-
-function enableTableEdit(tableName){
-	toggleTableEditToolbar(tableName, true);
-	var col = getTableData(tableName).columns.length - 1;
-	getTableData(tableName).table.column(col).visible(true)
-}
-
-function disableTableEdit(tableName){
-	toggleTableEditToolbar(tableName, false);
-	var col = getTableData(tableName).columns.length - 1;
-	getTableData(tableName).table.column(col).visible(false)
-}
-
-function cancelTableEdit(tableName){
-	//Do cancel
-	
-	disableTableEdit(tableName);
-}
-
-function confirmTableEdit(tableName){
-	// Do confirm
-	
-	disableTableEdit(tableName);
-}*/
-
 function showFormModal(tableName, row){
 	var data = (row ? row.val() : {});
 	var form = $(updateFormContent(tableName + "EditForm", data))
@@ -602,20 +418,53 @@ function showFormModal(tableName, row){
 // ############################## Event Handlers ##############################
 
 function onDocumentReady() {
-	//This is first so that the event will surely be registered before it is fired
-	enums.transactionTable = []
-	enums.transactionTable.Status = ["Uniniated", "Submitted", "Post Pending", "Complete"];
-	//enums.transactionTable.SourceBucket = ["A", "B", "C", "D"];
-	//enums.transactionTable.DestBucket = ["A", "B", "C", "D"];
 	
+	tableSchema = {
+		accountTable: {
+			columns: [
+				{name: "ID", visible: false, formVisible: false},
+				{name: "Name", title: "Name", type: "string", required: true, formType: "text"}
+			]
+		},
+		bucketTable: {
+			columns: [
+				{name: "ID", visible: false, formVisible: false},
+				{name: "Name", title: "Name", type: "string", required: true, formType: "text"},
+				{name: "Parent", title: "Parent", type: "number", required: true, formType: "select", options: getBucketOptions}
+			]
+		},
+		transactionTable: {
+			columns: [
+				{name: "ID", visible: false, formVisible: false},
+				{name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", formType: "select", options: getStatusOptions, required: true},
+				{name: "TransDate", title: "Date", type: "date", breakpoints:"xs", formatString:"YYYY-MM-DD", required: true, formType: "date"},
+				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date"},
+				{name: "Amount", title: "Amount", type: "number", breakpoints:"", required: true, formType: "number"},
+				{title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
+				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: bucketFormatter},
+				{name: "SourceBucket", required: true, formType: "select", options: getBucketOptions, visible: false},
+				{name: "DestBucket", required: true, formType: "select", options: getBucketOptions, visible: false},
+				{name: "Memo", title: "Memo", type: "string", breakpoints:"", formType: "textbox"},
+				{name: "Payee", title: "Payee", type: "string", breakpoints:"xs sm", formType: "text"}
+			]
+		}
+	}
+	
+	enums = {
+		transactionTable: [
+			"Uninitiated",
+			"Submitted",
+			"Post-Pending",
+			"Complete"
+		]
+	}
+	
+	//This is first so that the event will surely be registered before it is fired
 	$('#accountTree').on("ready.jstree", function(e, data) {
 		onJSTreeReady();
 	});
 	$('#accountTree').jstree({
 		core: {
-			themes: {
-				variant: "large"	
-			},
 			animation: false,
 			data: {
 				method: "POST",
@@ -630,7 +479,6 @@ function onDocumentReady() {
 					if(node.id == "#"){
 						data = null
 					} else {
-						//alert(JSON.stringify(node));
 						if(node.original.childrenIDs){
 							node.original.childrenIDs.forEach(function(item, index){
 								data.push({ID: item, Children: null, Balance: null, Name: null})
@@ -692,6 +540,44 @@ function onDocumentReady() {
 	});
 }
 
+function getBucketOptions(){
+	
+}
+
+function getTypeOptions(){
+	
+}
+
+function getStatusOptions(){
+	
+}
+
+function transactionTypeFormatter(value, options, rowData){
+	/*
+	00 = Transfer;
+	01 = Deposit;
+	10 = Withdrawl:
+	11 = Invalid
+	*/
+	
+	var source = (rowData.SourceBucket != -1);
+	var dest = (rowData.DestBucket != -1);
+	
+	if ( !source && !dest ){
+		return "Transfer";
+	} else if ( !source && dest ){
+		return "Deposit";
+	} else if ( source && !dest ){
+		return "Withdrawl";
+	}
+	return "N/A";
+}
+
+function bucketFormatter(value, options, rowData){
+	//console.log(JSON.stringify(rowData));
+	return "B:" + value;
+}
+
 function onJSTreeReady() {
 	getSelectedAccount(); // This will select the first list item
 	refreshBalanceDisplay(); // Initial update since the usual event handler isn't registered yet
@@ -748,11 +634,9 @@ function onFormSubmit(self, tableName){
 }
 
 function onCreateRow(tableName, data){
-	//alert("a")
 	apiRequest(createRequest("create", getTableData(tableName).apiDataType, [formToSQLRow(data)]), function(result){
 		var unlockKey = getTableData(tableName).lockTable();
 		addTableRows(tableName, result.data, unlockKey, true);
-		//drawTable(tableName);
 		getTableData(tableName).unlockTable(unlockKey);
 	});
 }
@@ -766,21 +650,16 @@ function onDeleteRow(tableName, tableRow){
 	});
 	apiRequest(createRequest("delete", getTableData(tableName).apiDataType, [data]), function(result){
 		var unlockKey = getTableData(tableName).lockTable();
-		//refreshTable(tableName); //TODO: Replace this with single row update
 		deleteTableRows(tableName, tableRow, unlockKey);
-		//drawTable(tableName);
 		getTableData(tableName).unlockTable(unlockKey);
 	});
 }
 
 function onUpdateRow(tableName, tableRow, data){
-	//alert("b")
 	apiRequest(createRequest("update", getTableData(tableName).apiDataType, [formToSQLRow(data)]), function(result){
 		var unlockKey = getTableData(tableName).lockTable();
 		var rows = [{row: tableRow, data: result.data[0]}] // Todo: Add support for updating multiple rows at once
 		updateTableRows(tableName, rows, unlockKey);
-		//refreshTable(tableName); //TODO: Replace this with single row update
-		//drawTable(tableName);
 		getTableData(tableName).unlockTable(unlockKey);
 	});
 }

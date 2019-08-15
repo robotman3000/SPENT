@@ -180,6 +180,29 @@ function apiTableSchemaToColumnsOld(data, tableName){
 	return columns;
 }
 
+colData = {
+	transactionTable: {
+		Amount: {
+			formatter: function(value, options, rowData){
+				return value * -1;
+			},
+			type: "number"
+		},
+		DestBucket: {
+			formatter: function(value, options, rowData){
+				return value + 100
+			},
+			type: "number"
+		},
+		SourceBucket: {
+			formatter: function(value, options, rowData){
+				return "A"
+			},
+			type: "string"
+		}
+	}
+}
+
 function apiTableSchemaToColumns(data, tableName){
 	var columns = []
 
@@ -198,6 +221,10 @@ function apiTableSchemaToColumns(data, tableName){
 				obj.formatter = function(value, options, rowData){
 					return getEnumValue(value, tableName, item.name);
 				};
+			} else if (props.type == "formatter"){
+				obj.type = colData[tableName][item.name].type
+				obj.formatter = colData[tableName][item.name].formatter
+
 			} else {
 				obj.type = props.type;
 			}
@@ -277,17 +304,20 @@ function apiTableSchemaToEditForm(data, tableName){
 		
 		var input = null;
 		var typeStr = 'text';
-		if(props.type == "date"){
-			typeStr = "date"
-		} else if (props.type == "number"){
-			typeStr = "number"
-		} else if (props.type == "enum" || props.type == "mapping"){
-			typeStr = "number"
-			//TODO: Do nothing for now but eventualy generate a select
+		if(props){
+			if(props.type == "date"){
+				typeStr = "date"
+			} else if (props.type == "number"){
+				typeStr = "number"
+			} else if (props.type == "enum" || props.type == "mapping"){
+				typeStr = "number"
+				//TODO: Do nothing for now but eventualy generate a select
+			}
+		} else {
+			typeStr = "string"
 		}
-		
 		// Prevent null is listed last to make the "required" given by spent-server.py have priority
-		var requiredStr = ((props.required && props.required == true) || item.PreventNull == true)
+		var requiredStr = ( ( props && (props.required && props.required == true) ) || item.PreventNull == true)
 		
 		var input = $('<input type="' + typeStr + '"step="0.01" value=' + "" + requiredStr + ">");
 		input.attr("name", item.name)
@@ -315,7 +345,7 @@ function initTable(tableName, apiDataType){
 			tables[tableName] = {
 				apiDataType: apiDataType,
 				columns: apiTableSchemaToColumns(data, tableName),
-				settings: apiTableSchemaToSettings(data, tableName),
+				//settings: apiTableSchemaToSettings(data, tableName),
 				table: {
 					loadRows: function(a, b){
 						console.log("Warning: loadRows called before table was ready");
@@ -357,6 +387,8 @@ function initTable(tableName, apiDataType){
 					} else {
 						onCreateRow(tableName, data);
 					}
+					refreshBalanceDisplay();
+					refreshSidebarAccountSelect();
 					//TODO: make this actually reflect whether the callback completed sucessfully
 					return true;
 				},
@@ -722,8 +754,6 @@ function onCreateRow(tableName, data){
 		addTableRows(tableName, result.data, unlockKey, true);
 		//drawTable(tableName);
 		getTableData(tableName).unlockTable(unlockKey);
-		refreshBalanceDisplay();
-		refreshSidebarAccountSelect();
 	});
 }
 
@@ -740,8 +770,6 @@ function onDeleteRow(tableName, tableRow){
 		deleteTableRows(tableName, tableRow, unlockKey);
 		//drawTable(tableName);
 		getTableData(tableName).unlockTable(unlockKey);
-		refreshBalanceDisplay();
-		refreshSidebarAccountSelect();
 	});
 }
 
@@ -754,7 +782,5 @@ function onUpdateRow(tableName, tableRow, data){
 		//refreshTable(tableName); //TODO: Replace this with single row update
 		//drawTable(tableName);
 		getTableData(tableName).unlockTable(unlockKey);
-		refreshBalanceDisplay();
-		refreshSidebarAccountSelect();
 	});
 }

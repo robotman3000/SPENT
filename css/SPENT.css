@@ -1,134 +1,41 @@
- /* The sidebar menu */
-.sidebar-sidebar {
-  height: 100%; /* 100% Full-height */
-  width: 16em; /* 0 width - change this with JavaScript */
-  position: fixed; /* Stay in place */
-  z-index: 1; /* Stay on top */
-  top: 0;
-  left: 0;
-  overflow-x: hidden; /* Disable horizontal scroll */
-  /*transition: 0.5s; /* 0.5 second transition effect to slide in the sidebar */
-}
-
-/* Position and style the close button (top right corner) */
-.sidebar-sidebar .sidebar-close {
-	float: right;
-	margin: 0.5em;
-}
-
-/* Style page content - use this if you want to push the page content to the right when you open the side navigation */
-.sidebar-main {
-  /*transition: margin-left .5s; /* If you want a transition effect */
-	margin-left: 16em;
-	overflow-x: hidden;
-}
-
-@media screen and (max-width: 700px) {
-  .sidebar-sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-  }
-  .sidebar-main {margin-left: 0;}
-}
-
 .jstree-grid-column{
 	width:100%;
 }
 
-/* The Modal (background) */
-.modal {
+ /* The Modal (background) */
+.modal1 {
   display: none; /* Hidden by default */
   position: fixed; /* Stay in place */
-  z-index: 1; /* Sit on top */
+  z-index: 1030; /* Sit on top */
   left: 0;
   top: 0;
   width: 100%; /* Full width */
   height: 100%; /* Full height */
-  overflow-x: hidden; /* Enable scroll if needed */
+  overflow: auto; /* Enable scroll if needed */
   background-color: rgb(0,0,0); /* Fallback color */
   background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
 }
 
 /* Modal Content/Box */
-.modal-content {
+.modal1-content {
   background-color: #fefefe;
   margin: 15% auto; /* 15% from the top and centered */
   padding: 20px;
-  /*border: 1px solid #888;*/
+  border: 1px solid #888;
   width: 80%; /* Could be more or less, depending on screen size */
 }
 
-.modal-close {
-
+/* The Close Button */
+.modal1-close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
 }
 
-#title {
-	padding: 0;
-	margin: 0.5em;
-}
-
-scrollmenu {
-  overflow: auto;
-  white-space: nowrap;
-	width:100%;
-}
-
-ul.button-stack {
-  list-style-type: none;
-  width: auto;
-  margin: 1em;
-  padding: 0;
-}
-
-ul.button-stack li button {
-	width: 100%;
-	margin-top: 0.15em;
-	margin-bottom: 0.15em;
-}
-
-/*TODO: Clean these up*/
-.table-input-class {
-	padding: 3px 6px;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-}
-.table-confirm-class {
-	padding: 3px 6px;
-	font-size: 12px;
-	color: white;
-	text-align: center;
-	vertical-align: middle;
-	border-radius: 4px;
-	background-color: #337ab7;
-	text-decoration: none;
-}
-.table-cancel-class {
-	padding: 3px 6px;
-	font-size: 12px;
-	color: white;
-	text-align: center;
-	vertical-align: middle;
-	border-radius: 4px;
-	background-color: #a94442;
-	text-decoration: none;
-}
-.table-input-error {
-	border: solid 1px;
-	border-color: #a94442;
-}
-
-#transactionTable > tbody> tr:nth-child(even) {
-  /*background-color: #f2f2f2*/
-}
-
-ul.nav {
-    white-space: nowrap;
-    overflow-x: auto;
-}
-
-ul.nav li {
-    display: inline-block;
-    float: none;
-}
-	
+.modal1-close:hover,
+.modal1-close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+} 

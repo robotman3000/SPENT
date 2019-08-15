@@ -54,8 +54,10 @@ class SPENTServer():
 					"Status": {"title": "Status", "type": "enum", "breakpoints":"xs sm md"},
 					"TransDate": {"title": "Date", "type": "date", "breakpoints":"xs","formatString":"YYYY-MM-DD", "required": True},
 					"PostDate": {"title": "Posted", "type": "date", "breakpoints":"xs sm md", "formatString":"YYYY-MM-DD"},
-					"Amount": {"title": "Amount", "type": "number", "breakpoints":"", "required": True},
+					"Amount": {"title": "Amount", "type": "formatter", "breakpoints":"", "required": True},
+					#"SourceBucket": {"title": "Type", "type": "formatter", "breakpoints":"xs sm md", "required": True},
 					"SourceBucket": {"title": "Source", "type": "mapping", "breakpoints":"xs sm md", "required": True},
+					#"DestBucket": {"title": "Bucket", "type": "formatter", "breakpoints":"xs sm md", "required": True},
 					"DestBucket": {"title": "Destination", "type": "mapping", "breakpoints":"xs sm md", "required": True},
 					"Memo": {"title": "Memo", "type": "string", "breakpoints":""},
 					"Payee": {"title": "Payee", "type": "string", "breakpoints":"xs sm"},
@@ -74,6 +76,9 @@ class SPENTServer():
 			return source.getAllChildrenID()
 		
 		self.accountMan.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
+		
+		##self.accountMan.registerVirtualColumn("Transactions", "Type", None)
+		#self.accountMan.registerVirtualColumn("Transactions", "Bucket", None)
 		
 		self.accountMan.connect()
 		
@@ -291,7 +296,7 @@ class SPENTServer():
 		self.accountMan.disconnect()
 		self.running = False
 
-		
+	
 	def getTableSchema(self, query):
 		#TODO: remove this
 		tableNames = {"transactionTable": "Transactions", "bucketTable": "Buckets", "accountTable": "Buckets"}
@@ -439,199 +444,6 @@ class SPENTServer():
 	
 	def getEnum(self, request, columns):
 		return self.unimp	
-	
-	
-	
-		
-	def DEPgetStatusList(self, query, contentLen, content):
-		rows = self.accountMan._tableSelectDelete_(False, "StatusMap")
-		responseBody = self.SQLRowsToOptions(rows, "Name", "ID")
-		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-
-	def DEPgetTransactionTypeList(self, query, contentLen, content):
-		rows = self.accountMan._tableSelectDelete_(False, "TypeMap")
-		responseBody = self.SQLRowsToOptions(rows, "Name", "ID")
-		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-	
-	def DEPgetAccountTransactions(self, query):
-		transactions = []
-		bucket = self.accountMan.getBucket(int(query["account"]))
-		if bucket is not None:
-			rows = bucket.getAllTransactions()
-			responseBody = self.SQLRowsToJSON(rows)
-			status = "200 OK"
-		else:
-			responseBody = "No account with id %s exists" % query["account"]
-			status = "500 OK"
-			print("No account with id %s exists" % query["account"])
-			#responseBody = json.dumps({ "Result":"ERROR", "Message": "No account with id %s exists" % query["account"]})
-			
-		#	transactions.append({"id": i.getID(), "status": i.getStatus(), "transDate": i.getTransactionDate(), "postDate": i.getPostDate(), "amount": i.getAmount(), "bucket": i.getBucket().getID(), "userNotes": i.getUserNotes()})
-		
-		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse(status, headers, responseBody)
-	
-	def DEPupdateTransaction(self, query, contentLen, content):
-		formData = self.formToDict(content)
-		tID = formData["ID"]
-		trans = self.accountMan.getTransaction(tID)
-		for i in formData.items():
-			trans.updateValue(i[0], i[1])
-		responseBody = self.SQLRowToRecord(trans)
-		headers = [('Content-type', "text/json"),
-		   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-	
-	def DEPdeleteTransaction(self, query, contentLen, content):
-		formData = self.formToDict(content)
-		tID = formData["ID"]
-		trans = self.accountMan.getTransaction(tID)
-		self.accountMan.deleteTransaction(trans)
-		responseBody = json.dumps({"Result": "OK"})
-		headers = [('Content-type', "text/json"),
-		   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-				
-	def DEPcreateTransaction(self, query, contentLen, content):
-		formData = self.formToDict(content)
-		amount = formData.get("Amount")
-		bucket = self.accountMan.getBucket(formData.get("Bucket", -1))
-		notes = formData.get("UserNotes", "")
-		date = formData.get("TransDate", -1)
-		
-		newID = self.accountMan.createTransaction(amount, bucket, transactionDate=date, description=notes)
-		
-		newTrans = self.accountMan.getTransaction(newID)
-		
-		responseBody = self.SQLRowToRecord(newTrans)
-		headers = [('Content-type', "text/json"),
-		   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-	
-	def DEPgetAccounts(self, query):
-		status = "200 OK"
-		contentType = "text/plain"
-		responseBody=""
-		form = query["format"]
-				
-		if form is not None:
-			if form == "html-select":
-				result = "<select id=\"accountSelect\">\n"
-				for i in self.accountMan.getAccountList():
-					result += "\t<option value=\"%s\">%s</option>\n" % (i.getID(), i.getName())
-				result += "</select>"
-				responseBody = result
-				contentType = "text/html"
-			elif form == "recordList":
-				rows = self.accountMan.getAccountList()
-				responseBody = self.SQLRowsToRecords(rows)
-				contentType = "text/json"
-			elif form == "json":
-				rows = self.accountMan.getAccountList()
-				responseBody = self.SQLRowsToJSON(rows)
-				contentType = "text/json"
-			else:
-				status = "500 OK"
-				responseBody = "Error: Invalid form: %s" % form
-		
-		headers = [('Content-type', contentType),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse(status, headers, responseBody)
-	
-	def DEPgetAccountBuckets(self, query):
-		#input("Press Enter to continue...")
-		oldRows = []
-		
-		if query.get("account", -1) != -1:
-			bucket = self.accountMan.getBucket(query["account"])
-			oldRows = bucket.getAllChildren()
-			if query.get("exclude", -1) == -1:
-				oldRows.append(bucket)
-		else:
-			oldRows = self.accountMan.getAccountList() + self.accountMan.getBucketList()
-			
-		rows = oldRows
-		
-		#for row in oldRows:
-		#	if query.get("exclude", None) == None or row.getID() != int(query["exclude"]):
-		#		rows.append(row)
-		
-		responseBody = ""
-		
-		if query["format"] == "options":
-			responseBody = self.SQLRowsToOptions(rows, "Name", "ID")
-		elif query["format"] == "recordList":
-			responseBody = self.SQLRowsToRecords(rows)
-		elif query["format"] == "json":
-			responseBody = self.SQLRowsToJSON(rows)
-		else:
-			responseBody = "Unknown format: %s" % query["format"]
-		
-		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-	
-	def DEPgetAccountBucketsPOST(self, query, contentLen, content):
-		return self.getAccountBuckets(query)
-		
-	def DEPgetBucketHierarchy(self, query):
-		bucketID = query.get("bucket", None)
-		responseBody = ""
-		if bucketID is not None:
-			if int(bucketID) == -1:
-				buckets = self.accountMan.getAccountList()
-				responseBody = self.SQLRowsToNodes(buckets)
-			else:
-				bucket = self.accountMan.getBucket(int(bucketID))
-				responseBody = self.SQLRowsToNodes(bucket.getChildren())
-				
-		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-		
-	def DEPupdateBucket(self, query, contentLen, content):
-		formData = self.formToDict(content)
-		bID = formData["ID"]
-		bucket = self.accountMan.getBucket(bID)
-		for i in formData.items():
-			bucket.updateValue(i[0], i[1])
-		responseBody = self.SQLRowToRecord(bucket)
-		headers = [('Content-type', "text/json"),
-		   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-	
-	def DEPdeleteBucket(self, query, contentLen, content):
-		formData = self.formToDict(content)
-		bID = formData["ID"]
-		bucket = self.accountMan.getBucket(bID)
-		self.accountMan.deleteBucket(bucket)
-		responseBody = json.dumps({"Result": "OK"})
-		headers = [('Content-type', "text/json"),
-		   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
-	
-	def DEPcreateBucket(self, query, contentLen, content):
-		formData = self.formToDict(content)
-		accountName = formData.get("Name")
-		bucket = formData.get("Parent", -1)
-		self.accountMan.createBucket(accountName, bucket)
-		
-		newID = -1
-		for b in (self.accountMan.getAccountList() if bucket == -1 else self.accountMan.getBucketList()):
-			if b.getName() == accountName:
-				newID = b.getID()
-				break
-		
-		newBucket = self.accountMan.getBucket(newID)
-		responseBody = self.SQLRowToRecord(newBucket)
-		headers = [('Content-type', "text/json"),
-		   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
 
 class ServerResponse:
 	def __init__(self, status, headers, body):

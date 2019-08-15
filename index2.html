@@ -15,32 +15,33 @@
 	<!-- JQuery -->
 	<script type="text/javascript" src="/js/jquery-3.4.1.min.js"></script>
 
+	<!-- Bootstrap v4 -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+	<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+	
 	<!-- JSTree -->
 	<script type="text/javascript" src="/js/jstree.min.js"></script><!-- v3.3.8 -->
 	<link href="/css/jstree.min.css" rel="stylesheet"><!-- v3.3.8 -->
 	<script type="text/javascript" src="/js/jstreegrid.js"></script><!-- v3.9.5 -->
 	
 	<!-- FooTable -->
-	<link rel="stylesheet" type="text/css" href="/css/footable.bootstrap.css">
-	<script type="text/javascript" charset="utf8" src="/js/footable.js"></script>
-	
-	<script type="text/javascript" src="/js/moment.js"></script><!-- v2.24.0 -->
+	<!--script type="text/javascript" src="/js/moment.js"></script><!-- v2.24.0 -->
 	<link href="/css/font-awesome.min.css" rel="stylesheet"><!-- v4.7.0 -->
 	
-	<!-- Bootstrap v4 -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-	<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="/css/footable.bootstrap.css">
+	<script type="text/javascript" charset="utf8" src="/js/footable.js"></script>
 	
 	<!-- SPENT -->
 	<link href="/css/SPENT.css" rel="stylesheet">
 	<script type="text/javascript" src="/js/SPENT.js"></script>
 </head>
 <body>
+		
 	<div class="container-fluid p-0">
 		
 		<div class="row no-gutters">
 			<div class="col">
-				<nav class="navbar navbar-expand-sm bg-dark navbar-dark fixed-top">
+				<nav class="navbar navbar-expand-sm bg-light navbar-light fixed-top">
 					<a class="navbar-brand" href="#">SPENT</a>
 					
 					<!-- Toggler/collapsibe Button -->
@@ -59,6 +60,7 @@
 								<a class="nav-link" data-toggle="pill" href="#bucketTableTab">Buk</a>
 							</li>
 						</ul>
+					
 					<!--/div-->
 				</nav> 
 			</div>
@@ -66,23 +68,19 @@
 			
 		<div class="row no-gutters" style="margin-top: 56px; overflow-x: hidden;">
 			
-			<div class="col-12 tab-content">
+			<div class="col tab-content">
 				
 				<div class="tab-pane container-fluid active" id="transactionTableTab">
-					<div class="row no-gutters">
-						<div class="col">
-							<nav class="navbar navbar-expand-sm bg-light navbar-light">
-								<a class="navbar-brand" href="#">Balance</a>
-							</nav>
-						</div>
-					</div>
 					<div class="row">
 						<div class="col-md-4 col-lg-3">
+							<div class="row bg-light">
+								<p id="balanceDisplay" style="float: right; margin: auto;">Waiting on server for account balance...</p>
+							</div>
 							<div class="row">
 								<div id="accountTree"></div>
 							</div>
 						</div>
-						<div class="col-md-8 col-lg-9">
+						<div class="col-md-8 col-lg-9 p-0">
 							<!-- Transaction Table -->
 							<table id="transactionTable" class="table-striped" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
 						</div>
@@ -95,31 +93,29 @@
 				<div class="tab-pane container-fluid fade" id="bucketTableTab">
 					<table id="bucketTable" class="table-striped" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
 				</div>
+				
 			</div>
 			
 		</div>
 	</div>
 	
 	<!-- Transaction Edit Form Modal -->
-	<div id="transactionTableEditFormModal" class="modal">
+	<div id="transactionTableEditFormModal" class="modal1">
 		<!-- Modal content -->
-		<div class="modal-content">
-			<span id="transactionTableEditFormModalClose" class="modal-close">&times;</span>
-			<div class="modal-scroll">
-				
+		<div class="modal1-content">
+			<span id="transactionTableEditFormModalClose" class="modal1-close">&times;</span>
+			<div class="modal1-scroll">
 				<div id="transactionTableEditFormDiv"></div>
-				
 			</div>
 		</div>
 	</div>
-	
+
 	<!-- Account Edit Form Modal -->
-	<div id="accountTableEditFormModal" class="modal">
+	<div id="accountTableEditFormModal" class="modal1">
 		<!-- Modal content -->
-		<div class="modal-content">
-			<span id="accountTableEditFormModalClose" class="modal-close">&times;</span>
-			<div class="modal-scroll">
-				
+		<div class="modal1-content">
+			<span id="accountTableEditFormModalClose" class="modal1-close">&times;</span>
+			<div class="modal1-scroll">
 				<div id="accountTableEditFormDiv"></div>
 				
 			</div>
@@ -127,14 +123,12 @@
 	</div>
 	
 	<!-- Bucket Edit Form Modal -->
-	<div id="bucketTableEditFormModal" class="modal">
+	<div id="bucketTableEditFormModal" class="modal1">
 		<!-- Modal content -->
-		<div class="modal-content">
-			<span id="bucketTableEditFormModalClose" class="modal-close">&times;</span>
-			<div class="modal-scroll">
-				
+		<div class="modal1-content">
+			<span id="bucketTableEditFormModalClose" class="modal1-close">&times;</span>
+			<div class="modal1-scroll">
 				<div id="bucketTableEditFormDiv"></div>
-				
 			</div>
 		</div>
 	</div>
@@ -165,13 +159,13 @@
 			}
 
 			// When the user clicks anywhere outside of the modal, close it
-			window.onclick = function(event) {
+			/*window.onclick = function(event) {
 				if (event.target == modal) {
 					if(modal){
 						modal.style.display = "none";
 					}
 				}
-			} 	
+			} */	
 		}
 		
 		function showModal(name){

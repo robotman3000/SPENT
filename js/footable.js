@@ -1165,6 +1165,7 @@
 		 * @this FooTable.Cell
 		 */
 		format: function(value){
+			//abc
 			return this.column.formatter.call(this.column, value, this.ft.o, this.row.value);
 		},
 		/**
@@ -5055,7 +5056,8 @@
 
 	// this is used to define the sorting specific properties on cell creation
 	F.Cell.prototype.__sorting_define__ = function(valueOrElement){
-		this.sortValue = this.column.sortValue.call(this.column, valueOrElement);
+		//abc123
+		this.sortValue = this.column.sortValue.call(this.column, valueOrElement/*, this.row.value*/);
 	};
 
 	// this is used to update the sortValue property whenever the cell value is changed

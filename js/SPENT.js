@@ -2,6 +2,9 @@ var tables = {}
 var tableSchema = {}
 var enums = {}
 
+// Create our number formatter.
+var formatter = null;
+
 // ############################## Utility Functions ##############################
 
 function getOrDefault(object, property, def){
@@ -68,6 +71,30 @@ function getBucketNameForID(id){
 	}
 	
 	return "Invalid ID";
+}
+
+function getTransferDirection(rowData, bucketID){
+	// TODO: Is there a better way of representing this?
+	// True = Money Coming in; I.E. a positive value
+	// False = Money Going out; I.E. a negative value
+	
+	switch(getTransactionType(rowData)){
+		case 0:
+			if(rowData.SourceBucket == bucketID){
+			   // Then we have a transfer from/out of the selected bucket
+				return false;
+			} else {
+				return true;
+			}
+			break;
+		case 1:
+			return true;
+			break;
+		case 2:
+			return false;
+			break;
+	}
+	return null;
 }
 
 // ########################## #### API Logic ##############################
@@ -158,6 +185,10 @@ function apiTableSchemaToColumns(tableName){
 			obj.formatString = item.formatString;	
 		}
 
+		if(item.sortValue){
+			obj.sortValue = item.sortValue;
+		}
+		
 		switch(item.type){
 			case "enum":
 				obj.type = "string"
@@ -282,6 +313,12 @@ function initTable(tableName, apiDataType){
 	$("#" + tableName).on('ready.ft.table', function(e, table){
 		onTableReady(tableName, table);
 	});
+	
+	$("#" + tableName).on('before.ft.sorting', function(e, table, sorter){
+		sorter.abc123 = "djfskapvnoea;";
+		console.log("Before Sort");
+	});
+
 
 	$("#" + tableName).footable({
 		columns: getTableData(tableName).columns,
@@ -419,6 +456,11 @@ function showFormModal(tableName, row){
 // ############################## Event Handlers ##############################
 
 function onDocumentReady() {
+	// Undefined causes it to use the system local
+	formatter = new Intl.NumberFormat(undefined, {
+	  style: 'currency',
+	  currency: 'USD',
+	});
 	
 	tableSchema = {
 		accountTable: {
@@ -440,7 +482,7 @@ function onDocumentReady() {
 				{name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", formType: "select", options: getStatusOptions, required: true},
 				{name: "TransDate", title: "Date", type: "date", breakpoints:"xs", formatString:"YYYY-MM-DD", required: true, formType: "date"},
 				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date"},
-				{name: "Amount", title: "Amount", type: "number", breakpoints:"", required: true, formType: "number"},
+				{name: "Amount", title: "Amount", type: "formatter", breakpoints:"", required: true, formType: "number", formatterType: "number", formatter: transactionAmountFormatter},
 				{title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
 				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: bucketFormatter},
 				{name: "SourceBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: true},
@@ -599,29 +641,40 @@ function getTransactionType(rowData){
 }
 
 function transactionTypeFormatter(value, options, rowData){
-	return enums["transactionTable"]["Type"][getTransactionType(rowData)]
+	if(rowData.typeSort){
+	   return rowData.typeSort;
+	}
+	rowData.typeSort = getTransactionType(rowData);
+	return enums["transactionTable"]["Type"][rowData.typeSort]
+}
+
+function transactionAmountFormatter(value, options, rowData){
+	if(rowData.amountSort){
+	   return rowData.amountSort;
+	}
+	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
+	if (isDeposit){
+		// If withdrawal
+		rowData.amountSort = formatter.format(value);
+		return rowData.amountSort;
+	}
+	rowData.amountSort = formatter.format(value * -1);
+	return rowData.amountSort;
 }
 
 function bucketFormatter(value, options, rowData){
-	var id = -2; //This value will cause the name func to return "Invalid ID"
-	switch(getTransactionType(rowData)){
-		case 0:
-			if(rowData.SourceBucket == getSelectedAccount()){
-			   // Then we have a transfer from/out of the selected bucket
-				id = rowData.DestBucket;
-			} else {
-				id = rowData.SourceBucket;
-			}
-			break;
-		case 1:
-			id = rowData.DestBucket;
-			break;
-		case 2:
-			id = rowData.SourceBucket;
-			break;
+	if(rowData.bucketSort){
+	   return rowData.bucketSort;
 	}
-	
-	return getBucketNameForID(id);
+	var id = -2; //This value will cause the name func to return "Invalid ID"
+	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
+
+	if(isDeposit != null){
+		id = (isDeposit ? rowData.DestBucket : rowData.SourceBucket)
+	}
+
+	rowData.bucketSort = getBucketNameForID(id);
+	return rowData.bucketSort;
 }
 
 function onJSTreeReady() {

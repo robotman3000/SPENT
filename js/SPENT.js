@@ -2,18 +2,6 @@ var tables = {}
 var tableSchema = {}
 var enums = {}
 
-/*
-title
-breakpoints
-required
-options
-formatter
-type
-formType
-visible
-formVisible
-*/
-
 // ############################## Utility Functions ##############################
 
 function getOrDefault(object, property, def){
@@ -67,6 +55,19 @@ function getTableData(tableName){
 		console.log("Table " + tableName + " was undefined")
 	}
 	return table;
+}
+
+function getBucketNameForID(id){
+	if(id < 0){
+	   return "N/A";
+	}
+	
+	var node = $('#accountTree').jstree().get_node(id)
+	if(node != false){
+		return node.text;
+	}
+	
+	return "Invalid ID";
 }
 
 // ########################## #### API Logic ##############################
@@ -161,7 +162,7 @@ function apiTableSchemaToColumns(tableName){
 			case "enum":
 				obj.type = "string"
 				obj.formatter = function(value, options, rowData){
-					return enums[tableName][value];
+					return enums[tableName][obj.name][value];
 				};
 				break;
 			case "formatter":
@@ -430,7 +431,7 @@ function onDocumentReady() {
 			columns: [
 				{name: "ID", visible: false, formVisible: false},
 				{name: "Name", title: "Name", type: "string", required: true, formType: "text"},
-				{name: "Parent", title: "Parent", type: "number", required: true, formType: "select", options: getBucketOptions}
+				{name: "Parent", title: "Parent", type: "number", required: true, formType: "select", options: getBucketOptions, formDynamicSelect: true}
 			]
 		},
 		transactionTable: {
@@ -442,21 +443,43 @@ function onDocumentReady() {
 				{name: "Amount", title: "Amount", type: "number", breakpoints:"", required: true, formType: "number"},
 				{title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
 				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: bucketFormatter},
-				{name: "SourceBucket", required: true, formType: "select", options: getBucketOptions, visible: false},
-				{name: "DestBucket", required: true, formType: "select", options: getBucketOptions, visible: false},
+				{name: "SourceBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: true},
+				{name: "DestBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: true},
 				{name: "Memo", title: "Memo", type: "string", breakpoints:"", formType: "textbox"},
 				{name: "Payee", title: "Payee", type: "string", breakpoints:"xs sm", formType: "text"}
 			]
 		}
 	}
+
+/*
+title
+breakpoints
+required
+options
+formatter
+type
+formType
+visible
+formVisible
+formDynamicSelect
+*/
+
 	
 	enums = {
-		transactionTable: [
-			"Uninitiated",
-			"Submitted",
-			"Post-Pending",
-			"Complete"
-		]
+		transactionTable: {
+			Status: [
+				"Uninitiated",
+				"Submitted",
+				"Post-Pending",
+				"Complete"
+			],
+			Type: [
+				"Transfer",
+				"Deposit",
+				"Withdrawal",
+				"Invalid"
+			]
+		}
 	}
 	
 	//This is first so that the event will surely be registered before it is fired
@@ -545,18 +568,18 @@ function getBucketOptions(){
 }
 
 function getTypeOptions(){
-	
+	return enums["transactionTable"]["Type"]; 
 }
 
 function getStatusOptions(){
-	
+	return enums["transactionTable"]["Status"];
 }
 
-function transactionTypeFormatter(value, options, rowData){
+function getTransactionType(rowData){
 	/*
 	00 = Transfer;
 	01 = Deposit;
-	10 = Withdrawl:
+	10 = Withdrawal:
 	11 = Invalid
 	*/
 	
@@ -564,18 +587,41 @@ function transactionTypeFormatter(value, options, rowData){
 	var dest = (rowData.DestBucket != -1);
 	
 	if ( !source && !dest ){
-		return "Transfer";
+		return 0;
 	} else if ( !source && dest ){
-		return "Deposit";
+		return 1;
 	} else if ( source && !dest ){
-		return "Withdrawl";
+		return 2;
 	}
-	return "N/A";
+	
+	//This should never ever actually run
+	return 3;
+}
+
+function transactionTypeFormatter(value, options, rowData){
+	return enums["transactionTable"]["Type"][getTransactionType(rowData)]
 }
 
 function bucketFormatter(value, options, rowData){
-	//console.log(JSON.stringify(rowData));
-	return "B:" + value;
+	var id = -2; //This value will cause the name func to return "Invalid ID"
+	switch(getTransactionType(rowData)){
+		case 0:
+			if(rowData.SourceBucket == getSelectedAccount()){
+			   // Then we have a transfer from/out of the selected bucket
+				id = rowData.DestBucket;
+			} else {
+				id = rowData.SourceBucket;
+			}
+			break;
+		case 1:
+			id = rowData.DestBucket;
+			break;
+		case 2:
+			id = rowData.SourceBucket;
+			break;
+	}
+	
+	return getBucketNameForID(id);
 }
 
 function onJSTreeReady() {

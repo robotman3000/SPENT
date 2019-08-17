@@ -426,6 +426,9 @@ class RequestHandler:
 	def fileHandler(self, query, path):
 		print("Using file handler for: %s" % path)
 		try:
+			if path == "/":
+				path = "/index2.html"
+				
 			# we try to serve up a file with the requested name
 			#TODO: Make a more robust file handler
 			typeGuess = mimetypes.guess_type(path)

@@ -210,46 +210,61 @@ function apiTableSchemaToColumns(tableName){
 	return columns;
 }
 
-function apiTableSchemaToEditForm(data, tableName){
+function apiTableSchemaToEditForm(tableName){
 	var columns = []
 
-	/*tableSchema[tableName].columns.forEach(function(item, index){
-		var props = item.properties;
-		var titleStr = (props ? props.title : item.name); 
-		
-		var div = $("<div></div>");
-		div.append($('<span>' + titleStr + ':<br></span>'));
-		
-		var input = null;
-		var typeStr = 'text';
-		if(props){
-			if(props.type == "date"){
-				typeStr = "date"
-			} else if (props.type == "number"){
-				typeStr = "number"
-			} else if (props.type == "enum" || props.type == "mapping"){
-				typeStr = "number"
-				//TODO: Do nothing for now but eventualy generate a select
-			}
-		} else {
-			typeStr = "string"
-		}
-		// Prevent null is listed last to make the "required" given by spent-server.py have priority
-		var requiredStr = ( ( props && (props.required && props.required == true) ) || item.PreventNull == true)
-		
-		var input = $('<input type="' + typeStr + '"step="0.01" value=' + "" + requiredStr + ">");
-		input.attr("name", item.name)
-		div.append(input)
+	tableSchema[tableName].columns.forEach(function(item, index){
+		if(item.formVisible != false){
+			var titleStr = (item.title ? item.title : item.name); 
 
-		columns.push(div);
-	});*/
+			var div = $("<div class='form-group'></div>");
+			div.append($('<label>' + titleStr + '</label>').attr('for', item.title));
+
+			//formType, required, options, formVisible, formDynamicSelect
+
+			var input = null;
+			var typeStr = "text";
+			
+			switch(item.formType){
+				default:
+					var input = $('<input class="form-control" type="' + item.formType + '" value="' + "" + '" ' + (item.required ? " required " : "" ) + ' step="0.01" >');
+					input.attr("name", item.name)
+					div.append(input)
+					
+					//TODO: This is a quick fix
+					if (item.name == "ID"){
+						//input.prop("disabled", true);
+					}
+					
+					break;
+				case "select":
+					var select = $("<select class='form-control'></select>")
+					select.attr("name", item.name)
+					select.attr("id", tableName + item.name)
+					select.data("isDynamic", item.formDynamicSelect)
+					select.data("optionFunc", item.options)
+					
+					if (!item.formDynamicSelect) {
+						// If the option set is static
+						var optionArray = select.data("optionFunc")();
+						optionArray.forEach(function(item, index){
+							var option = $('<option value="' + index + '">' + item + '</option>');
+							select.append(option);
+						});
+					}
+					div.append(select)
+					break;
+			}
+			columns.push(div);
+		}
+	});
 	
 	var form = $("<form id=\"" + tableName + "EditForm\" onsubmit='return onFormSubmit(this, \"" + tableName + "\")' method='GET'></form>")
 	columns.forEach(function(item, index){
 		form.append(item);
 	});
 	
-	form.append("<input type='submit' value='Submit'>")
+	form.append("<input class='btn btn-primary' type='submit' value='Submit'>")
 	return form;
 }
 
@@ -449,8 +464,23 @@ function getSelectedBucketTableAccount(){
 function showFormModal(tableName, row){
 	var data = (row ? row.val() : {});
 	var form = $(updateFormContent(tableName + "EditForm", data))
+	updateDynamicInputs(form, tableName + "EditForm");
 	form.data('row', row);
 	showModal(tableName + "EditFormModal");
+}
+
+function updateDynamicInputs(form, name){
+	var inputs = form.find("select").toArray();
+	inputs.forEach(function(item, index){
+		var it = $(item)
+		if(it.data("isDynamic") != undefined){
+		   it.prop("disabled", true);
+		}
+		
+		//TODO: Start the async update function
+		// After the function completes it shoud re-enable the input
+		
+	});	
 }
 
 // ############################## Event Handlers ##############################
@@ -478,15 +508,15 @@ function onDocumentReady() {
 		},
 		transactionTable: {
 			columns: [
-				{name: "ID", visible: false, formVisible: false},
+				{name: "ID", visible: false, formVisible: true},
 				{name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", formType: "select", options: getStatusOptions, required: true},
 				{name: "TransDate", title: "Date", type: "date", breakpoints:"xs", formatString:"YYYY-MM-DD", required: true, formType: "date"},
 				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date"},
 				{name: "Amount", title: "Amount", type: "formatter", breakpoints:"", required: true, formType: "number", formatterType: "number", formatter: transactionAmountFormatter},
 				{title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
 				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: bucketFormatter},
-				{name: "SourceBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: true},
-				{name: "DestBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: true},
+				{title: "Source", name: "SourceBucket", required: true, formType: "number", options: getBucketOptions, visible: false, formDynamicSelect: true},
+				{title: "Destination", name: "DestBucket", required: true, formType: "number", options: getBucketOptions, visible: false, formDynamicSelect: true},
 				{name: "Memo", title: "Memo", type: "string", breakpoints:"", formType: "textbox"},
 				{name: "Payee", title: "Payee", type: "string", breakpoints:"xs sm", formType: "text"}
 			]
@@ -718,7 +748,7 @@ function onAccountSelectChanged() {
 
 function onFormSubmit(self, tableName){
 	var form = $("#" + tableName + "EditForm");
-	var data = $("#" + tableName + "EditForm :input[value!='']").serializeArray()
+	var data = $("#" + tableName + "EditForm").serializeArray()
 	var row = form.data('row');
 	//TODO: Create and implement a generic data validation system
 	

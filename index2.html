@@ -38,7 +38,7 @@
 		
 		<div class="row no-gutters">
 			<div class="col">
-				<nav class="navbar navbar-expand-sm bg-light navbar-light fixed-top">
+				<nav class="navbar navbar-expand-sm bg-light navbar-light fixed-top" style="height: 56px">
 					<a class="navbar-brand" href="#">SPENT</a>
 					
 					<!-- Toggler/collapsibe Button -->
@@ -50,12 +50,16 @@
 							<li class="nav-item">
 								<a class="nav-link active" data-toggle="pill" href="#transactionTableTab">Trans</a>
 							</li>
-							<li class="nav-item">
-								<a class="nav-link" data-toggle="pill" href="#accountTableTab">Acc</a>
+							<li class="nav-item dropdown">
+								<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Manage</a>
+								<div class="dropdown-menu">
+									<button id="bucketTableModalToggle" class="dropdown-item">Buckets</button>
+		  							<button id="accountTableModalToggle" class="dropdown-item">Accounts</button>
+									<div class="dropdown-divider"></div>
+									<a class="dropdown-item" href="#">Separated link</a>
+								</div>
 							</li>
-							<li class="nav-item">
-								<a class="nav-link" data-toggle="pill" href="#bucketTableTab">Buk</a>
-							</li>
+							
 						</ul>
 					
 					<!--/div-->
@@ -84,15 +88,32 @@
 					</div>
 				</div>
 				
-				<div class="tab-pane container-fluid fade" id="accountTableTab">
-					<table id="accountTable" class="table-striped" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
-				</div>
-				<div class="tab-pane container-fluid fade" id="bucketTableTab">
-					<table id="bucketTable" class="table-striped" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
-				</div>
-				
 			</div>
 			
+		</div>
+	</div>
+	
+	<!-- Account Table Modal -->
+	<div id="accountTableModal" class="modal1">
+		<!-- Modal content -->
+		<div class="modal1-content">
+			<span id="accountTableModalClose" class="modal1-close">&times;</span>
+			<div id="accountTableEditToolbar"></div>
+			<div class="modal1-scroll">
+				<table id="accountTable" class="table-striped" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bucket Table Modal -->
+	<div id="bucketTableModal" class="modal1">
+		<!-- Modal content -->
+		<div class="modal1-content">
+			<span id="bucketTableModalClose" class="modal-close">&times;</span>
+			<div id="bucketTableEditToolbar"></div>
+			<div class="modal1-scroll">
+				<table id="bucketTable" class="table-striped" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
+			</div>
 		</div>
 	</div>
 	
@@ -218,8 +239,8 @@
 		}
 		
 		$(document).ready(function() {
-			//registerModal("bucketTableModal");
-			//registerModal("accountTableModal");
+			registerModal("bucketTableModal");
+			registerModal("accountTableModal");
 			
 			registerModal("transactionTableEditFormModal");
 			registerModal("bucketTableEditFormModal");

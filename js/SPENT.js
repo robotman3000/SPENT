@@ -60,14 +60,36 @@ function getTableData(tableName){
 	return table;
 }
 
+function _getNodeForID_(id){
+	
+	return $('#accountTree').jstree().get_node(id)
+}
+
 function getBucketNameForID(id){
 	if(id < 0){
 	   return "N/A";
 	}
 	
-	var node = $('#accountTree').jstree().get_node(id)
+	var node = _getNodeForID_(id);
 	if(node != false){
-		return node.text;
+		return node.text;	
+	}
+	
+	return "Invalid ID";
+}
+
+function getBucketParentForID(id){
+	if(id < 0){
+	   return "N/A";
+	}
+	
+	var node = _getNodeForID_(id);
+	if(node != false){
+		var par = node.parent;
+		if(par == "#"){
+			return -1
+		}
+		return par;
 	}
 	
 	return "Invalid ID";
@@ -80,12 +102,7 @@ function getTransferDirection(rowData, bucketID){
 	
 	switch(getTransactionType(rowData)){
 		case 0:
-			if(rowData.SourceBucket == bucketID){
-			   // Then we have a transfer from/out of the selected bucket
-				return false;
-			} else {
-				return true;
-			}
+			return (rowData.DestBucket == bucketID);
 			break;
 		case 1:
 			return true;
@@ -231,9 +248,13 @@ function apiTableSchemaToEditForm(tableName){
 					input.attr("name", item.name)
 					div.append(input)
 					
-					//TODO: This is a quick fix
+					//TODO: This is a quick fix; 
+					//The ID currently must be on the form in
+					//order for it to get sent to the server. 
+					//If it's not then the server can't determine
+					//where the updated data shoud go
 					if (item.name == "ID"){
-						//input.prop("disabled", true);
+						input.prop("readonly", true);
 					}
 					
 					break;
@@ -370,49 +391,66 @@ function refreshTable(tableName){
 	if(getTableData(tableName).table){
 		console.log("Refreshing Table: " + tableName);
 		if(!getTableData(tableName).isLocked()){
-			//TODO: This chained "if" should be replaced with something less... static
-			if(tableName == "transactionTable" || tableName == "bucketTable"){
-				var accountID = (tableName == "transactionTable" ? getSelectedAccount() : getSelectedBucketTableAccount())
-				apiRequest(createRequest("get", "bucket", [{"ID": accountID, "AllChildren": null}]), function(response) {
-					var unlockKey = getTableData(tableName).lockTable();	
-
-					var buckets = [];
-					response.data.forEach(function(item3, index3){
-						buckets.push({"ID": item3.ID, "Transactions": null, "Name": null, "Parent": null});
+			
+			var unlockKey = getTableData(tableName).lockTable();
+			
+			switch(tableName){
+				case "accountTable":
+					apiRequest(createRequest("get", "account", null), function(response) {
+						var accounts = [];
+						response.data.forEach(function(item3, index3){
+							accounts.push({"ID": item3.ID, "Name": item3.Name});
+						});
+						
+						addTableRows(tableName, accounts, unlockKey);
+						getTableData(tableName).unlockTable(unlockKey);
 					});
+					break;
+				case "bucketTable":
+					apiRequest(createRequest("get", "bucket", [{"ID": getSelectedBucketTableAccount()}]), function(response) {
+						var buckets = [];
+						response.data.forEach(function(item3, index3){
+							buckets.push({"ID": item3.ID, "Transactions": null, "Name": null, "Parent": null});
+						});
 
-					apiRequest(createRequest("get", "bucket", buckets), function(response) {
-						if(tableName == "bucketTable"){
-							//alert("refreshung bucket table");
+						apiRequest(createRequest("get", "bucket", buckets), function(response) {
 							addTableRows(tableName, response.data, unlockKey);
 							getTableData(tableName).unlockTable(unlockKey);	
-						} else if(tableName == "transactionTable"){
+						});
+					});
+					break;
+				case "transactionTable":
+					var accountID = getSelectedAccount();
+					var parent = getBucketParentForID(accountID);
+					apiRequest(createRequest("get", "bucket", [{"ID": accountID, "AllChildren": null}]), function(response) {
+						var buckets = [];
+						response.data.forEach(function(item3, index3){
+							buckets.push({"ID": item3.ID, "Transactions": null, "Name": null, "Parent": null});
+							if(item3.ID == accountID && parent == -1){
+								item3.AllChildren.forEach(function(item4, index4){
+									buckets.push({"ID": item4, "Transactions": null, "Name": null, "Parent": null});
+								});
+							}
+						});
+
+						apiRequest(createRequest("get", "bucket", buckets), function(response) {
 							var data = []
 							response.data.forEach(function(item, index){
 								item.Transactions.forEach(function(item2, index2){
 									data.push({"ID": item2, "Status": null, "TransDate": null, "PostDate": null, "Amount": null, "SourceBucket": null, "DestBucket": null, "Memo": null, "Payee": null});
 								});
 							});
+							
 							apiRequest(createRequest("get", "transaction", data), function(response) {
-								//alert("Filling Transactions");
 								addTableRows(tableName, response.data, unlockKey);
 								getTableData(tableName).unlockTable(unlockKey);
 							});	
-						}
-					});		
-				});
-			} else if (tableName == "accountTable"){
-				apiRequest(createRequest("get", "account", null), function(response) {
-					var unlockKey = getTableData(tableName).lockTable();
-					var accounts = [];
-					response.data.forEach(function(item3, index3){
-						accounts.push({"ID": item3.ID, "Name": item3.Name});
+
+						});		
 					});
-					addTableRows(tableName, accounts, unlockKey);
-					getTableData(tableName).unlockTable(unlockKey);
-				});
-			} else {
-				alert("Unknown table: " + tableName);	
+					break;
+				default:
+					alert("Unknown table: " + tableName);
 			}
 		} else {
 			console.log("Error: " + tableName + " is locked and cannot be refreshed")
@@ -495,15 +533,15 @@ function onDocumentReady() {
 	tableSchema = {
 		accountTable: {
 			columns: [
-				{name: "ID", visible: false, formVisible: false},
+				{name: "ID", visible: false, formVisible: true},
 				{name: "Name", title: "Name", type: "string", required: true, formType: "text"}
 			]
 		},
 		bucketTable: {
 			columns: [
-				{name: "ID", visible: false, formVisible: false},
+				{name: "ID", visible: false, formVisible: true},
 				{name: "Name", title: "Name", type: "string", required: true, formType: "text"},
-				{name: "Parent", title: "Parent", type: "number", required: true, formType: "select", options: getBucketOptions, formDynamicSelect: true}
+				{name: "Parent", title: "Parent", type: "number", required: true, formType: "number", options: getBucketOptions, formDynamicSelect: true}
 			]
 		},
 		transactionTable: {
@@ -548,8 +586,7 @@ formDynamicSelect
 			Type: [
 				"Transfer",
 				"Deposit",
-				"Withdrawal",
-				"Invalid"
+				"Withdrawal"
 			]
 		}
 	}
@@ -633,6 +670,7 @@ formDynamicSelect
 			}],
 		},
 	});
+	$('#accountTree').jstree().load_all();
 }
 
 function getBucketOptions(){
@@ -658,11 +696,14 @@ function getTransactionType(rowData){
 	var source = (rowData.SourceBucket != -1);
 	var dest = (rowData.DestBucket != -1);
 	
-	if ( !source && !dest ){
+	if ( source && dest ){
+		//Transfer
 		return 0;
 	} else if ( !source && dest ){
+		//Deposit
 		return 1;
 	} else if ( source && !dest ){
+		//Withdrawal
 		return 2;
 	}
 	
@@ -671,20 +712,24 @@ function getTransactionType(rowData){
 }
 
 function transactionTypeFormatter(value, options, rowData){
-	if(rowData.typeSort){
+	/*if(rowData.typeSort){
 	   return rowData.typeSort;
-	}
+	}*/
 	rowData.typeSort = getTransactionType(rowData);
-	return enums["transactionTable"]["Type"][rowData.typeSort]
+	var fromToStr = "";
+	if (rowData.typeSort == 0){//Transfer
+		fromToStr = (getTransferDirection(rowData, getSelectedAccount()) ? " from " : " to ");	
+	}
+	return enums["transactionTable"]["Type"][rowData.typeSort] + fromToStr;
 }
 
 function transactionAmountFormatter(value, options, rowData){
-	if(rowData.amountSort){
+	/*if(rowData.amountSort){
 	   return rowData.amountSort;
-	}
+	}*/
 	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
 	if (isDeposit){
-		// If withdrawal
+		// If deposit
 		rowData.amountSort = formatter.format(value);
 		return rowData.amountSort;
 	}
@@ -693,17 +738,25 @@ function transactionAmountFormatter(value, options, rowData){
 }
 
 function bucketFormatter(value, options, rowData){
-	if(rowData.bucketSort){
+	/*if(rowData.bucketSort){
 	   return rowData.bucketSort;
-	}
+	}*/
 	var id = -2; //This value will cause the name func to return "Invalid ID"
-	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
-
-	if(isDeposit != null){
-		id = (isDeposit ? rowData.DestBucket : rowData.SourceBucket)
+	
+	var transType = getTransactionType(rowData);
+	var isDeposit = (rowData, getSelectedAccount());
+	if(transType != 0){
+		id = (transType == 1 ? rowData.DestBucket : rowData.SourceBucket);
+	} else {
+		id = (rowData.SourceBucket == getSelectedAccount() ? rowData.DestBucket : rowData.SourceBucket);
 	}
-
-	rowData.bucketSort = getBucketNameForID(id);
+	
+	var par = getBucketParentForID(id);
+	//if(par != -1){
+		rowData.bucketSort = getBucketNameForID(id);
+	/*} else {
+		rowData.bucketSort = "Unassigned";
+	}*/
 	return rowData.bucketSort;
 }
 

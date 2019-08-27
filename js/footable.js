@@ -2203,51 +2203,69 @@
 		 */
 		draw: function () {
 			var self = this;
+			
+			console.log("Attempting to draw" + self.name);
 
-			// Clone the current table and insert it into the original's place
-			var $elCopy = self.$el.clone().insertBefore(self.$el);
+			if(!self.lockable){
+				initLocks(self);
+			}
+			if(!self.isDrawing){
+				self.isDrawing = true;
+				// Clone the current table and insert it into the original's place
+				console.log("Removing Table" + self.name)
+				var $elCopy = self.$el.clone().insertBefore(self.$el);
 
-			// Detach `self.$el` from the DOM, retaining its event handlers
-			self.$el.detach();
+				// Detach `self.$el` from the DOM, retaining its event handlers
+				self.$el.detach();
 
-			// when drawing the order that the components are executed is important so chain the methods but use promises to retain async safety.
-			return self.execute(false, true, 'predraw').then(function(){
-				/**
-				 * The predraw.ft.table event is raised after all core components and add-ons have executed there predraw functions but before they execute there draw functions.
-				 * @event FooTable.Table#"predraw.ft.table"
-				 * @param {jQuery.Event} e - The jQuery.Event object for the event.
-				 * @param {FooTable.Table} ft - The instance of the plugin raising the event.
-				 */
-				return self.raise('predraw.ft.table').then(function(){
-					return self.execute(false, true, 'draw').then(function(){
-						/**
-						 * The draw.ft.table event is raised after all core components and add-ons have executed there draw functions.
-						 * @event FooTable.Table#"draw.ft.table"
-						 * @param {jQuery.Event} e - The jQuery.Event object for the event.
-						 * @param {FooTable.Table} ft - The instance of the plugin raising the event.
-						 */
-						return self.raise('draw.ft.table').then(function(){
-							return self.execute(false, true, 'postdraw').then(function(){
-								/**
-								 * The postdraw.ft.table event is raised after all core components and add-ons have executed there postdraw functions.
-								 * @event FooTable.Table#"postdraw.ft.table"
-								 * @param {jQuery.Event} e - The jQuery.Event object for the event.
-								 * @param {FooTable.Table} ft - The instance of the plugin raising the event.
-								 */
-								return self.raise('postdraw.ft.table');
+				// when drawing the order that the components are executed is important so chain the methods but use promises to retain async safety.
+				return self.execute(false, true, 'predraw').then(function(){
+					/**
+					 * The predraw.ft.table event is raised after all core components and add-ons have executed their predraw functions but before they execute their draw functions.
+					 * @event FooTable.Table#"predraw.ft.table"
+					 * @param {jQuery.Event} e - The jQuery.Event object for the event.
+					 * @param {FooTable.Table} ft - The instance of the plugin raising the event.
+					 */
+					console.log("table" + self.name + " predraw")
+					return self.raise('predraw.ft.table').then(function(){
+						return self.execute(false, true, 'draw').then(function(){
+							/**
+							 * The draw.ft.table event is raised after all core components and add-ons have executed their draw functions.
+							 * @event FooTable.Table#"draw.ft.table"
+							 * @param {jQuery.Event} e - The jQuery.Event object for the event.
+							 * @param {FooTable.Table} ft - The instance of the plugin raising the event.
+							 */
+							console.log("table" + self.name + " draw")
+							return self.raise('draw.ft.table').then(function(){
+								return self.execute(false, true, 'postdraw').then(function(){
+									/**
+									 * The postdraw.ft.table event is raised after all core components and add-ons have executed their postdraw functions.
+									 * @event FooTable.Table#"postdraw.ft.table"
+									 * @param {jQuery.Event} e - The jQuery.Event object for the event.
+									 * @param {FooTable.Table} ft - The instance of the plugin raising the event.
+									 */
+									console.log("table" + self.name + " postdraw")
+									return self.raise('postdraw.ft.table');
+								});
 							});
 						});
 					});
+				}).fail(function(err){
+					if (F.is.error(err)){
+						console.error('FooTable: unhandled error thrown during a draw operation.', err);
+					}
+				}).always(function(){
+					// Replace the copy that we added above with the modified `self.$el`
+					$elCopy.replaceWith(self.$el);
+					console.log("Replacing Table" + self.name)
+					self.$loader.remove();
+					
+					self.isDrawing = false;
+					console.log("Done...." + self.name)
 				});
-			}).fail(function(err){
-				if (F.is.error(err)){
-					console.error('FooTable: unhandled error thrown during a draw operation.', err);
-				}
-			}).always(function(){
-				// Replace the copy that we added above with the modified `self.$el`
-				$elCopy.replaceWith(self.$el);
-				self.$loader.remove();
-			});
+			}
+			console.log("Lock prevented draw" + self.name);
+			return $.when();
 		},
 		/**
 		 * Executes the specified method with the optional number of parameters on all components and waits for the promise from each to be resolved before executing the next.

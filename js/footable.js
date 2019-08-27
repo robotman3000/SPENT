@@ -1166,7 +1166,13 @@
 		 */
 		format: function(value){
 			//abc
-			return this.column.formatter.call(this.column, value, this.ft.o, this.row.value);
+			var value = this.column.formatter.call(this.column, value, this.ft.o, this.row.value);
+			if(value){
+				this.row.cells[this.column.index].filterValue = value;
+				this.row.cells[this.column.index].sortValue = value;
+				this.row.cells[this.column.index].value = value;
+			}
+			return value;
 		},
 		/**
 		 * Allows easy access to getting or setting the cell's value. If the value is set all associated properties are also updated along with the actual element.
@@ -5643,6 +5649,7 @@
 		 * @returns {string}
 		 */
 		format: function(formatString){
+			//abca
 			var firstRow = (this.size * (this.current - 1)) + 1,
 				lastRow = this.size * this.current;
 			if (this.ft.rows.array.length == 0){

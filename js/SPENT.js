@@ -75,7 +75,7 @@ function getBucketNameForID(id){
 		return node.text;	
 	}
 	
-	return "Invalid ID";
+	return "Invalid ID: " + id;
 }
 
 function getBucketParentForID(id){
@@ -92,7 +92,7 @@ function getBucketParentForID(id){
 		return par;
 	}
 	
-	return "Invalid ID";
+	return "Invalid ID: " + id;
 }
 
 function getTransferDirection(rowData, bucketID){
@@ -206,6 +206,10 @@ function apiTableSchemaToColumns(tableName){
 			obj.sortValue = item.sortValue;
 		}
 		
+		if(item.formatter){
+			obj.formatter = item.formatter;
+		}
+		
 		switch(item.type){
 			case "enum":
 				obj.type = "string"
@@ -215,7 +219,6 @@ function apiTableSchemaToColumns(tableName){
 				break;
 			case "formatter":
 				obj.type = "string"
-				obj.formatter = item.formatter;
 				break;
 			default:
 				obj.type = item.type;
@@ -318,7 +321,7 @@ function initTable(tableName, apiDataType){
 		},
 		isLocked: function(lockID){
 			var result = this.table.isLocked;
-			if (lockID && lockID == this.lockID){
+			if (lockID == this.lockID){
 				console.log("Table " + tableName + " can be accessed by " + lockID);
 				result = false;
 			}
@@ -390,7 +393,7 @@ function refreshTable(tableName){
 	//alert("Table: " + tables[tableName].table);
 	if(getTableData(tableName).table){
 		console.log("Refreshing Table: " + tableName);
-		if(!getTableData(tableName).isLocked()){
+		if(!getTableData(tableName).isLocked(null)){
 			
 			var unlockKey = getTableData(tableName).lockTable();
 			
@@ -549,7 +552,7 @@ function onDocumentReady() {
 				{name: "ID", visible: false, formVisible: true},
 				{name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", formType: "select", options: getStatusOptions, required: true},
 				{name: "TransDate", title: "Date", type: "date", breakpoints:"xs", formatString:"YYYY-MM-DD", required: true, formType: "date"},
-				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date"},
+				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date", formatter: transactionDateFormatter},
 				{name: "Amount", title: "Amount", type: "formatter", breakpoints:"", required: true, formType: "number", formatterType: "number", formatter: transactionAmountFormatter},
 				{title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
 				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: bucketFormatter},
@@ -712,9 +715,9 @@ function getTransactionType(rowData){
 }
 
 function transactionTypeFormatter(value, options, rowData){
-	/*if(rowData.typeSort){
+	if(rowData.typeSort){
 	   return rowData.typeSort;
-	}*/
+	}
 	rowData.typeSort = getTransactionType(rowData);
 	var fromToStr = "";
 	if (rowData.typeSort == 0){//Transfer
@@ -724,9 +727,9 @@ function transactionTypeFormatter(value, options, rowData){
 }
 
 function transactionAmountFormatter(value, options, rowData){
-	/*if(rowData.amountSort){
+	if(rowData.amountSort){
 	   return rowData.amountSort;
-	}*/
+	}
 	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
 	if (isDeposit){
 		// If deposit
@@ -738,9 +741,9 @@ function transactionAmountFormatter(value, options, rowData){
 }
 
 function bucketFormatter(value, options, rowData){
-	/*if(rowData.bucketSort){
+	if(rowData.bucketSort){
 	   return rowData.bucketSort;
-	}*/
+	}
 	var id = -2; //This value will cause the name func to return "Invalid ID"
 	
 	var transType = getTransactionType(rowData);
@@ -760,6 +763,14 @@ function bucketFormatter(value, options, rowData){
 	return rowData.bucketSort;
 }
 
+function transactionDateFormatter(value, options, rowData){
+	var d = new Date(1971,01,01);
+	if(rowData.PostDate.toDate() < d){
+		return "N/A";
+	}
+	return rowData.PostDate.format("YYYY-MM-DD");
+}
+
 function onJSTreeReady() {
 	getSelectedAccount(); // This will select the first list item
 	refreshBalanceDisplay(); // Initial update since the usual event handler isn't registered yet
@@ -777,6 +788,7 @@ function onJSTreeReady() {
 
 function onJSTreeChanged(e, data) {
 	if (data.action == "select_node") {
+		console.log("JS TREE CHANGE------------------------------------------------")
 		refreshBalanceDisplay();
 		refreshTable("transactionTable");
 	} else if (data.action == "deselect_all") {} else {

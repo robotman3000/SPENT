@@ -61,7 +61,6 @@ function getTableData(tableName){
 }
 
 function _getNodeForID_(id){
-	
 	return $('#accountTree').jstree().get_node(id)
 }
 
@@ -128,6 +127,7 @@ function apiRequest(requestObj, callback){
 			   	if(callback){
 				   callback(data);
 				}
+				return data;
 			}
 		},
 		error: function() {
@@ -156,7 +156,7 @@ function apiRequestSuccessful(response){
 	if(response.successful == true){
 		return true;
 	}
-	alert("Error: " + response.message);
+	alert("API Error: " + response.message);
 	return false;
 }
 
@@ -271,11 +271,54 @@ function apiTableSchemaToEditForm(tableName){
 					if (!item.formDynamicSelect) {
 						// If the option set is static
 						var optionArray = select.data("optionFunc")();
+						
+						//TODO: This is a quick fix
+						if(item.name == "Type"){
+							var option = $('<option value="" selected disabled hidden>Select a transaction type</option>');
+							select.append(option);
+						}
+						
 						optionArray.forEach(function(item, index){
 							var option = $('<option value="' + index + '">' + item + '</option>');
 							select.append(option);
 						});
 					}
+					
+					
+					
+					//TODO: This is a quick fix;
+					if(item.name == "Type"){
+					   select.change(function(data){
+						   //alert(this.value);
+						   sourceVisible = false;
+						   destVisible = false;
+						   switch(this.value){
+							   case "0":
+								   sourceVisible = true;
+								   destVisible = true;
+								   break;
+							   case "1":
+								   sourceVisible = false;
+								   destVisible = true;
+								   break;
+							   case "2":
+								   sourceVisible = true;
+								   destVisible = false;
+								   break;
+						   }
+						   $("#" + tableName + "SourceBucket").prop("disabled", !sourceVisible);
+						   $("#" + tableName + "DestBucket").prop("disabled", !destVisible);
+						   
+						   if(!sourceVisible){
+							   $("#" + tableName + "SourceBucket").val(-1)
+						   }
+						   
+						   if(!destVisible){
+							   $("#" + tableName + "DestBucket").val(-1)
+						   }
+					   });
+					}
+					
 					div.append(select)
 					break;
 			}
@@ -505,23 +548,62 @@ function getSelectedBucketTableAccount(){
 function showFormModal(tableName, row){
 	var data = (row ? row.val() : {});
 	var form = $(updateFormContent(tableName + "EditForm", data))
-	updateDynamicInputs(form, tableName + "EditForm");
-	form.data('row', row);
-	showModal(tableName + "EditFormModal");
-}
-
-function updateDynamicInputs(form, name){
+		
 	var inputs = form.find("select").toArray();
 	inputs.forEach(function(item, index){
 		var it = $(item)
-		if(it.data("isDynamic") != undefined){
-		   it.prop("disabled", true);
+		var needsUpdate = it.data("isDynamic");
+		if(needsUpdate != undefined){
+			if(needsUpdate()){
+				rowVal = -1;
+				if(row){
+					rowVal = row.val()[it[0].name];
+				}
+				updateDynamicInput(it, rowVal);
+			}
 		}
 		
-		//TODO: Start the async update function
-		// After the function completes it shoud re-enable the input
+		//TODO: This is a quick fix
+		//alert(item.name);
+		/*if(item.name == "Type"){
+			//alert("Caught")
+			var type = getTransactionType(data);
+			if(type == 3){
+				type = 1;
+			}
+			it.val(type + "");
+		}*/
 		
-	});	
+	});
+	form.data('row', row);
+	
+	showModal(tableName + "EditFormModal");
+	
+	//TODO: This is a quick fix
+	/*if(tableName == "transactionTable"){
+		$("#transactionTableType").change();
+	}*/
+}
+
+function updateDynamicInput(it, value){
+	//alert("Value: " + value);
+	it.prop("disabled", true);
+
+	//TODO: Start the async update function
+	// After the function completes it shoud re-enable the input
+	it.data("optionFunc")().then(function(result){
+		if(result == null){
+			alert("failed to update input: " + it)
+		} else {
+			it[0].options.length=0
+			it[0].options.add(new Option("N/A", -1, true, (value == -1)));
+			result.forEach(function(ite, ind){
+				it[0].options.add(new Option(ite.Name, ite.ID, false, (value == ite.ID)))
+			});
+			
+			it.prop("disabled", false);
+		}
+	});
 }
 
 // ############################## Event Handlers ##############################
@@ -544,7 +626,7 @@ function onDocumentReady() {
 			columns: [
 				{name: "ID", visible: false, formVisible: true},
 				{name: "Name", title: "Name", type: "string", required: true, formType: "text"},
-				{name: "Parent", title: "Parent", type: "number", required: true, formType: "number", options: getBucketOptions, formDynamicSelect: true}
+				{name: "Parent", title: "Parent", type: "number", required: true, formType: "number", options: getBucketOptions, formDynamicSelect: function(){ return true; }}
 			]
 		},
 		transactionTable: {
@@ -554,10 +636,10 @@ function onDocumentReady() {
 				{name: "TransDate", title: "Date", type: "date", breakpoints:"xs", formatString:"YYYY-MM-DD", required: true, formType: "date"},
 				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date", formatter: transactionDateFormatter},
 				{name: "Amount", title: "Amount", type: "formatter", breakpoints:"", required: true, formType: "number", formatterType: "number", formatter: transactionAmountFormatter},
-				{title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
+				{name: "Type", title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
 				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: bucketFormatter},
-				{title: "Source", name: "SourceBucket", required: true, formType: "number", options: getBucketOptions, visible: false, formDynamicSelect: true},
-				{title: "Destination", name: "DestBucket", required: true, formType: "number", options: getBucketOptions, visible: false, formDynamicSelect: true},
+				{title: "Source", name: "SourceBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: function(){ return true; }},
+				{title: "Destination", name: "DestBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: function(){ return true; }},
 				{name: "Memo", title: "Memo", type: "string", breakpoints:"", formType: "textbox"},
 				{name: "Payee", title: "Payee", type: "string", breakpoints:"xs sm", formType: "text"}
 			]
@@ -587,9 +669,9 @@ formDynamicSelect
 				"Complete"
 			],
 			Type: [
-				"Transfer",
-				"Deposit",
-				"Withdrawal"
+				"Transfer", //0
+				"Deposit", // 1
+				"Withdrawal" //2
 			]
 		}
 	}
@@ -677,7 +759,22 @@ formDynamicSelect
 }
 
 function getBucketOptions(){
-	
+	return apiRequest(createRequest("get", "bucket", [{"ID": getSelectedAccount(), "AllChildren": null}])).then(function(result){
+		var buckets = []
+		buckets.push({"ID": getSelectedAccount(), "Name": null})
+		result.data[0].AllChildren.forEach(function(item, index){
+			buckets.push({"ID": item, "Name": null})
+		});
+		return apiRequest(createRequest("get", "bucket", buckets));
+	}).then(function(result2){
+		//alert("Hello World")
+		var array = []
+		result2.data.forEach(function(item, index){
+			array.push({"ID": item.ID, "Name": item.Name})
+		});
+		
+		return Promise.resolve(array);
+	});
 }
 
 function getTypeOptions(){
@@ -764,11 +861,14 @@ function bucketFormatter(value, options, rowData){
 }
 
 function transactionDateFormatter(value, options, rowData){
-	var d = new Date(1971,01,01);
-	if(rowData.PostDate.toDate() < d){
-		return "N/A";
+	if(rowData.PostDate.toDate){
+		var d = new Date(1971,01,01);
+		if(rowData.PostDate.toDate() < d){
+			return "N/A";
+		}
+		return rowData.PostDate.format("YYYY-MM-DD");
 	}
-	return rowData.PostDate.format("YYYY-MM-DD");
+	return value;
 }
 
 function onJSTreeReady() {

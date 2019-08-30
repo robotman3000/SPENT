@@ -230,8 +230,12 @@
 			var inputs = form.find("select").toArray();
 			inputs.forEach(function(item, index){
 				var key = item.name;
-				var oldValue = getOrDefault(data, key, "");
-				$(item).val(oldValue);
+				var oldValue = getOrDefault(data, key, null);
+				if(oldValue == null){
+					item.selectedIndex = 0;
+				} else {
+					$(item).val(oldValue);
+				}
 			});
 			
 			

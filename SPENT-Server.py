@@ -7,21 +7,27 @@ from SPENT import *
 import json
 import time
 from argparse import ArgumentParser
+import os
 
 parser = ArgumentParser()
 parser.add_argument("--file", dest="dbpath",
                     default="SPENT.db")
+parser.add_argument("--root", dest="serverRoot",
+                    default="/")
 parser.add_argument("--debug",
                     action="store_true", dest="debugCore", default=False,
-                    help="don't print status messages to stdout")
+                    help="Enable debug logging")
 parser.add_argument("--debug-API",
                     action="store_true", dest="debugAPI", default=False,
-                    help="don't print status messages to stdout")
+                    help="Enable API request logging")
+parser.add_argument("--debug-Server",
+                    action="store_true", dest="debugServer", default=False,
+                    help="Enable server debugging features")
 
 args = parser.parse_args()
 
-
-FILE = 'index.html'
+SERVER_ROOT = args.serverRoot
+INDEX = SERVER_ROOT + "index.html"
 
 def getTimeStr(timeMS):
 	if timeMS > 1000:
@@ -424,22 +430,29 @@ class RequestHandler:
 		
 		return False
 	def fileHandler(self, query, path):
+		if path == "/":
+				path = INDEX
+				
 		print("Using file handler for: %s" % path)
+		fullPath = os.path.join(SERVER_ROOT, path)
+		if args.debugServer:
+			print("Full file request path: %s" % fullPath)
 		try:
-			if path == "/":
-				path = "/index2.html"
 				
 			# we try to serve up a file with the requested name
 			#TODO: Make a more robust file handler
-			typeGuess = mimetypes.guess_type(path)
+			typeGuess = mimetypes.guess_type(fullPath)
 			modeStr = "r%s" % ('t' if self.isText(typeGuess) else 'b')
-			response_body = open("./" + path, mode=modeStr).read()
+			response_body = open("./" + fullPath, mode=modeStr).read()
 			status = '200 OK'
 			headers = [('Content-type', typeGuess[0] if typeGuess[0] is not None else "application/octet-stream"),
 				   ('Content-Length', str(len(response_body)))]
 
 		except FileNotFoundError as e:
 			response_body = "File not found"
+			if args.debugServer:
+				response_body +=  "\n" + SERVER_ROOT + path + "\n"
+				response_body += "\n".join(os.listdir(SERVER_ROOT))
 			status = '404 OK'
 			headers = [('Content-type', 'text/plain'),
 				   ('Content-Length', str(len(response_body)))]

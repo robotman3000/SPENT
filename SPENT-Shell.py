@@ -1,5 +1,5 @@
 from SPENT import *
-import readline
+#import readline
 
 class REPL():
 	def __init__(self, exitCallback, commands={}):
@@ -22,7 +22,7 @@ class REPL():
 		
 	def main(self):
 		self.running = True
-		readline.set_completer(self.getCommandMatches)
+		#readline.set_completer(self.getCommandMatches)
 		while self.running:
 			rawStr = input("> ")
 			rawStrParts = rawStr.split(";")

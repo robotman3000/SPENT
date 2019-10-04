@@ -1,7 +1,12 @@
-﻿import sqlite3 as sql
+import sqlite3 as sql
 import sys
 import traceback
-
+def Aprint(*args, **kwargs):
+	"""My custom print() function."""
+	#__builtin__.print('My overridden print() function!')
+	#return __builtin__.print(*args, **kwargs)
+	return True
+	
 class DatabaseWrapper():
 	#TODO: create an api for getting the value of a single cell
 	def __init__(self, dbPath):

@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import webbrowser
 from wsgiref.simple_server import make_server
 import mimetypes
@@ -7,6 +7,7 @@ from SPENT import *
 import json
 import time
 from argparse import ArgumentParser
+import builtins as __builtin__
 
 parser = ArgumentParser()
 parser.add_argument("--file", dest="dbpath",
@@ -17,11 +18,13 @@ parser.add_argument("--debug",
 parser.add_argument("--debug-API",
                     action="store_true", dest="debugAPI", default=False,
                     help="don't print status messages to stdout")
-
+parser.add_argument("--server-mode",
+                    action="store_true", dest="serverMode", default=False,
+                    help="Host the web server")
 args = parser.parse_args()
 
 
-FILE = 'index.html'
+FILE = 'index2.html'
 
 def getTimeStr(timeMS):
 	if timeMS > 1000:
@@ -29,11 +32,18 @@ def getTimeStr(timeMS):
 	return "%s ms" % (timeMS)
 	
 def time_it(f, *args):
-	start = time.time_ns()
+	start = time.process_time()
 	result = f(*args)
-	return [result, (getTimeStr((time.time_ns() - start) / 1000000))]
+	return [result, (getTimeStr((time.process_time() - start) / 1000000))]
 
 class SPENTServer():
+	def open_browser(self):
+		"""Start a browser after waiting for half a second."""
+		def _open_browser():
+			webbrowser.open('http://localhost:%s/%s' % (self.port, FILE))
+		thread = threading.Timer(0.5, _open_browser)
+		thread.start()
+		
 	def __init__(self, port=8080):
 		self.unimp = {"successful": False, "message": "Unimplemented!"}
 		self.accountMan = AccountManager(args.dbpath)
@@ -427,6 +437,7 @@ class RequestHandler:
 		print("Using file handler for: %s" % path)
 		try:
 			if path == "/":
+				print("Serving index2.html")
 				path = "/index2.html"
 				
 			# we try to serve up a file with the requested name
@@ -453,10 +464,8 @@ class RequestHandler:
 	def getHandler(self, method, path):
 		print("Searching for endpoint handler for: %s - %s" % (method, path))
 		return self.handlers.get("%s;%s" % (method, path), None)
+	
 
-if sys.hexversion >= 0x30001f0:
+if args.serverMode:
 	server = SPENTServer(8080)
-	#server.open_browser()
 	server.start_server()
-else:
-	print("Sorry, your version of python is too old")

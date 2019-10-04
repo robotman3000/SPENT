@@ -1,4 +1,4 @@
-import threading
+﻿import threading
 import webbrowser
 from wsgiref.simple_server import make_server
 import mimetypes
@@ -7,24 +7,27 @@ from SPENT import *
 import json
 import time
 from argparse import ArgumentParser
-import builtins as __builtin__
+import os
 
 parser = ArgumentParser()
 parser.add_argument("--file", dest="dbpath",
                     default="SPENT.db")
+parser.add_argument("--root", dest="serverRoot",
+                    default="/")
 parser.add_argument("--debug",
                     action="store_true", dest="debugCore", default=False,
-                    help="don't print status messages to stdout")
+                    help="Enable debug logging")
 parser.add_argument("--debug-API",
                     action="store_true", dest="debugAPI", default=False,
-                    help="don't print status messages to stdout")
-parser.add_argument("--server-mode",
-                    action="store_true", dest="serverMode", default=False,
-                    help="Host the web server")
+                    help="Enable API request logging")
+parser.add_argument("--debug-Server",
+                    action="store_true", dest="debugServer", default=False,
+                    help="Enable server debugging features")
+
 args = parser.parse_args()
 
-
-FILE = 'index2.html'
+SERVER_ROOT = args.serverRoot
+INDEX = SERVER_ROOT + "index.html"
 
 def getTimeStr(timeMS):
 	if timeMS > 1000:
@@ -32,18 +35,11 @@ def getTimeStr(timeMS):
 	return "%s ms" % (timeMS)
 	
 def time_it(f, *args):
-	start = time.process_time()
+	start = time.time_ns()
 	result = f(*args)
-	return [result, (getTimeStr((time.process_time() - start) / 1000000))]
+	return [result, (getTimeStr((time.time_ns() - start) / 1000000))]
 
 class SPENTServer():
-	def open_browser(self):
-		"""Start a browser after waiting for half a second."""
-		def _open_browser():
-			webbrowser.open('http://localhost:%s/%s' % (self.port, FILE))
-		thread = threading.Timer(0.5, _open_browser)
-		thread.start()
-		
 	def __init__(self, port=8080):
 		self.unimp = {"successful": False, "message": "Unimplemented!"}
 		self.accountMan = AccountManager(args.dbpath)
@@ -434,23 +430,29 @@ class RequestHandler:
 		
 		return False
 	def fileHandler(self, query, path):
+		if path == "/":
+				path = "index.html"
+				
 		print("Using file handler for: %s" % path)
+		fullPath = os.path.join(SERVER_ROOT, path)
+		if args.debugServer:
+			print("Full file request path: %s" % fullPath)
 		try:
-			if path == "/":
-				print("Serving index2.html")
-				path = "/index2.html"
 				
 			# we try to serve up a file with the requested name
 			#TODO: Make a more robust file handler
-			typeGuess = mimetypes.guess_type(path)
+			typeGuess = mimetypes.guess_type(fullPath)
 			modeStr = "r%s" % ('t' if self.isText(typeGuess) else 'b')
-			response_body = open("./" + path, mode=modeStr).read()
+			response_body = open(SERVER_ROOT + path, mode=modeStr).read()
 			status = '200 OK'
 			headers = [('Content-type', typeGuess[0] if typeGuess[0] is not None else "application/octet-stream"),
 				   ('Content-Length', str(len(response_body)))]
 
 		except FileNotFoundError as e:
 			response_body = "File not found"
+			if args.debugServer:
+				response_body +=  "\n" + SERVER_ROOT + path + "\n"
+				response_body += "\n".join(os.listdir(SERVER_ROOT))
 			status = '404 OK'
 			headers = [('Content-type', 'text/plain'),
 				   ('Content-Length', str(len(response_body)))]
@@ -464,8 +466,10 @@ class RequestHandler:
 	def getHandler(self, method, path):
 		print("Searching for endpoint handler for: %s - %s" % (method, path))
 		return self.handlers.get("%s;%s" % (method, path), None)
-	
 
-if args.serverMode:
+if sys.hexversion >= 0x30001f0:
 	server = SPENTServer(8080)
+	#server.open_browser()
 	server.start_server()
+else:
+	print("Sorry, your version of python is too old")

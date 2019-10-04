@@ -13,7 +13,7 @@ parser = ArgumentParser()
 parser.add_argument("--file", dest="dbpath",
                     default="SPENT.db")
 parser.add_argument("--root", dest="serverRoot",
-                    default="/")
+                    default="./")
 parser.add_argument("--debug",
                     action="store_true", dest="debugCore", default=False,
                     help="Enable debug logging")
@@ -23,6 +23,9 @@ parser.add_argument("--debug-API",
 parser.add_argument("--debug-Server",
                     action="store_true", dest="debugServer", default=False,
                     help="Enable server debugging features")
+parser.add_argument("--server-mode",
+					action="store_true", dest="serverMode", default=False,
+					help="Run the server")
 
 args = parser.parse_args()
 
@@ -467,9 +470,10 @@ class RequestHandler:
 		print("Searching for endpoint handler for: %s - %s" % (method, path))
 		return self.handlers.get("%s;%s" % (method, path), None)
 
-if sys.hexversion >= 0x30001f0:
-	server = SPENTServer(8080)
-	#server.open_browser()
-	server.start_server()
-else:
-	print("Sorry, your version of python is too old")
+if args.serverMode:
+	if sys.hexversion >= 0x30001f0:
+		server = SPENTServer(8080)
+		#server.open_browser()
+		server.start_server()
+	else:
+		print("Sorry, your version of python is too old")

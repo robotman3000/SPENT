@@ -94,6 +94,7 @@ function getBucketParentForID(id){
 	return "Invalid ID: " + id;
 }
 
+//Begin Flag
 function getTransferDirection(rowData, bucketID){
 	// TODO: Is there a better way of representing this?
 	// True = Money Coming in; I.E. a positive value
@@ -112,6 +113,7 @@ function getTransferDirection(rowData, bucketID){
 	}
 	return null;
 }
+//Eng Flag
 
 // ########################## #### API Logic ##############################
 
@@ -136,7 +138,7 @@ function apiRequest(requestObj, callback){
 	});
 }
 
-function createRequest(action, type, data){
+function createRequest(action, type, data, columns){
 	//TODO: Verify the input data
 	var request = {
 		action: action,
@@ -145,6 +147,13 @@ function createRequest(action, type, data){
 	
 	if(data != undefined){
 	   request.data = data;
+		if(data.length < 1){
+			request.data = null;
+		}
+	}
+	
+	if(columns != undefined){
+	   request.columns = columns;
 	}
 	
 	request.debugTrace = new Error().stack;
@@ -456,10 +465,10 @@ function refreshTable(tableName){
 					apiRequest(createRequest("get", "bucket", [{"ID": getSelectedBucketTableAccount()}]), function(response) {
 						var buckets = [];
 						response.data.forEach(function(item3, index3){
-							buckets.push({"ID": item3.ID, "Transactions": null, "Name": null, "Parent": null});
+							buckets.push({"ID": item3.ID});
 						});
 
-						apiRequest(createRequest("get", "bucket", buckets), function(response) {
+						apiRequest(createRequest("get", "bucket", buckets, ["Transactions", "Name", "Parent"]), function(response) {
 							addTableRows(tableName, response.data, unlockKey);
 							getTableData(tableName).unlockTable(unlockKey);	
 						});
@@ -468,26 +477,31 @@ function refreshTable(tableName){
 				case "transactionTable":
 					var accountID = getSelectedAccount();
 					var parent = getBucketParentForID(accountID);
-					apiRequest(createRequest("get", "bucket", [{"ID": accountID, "AllChildren": null}]), function(response) {
+					apiRequest(createRequest("get", "bucket", [{"ID": accountID}], ["AllChildren"]), function(response) {
 						var buckets = [];
 						response.data.forEach(function(item3, index3){
-							buckets.push({"ID": item3.ID, "Transactions": null, "Name": null, "Parent": null});
+							buckets.push({"ID": item3.ID});
 							if(item3.ID == accountID && parent == -1){
 								item3.AllChildren.forEach(function(item4, index4){
-									buckets.push({"ID": item4, "Transactions": null, "Name": null, "Parent": null});
+									buckets.push({"ID": item4});
 								});
 							}
 						});
 
-						apiRequest(createRequest("get", "bucket", buckets), function(response) {
+						apiRequest(createRequest("get", "bucket", buckets, ["Transactions", "Name", "Parent"]), function(response) {
 							var data = []
+							var ids = new Set()
 							response.data.forEach(function(item, index){
 								item.Transactions.forEach(function(item2, index2){
-									data.push({"ID": item2, "Status": null, "TransDate": null, "PostDate": null, "Amount": null, "SourceBucket": null, "DestBucket": null, "Memo": null, "Payee": null});
+									ids.add(item2)
 								});
 							});
 							
-							apiRequest(createRequest("get", "transaction", data), function(response) {
+							ids.forEach(function(item, index){
+								data.push({"ID": item})
+							})
+							
+							apiRequest(createRequest("get", "transaction", data, ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "Memo", "Payee"]), function(response) {
 								addTableRows(tableName, response.data, unlockKey);
 								getTableData(tableName).unlockTable(unlockKey);
 							});	
@@ -524,7 +538,7 @@ function refreshBucketTableAccountSelect() {
 
 function refreshBalanceDisplay() {
 	if (getSelectedAccount() != undefined) {
-		apiRequest(createRequest("get", "bucket", [{"ID": getSelectedAccount(), "Balance": null, "PostedBalance": null}]), function(response) {
+		apiRequest(createRequest("get", "bucket", [{"ID": getSelectedAccount()}], ["Balance", "PostedBalance"]), function(response) {
 			$("#balanceDisplay").text("Available: \$" + response.data[0]["Balance"] + ", Posted: \$" + response.data[0]["PostedBalance"]);
 		});
 	} else {
@@ -759,13 +773,13 @@ formDynamicSelect
 }
 
 function getBucketOptions(){
-	return apiRequest(createRequest("get", "bucket", [{"ID": getSelectedAccount(), "AllChildren": null}])).then(function(result){
+	return apiRequest(createRequest("get", "bucket", [{"ID": getSelectedAccount()}], ["AllChildren"])).then(function(result){
 		var buckets = []
-		buckets.push({"ID": getSelectedAccount(), "Name": null})
+		buckets.push({"ID": getSelectedAccount()})
 		result.data[0].AllChildren.forEach(function(item, index){
-			buckets.push({"ID": item, "Name": null})
+			buckets.push({"ID": item})
 		});
-		return apiRequest(createRequest("get", "bucket", buckets));
+		return apiRequest(createRequest("get", "bucket", buckets, ["Name"]));
 	}).then(function(result2){
 		//alert("Hello World")
 		var array = []
@@ -785,6 +799,7 @@ function getStatusOptions(){
 	return enums["transactionTable"]["Status"];
 }
 
+//Begin Flag
 function getTransactionType(rowData){
 	/*
 	00 = Transfer;
@@ -810,6 +825,7 @@ function getTransactionType(rowData){
 	//This should never ever actually run
 	return 3;
 }
+//End Flag
 
 function transactionTypeFormatter(value, options, rowData){
 	if(rowData.typeSort){

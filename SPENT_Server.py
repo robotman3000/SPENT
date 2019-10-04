@@ -1,13 +1,8 @@
-import threading
-import webbrowser
+﻿import threading, webbrowser, mimetypes, traceback, json, time, os
 from wsgiref.simple_server import make_server
-import mimetypes
-import traceback
 from SPENT import *
-import json
-import time
+from SPENT_Util import *
 from argparse import ArgumentParser
-import os
 
 parser = ArgumentParser()
 parser.add_argument("--file", dest="dbpath",
@@ -32,6 +27,7 @@ args = parser.parse_args()
 SERVER_ROOT = args.serverRoot
 INDEX = SERVER_ROOT + "index.html"
 
+#Begin Flag (Perf Mon Util)
 def getTimeStr(timeMS):
 	if timeMS > 1000:
 		return "%s sec" % (timeMS / 1000)
@@ -41,6 +37,7 @@ def time_it(f, *args):
 	start = time.time_ns()
 	result = f(*args)
 	return [result, (getTimeStr((time.time_ns() - start) / 1000000))]
+#End Flag
 
 class SPENTServer():
 	def __init__(self, port=8080):
@@ -48,11 +45,6 @@ class SPENTServer():
 		self.accountMan = AccountManager(args.dbpath)
 		self.showAPIData = args.debugAPI
 		self.accountMan.printDebug = args.debugCore
-					
-		def getAllBucketChildren(source, tableName, columnName):
-			return source.getAllChildrenID()
-		
-		self.accountMan.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
 		
 		self.accountMan.connect()
 		
@@ -145,17 +137,10 @@ class SPENTServer():
 	
 	def getRequestedColumns(self, request):
 		#TODO: Make this look at more than one row
-		data = request.get("data", None)
-		result = set()
-		if data is not None:
-			for i in data:
-				for j in i.items():
-					# We make a special allowance for the ID column here becuase
-					# it is a special colum. Without it the response is difficult/imposible to parse
-					# correctly in most cases
-					if j[1] is None or j[0] == "ID":
-						#print("Requested Column: %s" % j[0])
-						result.add(j[0])
+		data = request.get("columns", [])
+		result = set(data)
+		if len(result) > 0:
+			result.add("ID")
 		return result
 	
 	def invalidHandler(self, request, requestedColumns):
@@ -261,7 +246,6 @@ class SPENTServer():
 	def closeDatabase(self, query):
 		self.accountMan.disconnect()
 		self.running = False
-
 		
 	def getAccount(self, request, columns):
 		rows = []
@@ -270,7 +254,7 @@ class SPENTServer():
 			for row in data:
 				rows.append(self.accountMan.getBucket(row.get("ID", -1)))
 		else:
-			rows = self.accountMan.getAccountList()
+			rows = self.accountMan.getAccountsWhere()
 			
 		result = self.SQLRowsToArray(rows, columns)
 		return {"successful": True, "data": result}
@@ -291,7 +275,7 @@ class SPENTServer():
 			for row in data:
 				rows.append(self.accountMan.getBucket(row.get("ID", -1)))
 		else:
-			rows = self.accountMan.getBucketList()
+			rows = self.accountMan.getBucketsWhere()
 			
 		result = self.SQLRowsToArray(rows, columns)
 		return {"successful": True, "data": result}
@@ -343,7 +327,7 @@ class SPENTServer():
 			for row in data:
 				rows.append(self.accountMan.getTransaction(row.get("ID", -1)))
 		else:
-			self.accountMan.getTransactionList()
+			self.accountMan.getTransactionsWhere()
 			
 		result = self.SQLRowsToArray(rows, columns)
 		return {"successful": True, "data": result}

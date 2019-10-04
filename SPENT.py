@@ -4,6 +4,7 @@ from sqlite3_DOM import *
 def getCurrentDateStr():
 	return str(date.today())
 
+#TODO: The name of this class is not accurate. It should be called SpentDBManager or similar
 class AccountManager(DatabaseWrapper):
 	def __init__(self, dbFile="SPENT.db"):
 		super().__init__(dbFile)
@@ -25,11 +26,22 @@ class AccountManager(DatabaseWrapper):
 
 		self.registerTableSchema("StatusMap", None, ["Uninitiated", "Submitted", "Post-Pending", "Complete"])
 		
-		def getAvailBucketBalance(source, tableName, columnName):
-			return source.getAvailableBalance()
-			
-		def getPostedBucketBalance(source, tableName, columnName):
-			return source.getPostedBalance()
+		def checkIsTransfer(source, tableName, columnName):
+			return (source.getSourceBucket() is not None) and (source.getDestBucket() is not None)
+		
+		def getTransactionType(source, tableName, columnName):
+			return source.isTransfer()
+		
+		def getTrueAmount(source, tableName, columnName):
+			return source.isTransfer()
+		
+		def getDisplayBucket(source, tableName, columnName):
+			return 0
+		
+		self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
+		self.registerVirtualColumn("Transactions", "Type", getTransactionType)
+		self.registerVirtualColumn("Transactions", "TrueAmount", getTrueAmount)
+		self.registerVirtualColumn("Transactions", "DisplayBucket", getDisplayBucket)
 		
 		def getBucketTransactions(source, tableName, columnName):
 			return source.getTransactionsID()
@@ -37,15 +49,13 @@ class AccountManager(DatabaseWrapper):
 		def getBucketChildren(source, tableName, columnName):
 			return source.getChildrenID()
 		
-		def checkIsTransfer(source, tableName, columnName):
-			return source.isTransfer()
+		def getAllBucketChildren(source, tableName, columnName):
+			return source.getAllChildrenID()
 		
-		self.registerVirtualColumn("Buckets", "Balance", getAvailBucketBalance)
-		self.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
 		self.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
 		self.registerVirtualColumn("Buckets", "Children", getBucketChildren)
-		#self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
-		
+		self.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
+
 	def createBucket(self, name, parent):
 		#TODO: Verify the data is valid
 		return self._tableInsertInto_("Buckets", 
@@ -55,7 +65,7 @@ class AccountManager(DatabaseWrapper):
 	
 	def createTransaction(self, amount, status=0, sourceBucket=None, destBucket=None, transactionDate=getCurrentDateStr(), postDate=None, memo="",  payee=""):
 		#TODO: Verify that all the data is in the correct format
-		print("%s - %s - %s - %s - %s - %s - %s - %s" % (amount, status, sourceBucket, destBucket, transactionDate, postDate, memo, payee))
+		#print("%s - %s - %s - %s - %s - %s - %s - %s" % (amount, status, sourceBucket, destBucket, transactionDate, postDate, memo, payee))
 		return self._tableInsertInto_("Transactions", 
 									  {"Status" : int(status),
 									   "TransDate" : str(transactionDate),
@@ -66,7 +76,10 @@ class AccountManager(DatabaseWrapper):
 									   "Memo" : str(memo),
 									   "Payee": str(payee)
 									  })[0]
-
+	
+	def createAccount(self, name):
+		return self.createBucket(name, -1)
+	
 	def getBucket(self, bucketID):
 		#TODO: Verify the id actually has a mapping
 		if bucketID is not None: #TODO: and is an int
@@ -81,7 +94,18 @@ class AccountManager(DatabaseWrapper):
 		else:
 			print("Error: AccountManager.getBucket: bucketID can't be None")
 			return None
-		
+	
+	def getBucketsWhere(self, where=None):
+		result = self.selectTableRowsColumnsWhere("Buckets", ["ID"], where)
+		buckets = []
+		for i in result:
+			bucket = self.getBucket(i.getValue("ID"))
+			if bucket is not None:
+				buckets.append(bucket)
+			else:
+				print("Error: AccountManager.getTransactionList: Encountered a None transaction")
+		return buckets
+	
 	def getTransaction(self, transactionID):
 		#TODO: Verify the id has a mapping
 		if transactionID is not None: #TOOD: and is an int
@@ -90,6 +114,30 @@ class AccountManager(DatabaseWrapper):
 			print("Error: AccountManager.getTransaction: transactionID can't be None")
 			return None
 		
+	def getTransactionsWhere(self, where=None):
+		result = self.selectTableRowsColumnsWhere("Transactions", columnNames=["ID"], where=where)
+		transactions = []
+		for i in result:
+			trans = self.getTransaction(i.getValue("ID"))
+			if trans is not None:
+				transactions.append(trans)
+			else:
+				print("Error: AccountManager.getTransactionList: Encountered a None transaction")
+		return transactions	
+	
+	def getAccount(self, accountID):
+		return self.getBucket(accountID)
+		
+	def getAccountsWhere(self, where=None):
+		nWhere = where
+		if nWhere is not None:
+			#TODO: To avoid ruing potentially complex where statements this would idealy insert at the begining of the where statement
+			nWhere.AND("Parent == -1")
+		else:
+			nWhere = SQL_WhereStatementBuilder("Parent == -1")
+			
+		return self.getBucketsWhere(nWhere)
+	
 	def deleteBucket(self, bucket):
 		if bucket is not None: #TODO: and actually is a bucket
 			isAccount = (bucket.getParent() == None)
@@ -117,6 +165,9 @@ class AccountManager(DatabaseWrapper):
 		else:
 			print("Error: AccountManager.getBucketList: Bucket can't be None")
 		del bucket # Destroy the data our reference points to; to prevent further use
+	
+	def deleteBucketsWhere(self, where=None):
+		pass
 		
 	def deleteTransaction(self, transaction):
 		if transaction is not None: #TODO: and actually is a transaction
@@ -126,35 +177,17 @@ class AccountManager(DatabaseWrapper):
 		else:
 			print("Error: AccountManager.deleteTransaction: Transaction can't be None")
 		del transaction # Destroy the data our reference points to; to prevent further use
-	
-	def getAccountList(self):
-		return self._getBucketsList_(SQL_WhereStatementBuilder("Parent == -1"))
 		
-	def getBucketList(self):
-		return self._getBucketsList_(SQL_WhereStatementBuilder("Parent > -1"))
-	
-	def _getBucketsList_(self, where):
-		result = self.selectTableRowsColumnsWhere("Buckets", ["ID"], where)
-		buckets = []
-		for i in result:
-			bucket = self.getBucket(i.getValue("ID"))
-			if bucket is not None:
-				buckets.append(bucket)
-			else:
-				print("Error: AccountManager.getTransactionList: Encountered a None transaction")
-		return buckets
+	def deleteTransactionsWhere(self, where=None):
+		pass
 		
-	def getTransactionList(self):
-		result = self.selectTableRowsColumns("Transactions", columnNames=["ID"])
-		transactions = []
-		for i in result:
-			trans = self.getTransaction(i.getValue("ID"))
-			if trans is not None:
-				transactions.append(trans)
-			else:
-				print("Error: AccountManager.getTransactionList: Encountered a None transaction")
-		return transactions	
-
+	def deleteAccount(self, account):
+		self.deleteBucket(account)
+		
+	def deleteAccountsWhere(self, where=None):
+		pass
+		
+#TODO: This should be renamed RawBucket
 class Bucket(SQL_RowMutable):
 	def __init__(self, database, ID):
 		super().__init__(database, "Buckets", ID)
@@ -215,30 +248,7 @@ class Bucket(SQL_RowMutable):
 	def getAllTransactionsID(self):
 		return self._getTransactions_(self.getAllChildrenID() + [self.getID()], False)
 	
-	def getPostedBalance(self):
-		return self._calculateBalance_(True)
-		
-	def getAvailableBalance(self):
-		return self._calculateBalance_()
-		
-	def _calculateBalance_(self, posted=False):
-		ids = self.getAllChildrenID()
-		ids.append(self.getID()) # We can't forget ourself
-		idStr = ", ".join(map(str, ids))
-		
-		statusStr = ""
-		if posted:
-			statusStr = "AND Status IN (2, 3)"
-		
-		query = "SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) %s)" % (idStr, statusStr, idStr, statusStr)
-		column = "Amount"
-		#print("Balance Query: %s" % query)
-		result = self.database._rawSQL_(query)
-		rows = self.database.parseRows(result, [column], "Transactions")
-		if len(rows) > 0:
-			return round(float(rows[0].getValue(column, False)), 2)
-		return 0
-	
+	#TODO: Replace anywhere this is used with getTransactionsWhere
 	def _getTransactions_(self, bucketIDs, asTransactions=True):
 		#TODO: Verify input data
 		idStr = ", ".join(map(str, bucketIDs))
@@ -246,14 +256,14 @@ class Bucket(SQL_RowMutable):
 		result = self.database.parseRows(self.database._rawSQL_(query), ["ID"], "Transactions")
 		#print("Res: %s" % result)
 		return [(self.database.getTransaction(i.getValue("ID")) if asTransactions else i.getValue("ID")) for i in result]
-		
+	 
 class Account(Bucket):
 	def getParent(self):
 		return None
 	
 	def getParentAccount(self):
 		return self
-
+	
 class Transaction(SQL_RowMutable):
 	def __init__(self, database, ID):
 		super().__init__(database, "Transactions", ID)
@@ -270,7 +280,7 @@ class Transaction(SQL_RowMutable):
 	def getPostDate(self):
 		return self.getValue("PostDate")
 		
-	def getAmount(self):
+	def getAmountValue(self):
 		return self.getValue("Amount")
 	
 	def getMemo(self):
@@ -286,4 +296,13 @@ class Transaction(SQL_RowMutable):
 		return self.database.getBucket(self.getValue("DestBucket"))
 	
 	def isTransfer(self):
-		return (self.getSourceBucket() is not None) and (self.getDestBucket() is not None)
+		return self.getValue("IsTransfer")
+	
+	def getType(self):
+		return self.getValue("Type")
+	
+	def getAmount(self):
+		return self.getValue("TrueAmount")
+	
+	def getDisplayBucket(self):
+		return self.getValue("DisplayBucket")

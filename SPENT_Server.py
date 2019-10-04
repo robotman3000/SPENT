@@ -1,4 +1,4 @@
-﻿import threading
+import threading
 import webbrowser
 from wsgiref.simple_server import make_server
 import mimetypes
@@ -431,7 +431,7 @@ class RequestHandler:
 		return False
 	def fileHandler(self, query, path):
 		if path == "/":
-				path = "index.html"
+			path = "index.html"
 				
 		print("Using file handler for: %s" % path)
 		fullPath = os.path.join(SERVER_ROOT, path)

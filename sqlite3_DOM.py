@@ -1,11 +1,6 @@
 import sqlite3 as sql
 import sys
 import traceback
-def Aprint(*args, **kwargs):
-	"""My custom print() function."""
-	#__builtin__.print('My overridden print() function!')
-	#return __builtin__.print(*args, **kwargs)
-	return True
 	
 class DatabaseWrapper():
 	#TODO: create an api for getting the value of a single cell
@@ -442,14 +437,14 @@ class SQL_WhereStatementBuilder():
 		# Note: The list datatype must maintain the order the elements are added
 		self.logic = []
 		if initialStatement is not None:
-			self.addStatement("", initialStatement)
+			self.addStatement("AND", initialStatement)
 		
 	def addStatement(self, operation, expression):
-		newOp = operation
-		if len(self.logic) == 0:
-			newOp = ""
-			
-		self.logic.append(BooleanStatement(newOp, expression))
+		self.logic.append(BooleanStatement(operation, expression))
+		return self
+	
+	def insertStatement(self, operation, expression):
+		self.logic.insert(0, BooleanStatement(operation, expression))
 		return self
 	
 	def AND(self, expression):
@@ -460,14 +455,23 @@ class SQL_WhereStatementBuilder():
 		
 	def __str__(self):
 		strs = []
-		for i in self.logic:
-			strs.append(str(i))
+		for i in range(len(self.logic)):
+			if i > 0:
+				strs.append(self.logic[i].getOperation() + " ")
+			strs.append(self.logic[i].getExpression())
+			
 		return ("" if len(strs) < 1 else "WHERE " + " ".join(strs))
 	
 class BooleanStatement():
 	def __init__(self, operation, expression):
 		self.operation = operation
 		self.expression = expression
+		
+	def getOperation(self):
+		return self.operation
+	
+	def getExpression(self):
+		return self.expression
 		
 	def __str__(self):
 		return "%s %s" % (self.operation, self.expression)

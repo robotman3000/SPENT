@@ -5,9 +5,11 @@ def getCurrentDateStr():
 	return str(date.today())
 
 #TODO: The name of this class is not accurate. It should be called SpentDBManager or similar
+#TODO: This class has a ton of duplicated code, the code reuse needs to be increased
 class AccountManager(DatabaseWrapper):
 	def __init__(self, dbFile="SPENT.db"):
 		super().__init__(dbFile)
+		
 		self.registerTableSchema("Buckets", 
 			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
 			 {"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": True},
@@ -81,11 +83,11 @@ class AccountManager(DatabaseWrapper):
 		return self.createBucket(name, -1)
 	
 	def getBucket(self, bucketID):
-		#TODO: Verify the id actually has a mapping
+		#TODO: Verify the id has a mapping
 		if bucketID is not None: #TODO: and is an int
 			result = self.selectTableRowsColumnsWhere("Buckets", ["Parent"], SQL_WhereStatementBuilder("ID == %d" % int(bucketID)))
 			if result is None or len(result) < 1:
-				print("Debug: AccountManager.getBucket: Returning None for id: %s wit result %s" % (bucketID, result))
+				print("Debug: AccountManager.getBucket: Returning None for id: %s with result %s" % (bucketID, result))
 				return None
 
 			if result[0].getValue("Parent") < 1:
@@ -96,14 +98,21 @@ class AccountManager(DatabaseWrapper):
 			return None
 	
 	def getBucketsWhere(self, where=None):
-		result = self.selectTableRowsColumnsWhere("Buckets", ["ID"], where)
+		nWhere = where
+		if nWhere is not None:
+			#TODO: To avoid ruining potentially complex where statements this would idealy insert at the begining of the where statement
+			nWhere.insertStatement("AND", "Parent > -1")
+		else:
+			nWhere = SQL_WhereStatementBuilder("Parent > -1")
+			
+		result = self.selectTableRowsColumnsWhere("Buckets", ["ID"], nWhere)
 		buckets = []
 		for i in result:
 			bucket = self.getBucket(i.getValue("ID"))
 			if bucket is not None:
 				buckets.append(bucket)
 			else:
-				print("Error: AccountManager.getTransactionList: Encountered a None transaction")
+				print("Error: AccountManager.getBucketsWhere: Encountered a None bucket")
 		return buckets
 	
 	def getTransaction(self, transactionID):
@@ -122,7 +131,7 @@ class AccountManager(DatabaseWrapper):
 			if trans is not None:
 				transactions.append(trans)
 			else:
-				print("Error: AccountManager.getTransactionList: Encountered a None transaction")
+				print("Error: AccountManager.getTransactionsWhere: Encountered a None transaction")
 		return transactions	
 	
 	def getAccount(self, accountID):
@@ -131,12 +140,20 @@ class AccountManager(DatabaseWrapper):
 	def getAccountsWhere(self, where=None):
 		nWhere = where
 		if nWhere is not None:
-			#TODO: To avoid ruing potentially complex where statements this would idealy insert at the begining of the where statement
-			nWhere.AND("Parent == -1")
+			#TODO: To avoid ruining potentially complex where statements this would idealy insert at the begining of the where statement
+			nWhere.insertStatement("AND", "Parent == -1")
 		else:
 			nWhere = SQL_WhereStatementBuilder("Parent == -1")
 			
-		return self.getBucketsWhere(nWhere)
+		result = self.selectTableRowsColumnsWhere("Buckets", ["ID"], nWhere)
+		buckets = []
+		for i in result:
+			bucket = self.getBucket(i.getValue("ID"))
+			if bucket is not None:
+				buckets.append(bucket)
+			else:
+				print("Error: AccountManager.getAccountsWhere: Encountered a None bucket")
+		return buckets
 	
 	def deleteBucket(self, bucket):
 		if bucket is not None: #TODO: and actually is a bucket
@@ -210,15 +227,7 @@ class Bucket(SQL_RowMutable):
 		return parent.getParentAccount()
 	
 	def getChildren(self):
-		result1 = self.database.selectTableRowsColumnsWhere(self.getTableName(), ["ID"], SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(self.getID()))))
-		children = []
-		for i in result1:
-			bucket = self.database.getBucket(i.getValue("ID"))
-			if bucket is not None:
-				children.append(bucket)
-			else:
-				print("Error: Bucket.getChildren: bucket id %s returned None" % i.getValue("ID"))
-		return children
+		return self.database.getBucketsWhere(SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(self.getID()))))
 	
 	def getChildrenID(self):
 		#TODO: this and the "all" version are inefficent
@@ -237,25 +246,17 @@ class Bucket(SQL_RowMutable):
 		return [i.getID() for i in self.getAllChildren()]
 	
 	def getTransactions(self):
-		return self._getTransactions_([self.getID()])
+		return self.database.getTransactionsWhere(SQL_WhereStatementBuilder("%s == %s" % ("SourceBucket", self.getID())).OR("%s == %s" % ("DestBucket", self.getID())))
 		
 	def getTransactionsID(self):
-		return self._getTransactions_([self.getID()], False)
+		return [i.getID() for i in self.getTransactions()]
 	
 	def getAllTransactions(self):
-		return self._getTransactions_(self.getAllChildrenID() + [self.getID()])
+		allIDList = ", ".join(self.getAllChildrenID() + [self.getID()])
+		return self.database.getTransactionsWhere(SQL_WhereStatementBuilder("%s IN (%s)" % ("SourceBucket", allIDList)).OR("%s IN (%s)" % ("DestBucket", allIDList)))
 	
 	def getAllTransactionsID(self):
-		return self._getTransactions_(self.getAllChildrenID() + [self.getID()], False)
-	
-	#TODO: Replace anywhere this is used with getTransactionsWhere
-	def _getTransactions_(self, bucketIDs, asTransactions=True):
-		#TODO: Verify input data
-		idStr = ", ".join(map(str, bucketIDs))
-		query = "SELECT ID FROM \"Transactions\" WHERE SourceBucket IN (%s) or DestBucket IN (%s) ORDER BY ID" % (idStr, idStr)		
-		result = self.database.parseRows(self.database._rawSQL_(query), ["ID"], "Transactions")
-		#print("Res: %s" % result)
-		return [(self.database.getTransaction(i.getValue("ID")) if asTransactions else i.getValue("ID")) for i in result]
+		return [i.getID() for i in self.getAllTransactions()]
 	 
 class Account(Bucket):
 	def getParent(self):

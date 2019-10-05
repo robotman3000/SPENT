@@ -43,6 +43,8 @@ class SPENTServer():
 	def __init__(self, port=8080):
 		self.unimp = {"successful": False, "message": "Unimplemented!"}
 		self.accountMan = AccountManager(args.dbpath)
+		self.spentUtil = SPENTUtil(self.accountMan)
+		
 		self.showAPIData = args.debugAPI
 		self.accountMan.printDebug = args.debugCore
 		
@@ -62,6 +64,7 @@ class SPENTServer():
 
 	def handleRequest(self, environ, start_response):
 		print("\n--------------------------------------------------------------------------------\n")
+		runTime = ""
 		#resp = self.handler.get
 		method = environ['REQUEST_METHOD']
 		path = environ['PATH_INFO']
@@ -84,12 +87,19 @@ class SPENTServer():
 					except (TypeError, ValueError):
 						request_body = "0"
 						
-					response = delegate(queryStr, request_body_size, request_body)
+					resp = time_it(delegate, queryStr, request_body_size, request_body)
+					response = resp[0]
+					runTime = resp[1]
 				else:
-					#response = time_it(delegate, queryStr)
-					response = delegate(queryStr)
+					resp = time_it(delegate, queryStr)
+					response = resp[0]
+					runTime = resp[1]
+					#response = delegate(queryStr)
+					
 			else:
-				response = self.handler.fileHandler(queryStr, path)
+				resp = time_it(self.handler.fileHandler, queryStr, path)
+				response = resp[0]
+				runTime = resp[1]
 				skipResponse = True
 			
 			start_response(response.getStatus(), response.getHeaders())
@@ -111,6 +121,9 @@ class SPENTServer():
 				print("Server Response: -File-")
 				
 		self.accountMan.save()
+		
+		# This should always print
+		print("Request Delegate ran for: %s" % runTime)
 		return [response.getBody()]
 		
 	def apiRequest(self, query, contentLen, content):
@@ -124,13 +137,17 @@ class SPENTServer():
 		
 		requestedColumns = self.getRequestedColumns(request)
 		result = time_it(handlerFunc, request, requestedColumns)
-		print("API Request Handler Ran For: %s" % result[1])
+		
+		if args.debugServer:
+			print("API Request Handler Ran For: %s" % result[1])
 		#result = handlerFunc(request, requestedColumns)
 		if result[0] is None:
 			result[0] = self.unimp
 			
 		responseBody = time_it(json.dumps, result[0])
-		print("Serialization Took: %s" % responseBody[1])
+		
+		if args.debugServer:
+			print("Serialization Took: %s" % responseBody[1])
 		headers = [('Content-type', "text/json"),
 				   ('Content-Length', str(len(responseBody[0])))]
 		return ServerResponse("200 OK", headers, responseBody[0])
@@ -159,7 +176,8 @@ class SPENTServer():
 			if len(spl2) >= 2:
 				result[str(spl2[0])] = str(spl2[1].replace("+", " "))
 		
-		print("QS To Dict: %s = %s" %(queryString, result))
+		if args.debugServer:
+			print("QS To Dict: %s = %s" %(queryString, result))
 		return result
 	
 	def formToDict(self, form):
@@ -167,12 +185,16 @@ class SPENTServer():
 		
 	def SQLRowsToArray(self, rows, columns=[]):
 		time = time_it(self.SQLRowsToArray_, rows, columns)
-		print("Rows to Array ran for: " + time[1])
+		if args.debugServer:
+			print("Rows to Array ran for: " + time[1])
+			
 		return time[0]
 	
 	def SQLRowsToArray_(self, rows, columns=[]):
 		records = []
-		print("Rows: %s, Columns: %s" % (rows, columns))
+		
+		if args.debugServer:
+			print("Rows: %s, Columns: %s" % (rows, columns))
 		for i in rows:
 			if i is not None:
 				record = {}

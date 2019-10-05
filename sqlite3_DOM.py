@@ -12,8 +12,8 @@ class DatabaseWrapper():
 		self.enums = {}
 		self.virtualColumns = {}
 
-	def _getLastInsRowID_(self):
-		return self._rawSQL_("SELECT last_insert_rowid()")[0]
+	def _getLastInsRowsID_(self):
+		return self._rawSQL_("SELECT last_insert_rowid()")
 		
 	def _rawSQL_(self, command):
 		return self._rawSQLList_([command])
@@ -118,10 +118,10 @@ class DatabaseWrapper():
 		
 		valueStr = ", ".join(map(self.quoteStr, valueList))
 		self._rawSQL_("%s INTO %s (%s) VALUES (%s)" % (("REPLACE" if replace else "INSERT"), tableName, keyStr, valueStr))
-		return self._getLastInsRowID_()
+		return self._getLastInsRowsID_()
 		
 	def updateTableRow(self, tableName, columns, rowID):
-		self.updateTableWhere(tableName, columns, self.rowsToWhere([rowID]))
+		return self.updateTableWhere(tableName, columns, self.rowsToWhere([rowID]))
 		
 	def updateTableWhere(self, tableName, columns, where):
 		updateList = []
@@ -137,7 +137,7 @@ class DatabaseWrapper():
 			
 		updates = ", ".join(updateList)
 		query = "UPDATE %s SET %s %s" % (tableName, updates, where)
-		self._rawSQL_(query)
+		return self._rawSQL_(query)
 		
 	def connect(self):
 		self.con = sql.connect(self.dbPath)
@@ -227,12 +227,8 @@ class DatabaseWrapper():
 	def rowsToWhere(self, rowIDs):
 		whereStatement = SQL_WhereStatementBuilder()
 		if rowIDs is not None:
-			for row in rowIDs:
-				if row is not None:
-					whereStatement.OR("ID == %d" % int(row))
-				else:
-					traceback.print_stack()
-					print("Error: Database.rowsToWhere: id was NOne")
+			rowStr = ", ".join(map(str, rowIDs))
+			whereStatement.AND("ID in (%s)" % rowStr)
 		else:
 			print("Error: DatabaseWrapper.rowsToWhere: rowIDs was None")
 		return whereStatement
@@ -330,7 +326,7 @@ class SQL_Row():
 	def getColumnNames(self, includeVirtual=True):
 		#TODO: Verify there are no None values running loose in here
 		#TODO: This is supposd to maintain order and append all non duplicate virtual column names to the end
-		# THis is n*m complexity? anyway it is about the slowest way to do the job; so this needs redone
+		# This is n*m complexity? anyway it is about the slowest way to do the job; so this needs redone
 		result = []
 		for x in self.columnNameList:
 			result.append(x)
@@ -381,8 +377,10 @@ class SQL_RowMutable(SQL_Row):
 			print("Error: SQL_RowMutable.__init__: rowID cannot be None")
 	
 	def refreshColumns(self):
+		print("Refresh Columns")
 		result = self.database.selectTableRow(self.getTableName(), self.id)
 		self.columns = result[0].columns
+		print("Refreshed")
 		
 	def getValue(self, columnName):
 		self.refreshColumns()
@@ -402,7 +400,7 @@ class SQL_RowMutable(SQL_Row):
 				if i is not None:
 					self.database.updateTableRow(self.tableName, columns, self.id)
 				else:
-					print("Error: SQL_RowMutable.updateValues: A colum item was None")
+					print("Error: SQL_RowMutable.updateValues: A column item was None")
 		else:
 			print("Error: SQL_RowMutable.updateValues: columns can't be None")
 			
@@ -474,4 +472,4 @@ class BooleanStatement():
 		return self.expression
 		
 	def __str__(self):
-		return "%s %s" % (self.operation, self.expression)
+		return "BooleanStatement: %s %s" % (self.operation, self.expression)

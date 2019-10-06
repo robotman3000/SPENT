@@ -35,18 +35,27 @@ class AccountManager(DatabaseWrapper):
 			return (source.getSourceBucket() is not None) and (source.getDestBucket() is not None)
 		
 		def getTransactionType(source, tableName, columnName):
-			return source.isTransfer()
-		
-		def getTrueAmount(source, tableName, columnName):
-			return source.isTransfer()
-		
-		def getDisplayBucket(source, tableName, columnName):
-			return 0
+			#00 = Transfer;
+			#01 = Deposit;
+			#10 = Withdrawal:
+			#11 = Invalid
+	
+			source = (self.getValue("SourceBucket") != -1);
+			dest = (self.getValue("DestBucket") != -1);
+			if source and dest:
+				#Transfer
+				return 0
+			elif not source and dest:
+				#Deposit
+				return 1
+			elif source and not dest:
+				#Withdrawal
+				return 2
+			
+			return 3
 		
 		self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
 		self.registerVirtualColumn("Transactions", "Type", getTransactionType)
-		self.registerVirtualColumn("Transactions", "TrueAmount", getTrueAmount)
-		self.registerVirtualColumn("Transactions", "DisplayBucket", getDisplayBucket)
 		
 		#Flag: These should be moved to util and/or be replaced by get**Where()
 		def getBucketTransactions(source, tableName, columnName):
@@ -223,47 +232,6 @@ class Bucket(SQL_RowMutable):
 		parentID = self.getValue("Parent")
 		return self.database.getBucket(parentID)
 	
-	#Flag: These should be moved to util and/or be replaced by get**Where()
-	def getParentAccount(self):
-		parent = self.getParent()
-		if parent.getID() == -1:
-			return parent
-		
-		return parent.getParentAccount()
-
-	def getChildren(self):
-		return self.database.getBucketsWhere(SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(self.getID()))))
-	
-	def getChildrenID(self):
-		#TODO: this and the "all" version are inefficent
-		return [i.getID() for i in self.getChildren()]
-	
-	def getAllChildren(self):
-		children = self.getChildren()
-		newChildren = [] + children
-		for i in children:
-			newChildren += i.getAllChildren()
-			
-		#print(newChildren)
-		return newChildren
-	
-	def getAllChildrenID(self):
-		return [i.getID() for i in self.getAllChildren()]
-	
-	def getTransactions(self):
-		return self.database.getTransactionsWhere(SQL_WhereStatementBuilder("%s == %s" % ("SourceBucket", self.getID())).OR("%s == %s" % ("DestBucket", self.getID())))
-		
-	def getTransactionsID(self):
-		return [i.getID() for i in self.getTransactions()]
-	
-	def getAllTransactions(self):
-		allIDList = ", ".join(self.getAllChildrenID() + [self.getID()])
-		return self.database.getTransactionsWhere(SQL_WhereStatementBuilder("%s IN (%s)" % ("SourceBucket", allIDList)).OR("%s IN (%s)" % ("DestBucket", allIDList)))
-	
-	def getAllTransactionsID(self):
-		return [i.getID() for i in self.getAllTransactions()]
-	#End Flag
-		
 class Account(Bucket):
 	def getParent(self):
 		return None
@@ -287,7 +255,7 @@ class Transaction(SQL_RowMutable):
 	def getPostDate(self):
 		return self.getValue("PostDate")
 		
-	def getAmountValue(self):
+	def getAmount(self):
 		return self.getValue("Amount")
 	
 	def getMemo(self):
@@ -307,9 +275,3 @@ class Transaction(SQL_RowMutable):
 	
 	def getType(self):
 		return self.getValue("Type")
-	
-	def getAmount(self):
-		return self.getValue("TrueAmount")
-	
-	def getDisplayBucket(self):
-		return self.getValue("DisplayBucket")

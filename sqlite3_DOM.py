@@ -25,7 +25,7 @@ class DatabaseWrapper():
 			try:
 				for cmd in commands:
 					if self.printDebug:
-						print("Debug: SQL: %s" % cmd)
+						print("Debug: SQL Request: %s" % cmd)
 					if cmd is not None:
 						cursor.execute(cmd)
 					else:
@@ -34,19 +34,20 @@ class DatabaseWrapper():
 				print("Error: SQL: %s" % e)
 
 			while True:
+				
+				#TODO: Is this loop needed?
 				row = cursor.fetchone()
 				if row is None:
 					break;
 				result.append(row)
 				if self.printDebug:
-					print("Debug: SQL: %s" % str(row))
+					print("Debug: SQL Response: %s" % str(row))
 			cursor.close()
 		else:
 			print("Error: DatabaseWrapper._rawSQLList_: Recieved None Input")
 		return result
 	
 	def _tableSelectDelete_(self, isDelete, tableName, columnNames=["*"], where=None):
-		#TODO: Support a list of rows rather than all or one
 		if not (isDelete is None or tableName is None or columnNames is None):
 			command = "DELETE" if isDelete else ("SELECT %s" % ", ".join(columnNames))
 			query = "%s FROM %s" % (command, tableName)
@@ -66,37 +67,38 @@ class DatabaseWrapper():
 		parsedRows = []
 		
 		if not (rows is None and columnNames is None):
-			if (len(columnNames) == 1 and columnNames[0] =="*"):
-				tableSchema = self.getTableSchema(tableName)
-				if len(tableSchema) > 0:
-					# Use the declared columns
-					temp = []
-					for i in tableSchema:
-						n = i.get("name", None)
-						if n is not None:
-							temp.append(n)
-					names = temp
-				else:
-					#TODO: Should pragma even be allowed here?
-					# Use pragma to get the column names
-					temp = self._rawSQL_("PRAGMA table_info(%s)" % tableName)
-					temp2 = [""] * len(temp)
-					for i in temp:
-						# i[0] is the column index
-						# i[1] is the column name
-						temp2[i[0]] = i[1]
+			if len(rows) > 0:
+				if (len(columnNames) == 1 and columnNames[0] =="*"):
+					tableSchema = self.getTableSchema(tableName)
+					if len(tableSchema) > 0:
+						# Use the declared columns
+						temp = []
+						for i in tableSchema:
+							n = i.get("name", None)
+							if n is not None:
+								temp.append(n)
+						names = temp
+					else:
+						#TODO: Should pragma even be allowed here?
+						# Use pragma to get the column names
+						temp = self._rawSQL_("PRAGMA table_info(%s)" % tableName)
+						temp2 = [""] * len(temp)
+						for i in temp:
+							# i[0] is the column index
+							# i[1] is the column name
+							temp2[i[0]] = i[1]
 
-					names = temp2
+						names = temp2
 
-			#print("Names: %s" % names)
-			for i in rows:
-				columns = {}
-				for x in range(0, len(names)):
-					if i is None or names[x] is None or len(i) < x:
-						print("Error: DatabaseWrapper.parseRows: Found None value in column parse loop")
-						continue
-					columns[names[x]] = i[x]
-				parsedRows.append(SQL_Row(self, columns, tableName))
+				#print("Names: %s" % names)
+				for i in rows:
+					columns = {}
+					for x in range(0, len(names)):
+						if i is None or names[x] is None or len(i) < x:
+							print("Error: DatabaseWrapper.parseRows: Found None value in column parse loop")
+							continue
+						columns[names[x]] = i[x]
+					parsedRows.append(SQL_Row(self, columns, tableName))
 		else:
 			print("Error: DatabaseWrapper.parseRows: Recieved None Input")
 		return parsedRows
@@ -234,6 +236,8 @@ class DatabaseWrapper():
 		return whereStatement
 	
 	def remapValue(self, tableName, inColumn, outColumn, oldValue):
+		if self.printDebug:
+			print("Remapping Value: %s" % oldValue)
 		#TODO: Verify the input data
 		result = self._rawSQL_("SELECT %s FROM %s WHERE %s == \"%s\"" % (outColumn, tableName, inColumn, oldValue))
 		if len(result) > 0:
@@ -297,15 +301,18 @@ class SQL_Row():
 		if self.database.printDebug:
 			print("Debug: SQL_Row.getColumn: %s" % columnName)
 		column = self.getColumnIndex(columnName)
-		schema = self.database.getTableSchema(self.getTableName())
-		if len(schema) > column:
-			return schema[column]
-		print("Error: SQL_Row.getColumn: Column %s has index of %s, the schema for %s has a size of %s" % (columnName, column, self.getTableName(), len(schema)))
-		#traceback.print_stack()
-		return {}
+		if column > -1:
+			schema = self.database.getTableSchema(self.getTableName())
+			if len(schema) > column:
+				return schema[column]
+			print("Error: SQL_Row.getColumn: Column %s has index of %s, the schema for %s has a size of %s" % (columnName, column, self.getTableName(), len(schema)))
+			#traceback.print_stack()
+		else:
+			print("Error: SQL_Row.getColumn: Invalid column name %s in table %s; Returning None" % (columnName, self.getTableName()))
+		return None
 		
 	def getColumnIndex(self, columnName):
-		names = self.getColumnNames()
+		names = self.getColumnNames(True)
 		for i in range(len(names)):
 			if names[i] is not None and names[i] == columnName:
 				if self.database.printDebug:
@@ -313,11 +320,10 @@ class SQL_Row():
 				return i
 				
 		print("Error: SQL_Row.getColumnIndex: Invalid column name: %s" % columnName)
-		traceback.print_stack()
 		return -1
 	
 	def getColumnName(self, index):
-		names = self.getColumnNames()
+		names = self.getColumnNames(True)
 		if index < len(names):
 			return names[index]
 		print("Error: SQL_Row.getColumnName: Column index %s is greater than max of %s" % (index, len(names)))
@@ -344,10 +350,11 @@ class SQL_Row():
 		return False
 	
 	def getColumnProperty(self, columnName, propertyName):
-		return self.getColumn(columnName).get(propertyName, None)
-	
-	def _getValue_(self, columnName):
-		return self.columns.get(columnName, None)
+		column = self.getColumn(columnName)
+		if column is not None:
+			return column.get(propertyName, None)
+		print("Error: SQLRow.getColumnProperty: Invalid column name: %s" % columnName)
+		return None
 	
 	def getValue(self, columnName, force=False, defaultValue=None):
 		if self.getColumnIndex(columnName) > -1 or force:
@@ -355,14 +362,14 @@ class SQL_Row():
 			if virCol is not None:
 				return virCol(self, self.getTableName(), columnName)
 
-			return self._getValue_(columnName)
+			return self.columns.get(columnName, None)
 		return defaultValue
 		
 	def getValues(self, columnNames):
 		result = []
 		colNames = columnNames
 		if columnNames is None:
-			colNames = self.getColumnNames()
+			colNames = self.getColumnNames(True)
 		for i in colNames:
 			result.append(self.getValue(i))
 		return result
@@ -377,10 +384,10 @@ class SQL_RowMutable(SQL_Row):
 			print("Error: SQL_RowMutable.__init__: rowID cannot be None")
 	
 	def refreshColumns(self):
-		print("Refresh Columns")
+		#print("Refresh Columns")
 		result = self.database.selectTableRow(self.getTableName(), self.id)
 		self.columns = result[0].columns
-		print("Refreshed")
+		#print("Refreshed")
 		
 	def getValue(self, columnName):
 		self.refreshColumns()

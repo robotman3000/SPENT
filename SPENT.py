@@ -6,6 +6,9 @@ def getCurrentDateStr():
 
 #TODO: The name of this class is not accurate. It should be called SpentDBManager or similar
 #TODO: This class has a ton of duplicated code, the code reuse needs to be increased
+#TODO: The creates should return the created object
+#TODO: The singular "get's" should call the getWhere's
+
 class AccountManager(DatabaseWrapper):
 	def __init__(self, dbFile="SPENT.db"):
 		super().__init__(dbFile)
@@ -45,6 +48,7 @@ class AccountManager(DatabaseWrapper):
 		self.registerVirtualColumn("Transactions", "TrueAmount", getTrueAmount)
 		self.registerVirtualColumn("Transactions", "DisplayBucket", getDisplayBucket)
 		
+		#Flag: These should be moved to util and/or be replaced by get**Where()
 		def getBucketTransactions(source, tableName, columnName):
 			return source.getTransactionsID()
 		
@@ -57,13 +61,14 @@ class AccountManager(DatabaseWrapper):
 		self.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
 		self.registerVirtualColumn("Buckets", "Children", getBucketChildren)
 		self.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
-
+		#End Flag
+		
 	def createBucket(self, name, parent):
 		#TODO: Verify the data is valid
 		return self._tableInsertInto_("Buckets", 
 									  {"Name" : str(name), 
 									   "Parent" : int(parent)
-									  })[0]
+									  })[0][0]
 	
 	def createTransaction(self, amount, status=0, sourceBucket=None, destBucket=None, transactionDate=getCurrentDateStr(), postDate=None, memo="",  payee=""):
 		#TODO: Verify that all the data is in the correct format
@@ -204,7 +209,6 @@ class AccountManager(DatabaseWrapper):
 	def deleteAccountsWhere(self, where=None):
 		pass
 		
-#TODO: This should be renamed RawBucket
 class Bucket(SQL_RowMutable):
 	def __init__(self, database, ID):
 		super().__init__(database, "Buckets", ID)
@@ -219,13 +223,14 @@ class Bucket(SQL_RowMutable):
 		parentID = self.getValue("Parent")
 		return self.database.getBucket(parentID)
 	
+	#Flag: These should be moved to util and/or be replaced by get**Where()
 	def getParentAccount(self):
 		parent = self.getParent()
 		if parent.getID() == -1:
 			return parent
 		
 		return parent.getParentAccount()
-	
+
 	def getChildren(self):
 		return self.database.getBucketsWhere(SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(self.getID()))))
 	
@@ -257,7 +262,8 @@ class Bucket(SQL_RowMutable):
 	
 	def getAllTransactionsID(self):
 		return [i.getID() for i in self.getAllTransactions()]
-	 
+	#End Flag
+		
 class Account(Bucket):
 	def getParent(self):
 		return None

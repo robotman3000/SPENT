@@ -1,4 +1,5 @@
 from SPENT import *
+from SPENT_Util import *
 #import readline
 
 class REPL():
@@ -98,11 +99,12 @@ class ListCommand(Command):
 			print(a)
 
 accountMan = AccountManager()
+spentUtil = SPENTUtil(accountMan)
 accountMan.printDebug = True
 accountMan.connect()
 
 def printTree(bucket, depth=0):
-	print("%s %d - %s ($%s, $%s)" % (" ".join([" | " for i in range(0, depth)]), bucket.getID(), bucket.getName(), bucket.getAvailableBalance(), bucket.getPostedBalance()))
+	print("%s %d - %s ($%s, $%s)" % (" ".join([" | " for i in range(0, depth)]), bucket.getID(), bucket.getName(), bucket.getValue("Balance"), bucket.getValue("PostedBalance")))
 	for child in bucket.getChildren():
 		printTree(child, depth+1)
 						   
@@ -144,14 +146,14 @@ def listBucketTransactions(command):
 
 def showAccountTree(command):
 	print("ID, Name, Available, Posted")
-	for a in accountMan.getAccountList():
+	for a in accountMan.getAccountsWhere():
 		printTree(a)
 
 def showBucket(command):
 	bucket = accountMan.getBucket(command[0])
 	print("===== %s =====" % bucket.getName())
-	print("Avail Balance: %s" % bucket.getAvailableBalance())
-	print("Posted Balance: %s" % bucket.getPostedBalance())
+	print("Avail Balance: %s" % bucket.getValue("Balance"))
+	print("Posted Balance: %s" % bucket.getValue("PostedBalance"))
 	listBucketTransactions(command)
 	
 def toggleDebug(command):
@@ -183,9 +185,9 @@ repl = REPL(callback, {
 	'DeleteBucket' : Command(deleteBucket, "ID"), #Swipe To Delete
 	'DeleteTransation' : Command(deleteTransaction, "ID"), #Swipe To Delete
 
-	'ListBuckets' : ListCommand(accountMan.getBucketList), # ScrollMenu
-	'ListAccounts' : ListCommand(accountMan.getAccountList), # ScrollMenu
-	'ListTransactions' : ListCommand(accountMan.getTransactionList), # ScrollMenu
+	'ListBuckets' : ListCommand(accountMan.getBucketsWhere), # ScrollMenu
+	'ListAccounts' : ListCommand(accountMan.getAccountsWhere), # ScrollMenu
+	'ListTransactions' : ListCommand(accountMan.getTransactionsWhere), # ScrollMenu
 
 	'ShowBucket' : Command(showBucket, "ID"), #ScrollMenu Item Tapped
 	'ShowTransaction' : Command(showTransaction, "ID"), #ScrollMenu Item Tapped

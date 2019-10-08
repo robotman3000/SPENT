@@ -1,24 +1,28 @@
 import sqlite3 as sql
 import sys
 import traceback
+from typing import List, Set, Dict, Tuple, Optional, Any, Union
 	
 class DatabaseWrapper():
 	#TODO: create an api for getting the value of a single cell
-	def __init__(self, dbPath):
-		self.con = None
-		self.dbPath = dbPath
-		self.printDebug = False
-		self.schema = {}
-		self.enums = {}
-		self.virtualColumns = {}
+	def __init__(self, dbPath: str):
+		self.con: Connection = None
+		self.dbPath: str = dbPath
+		self.printDebug: bool = False
+		self.schema: Dict[str, Dict[str, Union[str, bool]]] = {}
+		self.enums: Dict[str, Dict[str, int]] = {}
+		self.virtualColumns: Dict[str, Dict[str, function]] = {}
 
-	def _getLastInsRowsID_(self):
-		return self._rawSQL_("SELECT last_insert_rowid()")
+	def _getLastInsRowsID_(self) -> List[int]:
+		return self._rawSQL_("SELECT last_insert_rowid()", False)
 		
-	def _rawSQL_(self, command):
-		return self._rawSQLList_([command])
+	def _rawSQL_(self, command: str, sugar: bool = True) -> List[sql.Row]:
+		return self._rawSQLList_([command], sugar)
 	
-	def _rawSQLList_(self, commands):
+	def _rawSQLList_(self, commands, sugar=True):
+		if sugar:
+			print("Warn: DatabaseWrapper._rawSQLList_: This shouldn't be called directly")
+			
 		result = []
 		cursor = self.con.cursor()
 		if cursor is not None and commands is not None:
@@ -39,8 +43,8 @@ class DatabaseWrapper():
 				result.append(row)
 				if self.printDebug:
 					print("Debug: SQL Response: %s" % str(row))
-						
-			if len(result) < 1:
+			
+			if self.printDebug and len(result) < 1:
 				print("Debug: SQL Response: Empty")
 				
 			cursor.close()
@@ -56,7 +60,7 @@ class DatabaseWrapper():
 			if where is not None:
 				query += " %s" % where
 
-			result = self._rawSQL_(query)
+			result = self._rawSQL_(query, False)
 			rows = self.parseRows(result, columnNames, tableName)
 			return rows
 		else:
@@ -82,7 +86,7 @@ class DatabaseWrapper():
 					else:
 						#TODO: Should pragma even be allowed here?
 						# Use pragma to get the column names
-						temp = self._rawSQL_("PRAGMA table_info(%s)" % tableName)
+						temp = self._rawSQL_("PRAGMA table_info(%s)" % tableName, False)
 						temp2 = [""] * len(temp)
 						for i in temp:
 							# i[0] is the column index
@@ -120,7 +124,7 @@ class DatabaseWrapper():
 		keyStr = ", ".join(keyList)
 		
 		valueStr = ", ".join(map(self.quoteStr, valueList))
-		self._rawSQL_("%s INTO %s (%s) VALUES (%s)" % (("REPLACE" if replace else "INSERT"), tableName, keyStr, valueStr))
+		self._rawSQL_("%s INTO %s (%s) VALUES (%s)" % (("REPLACE" if replace else "INSERT"), tableName, keyStr, valueStr), False)
 		return self._getLastInsRowsID_()
 		
 	def updateTableRow(self, tableName, columns, rowID):
@@ -129,8 +133,13 @@ class DatabaseWrapper():
 	def updateTableWhere(self, tableName, columns, where):
 		updateList = []
 		if columns is not None:
+			virColumns = self.getTableVirtualColumns(tableName)
 			for i in columns.items():
-				updateList.append("%s = %s" % (i[0], self.quoteStr(i[1])))
+				if virColumns.get(i[0], None) is None:
+					updateList.append("%s = %s" % (i[0], self.quoteStr(i[1])))
+				else:
+					#TODO: This should probably raise a ValueError rather than silently failing
+					print("Warn: DatabaseWrapper.updateTableWhere: Attempted to update a virtual column: Table: %s, Column: %s" % (tableName, i[0]))
 		else:
 			print("Warn: DatabaseWrapper.updateTableWhere: Recieved None Columns")
 			
@@ -138,9 +147,11 @@ class DatabaseWrapper():
 			where = ""
 			print("Warn: DatabaseWrapper.updateTableWhere: where was None")
 			
-		updates = ", ".join(updateList)
-		query = "UPDATE %s SET %s %s" % (tableName, updates, where)
-		return self._rawSQL_(query)
+		if len(updateList) > 0:
+			updates = ", ".join(updateList)
+			query = "UPDATE %s SET %s %s" % (tableName, updates, where)
+			return self._rawSQL_(query, False)
+		return []
 		
 	def connect(self):
 		self.con = sql.connect(self.dbPath)
@@ -190,7 +201,7 @@ class DatabaseWrapper():
 				columns.append("\"%s\" %s %s" % (column["name"], column["type"], " ".join(options)))
 				
 			sqlStr = "CREATE TABLE IF NOT EXISTS \"%s\" (%s)" % (tableName, ", ".join(columns))
-			self._rawSQL_(sqlStr)
+			self._rawSQL_(sqlStr, False)
 			
 			enumValues = self.enums.get(tableName, [])
 			for index in range(len(enumValues)):
@@ -240,7 +251,7 @@ class DatabaseWrapper():
 		if self.printDebug:
 			print("Remapping Value: %s" % oldValue)
 		#TODO: Verify the input data
-		result = self._rawSQL_("SELECT %s FROM %s WHERE %s == \"%s\"" % (outColumn, tableName, inColumn, oldValue))
+		result = self._rawSQL_("SELECT %s FROM %s WHERE %s == \"%s\"" % (outColumn, tableName, inColumn, oldValue), False)
 		if len(result) > 0:
 			return result[0][0]
 		return None
@@ -300,7 +311,8 @@ class SQL_Row():
 
 	def getColumn(self, columnName):
 		if self.database.printDebug:
-			print("Debug: SQL_Row.getColumn: %s" % columnName)
+			pass
+			#print("Debug: SQL_Row.getColumn: %s" % columnName)
 		column = self.getColumnIndex(columnName)
 		if column > -1:
 			schema = self.database.getTableSchema(self.getTableName())
@@ -380,26 +392,33 @@ class SQL_RowMutable(SQL_Row):
 		#TODO: Raise an exception if the rowID is None or is not an int
 		if type(rowID) is int:
 			self.id = rowID
+			self.isDirty = True
 			self.refreshColumns()
 		else:
 			raise ValueError("SQL_RowMutable.__init__: rowID must be an int not %s" % type(rowID))
 	
-	def refreshColumns(self):
-		oldState = self.database.printDebug
-		if self.database.printDebug:
-			print("Refresh Columns")
-			self.printDebug = False
-			
-		result = self.database.selectTableRow(self.getTableName(), self.id)
+	def _isDirty_(self):
+		return self.isDirty
 		
-		if oldState:
-			self.database.printDebug = True
+	def _markClean_(self, newValue=False):
+		self.isDirty = newValue
+		
+	def refreshColumns(self):
+		if self._isDirty_():
+			if self.database.printDebug:
+				print("Refresh Columns")
+
+			result = self.database.selectTableRow(self.getTableName(), self.id)
 			
-		if len(result) > 0:
-			self.columns = result[0].columns
-		else:
-			raise ValueError("SQL_RowMutable.refreshColumns: No records returned for table %s and ID %s" % (self.getTableName(), self.id))
-		#print("Refreshed")
+			#self._markClean_()
+			
+			if self.database.printDebug:
+				print("Refreshed")
+
+			if len(result) > 0:
+				self.columns = result[0].columns
+			else:
+				raise ValueError("SQL_RowMutable.refreshColumns: No records returned for table %s and ID %s" % (self.getTableName(), self.id))
 		
 	def getValue(self, columnName):
 		self.refreshColumns()

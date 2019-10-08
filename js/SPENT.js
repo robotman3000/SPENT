@@ -94,6 +94,10 @@ function getBucketParentForID(id){
 	return "Invalid ID: " + id;
 }
 
+function getNodeType(node){
+	return (node.parent == "#" ? "account" : "bucket")
+}
+
 // ########################## #### API Logic ##############################
 
 function apiRequest(requestObj, callback){
@@ -135,7 +139,7 @@ function createRequest(action, type, data, columns){
 	   request.columns = columns;
 	}
 	
-	request.debugTrace = new Error().stack;
+	//request.debugTrace = new Error().stack;
 	
 	return request
 }
@@ -383,11 +387,6 @@ function initTable(tableName, apiDataType){
 	$("#" + tableName).on('ready.ft.table', function(e, table){
 		onTableReady(tableName, table);
 	});
-	
-	$("#" + tableName).on('before.ft.sorting', function(e, table, sorter){
-		sorter.abc123 = "djfskapvnoea;";
-		console.log("Before Sort");
-	});
 
 
 	$("#" + tableName).footable({
@@ -454,39 +453,33 @@ function refreshTable(tableName){
 					});
 					break;
 				case "transactionTable":
-					var accountID = getSelectedAccount();
-					var parent = getBucketParentForID(accountID);
-					apiRequest(createRequest("get", "bucket", [{"ID": accountID}], ["AllChildren"]), function(response) {
-						var buckets = [];
-						response.data.forEach(function(item3, index3){
-							buckets.push({"ID": item3.ID});
-							if(item3.ID == accountID && parent == -1){
-								item3.AllChildren.forEach(function(item4, index4){
-									buckets.push({"ID": item4});
-								});
-							}
+					var node = _getNodeForID_(getSelectedAccount())
+					var parent = getBucketParentForID(node.id);
+					
+					requestColumns = ["Transactions"]
+					if(parent == -1){
+						requestColumns = ["AllTransactions"]
+					}
+
+					apiRequest(createRequest("get", getNodeType(node), [{"ID": parseInt(node.id)}], requestColumns), function(response) {
+						var data = []
+						var ids = new Set()
+						response.data.forEach(function(item, index){
+							item[requestColumns[0]].forEach(function(item2, index2){
+								ids.add(item2)
+							});
 						});
 
-						apiRequest(createRequest("get", "bucket", buckets, ["Transactions", "Name", "Parent"]), function(response) {
-							var data = []
-							var ids = new Set()
-							response.data.forEach(function(item, index){
-								item.Transactions.forEach(function(item2, index2){
-									ids.add(item2)
-								});
-							});
-							
-							ids.forEach(function(item, index){
-								data.push({"ID": item})
-							})
-							
-							apiRequest(createRequest("get", "transaction", data, ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "Memo", "Payee", "Type"]), function(response) {
-								addTableRows(tableName, response.data, unlockKey);
-								getTableData(tableName).unlockTable(unlockKey);
-							});	
+						ids.forEach(function(item, index){
+							data.push({"ID": item})
+						})
 
-						});		
-					});
+						apiRequest(createRequest("get", "transaction", data, ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "Memo", "Payee", "Type"]), function(response) {
+							addTableRows(tableName, response.data, unlockKey);
+							getTableData(tableName).unlockTable(unlockKey);
+						});	
+
+					});		
 					break;
 				default:
 					alert("Unknown table: " + tableName);
@@ -517,8 +510,8 @@ function refreshBucketTableAccountSelect() {
 
 function refreshBalanceDisplay() {
 	if (getSelectedAccount() != undefined) {
-		var node = $('#accountTree').jstree('get_node', getSelectedAccount());
-		apiRequest(createRequest("get", (node.parent == "#" ? "account" : "bucket"), [{"ID": node.id}], ["Balance", "PostedBalance"]), function(response) {
+		var node = _getNodeForID_(getSelectedAccount());
+		apiRequest(createRequest("get", getNodeType(node), [{"ID": node.id}], ["Balance", "PostedBalance"]), function(response) {
 			$("#balanceDisplay").text("Available: \$" + response.data[0]["Balance"] + ", Posted: \$" + response.data[0]["PostedBalance"]);
 		});
 	} else {
@@ -536,13 +529,15 @@ function getSelectedAccount() {
 }
 
 function getSelectedBucketTableAccount(){
-	
+	/*
+	$("#elementId :selected").text(); // The text content of the selected option
+$("#elementId :selected").val(); // The value of the selected option
+	*/
 }
 
 function showFormModal(tableName, row){
 	var data = (row ? row.val() : {});
 	var form = $(updateFormContent(tableName + "EditForm", data))
-		
 	var inputs = form.find("select").toArray();
 	inputs.forEach(function(item, index){
 		var it = $(item)
@@ -556,38 +551,19 @@ function showFormModal(tableName, row){
 				updateDynamicInput(it, rowVal);
 			}
 		}
-		
-		//TODO: This is a quick fix
-		//alert(item.name);
-		/*if(item.name == "Type"){
-			//alert("Caught")
-			var type = getTransactionType(data);
-			if(type == 3){
-				type = 1;
-			}
-			it.val(type + "");
-		}*/
-		
 	});
 	form.data('row', row);
-	
+	form.data('rowID', data.ID);
 	showModal(tableName + "EditFormModal");
-	
-	//TODO: This is a quick fix
-	/*if(tableName == "transactionTable"){
-		$("#transactionTableType").change();
-	}*/
 }
 
 function updateDynamicInput(it, value){
-	//alert("Value: " + value);
 	it.prop("disabled", true);
 
-	//TODO: Start the async update function
 	// After the function completes it shoud re-enable the input
 	it.data("optionFunc")().then(function(result){
 		if(result == null){
-			alert("failed to update input: " + it)
+			alert("Failed to update input: " + it)
 		} else {
 			it[0].options.length=0
 			it[0].options.add(new Option("N/A", -1, true, (value == -1)));
@@ -595,7 +571,11 @@ function updateDynamicInput(it, value){
 				it[0].options.add(new Option(ite.Name, ite.ID, false, (value == ite.ID)))
 			});
 			
-			it.prop("disabled", false);
+			//it.prop("disabled", false);
+			
+			if (it.attr('name') == "DestBucket" || it.attr('name') == "SourceBucket") {
+				$("#transactionTableType").change();
+			}
 		}
 	});
 }
@@ -612,20 +592,20 @@ function onDocumentReady() {
 	tableSchema = {
 		accountTable: {
 			columns: [
-				{name: "ID", visible: false, formVisible: true},
+				{name: "ID", visible: false, formVisible: false},
 				{name: "Name", title: "Name", type: "string", required: true, formType: "text"}
 			]
 		},
 		bucketTable: {
 			columns: [
-				{name: "ID", visible: false, formVisible: true},
+				{name: "ID", visible: false, formVisible: false},
 				{name: "Name", title: "Name", type: "string", required: true, formType: "text"},
-				{name: "Parent", title: "Parent", type: "number", required: true, formType: "number", options: getBucketOptions, formDynamicSelect: function(){ return true; }}
+				{name: "Parent", title: "Parent", type: "number", required: true, formType: "select", options: getBucketOptions, formDynamicSelect: function(){ return true; }}
 			]
 		},
 		transactionTable: {
 			columns: [
-				{name: "ID", visible: false, formVisible: true},
+				{name: "ID", visible: false, formVisible: false},
 				{name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", formType: "select", options: getStatusOptions, required: true},
 				{name: "TransDate", title: "Date", type: "date", breakpoints:"xs", formatString:"YYYY-MM-DD", required: true, formType: "date"},
 				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date", formatter: transactionDateFormatter},
@@ -753,18 +733,18 @@ formDynamicSelect
 }
 
 function getBucketOptions(){
-	return apiRequest(createRequest("get", "bucket", [{"ID": getSelectedAccount()}], ["AllChildren"])).then(function(result){
-		var buckets = []
-		buckets.push({"ID": getSelectedAccount()})
-		result.data[0].AllChildren.forEach(function(item, index){
-			buckets.push({"ID": item})
+	//TODO: Rewrite this to account for the selected account and whether the type is set as "transfer"
+	var array = [];
+	return apiRequest(createRequest("get", "account")).then(function(result){
+		result.data.forEach(function(item, index){
+			array.push({"ID": item.ID, "Name": item.Name})
 		});
-		return apiRequest(createRequest("get", "bucket", buckets, ["Name"]));
+		return apiRequest(createRequest("get", "bucket"));
 	}).then(function(result2){
 		//alert("Hello World")
-		var array = []
+		
 		result2.data.forEach(function(item, index){
-			array.push({"ID": item.ID, "Name": item.Name})
+			array.push({"ID": item.ID, "Name": "    " + item.Name})
 		});
 		
 		return Promise.resolve(array);
@@ -780,18 +760,16 @@ function getStatusOptions(){
 }
 
 function getTransferDirection(rowData, bucketID){
-	// TODO: Is there a better way of representing this?
 	// True = Money Coming in; I.E. a positive value
 	// False = Money Going out; I.E. a negative value
-	
 	switch(rowData.Type){
-		case 0:
+		case "0":
 			return (rowData.DestBucket == bucketID);
 			break;
-		case 1:
+		case "1":
 			return true;
 			break;
-		case 2:
+		case "2":
 			return false;
 			break;
 	}
@@ -804,7 +782,7 @@ function transactionTypeFormatter(value, options, rowData){
 	}
 	rowData.typeSort = rowData.Type
 	var fromToStr = "";
-	if (rowData.typeSort == 0){//Transfer
+	if (rowData.typeSort == "0"){//Transfer
 		fromToStr = (getTransferDirection(rowData, getSelectedAccount()) ? " from " : " to ");	
 	}
 	return enums["transactionTable"]["Type"][rowData.typeSort] + fromToStr;
@@ -814,6 +792,7 @@ function transactionAmountFormatter(value, options, rowData){
 	if(rowData.amountSort){
 	   return rowData.amountSort;
 	}
+	
 	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
 	if (isDeposit){
 		// If deposit
@@ -832,8 +811,8 @@ function bucketFormatter(value, options, rowData){
 	
 	var transType = rowData.Type;
 	var isDeposit = (rowData, getSelectedAccount());
-	if(transType != 0){
-		id = (transType == 1 ? rowData.DestBucket : rowData.SourceBucket);
+	if(transType != "0"){
+		id = (transType == "1" ? rowData.DestBucket : rowData.SourceBucket);
 	} else {
 		id = (rowData.SourceBucket == getSelectedAccount() ? rowData.DestBucket : rowData.SourceBucket);
 	}
@@ -902,6 +881,7 @@ function onFormSubmit(self, tableName){
 	var form = $("#" + tableName + "EditForm");
 	var data = $("#" + tableName + "EditForm").serializeArray()
 	var row = form.data('row');
+	data.push({name:"ID", value: form.data('rowID')})
 	//TODO: Create and implement a generic data validation system
 	
 	// Call the submit callback for the affected table

@@ -28,6 +28,9 @@ class SPENTUtil():
 		def getBucketTransactions(source, tableName, columnName):
 			return self.getBucketTransactionsID(source)
 		
+		def getAllBucketTransactions(source, tableName, columnName):
+			return self.getAllBucketTransactionsID(source)
+		
 		def getBucketChildren(source, tableName, columnName):
 			return self.getBucketChildrenID(source)
 		
@@ -35,6 +38,7 @@ class SPENTUtil():
 			return self.getAllBucketChildrenID(source)
 		
 		self._spentDB_.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
+		self._spentDB_.registerVirtualColumn("Buckets", "AllTransactions", getAllBucketTransactions)
 		self._spentDB_.registerVirtualColumn("Buckets", "Children", getBucketChildren)
 		self._spentDB_.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
 		
@@ -95,7 +99,7 @@ class SPENTUtil():
 		return [i.getID() for i in self.getBucketTransactions(bucket)]
 	
 	def getAllBucketTransactions(self, bucket):
-		allIDList = ", ".join(self.getAllBucketChildrenID(bucket) + [bucket.getID()])
+		allIDList = ", ".join(map(str, self.getAllBucketChildrenID(bucket) + [bucket.getID()]))
 		return self._spentDB_.getTransactionsWhere(SQL_WhereStatementBuilder("%s IN (%s)" % ("SourceBucket", allIDList)).OR("%s IN (%s)" % ("DestBucket", allIDList)))
 	
 	def getAllBucketTransactionsID(self, bucket):

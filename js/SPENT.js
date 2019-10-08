@@ -474,11 +474,15 @@ function refreshTable(tableName){
 							data.push({"ID": item})
 						})
 
-						apiRequest(createRequest("get", "transaction", data, ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "Memo", "Payee", "Type"]), function(response) {
-							addTableRows(tableName, response.data, unlockKey);
+						if (data.length > 0) {
+							apiRequest(createRequest("get", "transaction", data, ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "Memo", "Payee", "Type"]), function(response) {
+								addTableRows(tableName, response.data, unlockKey);
+								getTableData(tableName).unlockTable(unlockKey);
+							});	
+						} else {
+							addTableRows(tableName, [], unlockKey);
 							getTableData(tableName).unlockTable(unlockKey);
-						});	
-
+						}
 					});		
 					break;
 				default:
@@ -571,10 +575,10 @@ function updateDynamicInput(it, value){
 				it[0].options.add(new Option(ite.Name, ite.ID, false, (value == ite.ID)))
 			});
 			
-			//it.prop("disabled", false);
-			
 			if (it.attr('name') == "DestBucket" || it.attr('name') == "SourceBucket") {
 				$("#transactionTableType").change();
+			} else {
+				it.prop("disabled", false);
 			}
 		}
 	});
@@ -600,7 +604,7 @@ function onDocumentReady() {
 			columns: [
 				{name: "ID", visible: false, formVisible: false},
 				{name: "Name", title: "Name", type: "string", required: true, formType: "text"},
-				{name: "Parent", title: "Parent", type: "number", required: true, formType: "select", options: getBucketOptions, formDynamicSelect: function(){ return true; }}
+				{name: "Parent", title: "Parent", type: "formatter", formatter: bucketFormatter, required: true, formType: "select", options: getBucketOptions, formDynamicSelect: function(){ return true; }}
 			]
 		},
 		transactionTable: {
@@ -819,7 +823,7 @@ function bucketFormatter(value, options, rowData){
 	
 	var par = getBucketParentForID(id);
 	//if(par != -1){
-		rowData.bucketSort = getBucketNameForID(id);
+	rowData.bucketSort = getBucketNameForID(id);
 	/*} else {
 		rowData.bucketSort = "Unassigned";
 	}*/

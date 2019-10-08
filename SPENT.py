@@ -1,5 +1,6 @@
 from datetime import date
 from sqlite3_DOM import *
+from SPENT_Util import *
 
 def getCurrentDateStr():
 	return str(date.today())
@@ -126,17 +127,17 @@ class AccountManager(DatabaseWrapper):
 		if where is None:
 			raise ValueError("AccountManager.deleteBucketsWhere: where can't be None")
 			
-		util = SPENT_Util.SPENTUtil(self)
+		util = SPENTUtil(self)
 		buckets = self._getBucketsWhere_(where)
 		
-		bucketIDs = Set()
+		bucketIDs = set()
 		for bucket in buckets:
 			children = util.getAllBucketChildrenID(bucket)
 			for i in children:
 				bucketIDs.add(i)
 			bucketIDs.add(bucket.getID())
 		
-		bucketStr = ", ",join(bucketIDs)
+		bucketStr = ", ".join(map(str, bucketIDs))
 		self.deleteTransactionsWhere(SQL_WhereStatementBuilder("SourceBucket in (%s)" % bucketStr).OR("DestBucket in (%s)" % bucketStr))
 		self.deleteTableRowsWhere("Buckets", SQL_WhereStatementBuilder("ID in (%s)" % bucketStr))
 		

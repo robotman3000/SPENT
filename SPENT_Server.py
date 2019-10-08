@@ -275,8 +275,8 @@ class SPENTServer():
 	def deleteBucket(self, request, columns):
 		data = request.get("data", {})
 		idList = [int(i.get("ID", -1)) for i in data]
-		self.accountMan.deleteBucketsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(idList)))
-		return self.wrapData(self.SQLRowsToArray([{"ID": idVal} for idVal in idList]))
+		self.accountMan.deleteBucketsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
+		return self.wrapData([{"ID": idVal} for idVal in idList])
 		
 	def getTransaction(self, request, columns):
 		data = request.get("data", {})
@@ -316,8 +316,8 @@ class SPENTServer():
 	def deleteTransaction(self, request, columns):
 		data = request.get("data", {})
 		idList = [int(i.get("ID", -1)) for i in data]
-		self.accountMan.deleteTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(idList)))
-		return self.wrapData(self.SQLRowsToArray([{"ID": idVal} for idVal in idList]))
+		self.accountMan.deleteTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
+		return self.wrapData([{"ID": idVal} for idVal in idList])
 	
 	def getProperty(self, request, columns):
 		return self.unimp	

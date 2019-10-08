@@ -1,6 +1,6 @@
 from SPENT import *
 from SPENT_Util import *
-#import readline
+import readline
 import traceback
 
 class REPL():

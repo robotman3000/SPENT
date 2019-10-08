@@ -13,6 +13,7 @@ class SPENTUtil():
 	def __init__(self, spentDB):
 		self._spentDB_ = spentDB
 		
+	def registerUtilityColumns(self):
 		def getAvailBucketBalance(source, tableName, columnName):
 			return self.getAvailableBalance(source)
 
@@ -22,6 +23,21 @@ class SPENTUtil():
 		self._spentDB_.registerVirtualColumn("Buckets", "Balance", getAvailBucketBalance)
 		self._spentDB_.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
 
+		
+		#TODO: SHould these vir columns be kept around?
+		def getBucketTransactions(source, tableName, columnName):
+			return self.getBucketTransactionsID(source)
+		
+		def getBucketChildren(source, tableName, columnName):
+			return self.getBucketChildrenID(source)
+		
+		def getAllBucketChildren(source, tableName, columnName):
+			return self.getAllBucketChildrenID(source)
+		
+		self._spentDB_.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
+		self._spentDB_.registerVirtualColumn("Buckets", "Children", getBucketChildren)
+		self._spentDB_.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
+		
 	def getPostedBalance(self, bucket):
 		return self._calculateBalance_(bucket, True)
 		
@@ -29,7 +45,7 @@ class SPENTUtil():
 		return self._calculateBalance_(bucket)
 		
 	def _calculateBalance_(self, bucket, posted=False):
-		ids = bucket.getAllChildrenID()
+		ids = self.getAllBucketChildrenID(bucket)
 		ids.append(bucket.getID()) # We can't forget ourself
 		idStr = ", ".join(map(str, ids))
 	
@@ -44,5 +60,43 @@ class SPENTUtil():
 		rows = self._spentDB_.parseRows(result, [column], "Transactions")
 		if len(rows) > 0:
 			return round(float(rows[0].getValue(column, False)), 2)
-		return 0	
+		return 0
 	
+	def getBucketParentAccount(self, bucket):
+		parent = bucket.getParent()
+		if parent.getID() == -1:
+			return parent
+		
+		return self.getBucketParentAccount(parent)
+
+	def getBucketChildren(self, bucket):
+		return self._spentDB_.getBucketsWhere(SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(bucket.getID()))))
+	
+	def getBucketChildrenID(self, bucket):
+		#TODO: this and the "all" version are inefficent
+		return [i.getID() for i in self.getBucketChildren(bucket)]
+	
+	def getAllBucketChildren(self, bucket):
+		children = self.getBucketChildren(bucket)
+		newChildren = [] + children
+		for i in children:
+			newChildren += self.getAllBucketChildren(i)
+			
+		#print(newChildren)
+		return newChildren
+	
+	def getAllBucketChildrenID(self, bucket):
+		return [i.getID() for i in self.getAllBucketChildren(bucket)]
+	
+	def getBucketTransactions(self, bucket):
+		return self._spentDB_.getTransactionsWhere(SQL_WhereStatementBuilder("%s == %s" % ("SourceBucket", bucket.getID())).OR("%s == %s" % ("DestBucket", bucket.getID())))
+		
+	def getBucketTransactionsID(self, bucket):
+		return [i.getID() for i in self.getBucketTransactions(bucket)]
+	
+	def getAllBucketTransactions(self, bucket):
+		allIDList = ", ".join(self.getAllBucketChildrenID(bucket) + [bucket.getID()])
+		return self._spentDB_.getTransactionsWhere(SQL_WhereStatementBuilder("%s IN (%s)" % ("SourceBucket", allIDList)).OR("%s IN (%s)" % ("DestBucket", allIDList)))
+	
+	def getAllBucketTransactionsID(self, bucket):
+		return [i.getID() for i in self.getAllBucketTransactions(bucket)]

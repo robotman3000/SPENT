@@ -29,22 +29,23 @@ class DatabaseWrapper():
 					if cmd is not None:
 						cursor.execute(cmd)
 					else:
-						print("Error: DatabaseWrapper._rawSQLList_: Recieved None CMD")
+						print("Warn: DatabaseWrapper._rawSQLList_: Recieved None CMD")
 			except Exception as e:
-				print("Error: SQL: %s" % e)
-
-			while True:
-				
-				#TODO: Is this loop needed?
-				row = cursor.fetchone()
-				if row is None:
-					break;
+				#TODO: This should use a more specific type
+				raise e
+				#print("Error: SQL: %s" % e)
+			
+			for row in cursor:
 				result.append(row)
 				if self.printDebug:
 					print("Debug: SQL Response: %s" % str(row))
+						
+			if len(result) < 1:
+				print("Debug: SQL Response: Empty")
+				
 			cursor.close()
 		else:
-			print("Error: DatabaseWrapper._rawSQLList_: Recieved None Input")
+			print("Warn: DatabaseWrapper._rawSQLList_: Recieved None Input")
 		return result
 	
 	def _tableSelectDelete_(self, isDelete, tableName, columnNames=["*"], where=None):
@@ -59,7 +60,7 @@ class DatabaseWrapper():
 			rows = self.parseRows(result, columnNames, tableName)
 			return rows
 		else:
-			print("Error: DatabaseWrapper._tableSelectDelete_: Recieved None Input")
+			print("Warn: DatabaseWrapper._tableSelectDelete_: Recieved None Input")
 		return []
 		
 	def parseRows(self, rows, columnNames=["*"], tableName=None):
@@ -95,12 +96,12 @@ class DatabaseWrapper():
 					columns = {}
 					for x in range(0, len(names)):
 						if i is None or names[x] is None or len(i) < x:
-							print("Error: DatabaseWrapper.parseRows: Found None value in column parse loop")
+							print("Warn: DatabaseWrapper.parseRows: Found None value in column parse loop")
 							continue
 						columns[names[x]] = i[x]
 					parsedRows.append(SQL_Row(self, columns, tableName))
 		else:
-			print("Error: DatabaseWrapper.parseRows: Recieved None Input")
+			print("Warn: DatabaseWrapper.parseRows: Recieved None Input")
 		return parsedRows
 		
 	def quoteStr(self, value):
@@ -131,11 +132,11 @@ class DatabaseWrapper():
 			for i in columns.items():
 				updateList.append("%s = %s" % (i[0], self.quoteStr(i[1])))
 		else:
-			print("Error: DatabaseWrapper.updateTableWhere: Recieved None Columns")
+			print("Warn: DatabaseWrapper.updateTableWhere: Recieved None Columns")
 			
 		if where is None:
 			where = ""
-			print("Error: DatabaseWrapper.updateTableWhere: where was None")
+			print("Warn: DatabaseWrapper.updateTableWhere: where was None")
 			
 		updates = ", ".join(updateList)
 		query = "UPDATE %s SET %s %s" % (tableName, updates, where)
@@ -232,7 +233,7 @@ class DatabaseWrapper():
 			rowStr = ", ".join(map(str, rowIDs))
 			whereStatement.AND("ID in (%s)" % rowStr)
 		else:
-			print("Error: DatabaseWrapper.rowsToWhere: rowIDs was None")
+			print("Warn: DatabaseWrapper.rowsToWhere: rowIDs was None")
 		return whereStatement
 	
 	def remapValue(self, tableName, inColumn, outColumn, oldValue):
@@ -305,10 +306,10 @@ class SQL_Row():
 			schema = self.database.getTableSchema(self.getTableName())
 			if len(schema) > column:
 				return schema[column]
-			print("Error: SQL_Row.getColumn: Column %s has index of %s, the schema for %s has a size of %s" % (columnName, column, self.getTableName(), len(schema)))
+			print("Warn: SQL_Row.getColumn: Column %s has index of %s, the schema for %s has a size of %s" % (columnName, column, self.getTableName(), len(schema)))
 			#traceback.print_stack()
 		else:
-			print("Error: SQL_Row.getColumn: Invalid column name %s in table %s; Returning None" % (columnName, self.getTableName()))
+			print("Warn: SQL_Row.getColumn: Invalid column name %s in table %s; Returning None" % (columnName, self.getTableName()))
 		return None
 		
 	def getColumnIndex(self, columnName):
@@ -316,17 +317,17 @@ class SQL_Row():
 		for i in range(len(names)):
 			if names[i] is not None and names[i] == columnName:
 				if self.database.printDebug:
-					print("Debug: SQL_Row.getColumnIndex: Names: %s, Index: %s, Name: %s" % (names, i, columnName))
+					pass
+					#print("Debug: SQL_Row.getColumnIndex: Names: %s, Index: %s, Name: %s" % (names, i, columnName))
 				return i
 				
-		print("Error: SQL_Row.getColumnIndex: Invalid column name: %s" % columnName)
-		return -1
+		raise ValueError("SQL_Row.getColumnIndex: Invalid column name: %s" % columnName)
 	
 	def getColumnName(self, index):
 		names = self.getColumnNames(True)
 		if index < len(names):
 			return names[index]
-		print("Error: SQL_Row.getColumnName: Column index %s is greater than max of %s" % (index, len(names)))
+		print("Warn: SQL_Row.getColumnName: Column index %s is greater than max of %s" % (index, len(names)))
 		return ""
 	
 	def getColumnNames(self, includeVirtual=True):
@@ -353,8 +354,7 @@ class SQL_Row():
 		column = self.getColumn(columnName)
 		if column is not None:
 			return column.get(propertyName, None)
-		print("Error: SQLRow.getColumnProperty: Invalid column name: %s" % columnName)
-		return None
+		raise ValueError("SQLRow.getColumnProperty: Invalid column name: %s" % columnName)
 	
 	def getValue(self, columnName, force=False, defaultValue=None):
 		if self.getColumnIndex(columnName) > -1 or force:
@@ -378,15 +378,27 @@ class SQL_RowMutable(SQL_Row):
 	def __init__(self, database, tableName, rowID):
 		super().__init__(database, {}, tableName)
 		#TODO: Raise an exception if the rowID is None or is not an int
-		if rowID is not None:
+		if type(rowID) is int:
 			self.id = rowID
+			self.refreshColumns()
 		else:
-			print("Error: SQL_RowMutable.__init__: rowID cannot be None")
+			raise ValueError("SQL_RowMutable.__init__: rowID must be an int not %s" % type(rowID))
 	
 	def refreshColumns(self):
-		#print("Refresh Columns")
+		oldState = self.database.printDebug
+		if self.database.printDebug:
+			print("Refresh Columns")
+			self.printDebug = False
+			
 		result = self.database.selectTableRow(self.getTableName(), self.id)
-		self.columns = result[0].columns
+		
+		if oldState:
+			self.database.printDebug = True
+			
+		if len(result) > 0:
+			self.columns = result[0].columns
+		else:
+			raise ValueError("SQL_RowMutable.refreshColumns: No records returned for table %s and ID %s" % (self.getTableName(), self.id))
 		#print("Refreshed")
 		
 	def getValue(self, columnName):
@@ -407,9 +419,9 @@ class SQL_RowMutable(SQL_Row):
 				if i is not None:
 					self.database.updateTableRow(self.tableName, columns, self.id)
 				else:
-					print("Error: SQL_RowMutable.updateValues: A column item was None")
+					print("Warn: SQL_RowMutable.updateValues: A column item was None")
 		else:
-			print("Error: SQL_RowMutable.updateValues: columns can't be None")
+			print("Warn: SQL_RowMutable.updateValues: columns can't be None")
 			
 	def getValueRemapped(self, columnName):
 		#TODO: Verify that there are no None's where they shouldn't be

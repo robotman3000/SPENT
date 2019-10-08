@@ -44,6 +44,7 @@ class SPENTServer():
 		self.unimp = {"successful": False, "message": "Unimplemented!"}
 		self.accountMan = AccountManager(args.dbpath)
 		self.spentUtil = SPENTUtil(self.accountMan)
+		self.spentUtil.registerUtilityColumns()
 		
 		self.showAPIData = args.debugAPI
 		self.accountMan.printDebug = args.debugCore
@@ -153,7 +154,6 @@ class SPENTServer():
 		return ServerResponse("200 OK", headers, responseBody[0])
 	
 	def getRequestedColumns(self, request):
-		#TODO: Make this look at more than one row
 		data = request.get("columns", [])
 		result = set(data)
 		if len(result) > 0:
@@ -209,55 +209,16 @@ class SPENTServer():
 				print("Error: SQLRowsToArray: Processed a None row!")
 		#print("Records: %s" % records)
 		return records
-		
-	def SQLRowsToJSON(self, rows, columns=[]):
-		return json.dumps(self.SQLRowsToArray(rows, columns))
-	
-	def SQLRowsToRecords(self, rows, columns=[]):
-		records = []
-		for i in rows:
-			record = {}
-			colList = columns
-			if len(columns) < 1:
-				colList = i.getColumnNames()
-							
-			for col in colList:
-				record[col] = i.getValue(col)
-			records.append(record)
-			
-		result = {"Result": "OK", "Records": records}
-		result["TotalRecordCount"] = len(records)
-		return json.dumps(result)
-	
-	def SQLRowToRecord(self, row, columns=[]):
-		record = {}
-		colList = columns
-		if len(columns) < 1:
-			colList = row.getColumnNames()
 
-		for col in colList:
-			record[col] = row.getValue(col)
-			
-		result = {"Result": "OK", "Record": record}
-		return json.dumps(result)
+	def dataToWhere(self, data):
+		if data is not None and len(data) > 0:
+			rowList = [int(row.get("ID", -1)) for row in data]
+			return SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, rowList)))
+		return SQL_WhereStatementBuilder()
 	
-	def SQLRowsToOptions(self, rows, displayKey, valueKey):
-		statusList = [{"DisplayText": str(rows[index].getValue(displayKey)), "Value": str(rows[index].getValue(valueKey))} for index in range(len(rows))]
-		return json.dumps({"Result" : "OK", "Options": statusList})
+	def wrapData(self, data):
+		return {"successful": True, "data": data}
 	
-	def SQLRowsToNodes(self, rows):
-		result = []
-		for i in rows:
-			parentID = -1
-			if i.getParent() is not None:
-				parentID = i.getParent().getID()
-			node = {"id": i.getID(), "parent": ("#" if parentID == -1 else parentID), "text": i.getName(), "data": {"balance": i.getBalance()}}
-			children = i.getChildren()
-			if len(children) > 0:
-				node["children"] =  True
-			result.append(node)
-		return json.dumps(result)
-		
 	def saveDatabase(self, query):
 		self.accountMan.save();
 		responseBody = "Database Saved"
@@ -270,16 +231,10 @@ class SPENTServer():
 		self.running = False
 		
 	def getAccount(self, request, columns):
-		rows = []
 		data = request.get("data", None)
-		if data is not None and len(data) > 0:
-			for row in data:
-				rows.append(self.accountMan.getBucket(row.get("ID", -1)))
-		else:
-			rows = self.accountMan.getAccountsWhere()
-			
+		rows = self.accountMan.getAccountsWhere(self.dataToWhere(data))
 		result = self.SQLRowsToArray(rows, columns)
-		return {"successful": True, "data": result}
+		return self.wrapData(result)
 
 	def createAccount(self, request, columns):
 		return self.createBucket(request, columns)
@@ -291,74 +246,53 @@ class SPENTServer():
 		return self.deleteBucket(request, columns)
 		
 	def getBucket(self, request, columns):
-		rows = []
 		data = request.get("data", None)
-		if data is not None and len(data) > 0:
-			for row in data:
-				rows.append(self.accountMan.getBucket(row.get("ID", -1)))
-		else:
-			rows = self.accountMan.getBucketsWhere()
-			
+		rows = self.accountMan.getBucketsWhere(self.dataToWhere(data))
 		result = self.SQLRowsToArray(rows, columns)
-		return {"successful": True, "data": result}
+		return self.wrapData(result)
 
 	def createBucket(self, request, columns):
 		data = request.get("data", {})
-		results = []
+		buckets = []
 		for i in data:
-			result = self.accountMan.createBucket(
+			buckets.append(self.accountMan.createBucket(
 				name=i.get("Name", 0),
 				parent=i.get("Parent", -1)
-			)
-
-			bucket = self.accountMan.getBucket(result)
-			results.append(bucket)
-		result = self.SQLRowsToArray([bucket])
-		return {"successful": True, "data": result}
+			))
+		return self.wrapData(self.SQLRowsToArray(buckets))
 	
 	def updateBucket(self, request, columns):
 		data = request.get("data", {})
 		results = []
 		for i in data:
 			bucket = self.accountMan.getBucket(int(i.get("ID", -1)))
-			
 			for j in i.items():
 				bucket.updateValue(j[0], j[1])
-			
 			results.append(bucket)
-		result = self.SQLRowsToArray([bucket])
-		return {"successful": True, "data": result}
+			
+		return self.wrapData(self.SQLRowsToArray(results))
 	
 	def deleteBucket(self, request, columns):
 		data = request.get("data", {})
-		results = []
-		for i in data:
-			bucket = self.accountMan.getBucket(int(i.get("ID", -1)))
-			
-			# Do this before the delete so that we can use the bucket object
-			results.append({"ID": bucket.getID()})
-			
-			self.accountMan.deleteBucket(bucket)
-			
-		return {"successful": True, "data": results}
+		idList = [int(i.get("ID", -1)) for i in data]
+		self.accountMan.deleteBucketsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(idList)))
+		return self.wrapData(self.SQLRowsToArray([{"ID": idVal} for idVal in idList]))
 		
 	def getTransaction(self, request, columns):
-		rows = []
-		data = request.get("data", None)
-		if data is not None:
-			for row in data:
-				rows.append(self.accountMan.getTransaction(row.get("ID", -1)))
-		else:
-			self.accountMan.getTransactionsWhere()
+		data = request.get("data", {})
+		
+		if data is None:
+			data = {}
 			
-		result = self.SQLRowsToArray(rows, columns)
-		return {"successful": True, "data": result}
-
+		idList = [int(i.get("ID", -1)) for i in data]
+		transactions = self.accountMan.getTransactionsWhere(self.dataToWhere(data))
+		return self.wrapData(self.SQLRowsToArray(transactions, columns))
+	
 	def createTransaction(self, request, columns):
 		data = request.get("data", {})
 		results = []
 		for i in data:
-			result = self.accountMan.createTransaction(
+			results.append(self.accountMan.createTransaction(
 				amount=i.get("Amount", 0),
 				status=i.get("Status", 0),
 				sourceBucket=self.accountMan.getBucket(int(i.get("SourceBucket", -1))),
@@ -366,38 +300,24 @@ class SPENTServer():
 				transactionDate=i.get("TransDate", getCurrentDateStr()),
 				postDate=i.get("PostDate", None),
 				memo=i.get("Memo", ""),
-				payee=i.get("Payee", ""))
-
-			transaction = self.accountMan.getTransaction(result)
-			results.append(transaction)
-		result = self.SQLRowsToArray([transaction])
-		return {"successful": True, "data": result}
+				payee=i.get("Payee", "")))
+		return self.wrapData(self.SQLRowsToArray(results))
 	
 	def updateTransaction(self, request, columns):
 		data = request.get("data", {})
 		results = []
 		for i in data:
 			bucket = self.accountMan.getTransaction(int(i.get("ID", -1)))
-			
 			for j in i.items():
 				bucket.updateValue(j[0], j[1])
-			
 			results.append(bucket)
-		result = self.SQLRowsToArray([bucket])
-		return {"successful": True, "data": result}
+		return self.wrapData(self.SQLRowsToArray(results, columns))
 	
 	def deleteTransaction(self, request, columns):
 		data = request.get("data", {})
-		results = []
-		for i in data:
-			bucket = self.accountMan.getTransaction(int(i.get("ID", -1)))
-			
-			# Do this before the delete so that we can use the transaction object
-			results.append({"ID": bucket.getID()})
-			
-			self.accountMan.deleteTransaction(bucket)
-			
-		return {"successful": True, "data": results}
+		idList = [int(i.get("ID", -1)) for i in data]
+		self.accountMan.deleteTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(idList)))
+		return self.wrapData(self.SQLRowsToArray([{"ID": idVal} for idVal in idList]))
 	
 	def getProperty(self, request, columns):
 		return self.unimp	

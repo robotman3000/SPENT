@@ -94,27 +94,6 @@ function getBucketParentForID(id){
 	return "Invalid ID: " + id;
 }
 
-//Begin Flag
-function getTransferDirection(rowData, bucketID){
-	// TODO: Is there a better way of representing this?
-	// True = Money Coming in; I.E. a positive value
-	// False = Money Going out; I.E. a negative value
-	
-	switch(getTransactionType(rowData)){
-		case 0:
-			return (rowData.DestBucket == bucketID);
-			break;
-		case 1:
-			return true;
-			break;
-		case 2:
-			return false;
-			break;
-	}
-	return null;
-}
-//Eng Flag
-
 // ########################## #### API Logic ##############################
 
 function apiRequest(requestObj, callback){
@@ -132,8 +111,8 @@ function apiRequest(requestObj, callback){
 				return data;
 			}
 		},
-		error: function() {
-			alert("Request Error!!");
+		error: function(data) {
+			alert("Request Error!!\n" + JSON.stringify(data));
 		}
 	});
 }
@@ -501,7 +480,7 @@ function refreshTable(tableName){
 								data.push({"ID": item})
 							})
 							
-							apiRequest(createRequest("get", "transaction", data, ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "Memo", "Payee"]), function(response) {
+							apiRequest(createRequest("get", "transaction", data, ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "Memo", "Payee", "Type"]), function(response) {
 								addTableRows(tableName, response.data, unlockKey);
 								getTableData(tableName).unlockTable(unlockKey);
 							});	
@@ -538,7 +517,8 @@ function refreshBucketTableAccountSelect() {
 
 function refreshBalanceDisplay() {
 	if (getSelectedAccount() != undefined) {
-		apiRequest(createRequest("get", "bucket", [{"ID": getSelectedAccount()}], ["Balance", "PostedBalance"]), function(response) {
+		var node = $('#accountTree').jstree('get_node', getSelectedAccount());
+		apiRequest(createRequest("get", (node.parent == "#" ? "account" : "bucket"), [{"ID": node.id}], ["Balance", "PostedBalance"]), function(response) {
 			$("#balanceDisplay").text("Available: \$" + response.data[0]["Balance"] + ", Posted: \$" + response.data[0]["PostedBalance"]);
 		});
 	} else {
@@ -799,39 +779,30 @@ function getStatusOptions(){
 	return enums["transactionTable"]["Status"];
 }
 
-//Begin Flag
-function getTransactionType(rowData){
-	/*
-	00 = Transfer;
-	01 = Deposit;
-	10 = Withdrawal:
-	11 = Invalid
-	*/
+function getTransferDirection(rowData, bucketID){
+	// TODO: Is there a better way of representing this?
+	// True = Money Coming in; I.E. a positive value
+	// False = Money Going out; I.E. a negative value
 	
-	var source = (rowData.SourceBucket != -1);
-	var dest = (rowData.DestBucket != -1);
-	
-	if ( source && dest ){
-		//Transfer
-		return 0;
-	} else if ( !source && dest ){
-		//Deposit
-		return 1;
-	} else if ( source && !dest ){
-		//Withdrawal
-		return 2;
+	switch(rowData.Type){
+		case 0:
+			return (rowData.DestBucket == bucketID);
+			break;
+		case 1:
+			return true;
+			break;
+		case 2:
+			return false;
+			break;
 	}
-	
-	//This should never ever actually run
-	return 3;
+	return null;
 }
-//End Flag
 
 function transactionTypeFormatter(value, options, rowData){
 	if(rowData.typeSort){
 	   return rowData.typeSort;
 	}
-	rowData.typeSort = getTransactionType(rowData);
+	rowData.typeSort = rowData.Type
 	var fromToStr = "";
 	if (rowData.typeSort == 0){//Transfer
 		fromToStr = (getTransferDirection(rowData, getSelectedAccount()) ? " from " : " to ");	
@@ -859,7 +830,7 @@ function bucketFormatter(value, options, rowData){
 	}
 	var id = -2; //This value will cause the name func to return "Invalid ID"
 	
-	var transType = getTransactionType(rowData);
+	var transType = rowData.Type;
 	var isDeposit = (rowData, getSelectedAccount());
 	if(transType != 0){
 		id = (transType == 1 ? rowData.DestBucket : rowData.SourceBucket);

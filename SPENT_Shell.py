@@ -1,6 +1,7 @@
 from SPENT import *
 from SPENT_Util import *
 #import readline
+import traceback
 
 class REPL():
 	def __init__(self, exitCallback, commands={}):
@@ -34,7 +35,8 @@ class REPL():
 						command.execute(rawStrParts[1:])
 					except Exception as e:
 						print("Error: Runtime Exception: %s" % e)
-						self.crash()
+						traceback.print_exception(type(e), e, e.__traceback__)
+						
 						#traceback.print_stack()
 				else:
 					print("Error: %s is not a valid command" % rawStrParts[0])
@@ -100,12 +102,13 @@ class ListCommand(Command):
 
 accountMan = AccountManager()
 spentUtil = SPENTUtil(accountMan)
+spentUtil.registerUtilityColumns()
 accountMan.printDebug = True
 accountMan.connect()
 
 def printTree(bucket, depth=0):
-	print("%s %d - %s ($%s, $%s)" % (" ".join([" | " for i in range(0, depth)]), bucket.getID(), bucket.getName(), bucket.getValue("Balance"), bucket.getValue("PostedBalance")))
-	for child in bucket.getChildren():
+	print("%s %d - %s ($%s, $%s)" % (" ".join([" | " for i in range(0, depth)]), bucket.getID(), bucket.getName(), spentUtil.getAvailableBalance(bucket), spentUtil.getPostedBalance(bucket)))
+	for child in spentUtil.getBucketChildren(bucket):
 		printTree(child, depth+1)
 						   
 def callback():
@@ -138,7 +141,7 @@ def deleteTransaction(command):
 
 def listBucketTransactions(command):
 	print("Transactions:")
-	transList = accountMan.getBucket(command[0]).getAllTransactions()
+	transList = spentUtil.getAllBucketTransactions(accountMan.getBucket(command[0]))
 	for trans in transList:
 		propList = ["ID", "Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "IsTransfer"]
 		res = ", ".join(map(str, [("%s: %s" % (i, trans.getValueRemapped(i))) for i in propList]))
@@ -152,8 +155,8 @@ def showAccountTree(command):
 def showBucket(command):
 	bucket = accountMan.getBucket(command[0])
 	print("===== %s =====" % bucket.getName())
-	print("Avail Balance: %s" % bucket.getValue("Balance"))
-	print("Posted Balance: %s" % bucket.getValue("PostedBalance"))
+	print("Avail Balance: %s" % spentUtil.getAvailableBalance(bucket))
+	print("Posted Balance: %s" % spentUtil.getPostedBalance(bucket))
 	listBucketTransactions(command)
 	
 def toggleDebug(command):

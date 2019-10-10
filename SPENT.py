@@ -12,7 +12,8 @@ class AccountManager(DatabaseWrapper):
 		self.registerTableSchema("Buckets", 
 			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
 			 {"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": True},
-			 {"name": "Parent", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
+			 {"name": "Parent", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
+			 {"name": "Ancestor", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
 
 		self.registerTableSchema("Transactions", 
 			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
@@ -24,6 +25,10 @@ class AccountManager(DatabaseWrapper):
 			 {"name": "DestBucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
 			 {"name": "Memo", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}, 
 			 {"name": "Payee", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
+
+		self.registerTableSchema("Tags",
+			[{"name": "TransactionID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
+			 {"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
 
 		self.registerTableSchema("StatusMap", None, ["Uninitiated", "Submitted", "Post-Pending", "Complete"])
 		
@@ -124,22 +129,7 @@ class AccountManager(DatabaseWrapper):
 		del bucket # Destroy the data our reference points to; to prevent further use
 	
 	def deleteBucketsWhere(self, where):
-		if where is None:
-			raise ValueError("AccountManager.deleteBucketsWhere: where can't be None")
-			
-		util = SPENTUtil(self)
-		buckets = self._getBucketsWhere_(where)
-		
-		bucketIDs = set()
-		for bucket in buckets:
-			children = util.getAllBucketChildrenID(bucket)
-			for i in children:
-				bucketIDs.add(i)
-			bucketIDs.add(bucket.getID())
-		
-		bucketStr = ", ".join(map(str, bucketIDs))
-		self.deleteTransactionsWhere(SQL_WhereStatementBuilder("SourceBucket in (%s)" % bucketStr).OR("DestBucket in (%s)" % bucketStr))
-		self.deleteTableRowsWhere("Buckets", SQL_WhereStatementBuilder("ID in (%s)" % bucketStr))
+		return self._deleteBucketsWhere_(where, False)
 		
 	def deleteTransaction(self, transaction):
 		where = self.rowsToWhere(transaction)
@@ -155,7 +145,7 @@ class AccountManager(DatabaseWrapper):
 		self.deleteBucket(account)
 		
 	def deleteAccountsWhere(self, where):
-		self.deleteBucketsWhere(where)
+		self._deleteBucketsWhere_(where, True)
 	
 	def _getBucketsWhere_(self, where):
 		result = self.selectTableRowsColumnsWhere("Buckets", ["ID"], where)
@@ -167,7 +157,48 @@ class AccountManager(DatabaseWrapper):
 			else:
 				print("Error: AccountManager._getBucketsWhere_: Encountered a None bucket")
 		return buckets
-		
+
+	def _deleteBucketsWhere_(self, where, deleteAccounts):
+		#TODO: This should be rewriten to use less SQL queries
+
+		if where is None:
+			raise ValueError("AccountManager._deleteBucketsWhere_: where can't be None")
+
+		util = SPENTUtil(self)
+		buckets = self._getBucketsWhere_(where)
+
+		bucketAncestorMap = {}
+		for bucket in buckets:
+			bucketIDs = bucketAncestorMap.get(bucket.getAncestor(), set())
+			bucketIDs.add(bucket.getID())
+
+			# We don't want the children of an account in the list of accounts
+			if bucket.getAncestor() is not None:
+				children = util.getAllBucketChildrenID(bucket)
+				for i in children:
+					bucketIDs.add(i)
+
+		bucketList = []
+		for i in bucketAncestorMap.items():
+			if i[0] is not None: # None is used as a key
+				bucketList += i[1]
+				self.updateTableWhere("Transactions", "SourceBucket = %s" % i[0], SQL_WhereStatementBuilder("SourceBucket in (%s)" % ", ".join(map(str, i[1]))))
+				self.updateTableWhere("Transactions", "DestBucket = %s" % i[0], SQL_WhereStatementBuilder("DestBucket in (%s)" % ", ".join(map(str, i[1]))))
+
+				# This is an exception to the "Never delete transactions rule"
+				# Transactions with a matching source and destination don't make any sense
+				self.deleteTransactionsWhere(SQL_WhereStatementBuilder("SourceBucket == DestBucket"))
+
+		bucketStr = ", ".join(map(str, bucketList))
+		self.deleteTableRowsWhere("Buckets", SQL_WhereStatementBuilder("ID in (%s)" % bucketStr))
+
+		if deleteAccounts:
+			accounts = bucketAncestorMap.get(None, set())
+			if len(accounts) > 0:
+				accountStr = ", ".join(map(str, accounts))
+				self.deleteTableRowsWhere("Buckets", SQL_WhereStatementBuilder("ID in (%s)" % accountStr))
+				self.deleteTransactionsWhere(SQL_WhereStatementBuilder("SourceBucket in (%s)" % accountStr).OR("DestBucket in (%s)" % accountStr))
+
 class Bucket(SQL_RowMutable):
 	def __init__(self, database, ID):
 		super().__init__(database, "Buckets", ID)
@@ -181,6 +212,10 @@ class Bucket(SQL_RowMutable):
 	def getParent(self):
 		parentID = self.getValue("Parent")
 		return self.database.getBucket(parentID)
+
+	def getAncestor(self):
+		ancestorID = self.getValue("Ancestor")
+		return self.database.getBucket(ancestorID)
 	
 class Account(Bucket):
 	def getParent(self):
@@ -188,6 +223,9 @@ class Account(Bucket):
 	
 	def getParentAccount(self):
 		return self
+
+	def getAncestor(self):
+		return None
 	
 class Transaction(SQL_RowMutable):
 	def __init__(self, database, ID):

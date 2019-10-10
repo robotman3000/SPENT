@@ -6,14 +6,14 @@ from typing import List, Set, Dict, Tuple, Optional, Any, Union
 class DatabaseWrapper():
 	#TODO: create an api for getting the value of a single cell
 	def __init__(self, dbPath: str):
-		self.con: Connection = None
+		self.con = None
 		self.dbPath: str = dbPath
 		self.printDebug: bool = False
 		self.schema: Dict[str, Dict[str, Union[str, bool]]] = {}
 		self.enums: Dict[str, Dict[str, int]] = {}
 		self.virtualColumns: Dict[str, Dict[str, function]] = {}
 
-	def _getLastInsRowsID_(self) -> List[int]:
+	def _getLastInsRowsID_(self):
 		return self._rawSQL_("SELECT last_insert_rowid()", False)
 		
 	def _rawSQL_(self, command: str, sugar: bool = True) -> List[sql.Row]:

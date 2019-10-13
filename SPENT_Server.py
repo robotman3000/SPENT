@@ -212,7 +212,7 @@ class SPENTServer():
 
 	def dataToWhere(self, data):
 		if data is not None and len(data) > 0:
-			rowList = [int(row.get("ID", -1)) for row in data]
+			rowList = [int(row.get("ID", -1)) for row in data if row.get("ID", -1) is not None]
 			return SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, rowList)))
 		return SQL_WhereStatementBuilder()
 	
@@ -243,10 +243,13 @@ class SPENTServer():
 		return self.updateBucket(request, columns)
 	
 	def deleteAccount(self, request, columns):
-		return self.deleteBucket(request, columns)
-		
+		data = request.get("data", {})
+		idList = [int(i.get("ID", -1)) for i in data]
+		deleteList = self.accountMan.deleteAccountsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
+		return self.wrapData([{"ID": idVal} for idVal in deleteList])
+
 	def getBucket(self, request, columns):
-		data = request.get("data", None)
+		data = request.get("data", [])
 		rows = self.accountMan.getBucketsWhere(self.dataToWhere(data))
 		result = self.SQLRowsToArray(rows, columns)
 		return self.wrapData(result)
@@ -275,8 +278,8 @@ class SPENTServer():
 	def deleteBucket(self, request, columns):
 		data = request.get("data", {})
 		idList = [int(i.get("ID", -1)) for i in data]
-		self.accountMan.deleteBucketsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
-		return self.wrapData([{"ID": idVal} for idVal in idList])
+		deleteList = self.accountMan.deleteBucketsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
+		return self.wrapData([{"ID": idVal} for idVal in deleteList])
 		
 	def getTransaction(self, request, columns):
 		data = request.get("data", {})
@@ -316,7 +319,7 @@ class SPENTServer():
 	def deleteTransaction(self, request, columns):
 		data = request.get("data", {})
 		idList = [int(i.get("ID", -1)) for i in data]
-		self.accountMan.deleteTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
+		deleteList = self.accountMan.deleteTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
 		return self.wrapData([{"ID": idVal} for idVal in idList])
 	
 	def getProperty(self, request, columns):

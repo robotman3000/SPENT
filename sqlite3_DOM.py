@@ -1,29 +1,33 @@
 import sqlite3 as sql
 import sys
 import traceback
-from typing import List, Set, Dict, Tuple, Optional, Any, Union
-	
+from typing import List, Dict, Optional, Any, Union, Callable, overload
+
 class DatabaseWrapper():
 	#TODO: create an api for getting the value of a single cell
 	def __init__(self, dbPath: str):
 		self.con = None
 		self.dbPath: str = dbPath
 		self.printDebug: bool = False
-		self.schema: Dict[str, Dict[str, Union[str, bool]]] = {}
-		self.enums: Dict[str, Dict[str, int]] = {}
-		self.virtualColumns: Dict[str, Dict[str, function]] = {}
+		self.schema: Dict[str, Optional[List[Dict[str, Union[str, bool]]]]] = {}
+		self.enums: Dict[str, List[str]] = {}
+		self.virtualColumns: Dict[str, Dict[str, Callable[[SQL_Row, str, str], Union[str, int, float, None]]]] = {}
 
-	def _getLastInsRowsID_(self):
+	def _getLastInsRowsID_(self) -> List[sql.Row]:
 		return self._rawSQL_("SELECT last_insert_rowid()", False)
 		
 	def _rawSQL_(self, command: str, sugar: bool = True) -> List[sql.Row]:
 		return self._rawSQLList_([command], sugar)
 	
-	def _rawSQLList_(self, commands, sugar=True):
+	def _rawSQLList_(self, commands: List[str], sugar: bool = True) -> List[sql.Row]:
 		if sugar:
 			print("Warn: DatabaseWrapper._rawSQLList_: This shouldn't be called directly")
 			
-		result = []
+		result: List[sql.Row] = []
+
+		if self.con is None:
+			raise ValueError("Database is not connected!!") # TODO: THis should be a different exception type
+
 		cursor = self.con.cursor()
 		if cursor is not None and commands is not None:
 			try:
@@ -38,21 +42,21 @@ class DatabaseWrapper():
 				#TODO: This should use a more specific type
 				raise e
 				#print("Error: SQL: %s" % e)
-			
+
 			for row in cursor:
 				result.append(row)
 				if self.printDebug:
 					print("Debug: SQL Response: %s" % str(row))
-			
+
 			if self.printDebug and len(result) < 1:
 				print("Debug: SQL Response: Empty")
-				
+
 			cursor.close()
 		else:
 			print("Warn: DatabaseWrapper._rawSQLList_: Recieved None Input")
 		return result
 	
-	def _tableSelectDelete_(self, isDelete, tableName, columnNames=["*"], where=None):
+	def _tableSelectDelete_(self, isDelete: bool, tableName: str, columnNames: List[str] = ["*"], where: Optional['SQL_WhereStatementBuilder'] = None) -> List['SQL_Row']:
 		if not (isDelete is None or tableName is None or columnNames is None):
 			command = "DELETE" if isDelete else ("SELECT %s" % ", ".join(columnNames))
 			query = "%s FROM %s" % (command, tableName)
@@ -67,70 +71,72 @@ class DatabaseWrapper():
 			print("Warn: DatabaseWrapper._tableSelectDelete_: Recieved None Input")
 		return []
 		
-	def parseRows(self, rows, columnNames=["*"], tableName=None):
+	def parseRows(self, rows: List[sql.Row], columnNames: List[str] = ["*"], tableName: Optional[str] = None) -> List['SQL_Row']:
 		names = columnNames
 		parsedRows = []
 		
-		if not (rows is None and columnNames is None):
+		if rows is not None and columnNames is not None:
 			if len(rows) > 0:
-				if (len(columnNames) == 1 and columnNames[0] =="*"):
+				if (len(columnNames) == 1 and columnNames[0] =="*") and tableName is not None:
 					tableSchema = self.getTableSchema(tableName)
-					if len(tableSchema) > 0:
+					if tableSchema is not None and len(tableSchema) > 0:
 						# Use the declared columns
 						temp = []
 						for i in tableSchema:
-							n = i.get("name", None)
+							n = str(i.get("name", None))
 							if n is not None:
 								temp.append(n)
 						names = temp
 					else:
 						#TODO: Should pragma even be allowed here?
 						# Use pragma to get the column names
-						temp = self._rawSQL_("PRAGMA table_info(%s)" % tableName, False)
-						temp2 = [""] * len(temp)
-						for i in temp:
+						temp2 = self._rawSQL_("PRAGMA table_info(%s)" % tableName, False)
+						temp3 = [""] * len(temp2)
+						for j in temp2:
 							# i[0] is the column index
 							# i[1] is the column name
-							temp2[i[0]] = i[1]
+							temp3[j[0]] = j[1]
 
-						names = temp2
+						names = temp3
 
 				#print("Names: %s" % names)
-				for i in rows:
+				for k in rows:
 					columns = {}
 					for x in range(0, len(names)):
-						if i is None or names[x] is None or len(i) < x:
+						if k is None or names[x] is None or len(k) < x:
 							print("Warn: DatabaseWrapper.parseRows: Found None value in column parse loop")
 							continue
-						columns[names[x]] = i[x]
+						columns[names[x]] = k[x]
+					if tableName is None:
+						tableName = ""
 					parsedRows.append(SQL_Row(self, columns, tableName))
 		else:
 			print("Warn: DatabaseWrapper.parseRows: Recieved None Input")
 		return parsedRows
 		
-	def quoteStr(self, value):
+	def quoteStr(self, value) -> str:
 		if isinstance(value, str):
 			return "\"%s\"" % value
 		return str(value)
 		
-	def _tableInsertInto_(self, tableName, columns, replace = False):
-		keyList = []
-		valueList = []
+	def _tableInsertInto_(self, tableName: str, columns: Dict[str, Union[str, int, float, None]], replace: bool = False) -> List[sql.Row]:
 		if columns is not None:
 			keyList = columns.keys()
 			valueList = columns.values()
+
+			keyStr = ", ".join(keyList)
+
+			valueStr = ", ".join(map(self.quoteStr, valueList))
+			self._rawSQL_(
+				"%s INTO %s (%s) VALUES (%s)" % (("REPLACE" if replace else "INSERT"), tableName, keyStr, valueStr), False)
+			return self._getLastInsRowsID_()
 		else:
-			print("Error: DatabaseWrapper._tableInsertInto_: columns was None")
-		keyStr = ", ".join(keyList)
-		
-		valueStr = ", ".join(map(self.quoteStr, valueList))
-		self._rawSQL_("%s INTO %s (%s) VALUES (%s)" % (("REPLACE" if replace else "INSERT"), tableName, keyStr, valueStr), False)
-		return self._getLastInsRowsID_()
-		
-	def updateTableRow(self, tableName, columns, rowID):
+			raise ValueError("DatabaseWrapper._tableInsertInto_: columns was None")
+
+	def updateTableRow(self, tableName: str, columns: Dict[str, Union[str, int, float, None]], rowID: int) -> List[sql.Row]:
 		return self.updateTableWhere(tableName, columns, self.rowsToWhere([rowID]))
 		
-	def updateTableWhere(self, tableName, columns, where):
+	def updateTableWhere(self, tableName: str, columns: Dict[str, Union[str, int, float, None]], where: 'SQL_WhereStatementBuilder') -> List[sql.Row]:
 		updateList = []
 		if columns is not None:
 			virColumns = self.getTableVirtualColumns(tableName)
@@ -207,38 +213,26 @@ class DatabaseWrapper():
 			for index in range(len(enumValues)):
 				self._tableInsertInto_(tableName, {"ID" : index, "Name" : enumValues[index]}, True)
 		
-	def selectTableRow(self, tableName, rowID):
-		return self.selectTableRowColumns(tableName, rowID)
-		
-	def selectTableColumn(self, tableName, columnName="*"):
-		return self.selectTableColumns(tableName, [columnName])
-		
-	def selectTableColumns(self, tableName, columnNames=["*"]):
-		return self.selectTableRowsColumns(tableName, columnNames=columnNames)
+	def selectTableRow(self, tableName: str, rowID: int) -> List['SQL_Row']:
+		return self.selectTableRowsColumns(tableName, [rowID])
 	
-	def selectTableRowColumn(self, tableName, rowID, columnName="*"):
-		return self.selectTableRowColumns(tableName, rowID, [columnName])
-	
-	def selectTableRowColumns(self, tableName, rowID, columnNames=["*"]):
-		return self.selectTableRowsColumns(tableName, [rowID], columnNames)
-	
-	def selectTableRowsColumns(self, tableName, rowIDs=[], columnNames=["*"]):
+	def selectTableRowsColumns(self, tableName: str, rowIDs: List[int] = [], columnNames: List[str] = ["*"]) -> List['SQL_Row']:
 		return self.selectTableRowsColumnsWhere(tableName, columnNames, self.rowsToWhere(rowIDs))
 		
-	def selectTableRowsColumnsWhere(self, tableName, columnNames=["*"], where=None):
+	def selectTableRowsColumnsWhere(self, tableName: str, columnNames: List[str] = ["*"], where: Optional['SQL_WhereStatementBuilder'] = None) -> List['SQL_Row']:
 		return self._tableSelectDelete_(False, tableName, columnNames, where)
 
-	def deleteTableRow(self, tableName, rowID):
-		return self.deleteTableRows(tableName, [rowID])
+	def deleteTableRow(self, tableName: str, rowID: int) -> None:
+		self.deleteTableRows(tableName, [rowID])
 
-	def deleteTableRows(self, tableName, rowIDs=[]):
+	def deleteTableRows(self, tableName: str, rowIDs: List[int] = []) -> None:
 		whereStatement = self.rowsToWhere(rowIDs)
-		return self.deleteTableRowsWhere(tableName, whereStatement)
+		self.deleteTableRowsWhere(tableName, whereStatement)
 
-	def deleteTableRowsWhere(self, tableName, where):
-		return self._tableSelectDelete_(True, tableName, where=where)
+	def deleteTableRowsWhere(self, tableName: str, where: 'SQL_WhereStatementBuilder') -> None:
+		self._tableSelectDelete_(True, tableName, where=where)
 		
-	def rowsToWhere(self, rowIDs):
+	def rowsToWhere(self, rowIDs: List[int]) -> 'SQL_WhereStatementBuilder':
 		whereStatement = SQL_WhereStatementBuilder()
 		if rowIDs is not None:
 			rowStr = ", ".join(map(str, rowIDs))
@@ -247,7 +241,7 @@ class DatabaseWrapper():
 			print("Warn: DatabaseWrapper.rowsToWhere: rowIDs was None")
 		return whereStatement
 	
-	def remapValue(self, tableName, inColumn, outColumn, oldValue):
+	def remapValue(self, tableName: str, inColumn: str, outColumn: str, oldValue: Union[str, int, float, None]) -> Union[str, int, float, None]:
 		if self.printDebug:
 			print("Remapping Value: %s" % oldValue)
 		#TODO: Verify the input data
@@ -255,23 +249,8 @@ class DatabaseWrapper():
 		if len(result) > 0:
 			return result[0][0]
 		return None
-	
-	def registerTableSchemaColumnProperty(self, tableName, columnName, propertyName, value):
-		#TODO: Verify the input data
-		for i in self.getTableSchema(tableName):
-			if i["name"] == columnName:
-				props = i.get("properties", None)
-				if props is None:
-					i["properties"] = {}
-					
-				i["properties"][propertyName] = value
-	
-	def getTableColumnProperty(self, tableName, columnName, propertyName):
-		for i in self.getTableSchema(tableName):
-			if i["name"] == columnName:
-				return i.get("properties", {}).get(propertyName, None)
 
-	def registerVirtualColumn(self, tableName, columnName, virtualFunction):
+	def registerVirtualColumn(self, tableName: str, columnName: str, virtualFunction: Callable[['SQL_Row', str, str], Union[str, int, float, None]]) -> None:
 		#TODO: Verify the input data
 		print("Registering Virtual Column: %s.%s" % (tableName, columnName))
 		
@@ -281,10 +260,10 @@ class DatabaseWrapper():
 		
 		self.virtualColumns[tableName][columnName] = virtualFunction
 		
-	def getTableVirtualColumns(self, tableName):
+	def getTableVirtualColumns(self, tableName: str) -> Dict[str, Callable[['SQL_Row', str, str], Union[str, int, float, None]]]:
 		return self.virtualColumns.get(tableName, {})
 	
-	def registerTableSchema(self, tableName, schema, enumValues = None):
+	def registerTableSchema(self, tableName: str, schema: Optional[List[Dict[str, Union[str, bool]]]], enumValues: Optional[List[str]] = None) -> None:
 		#TODO: Verify the input data
 		print("Registering Table: %s" % tableName)
 		self.schema[tableName] = schema
@@ -292,39 +271,43 @@ class DatabaseWrapper():
 			self.schema[tableName] = None # So we have full control over the enum table
 			self.enums[tableName] = enumValues
 	
-	def getTableSchema(self, tableName):
+	def getTableSchema(self, tableName: str) -> Union[List[Dict[str, Union[str, bool]]], None]:
 		return self.schema.get(tableName, [])
 	
 class SQL_Row():
-	def __init__(self, database, columns, tableName, virtualColumns = None):
+	def __init__(self, database: DatabaseWrapper, columns: Dict[str, Union[str, int, float, None]], tableName: str):
 		#TODO: Verify the input data
 		self.database = database
 		self.columns = columns
 		self.tableName = tableName
-		self.columnNameList = [i["name"] for i in self.database.getTableSchema(self.tableName)]
+		schema = self.database.getTableSchema(self.tableName)
+		self.columnNameList: List[str] = []
+		if schema is not None:
+			self.columnNameList = [str(i["name"]) for i in schema]
 		
-	def __str__(self):
+	def __str__(self) -> str:
 		return str(self.columns)
 	
-	def getTableName(self):
+	def getTableName(self) -> str:
 		return self.tableName
 
-	def getColumn(self, columnName):
+	def getColumn(self, columnName: str) -> Optional[Dict[str, Union[str, bool]]]:
 		if self.database.printDebug:
 			pass
 			#print("Debug: SQL_Row.getColumn: %s" % columnName)
 		column = self.getColumnIndex(columnName)
 		if column > -1:
 			schema = self.database.getTableSchema(self.getTableName())
-			if len(schema) > column:
-				return schema[column]
-			print("Warn: SQL_Row.getColumn: Column %s has index of %s, the schema for %s has a size of %s" % (columnName, column, self.getTableName(), len(schema)))
+			if schema is not None:
+				if len(schema) > column:
+					return schema[column]
+				print("Warn: SQL_Row.getColumn: Column %s has index of %s, the schema for %s has a size of %s" % (columnName, column, self.getTableName(), len(schema)))
 			#traceback.print_stack()
 		else:
 			print("Warn: SQL_Row.getColumn: Invalid column name %s in table %s; Returning None" % (columnName, self.getTableName()))
 		return None
 		
-	def getColumnIndex(self, columnName):
+	def getColumnIndex(self, columnName: str) -> int:
 		names = self.getColumnNames(True)
 		for i in range(len(names)):
 			if names[i] is not None and names[i] == columnName:
@@ -335,41 +318,42 @@ class SQL_Row():
 				
 		raise ValueError("SQL_Row.getColumnIndex: Invalid column name: %s" % columnName)
 	
-	def getColumnName(self, index):
+	def getColumnName(self, index: int) -> str:
 		names = self.getColumnNames(True)
 		if index < len(names):
 			return names[index]
 		print("Warn: SQL_Row.getColumnName: Column index %s is greater than max of %s" % (index, len(names)))
 		return ""
 	
-	def getColumnNames(self, includeVirtual=True):
+	def getColumnNames(self, includeVirtual: bool = True) -> List[str]:
 		#TODO: Verify there are no None values running loose in here
 		#TODO: This is supposd to maintain order and append all non duplicate virtual column names to the end
 		# This is n*m complexity? anyway it is about the slowest way to do the job; so this needs redone
-		result = []
+		result: List[str] = []
 		for x in self.columnNameList:
 			result.append(x)
-		
-		for x in self.database.getTableVirtualColumns(self.getTableName()).items():
-			if not self._isValueInList_(x[0], self.columnNameList):
-				result.append(x[0])
-				
+
+		if includeVirtual:
+			for y in self.database.getTableVirtualColumns(self.getTableName()).items():
+				if not self._isValueInList_(y[0], self.columnNameList):
+					result.append(y[0])
+
 		return result
 	
-	def _isValueInList_(self, value, checkList):
+	def _isValueInList_(self, value, checkList) -> bool:
 		for i in checkList:
 			if value == i:
 				return True
 		return False
 	
-	def getColumnProperty(self, columnName, propertyName):
+	def getColumnProperty(self, columnName: str, propertyName: str) -> Any:
 		column = self.getColumn(columnName)
 		if column is not None:
 			return column.get(propertyName, None)
 		raise ValueError("SQLRow.getColumnProperty: Invalid column name: %s" % columnName)
 	
-	def getValue(self, columnName, force=False, defaultValue=None):
-		if self.getColumnIndex(columnName) > -1 or force:
+	def getValue(self, columnName: str, defaultValue: Optional[Union[str, int, float]] = None) -> Union[str, int, float, None]:
+		if self.getColumnIndex(columnName) > -1:
 			virCol = self.database.getTableVirtualColumns(self.getTableName()).get(columnName, None)
 			if virCol is not None:
 				return virCol(self, self.getTableName(), columnName)
@@ -377,7 +361,7 @@ class SQL_Row():
 			return self.columns.get(columnName, None)
 		return defaultValue
 		
-	def getValues(self, columnNames):
+	def getValues(self, columnNames: List[str]) -> List[Union[str, int, float, None]]:
 		result = []
 		colNames = columnNames
 		if columnNames is None:
@@ -387,23 +371,19 @@ class SQL_Row():
 		return result
 		
 class SQL_RowMutable(SQL_Row):
-	def __init__(self, database, tableName, rowID):
+	def __init__(self, database: DatabaseWrapper, tableName: str, rowID: int):
 		super().__init__(database, {}, tableName)
-		#TODO: Raise an exception if the rowID is None or is not an int
-		if type(rowID) is int:
-			self.id = rowID
-			self.isDirty = True
-			self.refreshColumns()
-		else:
-			raise ValueError("SQL_RowMutable.__init__: rowID must be an int not %s" % type(rowID))
+		self.id = rowID
+		self.isDirty = True
+		self.refreshColumns()
 	
-	def _isDirty_(self):
+	def _isDirty_(self) -> bool:
 		return self.isDirty
 		
-	def _markClean_(self, newValue=False):
+	def _markClean_(self, newValue: bool = False) -> None:
 		self.isDirty = newValue
 		
-	def refreshColumns(self):
+	def refreshColumns(self) -> None:
 		if self._isDirty_():
 			if self.database.printDebug:
 				print("Refresh Columns")
@@ -419,20 +399,20 @@ class SQL_RowMutable(SQL_Row):
 				self.columns = result[0].columns
 			else:
 				raise ValueError("SQL_RowMutable.refreshColumns: No records returned for table %s and ID %s" % (self.getTableName(), self.id))
-		
-	def getValue(self, columnName):
+
+	def getValue(self, columnName: str, defaultValue: Union[str, int, float, None] = None) -> Union[str, int, float, None]:
 		self.refreshColumns()
 		return super().getValue(columnName)
 	
-	def getValues(self, columnNames):
+	def getValues(self, columnNames: List[str]) -> List[Union[str, int, float, None]]:
 		#TODO: Add logic to determine when to update self.columns
 		self.refreshColumns()
 		return super().getValues(columnNames)
 	
-	def updateValue(self, columnName, value):
+	def updateValue(self, columnName: str, value: Optional[Union[str, int, float]]) -> None:
 		self.updateValues({columnName : value})
 	
-	def updateValues(self, columns):
+	def updateValues(self, columns: Dict[str, Union[str, int, float, None]]) -> None:
 		if columns is not None:
 			for i in columns.items():
 				if i is not None:
@@ -442,7 +422,7 @@ class SQL_RowMutable(SQL_Row):
 		else:
 			print("Warn: SQL_RowMutable.updateValues: columns can't be None")
 			
-	def getValueRemapped(self, columnName):
+	def getValueRemapped(self, columnName: str) -> Union[str, int, float, None]:
 		#TODO: Verify that there are no None's where they shouldn't be
 		self.refreshColumns()
 		oldValue = self.getValue(columnName)
@@ -457,57 +437,57 @@ class SQL_RowMutable(SQL_Row):
 			
 		return oldValue
 	
-	def getColumnsRemapped(self):
+	def getColumnsRemapped(self) -> Dict[str, Optional[Union[str, int, float]]]:
 		#TODO: Verify there are no None's where there shouldn't be
-		result = {}
+		result: Dict[str, Union[str, int, float, None]] = {}
 		for i in self.columns.items():
 			result[i[0]] = self.getValueRemapped(i[0])
 		return result
 	
-	def __str__(self):
+	def __str__(self) -> str:
 		self.refreshColumns()
 		return str(self.getColumnsRemapped())
-		
+
 class SQL_WhereStatementBuilder():
-	def __init__(self, initialStatement=None):
+	def __init__(self, initialStatement: Optional[str] = None):
 		# Note: The list datatype must maintain the order the elements are added
-		self.logic = []
+		self.logic: List[BooleanStatement] = []
 		if initialStatement is not None:
 			self.addStatement("AND", initialStatement)
-		
-	def addStatement(self, operation, expression):
+
+	def addStatement(self, operation: str, expression: str) -> 'SQL_WhereStatementBuilder':
 		self.logic.append(BooleanStatement(operation, expression))
 		return self
-	
-	def insertStatement(self, operation, expression):
+
+	def insertStatement(self, operation: str, expression: str) -> 'SQL_WhereStatementBuilder':
 		self.logic.insert(0, BooleanStatement(operation, expression))
 		return self
-	
-	def AND(self, expression):
+
+	def AND(self, expression: str) -> 'SQL_WhereStatementBuilder':
 		return self.addStatement("AND", expression)
-	
-	def OR(self, expression):
+
+	def OR(self, expression: str) -> 'SQL_WhereStatementBuilder':
 		return self.addStatement("OR", expression)
-		
-	def __str__(self):
+
+	def __str__(self) -> str:
 		strs = []
 		for i in range(len(self.logic)):
 			if i > 0:
 				strs.append(self.logic[i].getOperation() + " ")
 			strs.append(self.logic[i].getExpression())
-			
+
 		return ("" if len(strs) < 1 else "WHERE " + " ".join(strs))
-	
+
 class BooleanStatement():
-	def __init__(self, operation, expression):
+	def __init__(self, operation: str, expression: str):
 		self.operation = operation
 		self.expression = expression
 		
-	def getOperation(self):
+	def getOperation(self) -> str:
 		return self.operation
 	
-	def getExpression(self):
+	def getExpression(self) -> str:
 		return self.expression
 		
-	def __str__(self):
+	def __str__(self) -> str:
 		return "BooleanStatement: %s %s" % (self.operation, self.expression)

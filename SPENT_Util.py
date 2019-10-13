@@ -7,7 +7,27 @@
 #Transaction Tagging
 #Transaction Grouping?
 
+from typing import List, Any
 from SPENT import *
+
+def asInt(obj: Any) -> int:
+	if type(obj) is int:
+		return obj
+	elif type(obj) is str:
+		return int(obj)
+	return int(str(obj))
+
+def asFloat(obj: Any) -> float:
+	if type(obj) is float:
+		return obj
+	elif type(obj) is str:
+		return float(obj)
+	return float(str(obj))
+
+def asStr(obj: Any) -> str:
+	if type(obj) is str:
+		return obj
+	return str(obj)
 
 class SPENTUtil():
 	def __init__(self, spentDB):
@@ -42,13 +62,13 @@ class SPENTUtil():
 		self._spentDB_.registerVirtualColumn("Buckets", "Children", getBucketChildren)
 		self._spentDB_.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
 		
-	def getPostedBalance(self, bucket):
+	def getPostedBalance(self, bucket: 'Bucket') -> float:
 		return self._calculateBalance_(bucket, True)
 		
-	def getAvailableBalance(self, bucket):
+	def getAvailableBalance(self, bucket: 'Bucket') -> float:
 		return self._calculateBalance_(bucket)
 		
-	def _calculateBalance_(self, bucket, posted=False):
+	def _calculateBalance_(self, bucket: 'Bucket', posted: bool = False) -> float:
 		ids = self.getAllBucketChildrenID(bucket)
 		ids.append(bucket.getID()) # We can't forget ourself
 		idStr = ", ".join(map(str, ids))
@@ -65,42 +85,45 @@ class SPENTUtil():
 		if len(rows) > 0:
 			return round(float(rows[0].getValue(column, False)), 2)
 		return 0
-	
-	def getBucketParentAccount(self, bucket):
+
+	def getBucketParentAccount(self, bucket: 'Bucket') -> 'Bucket':
+		#Do not reimplement this to use ancestor. This funciton is needed to generate the ancestor ID
 		parent = bucket.getParent()
-		if parent.getID() == -1:
+		if parent is None:
+			return bucket
+		elif parent.getID() == -1:
 			return parent
 		
 		return self.getBucketParentAccount(parent)
 
-	def getBucketChildren(self, bucket):
+	def getBucketChildren(self, bucket: 'Bucket') -> List['Bucket']:
 		return self._spentDB_.getBucketsWhere(SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(bucket.getID()))))
 	
-	def getBucketChildrenID(self, bucket):
+	def getBucketChildrenID(self, bucket: 'Bucket') -> List[int]:
 		#TODO: this and the "all" version are inefficent
 		return [i.getID() for i in self.getBucketChildren(bucket)]
 	
-	def getAllBucketChildren(self, bucket):
+	def getAllBucketChildren(self, bucket: 'Bucket') -> List['Bucket']:
 		children = self.getBucketChildren(bucket)
-		newChildren = [] + children
+		newChildren: List[Bucket] = children.copy()
 		for i in children:
 			newChildren += self.getAllBucketChildren(i)
 			
 		#print(newChildren)
 		return newChildren
 	
-	def getAllBucketChildrenID(self, bucket):
+	def getAllBucketChildrenID(self, bucket: 'Bucket') -> List[int]:
 		return [i.getID() for i in self.getAllBucketChildren(bucket)]
 	
-	def getBucketTransactions(self, bucket):
+	def getBucketTransactions(self, bucket: 'Bucket') -> List['Transaction']:
 		return self._spentDB_.getTransactionsWhere(SQL_WhereStatementBuilder("%s == %s" % ("SourceBucket", bucket.getID())).OR("%s == %s" % ("DestBucket", bucket.getID())))
 		
-	def getBucketTransactionsID(self, bucket):
+	def getBucketTransactionsID(self, bucket: 'Bucket') -> List[int]:
 		return [i.getID() for i in self.getBucketTransactions(bucket)]
 	
-	def getAllBucketTransactions(self, bucket):
+	def getAllBucketTransactions(self, bucket: 'Bucket') -> List['Transaction']:
 		allIDList = ", ".join(map(str, self.getAllBucketChildrenID(bucket) + [bucket.getID()]))
 		return self._spentDB_.getTransactionsWhere(SQL_WhereStatementBuilder("%s IN (%s)" % ("SourceBucket", allIDList)).OR("%s IN (%s)" % ("DestBucket", allIDList)))
 	
-	def getAllBucketTransactionsID(self, bucket):
+	def getAllBucketTransactionsID(self, bucket: 'Bucket') -> List[int]:
 		return [i.getID() for i in self.getAllBucketTransactions(bucket)]

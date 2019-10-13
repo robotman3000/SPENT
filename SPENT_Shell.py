@@ -24,7 +24,7 @@ class REPL():
 		
 	def main(self):
 		self.running = True
-		#readline.set_completer(self.getCommandMatches)
+		readline.set_completer(self.getCommandMatches)
 		while self.running:
 			rawStr = input("> ")
 			rawStrParts = rawStr.split(";")
@@ -47,7 +47,7 @@ class REPL():
 	def getCommandMatches(self, partial, state):
 		if self.partial != partial:
 			self.partial = partial
-			self.completes = getMatches()
+			self.completes = self.getMatches()
 			
 		if state > len(self.completes):
 			return -1
@@ -62,12 +62,12 @@ class REPL():
 				print("Match: %s" % i[0])
 			 	
 class Command():
-	def __init__(self, callback, usage=None):
+	def __init__(self, callback: Callable, usage: str = ""):
 		self.callback = callback
 		self.usage = usage
-		self.argCount = len(usage.split(";")) if self.usage != None else 0
+		self.argCount = len(usage.split(";")) if len(self.usage) > 0 else 0
 		
-	def execute(self, args):
+	def execute(self, args: List[str]) -> None:
 		if(len(args) >= self.argCount):
 			self.callback(args)
 		else:
@@ -106,7 +106,7 @@ spentUtil.registerUtilityColumns()
 accountMan.printDebug = True
 accountMan.connect()
 
-def printTree(bucket, depth=0):
+def printTree(bucket: Bucket, depth: int = 0) -> None:
 	print("%s %d - %s ($%s, $%s)" % (" ".join([" | " for i in range(0, depth)]), bucket.getID(), bucket.getName(), spentUtil.getAvailableBalance(bucket), spentUtil.getPostedBalance(bucket)))
 	for child in spentUtil.getBucketChildren(bucket):
 		printTree(child, depth+1)
@@ -116,61 +116,71 @@ def callback():
 	saveDB(None)
 	accountMan.disconnect()
 
-def rawSQL(command):
+def rawSQL(command: List[str]) -> None:
 	accountMan._rawSQL_(command[0])
 		
-def addAccount(command):
+def addAccount(command: List[str]) -> None:
 	accountMan.createAccount(command[0])
 
-def addBucket(command):
-	accountMan.createBucket(command[0], command[1])
+def addBucket(command: List[str]) -> None:
+	accountMan.createBucket(command[0], int(command[1]))
 
-def deleteBucket(command):
-	bucket = accountMan.getBucket(command[0])
-	accountMan.deleteBucket(bucket)	
+def deleteBucket(command: List[str]) -> None:
+	bucket = accountMan.getBucket(int(command[0]))
+	if bucket is not None:
+		accountMan.deleteBucket(bucket)
+	else:
+		print("No bucket with ID %s exists" % command[0])
 
-def addTransaction(command):
-	accountMan.createTransaction(amount=command[0], 
+def addTransaction(command: List[str]) -> None:
+	accountMan.createTransaction(amount=float(command[0]),
 								 sourceBucket=accountMan.getBucket(int(command[1])),
 								 destBucket=accountMan.getBucket(int(command[2])),
 								 transactionDate=command[3],
 								 memo=command[4])
 	
-def deleteTransaction(command):
+def deleteTransaction(command: List[str]) -> None:
 	accountMan.deleteTransaction(accountMan.getTransaction(int(command[0])))
 
-def listBucketTransactions(command):
-	print("Transactions:")
-	transList = spentUtil.getAllBucketTransactions(accountMan.getBucket(command[0]))
-	for trans in transList:
-		propList = ["ID", "Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "IsTransfer"]
-		res = ", ".join(map(str, [("%s: %s" % (i, trans.getValueRemapped(i))) for i in propList]))
-		print(res)		
+def listBucketTransactions(command: List[str]) -> None:
+	bucket = accountMan.getBucket(int(command[0]))
+	if bucket is not None:
+		print("Transactions:")
+		transList = spentUtil.getAllBucketTransactions(bucket)
+		for trans in transList:
+			propList = ["ID", "Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "IsTransfer"]
+			res = ", ".join(map(str, [("%s: %s" % (i, trans.getValueRemapped(i))) for i in propList]))
+			print(res)
+	else:
+		print("No bucket with ID %s exists" % command[0])
 
-def showAccountTree(command):
+def showAccountTree(command: List[str]) -> None:
 	print("ID, Name, Available, Posted")
 	for a in accountMan.getAccountsWhere():
 		printTree(a)
 
-def showBucket(command):
-	bucket = accountMan.getBucket(command[0])
-	print("===== %s =====" % bucket.getName())
-	print("Avail Balance: %s" % spentUtil.getAvailableBalance(bucket))
-	print("Posted Balance: %s" % spentUtil.getPostedBalance(bucket))
-	listBucketTransactions(command)
+def showBucket(command: List[str]) -> None:
+	bucket = accountMan.getBucket(int(command[0]))
+	if bucket is not None:
+		print("===== %s =====" % bucket.getName())
+		print("Avail Balance: %s" % spentUtil.getAvailableBalance(bucket))
+		print("Posted Balance: %s" % spentUtil.getPostedBalance(bucket))
+		listBucketTransactions(command)
+	else:
+		print("No bucket with ID %s exists" % command[0])
 	
-def toggleDebug(command):
+def toggleDebug(command: List[str]) -> None:
 	accountMan.printDebug = not accountMan.printDebug
 	print("Debug Messages: %s" % accountMan.printDebug)
 	
-def showTransaction(command):
-	trans = accountMan.getTransaction(command[0])
+def showTransaction(command: List[str]) -> None:
+	trans = accountMan.getTransaction(int(command[0]))
 	propList = ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket"]
 	
 	for i in propList:
 		print("%s: %s" % (i, trans.getValue(i)))
 	
-def saveDB(command):
+def saveDB(command: Optional[List[str]]) -> None:
 	print("Saving Database...")
 	accountMan.save()
 	print("Changes Saved.")

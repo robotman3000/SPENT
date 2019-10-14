@@ -1,5 +1,4 @@
-from SPENT import *
-from SPENT_Util import *
+from SPENT.SPENT import *
 import readline
 import traceback
 

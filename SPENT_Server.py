@@ -1,6 +1,6 @@
-﻿import threading, webbrowser, mimetypes, traceback, json, time, os
+﻿import mimetypes, json, time, os
 from wsgiref.simple_server import make_server
-from SPENT import *
+from SPENT.SPENT import *
 from argparse import ArgumentParser
 
 parser = ArgumentParser()

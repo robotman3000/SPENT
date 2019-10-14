@@ -1,14 +1,13 @@
 ﻿import threading, webbrowser, mimetypes, traceback, json, time, os
 from wsgiref.simple_server import make_server
 from SPENT import *
-from SPENT_Util import *
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
 parser.add_argument("--file", dest="dbpath",
                     default="SPENT.db")
 parser.add_argument("--root", dest="serverRoot",
-                    default="./")
+                    default="./web")
 parser.add_argument("--debug",
                     action="store_true", dest="debugCore", default=False,
                     help="Enable debug logging")
@@ -24,9 +23,6 @@ parser.add_argument("--server-mode",
 
 args = parser.parse_args()
 
-SERVER_ROOT = args.serverRoot
-INDEX = SERVER_ROOT + "index.html"
-
 #Begin Flag (Perf Mon Util)
 def getTimeStr(timeMS):
 	if timeMS > 1000:
@@ -39,11 +35,12 @@ def time_it(f, *args):
 	return [result, (getTimeStr((time.time_ns() - start) / 1000000))]
 #End Flag
 
+
 class SPENTServer():
 	def __init__(self, port=8080):
 		self.unimp = {"successful": False, "message": "Unimplemented!"}
-		self.accountMan = AccountManager(args.dbpath)
-		self.spentUtil = SPENTUtil(self.accountMan)
+		self.accountMan = SpentDBManager(args.dbpath)
+		self.spentUtil = SpentUtil(self.accountMan)
 		self.spentUtil.registerUtilityColumns()
 		
 		self.showAPIData = args.debugAPI
@@ -364,9 +361,12 @@ class RequestHandler:
 	def fileHandler(self, query, path):
 		if path == "/":
 			path = "index.html"
-				
+
+		if path.startswith("/"):
+			path = path[1:] # Remove the leading /
+
 		print("Using file handler for: %s" % path)
-		fullPath = os.path.join(SERVER_ROOT, path)
+		fullPath = os.path.join(args.serverRoot, path)
 		if args.debugServer:
 			print("Full file request path: %s" % fullPath)
 		try:
@@ -375,7 +375,7 @@ class RequestHandler:
 			#TODO: Make a more robust file handler
 			typeGuess = mimetypes.guess_type(fullPath)
 			modeStr = "r%s" % ('t' if self.isText(typeGuess) else 'b')
-			response_body = open(SERVER_ROOT + path, mode=modeStr).read()
+			response_body = open(fullPath, mode=modeStr).read()
 			status = '200 OK'
 			headers = [('Content-type', typeGuess[0] if typeGuess[0] is not None else "application/octet-stream"),
 				   ('Content-Length', str(len(response_body)))]
@@ -383,8 +383,8 @@ class RequestHandler:
 		except FileNotFoundError as e:
 			response_body = "File not found"
 			if args.debugServer:
-				response_body +=  "\n" + SERVER_ROOT + path + "\n"
-				response_body += "\n".join(os.listdir(SERVER_ROOT))
+				response_body +=  "\n" + args.serverRoot + path + "\n"
+				response_body += "\n".join(os.listdir(args.serverRoot))
 			status = '404 OK'
 			headers = [('Content-type', 'text/plain'),
 				   ('Content-Length', str(len(response_body)))]

@@ -100,8 +100,8 @@ class ListCommand(Command):
 		for a in rows:
 			print(a)
 
-accountMan = AccountManager()
-spentUtil = SPENTUtil(accountMan)
+accountMan = SpentDBManager()
+spentUtil = SpentUtil(accountMan)
 spentUtil.registerUtilityColumns()
 accountMan.printDebug = True
 accountMan.connect()

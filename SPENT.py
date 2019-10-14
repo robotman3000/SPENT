@@ -1,13 +1,142 @@
 from datetime import date
 from sqlite3_DOM import *
 from typing import Set, cast
-from SPENT_Util import SPENTUtil, asFloat, asInt, asStr
+
+#Verb layer features
+#	Reconcile
+#	Import/Export
+#	Report Generation
+#	Account/Bucket Balance Calculation
+
+#Transaction Tagging
+#Transaction Grouping?
 
 def getCurrentDateStr() -> str:
 	return str(date.today())
 
-#TODO: The name of this class is not accurate. It should be called SpentDBManager or similar
-class AccountManager(DatabaseWrapper):
+def asInt(obj: Any) -> int:
+	if type(obj) is int:
+		return obj
+	elif type(obj) is str:
+		return int(obj)
+	return int(str(obj))
+
+def asFloat(obj: Any) -> float:
+	if type(obj) is float:
+		return obj
+	elif type(obj) is str:
+		return float(obj)
+	return float(str(obj))
+
+def asStr(obj: Any) -> str:
+	if type(obj) is str:
+		return obj
+	return str(obj)
+
+class SpentUtil():
+	def __init__(self, spentDB):
+		self._spentDB_ = spentDB
+
+	def registerUtilityColumns(self):
+		def getAvailBucketBalance(source, tableName, columnName):
+			return self.getAvailableBalance(source)
+
+		def getPostedBucketBalance(source, tableName, columnName):
+			return self.getPostedBalance(source)
+
+		self._spentDB_.registerVirtualColumn("Buckets", "Balance", getAvailBucketBalance)
+		self._spentDB_.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
+
+		# TODO: SHould these vir columns be kept around?
+		def getBucketTransactions(source, tableName, columnName):
+			return self.getBucketTransactionsID(source)
+
+		def getAllBucketTransactions(source, tableName, columnName):
+			return self.getAllBucketTransactionsID(source)
+
+		def getBucketChildren(source, tableName, columnName):
+			return self.getBucketChildrenID(source)
+
+		def getAllBucketChildren(source, tableName, columnName):
+			return self.getAllBucketChildrenID(source)
+
+		self._spentDB_.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
+		self._spentDB_.registerVirtualColumn("Buckets", "AllTransactions", getAllBucketTransactions)
+		self._spentDB_.registerVirtualColumn("Buckets", "Children", getBucketChildren)
+		self._spentDB_.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
+
+	def getPostedBalance(self, bucket: 'Bucket') -> float:
+		return self._calculateBalance_(bucket, True)
+
+	def getAvailableBalance(self, bucket: 'Bucket') -> float:
+		return self._calculateBalance_(bucket)
+
+	def _calculateBalance_(self, bucket: 'Bucket', posted: bool = False) -> float:
+		ids = self.getAllBucketChildrenID(bucket)
+		ids.append(bucket.getID())  # We can't forget ourself
+		idStr = ", ".join(map(str, ids))
+
+		statusStr = ""
+		if posted:
+			statusStr = "AND Status IN (2, 3)"
+
+		query = "SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) %s)" % (
+		idStr, statusStr, idStr, statusStr)
+		column = "Amount"
+
+		result = self._spentDB_._rawSQL_(query)
+		rows = self._spentDB_.parseRows(result, [column], "Transactions")
+		if len(rows) > 0:
+			return round(float(rows[0].getValue(column, False)), 2)
+		return 0
+
+	def getBucketParentAccount(self, bucket: 'Bucket') -> 'Bucket':
+		# Do not reimplement this to use ancestor. This funciton is needed to generate the ancestor ID
+		parent = bucket.getParent()
+		if parent is None:
+			return bucket
+		elif parent.getID() == -1:
+			return parent
+
+		return self.getBucketParentAccount(parent)
+
+	def getBucketChildren(self, bucket: 'Bucket') -> List['Bucket']:
+		return self._spentDB_.getBucketsWhere(SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(bucket.getID()))))
+
+	def getBucketChildrenID(self, bucket: 'Bucket') -> List[int]:
+		# TODO: this and the "all" version are inefficent
+		return [i.getID() for i in self.getBucketChildren(bucket)]
+
+	def getAllBucketChildren(self, bucket: 'Bucket') -> List['Bucket']:
+		children = self.getBucketChildren(bucket)
+		newChildren: List[Bucket] = children.copy()
+		for i in children:
+			newChildren += self.getAllBucketChildren(i)
+
+		# print(newChildren)
+		return newChildren
+
+	def getAllBucketChildrenID(self, bucket: 'Bucket') -> List[int]:
+		return [i.getID() for i in self.getAllBucketChildren(bucket)]
+
+	def getBucketTransactions(self, bucket: 'Bucket') -> List['Transaction']:
+		return self._spentDB_.getTransactionsWhere(
+			SQL_WhereStatementBuilder("%s == %s" % ("SourceBucket", bucket.getID())).OR(
+				"%s == %s" % ("DestBucket", bucket.getID())))
+
+	def getBucketTransactionsID(self, bucket: 'Bucket') -> List[int]:
+		return [i.getID() for i in self.getBucketTransactions(bucket)]
+
+	def getAllBucketTransactions(self, bucket: 'Bucket') -> List['Transaction']:
+		allIDList = ", ".join(map(str, self.getAllBucketChildrenID(bucket) + [bucket.getID()]))
+		return self._spentDB_.getTransactionsWhere(
+			SQL_WhereStatementBuilder("%s IN (%s)" % ("SourceBucket", allIDList)).OR(
+				"%s IN (%s)" % ("DestBucket", allIDList)))
+
+	def getAllBucketTransactionsID(self, bucket: 'Bucket') -> List[int]:
+		return [i.getID() for i in self.getAllBucketTransactions(bucket)]
+
+class SpentDBManager(DatabaseWrapper):
 	def __init__(self, dbFile: str = "SPENT.db"):
 		super().__init__(dbFile)
 		self.registerTableSchema("Buckets", 
@@ -58,7 +187,7 @@ class AccountManager(DatabaseWrapper):
 		
 		self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
 		self.registerVirtualColumn("Transactions", "Type", getTransactionType)
-		self.util = SPENTUtil(self)
+		self.util = SpentUtil(self)
 
 	def createBucket(self, name: str, parent: int) -> Optional['Bucket']:
 		#TODO: Verify the data is valid
@@ -120,7 +249,7 @@ class AccountManager(DatabaseWrapper):
 			if trans is not None:
 				transactions.append(trans)
 			else:
-				print("Error: AccountManager.getTransactionsWhere: Encountered a None transaction")
+				print("Error: SpentDBManager.getTransactionsWhere: Encountered a None transaction")
 		return transactions	
 	
 	def getAccount(self, accountID: int) -> Optional['Bucket']: #TODO: This should be marked to return account
@@ -149,7 +278,7 @@ class AccountManager(DatabaseWrapper):
 		
 	def deleteTransactionsWhere(self, where: SQL_WhereStatementBuilder):#TODO return List[int]
 		if where is None:
-			raise ValueError("AccountManager.deleteTransactionsWhere: where can't be None")
+			raise ValueError("SpentDBManager.deleteTransactionsWhere: where can't be None")
 		self.deleteTableRowsWhere("Transactions", where)
 		
 	def deleteAccount(self, account: 'Account') -> None:
@@ -168,14 +297,14 @@ class AccountManager(DatabaseWrapper):
 			if bucket is not None:
 				buckets.append(bucket)
 			else:
-				print("Error: AccountManager._getBucketsWhere_: Encountered a None bucket")
+				print("Error: SpentDBManager._getBucketsWhere_: Encountered a None bucket")
 		return buckets
 
 	def _deleteBucketsWhere_(self, where: SQL_WhereStatementBuilder, deleteAccounts: bool) -> Set[int]:
 		#TODO: This should be rewriten to use less SQL queries
 
 		if where is None:
-			raise ValueError("AccountManager._deleteBucketsWhere_: where can't be None")
+			raise ValueError("SpentDBManager._deleteBucketsWhere_: where can't be None")
 		buckets = self._getBucketsWhere_(where)
 		bucketAncestorMap: Dict[int, Set[int]] = {}
 		for bucket in buckets:
@@ -234,11 +363,11 @@ class Bucket(SQL_RowMutable):
 	
 	def getParent(self) -> Optional['Bucket']:
 		parentID = asInt(self.getValue("Parent"))
-		return cast(AccountManager, self.database).getBucket(parentID)
+		return cast(SpentDBManager, self.database).getBucket(parentID)
 
 	def getAncestor(self) -> Optional['Bucket']:
 		ancestorID = asInt(self.getValue("Ancestor"))
-		return cast(AccountManager, self.database).getBucket(ancestorID)
+		return cast(SpentDBManager, self.database).getBucket(ancestorID)
 	
 class Account(Bucket):
 	def getParent(self) -> Optional[Bucket]:
@@ -276,10 +405,10 @@ class Transaction(SQL_RowMutable):
 		return str(self.getValue("Payee"))
 	
 	def getSourceBucket(self) -> Optional[Bucket]:
-		return cast(AccountManager, self.database).getBucket(asInt(self.getValue("SourceBucket")))
+		return cast(SpentDBManager, self.database).getBucket(asInt(self.getValue("SourceBucket")))
 	
 	def getDestBucket(self) -> Optional[Bucket]:
-		return cast(AccountManager, self.database).getBucket(asInt(self.getValue("DestBucket")))
+		return cast(SpentDBManager, self.database).getBucket(asInt(self.getValue("DestBucket")))
 	
 	def isTransfer(self) -> bool:
 		return bool(self.getValue("IsTransfer"))

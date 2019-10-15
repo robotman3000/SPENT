@@ -1,6 +1,7 @@
 var tables = {}
 var tableSchema = {}
 var enums = {}
+var lastSelection = null;
 
 // Create our number formatter.
 var formatter = null;
@@ -322,8 +323,7 @@ function apiTableSchemaToEditForm(tableName){
 	columns.forEach(function(item, index){
 		form.append(item);
 	});
-	
-	form.append("<input class='btn btn-primary' type='submit' value='Submit'>")
+
 	return form;
 }
 
@@ -371,6 +371,7 @@ function initTable(tableName, apiDataType){
 			} else {
 				onCreateRow(tableName, data);
 			}
+
 			refreshBalanceDisplay();
 			refreshSidebarAccountSelect();
 			//TODO: make this actually reflect whether the callback completed sucessfully
@@ -379,7 +380,8 @@ function initTable(tableName, apiDataType){
 		deleteCallback: function(tableRow){
 			//alert("Delete Callback");
 			onDeleteRow(tableName, tableRow);
-
+			refreshBalanceDisplay();
+			refreshSidebarAccountSelect();
 			return true;
 		}
 	};
@@ -394,14 +396,20 @@ function initTable(tableName, apiDataType){
 		editing: {
 			enabled: true,
 			addRow: function(){
-				showFormModal(tableName, null)
+				showFormModal(tableName, null, "New Row")
 			},
 			editRow: function(row){
-				showFormModal(tableName, row);
+				showFormModal(tableName, row, "Edit Row");
 			},
 			deleteRow: function(row){
+			    //TODO: Replace this with a modal
 				var table = getTableData(tableName).table;
-				if(confirm("Delete Row?")){
+				var data = row.val();
+				//TODO: The amount field is the raw value, we really want the pretty amount string
+				//TODO: And this only works right for the transaction table's form
+				var rowText = data.Amount + " - " + data.Memo
+
+				if(confirm("Delete Row?\n" + rowText)){
 					getTableData(tableName).deleteCallback(row);
 				}
 			}
@@ -417,6 +425,90 @@ function initTable(tableName, apiDataType){
 
 function initTableEditForm(editFormDiv, editForm, tableName){
 	editFormDiv.append(editForm)
+
+		// Create the modal buttons in the footer
+	if (editFormDiv.data("submit")){
+	    var submitBtn = $('<button/>').attr({type: 'submit', class: 'btn btn-default btn-primary'});
+	    submitBtn.text('Submit')
+	    submitBtn.click(function(){
+            editForm.submit();
+        })
+	    $("#" + tableName + "EditFormModal" + " .modal-footer").append(submitBtn)
+	}
+}
+
+function initFilterModal(){
+    var rules_basic = {
+      condition: 'AND',
+      rules: [{
+        id: 'price',
+        operator: 'less',
+        value: 10.25
+      }, {
+        condition: 'OR',
+        rules: [{
+          id: 'category',
+          operator: 'equal',
+          value: 2
+        }, {
+          id: 'category',
+          operator: 'equal',
+          value: 1
+        }]
+      }]
+    };
+
+    $('#transactionTableFilter').queryBuilder({
+
+  filters: [{
+    id: 'name',
+    label: 'Name',
+    type: 'string'
+  }, {
+    id: 'category',
+    label: 'Category',
+    type: 'integer',
+    input: 'select',
+    values: {
+      1: 'Books',
+      2: 'Movies',
+      3: 'Music',
+      4: 'Tools',
+      5: 'Goodies',
+      6: 'Clothes'
+    },
+    operators: ['equal', 'not_equal', 'in', 'not_in', 'is_null', 'is_not_null']
+  }, {
+    id: 'in_stock',
+    label: 'In stock',
+    type: 'integer',
+    input: 'radio',
+    values: {
+      1: 'Yes',
+      0: 'No'
+    },
+    operators: ['equal']
+  }, {
+    id: 'price',
+    label: 'Price',
+    type: 'double',
+    validation: {
+      min: 0,
+      step: 0.01
+    }
+  }, {
+    id: 'id',
+    label: 'Identifier',
+    type: 'string',
+    placeholder: '____-____-____',
+    operators: ['equal', 'not_equal'],
+    validation: {
+      format: /^.{4}-.{4}-.{4}$/
+    }
+  }],
+
+  rules: rules_basic
+    });
 }
 
 function refreshTable(tableName){
@@ -488,6 +580,8 @@ function refreshTable(tableName){
 				default:
 					alert("Unknown table: " + tableName);
 			}
+
+			//console.log("Table: " + tableName + " Done Refreshing")
 		} else {
 			console.log("Error: " + tableName + " is locked and cannot be refreshed")
 		}
@@ -539,9 +633,9 @@ $("#elementId :selected").val(); // The value of the selected option
 	*/
 }
 
-function showFormModal(tableName, row){
+function showFormModal(tableName, row, title){
 	var data = (row ? row.val() : {});
-	var form = $(updateFormContent(tableName + "EditForm", data))
+	var form = $(updateFormContent(tableName + "EditForm", data, title))
 	var inputs = form.find("select").toArray();
 	inputs.forEach(function(item, index){
 		var it = $(item)
@@ -582,6 +676,113 @@ function updateDynamicInput(it, value){
 			}
 		}
 	});
+}
+
+// ############################## Column Formatters ##############################
+
+function getBucketOptions(){
+	//TODO: Rewrite this to account for the selected account and whether the type is set as "transfer"
+	var array = [];
+	return apiRequest(createRequest("get", "account")).then(function(result){
+		result.data.forEach(function(item, index){
+			array.push({"ID": item.ID, "Name": item.Name})
+		});
+		return apiRequest(createRequest("get", "bucket"));
+	}).then(function(result2){
+		//alert("Hello World")
+
+		result2.data.forEach(function(item, index){
+			array.push({"ID": item.ID, "Name": "    " + item.Name})
+		});
+
+		return Promise.resolve(array);
+	});
+}
+
+function getTypeOptions(){
+	return enums["transactionTable"]["Type"];
+}
+
+function getStatusOptions(){
+	return enums["transactionTable"]["Status"];
+}
+
+function getTransferDirection(rowData, bucketID){
+	// True = Money Coming in; I.E. a positive value
+	// False = Money Going out; I.E. a negative value
+	switch(rowData.Type){
+		case "0":
+			return (rowData.DestBucket == bucketID);
+			break;
+		case "1":
+			return true;
+			break;
+		case "2":
+			return false;
+			break;
+	}
+	return null;
+}
+
+function transactionTypeFormatter(value, options, rowData){
+	if(rowData.typeSort){
+	   return rowData.typeSort;
+	}
+	rowData.typeSort = rowData.Type
+	var fromToStr = "";
+	if (rowData.typeSort == "0"){//Transfer
+		fromToStr = (getTransferDirection(rowData, getSelectedAccount()) ? " from " : " to ");
+	}
+	return enums["transactionTable"]["Type"][rowData.typeSort] + fromToStr;
+}
+
+function transactionAmountFormatter(value, options, rowData){
+	if(rowData.amountSort){
+	   return rowData.amountSort;
+	}
+
+	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
+	if (isDeposit){
+		// If deposit
+		rowData.amountSort = formatter.format(value);
+		return rowData.amountSort;
+	}
+	rowData.amountSort = formatter.format(value * -1);
+	return rowData.amountSort;
+}
+
+function bucketFormatter(value, options, rowData){
+	if(rowData.bucketSort){
+	   return rowData.bucketSort;
+	}
+	var id = -2; //This value will cause the name func to return "Invalid ID"
+
+	var transType = rowData.Type;
+	var isDeposit = (rowData, getSelectedAccount());
+	if(transType != "0"){
+		id = (transType == "1" ? rowData.DestBucket : rowData.SourceBucket);
+	} else {
+		id = (rowData.SourceBucket == getSelectedAccount() ? rowData.DestBucket : rowData.SourceBucket);
+	}
+
+	var par = getBucketParentForID(id);
+	//if(par != -1){
+	rowData.bucketSort = getBucketNameForID(id);
+	/*} else {
+		rowData.bucketSort = "Unassigned";
+	}*/
+	return rowData.bucketSort;
+}
+
+function transactionDateFormatter(value, options, rowData){
+	if(rowData.PostDate.toDate){
+		var d = new Date(1971,01,01);
+		if(rowData.PostDate.toDate() < d){
+			return "N/A";
+		}
+		return rowData.PostDate.format("YYYY-MM-DD");
+	}
+	return value;
 }
 
 // ############################## Event Handlers ##############################
@@ -637,7 +838,6 @@ formVisible
 formDynamicSelect
 */
 
-	
 	enums = {
 		transactionTable: {
 			Status: [
@@ -653,7 +853,10 @@ formDynamicSelect
 			]
 		}
 	}
-	
+
+	lastSelection = null;
+	//initFilterModal()
+
 	//This is first so that the event will surely be registered before it is fired
 	$('#accountTree').on("ready.jstree", function(e, data) {
 		onJSTreeReady();
@@ -701,9 +904,9 @@ formDynamicSelect
 		conditionalselect : function (node, event) {
 			// TODO: A slightly more robust condition is better as the trans table is not the only table affected by this option
 			if(!getTableData("transactionTable").isLocked()){
-				console.log("Prevented changing the account selection")
 				return true;
 			}
+			console.log("Prevented changing the account selection")
 			return false;
 		},
 		plugins: [
@@ -736,113 +939,8 @@ formDynamicSelect
 	$('#accountTree').jstree().load_all();
 }
 
-function getBucketOptions(){
-	//TODO: Rewrite this to account for the selected account and whether the type is set as "transfer"
-	var array = [];
-	return apiRequest(createRequest("get", "account")).then(function(result){
-		result.data.forEach(function(item, index){
-			array.push({"ID": item.ID, "Name": item.Name})
-		});
-		return apiRequest(createRequest("get", "bucket"));
-	}).then(function(result2){
-		//alert("Hello World")
-		
-		result2.data.forEach(function(item, index){
-			array.push({"ID": item.ID, "Name": "    " + item.Name})
-		});
-		
-		return Promise.resolve(array);
-	});
-}
-
-function getTypeOptions(){
-	return enums["transactionTable"]["Type"]; 
-}
-
-function getStatusOptions(){
-	return enums["transactionTable"]["Status"];
-}
-
-function getTransferDirection(rowData, bucketID){
-	// True = Money Coming in; I.E. a positive value
-	// False = Money Going out; I.E. a negative value
-	switch(rowData.Type){
-		case "0":
-			return (rowData.DestBucket == bucketID);
-			break;
-		case "1":
-			return true;
-			break;
-		case "2":
-			return false;
-			break;
-	}
-	return null;
-}
-
-function transactionTypeFormatter(value, options, rowData){
-	if(rowData.typeSort){
-	   return rowData.typeSort;
-	}
-	rowData.typeSort = rowData.Type
-	var fromToStr = "";
-	if (rowData.typeSort == "0"){//Transfer
-		fromToStr = (getTransferDirection(rowData, getSelectedAccount()) ? " from " : " to ");	
-	}
-	return enums["transactionTable"]["Type"][rowData.typeSort] + fromToStr;
-}
-
-function transactionAmountFormatter(value, options, rowData){
-	if(rowData.amountSort){
-	   return rowData.amountSort;
-	}
-	
-	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
-	if (isDeposit){
-		// If deposit
-		rowData.amountSort = formatter.format(value);
-		return rowData.amountSort;
-	}
-	rowData.amountSort = formatter.format(value * -1);
-	return rowData.amountSort;
-}
-
-function bucketFormatter(value, options, rowData){
-	if(rowData.bucketSort){
-	   return rowData.bucketSort;
-	}
-	var id = -2; //This value will cause the name func to return "Invalid ID"
-	
-	var transType = rowData.Type;
-	var isDeposit = (rowData, getSelectedAccount());
-	if(transType != "0"){
-		id = (transType == "1" ? rowData.DestBucket : rowData.SourceBucket);
-	} else {
-		id = (rowData.SourceBucket == getSelectedAccount() ? rowData.DestBucket : rowData.SourceBucket);
-	}
-	
-	var par = getBucketParentForID(id);
-	//if(par != -1){
-	rowData.bucketSort = getBucketNameForID(id);
-	/*} else {
-		rowData.bucketSort = "Unassigned";
-	}*/
-	return rowData.bucketSort;
-}
-
-function transactionDateFormatter(value, options, rowData){
-	if(rowData.PostDate.toDate){
-		var d = new Date(1971,01,01);
-		if(rowData.PostDate.toDate() < d){
-			return "N/A";
-		}
-		return rowData.PostDate.format("YYYY-MM-DD");
-	}
-	return value;
-}
-
 function onJSTreeReady() {
-	getSelectedAccount(); // This will select the first list item
+	lastSelection = getSelectedAccount(); // This will select the first list item and update the lastSelection for use later
 	refreshBalanceDisplay(); // Initial update since the usual event handler isn't registered yet
 	initTable("transactionTable", "transaction");
 	initTable("bucketTable", "bucket");
@@ -859,8 +957,13 @@ function onJSTreeReady() {
 function onJSTreeChanged(e, data) {
 	if (data.action == "select_node") {
 		console.log("JS TREE CHANGE------------------------------------------------")
-		refreshBalanceDisplay();
-		refreshTable("transactionTable");
+		if (lastSelection != getSelectedAccount()){
+            refreshBalanceDisplay();
+            refreshTable("transactionTable");
+            lastSelection = getSelectedAccount();
+		} else {
+		    console.log("Skipping because lastSel: " + lastSelection + " matched")
+		}
 	} else if (data.action == "deselect_all") {} else {
 		alert("onJSTreeChanged: Unknown action: " + data.action);
 	}

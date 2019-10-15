@@ -1,3 +1,9 @@
+input[disabled], select[disabled], textarea[disabled], input[readonly], select[readonly], textarea[readonly] {
+    cursor: not-allowed;
+    background-color: #EEE;
+    color: #9E9999;
+}
+
 .jstree-grid-column{
 	width:100%;
 }
@@ -38,4 +44,4 @@
   color: black;
   text-decoration: none;
   cursor: pointer;
-} 
+}

@@ -33,6 +33,32 @@ def asStr(obj: Any) -> str:
 		return obj
 	return str(obj)
 
+class Tag:
+	def getName(self):
+		pass
+
+	def getTransactions(self):
+		pass
+
+class TagManager:
+	def __init__(self, database: 'SpentDBManager'):
+		self.db = database
+
+	def getTransactionTags(self, transaction: 'Transation') -> List[Tag]:
+		pass
+
+	def getTag(self):
+		pass
+
+	def createTag(self):
+		pass
+
+	def renameTag(self):
+		pass
+
+	def deleteTag(self):
+		pass
+
 class SpentUtil():
 	def __init__(self, spentDB):
 		self._spentDB_ = spentDB

@@ -8,26 +8,30 @@
 	<meta content="" name="description">
 	<meta content="" name="author">
 	<title>SPENT</title>
-	
-	<script type="text/javascript" src="/js/objlocks.js"></script>
-	
+
+	<link href="/css/glyphicons-fontawesome.css" rel="stylesheet" type="text/css" />
+
 	<!-- JQuery -->
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js"></script>
 
 	<!-- Bootstrap v4 -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.css"><!-- v4.3.1 -->
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.js"></script><!-- v4.3.1 -->
-	
-	<!-- JSTree -->
-	<link href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.8/themes/default/style.min.css" rel="stylesheet"><!-- v3.3.8 -->
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.8/jstree.min.js"></script><!-- v3.3.8 -->
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jstreegrid/3.10.0/jstreegrid.js"></script><!-- v3.10.0 -->
-	
+
+	<!-- Bootstrap-Treeview -->
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/patternfly-bootstrap-treeview@2.1.10/dist/bootstrap-treeview.css">
+	<script src="https://cdn.jsdelivr.net/npm/patternfly-bootstrap-treeview@2.1.10/dist/bootstrap-treeview.js"></script>
+
+	<!-- JS-Grid -->
+    <link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.css" />
+    <link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid-theme.css" />
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.js"></script>
+
 	<!-- FooTable -->
-	<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/fontawesome.css" rel="stylesheet"><!-- v5.11.2 -->
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.js"></script><!-- v2.24.0 -->
 	
-	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-footable/3.1.6/footable.standalone.css">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-footable/3.1.6/footable.bootstrap.css">
 	<script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-footable/3.1.6/footable.js"></script>
 
 	<!-- jQuery-QueryBuilder -->
@@ -85,7 +89,8 @@
 								<p id="balanceDisplay" style="float: right; margin: auto;">Waiting on server for account balance...</p>
 							</div>
 							<div class="row">
-								<div id="accountTree"></div>
+								<!-- TODO: The way we are using the width property is nasty, find a better way -->
+								<div id="accountTree" style="width: 1000em"></div>
 							</div>
 						</div>
 						<div class="col-md-8 col-lg-9 p-0">
@@ -234,6 +239,31 @@
 		</div>
 	</div>
 
+	<!-- Action Confirmation Modal -->
+	<div class="modal fade" id="confirmActionModal" tabindex="-1" role="dialog" aria-labelledby="confirmActionModal-label" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-scrollable" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="confirmActionModal-label">Confirm</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+
+					<p id="confirmActionModalText"></p>
+
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" id="confirmActionModal-True" onclick="_confirmHandler_(true)">Yes</button>
+        			<button type="button" class="btn btn-primary" id="confirmActionModal-False" onclick="_confirmHandler_(false)">No</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<script src="https://kit.fontawesome.com/5762666c4b.js" crossorigin="anonymous"></script>
 	<script>
 		function registerModal(name){
 			// Get the modal
@@ -268,7 +298,33 @@
 				}
 			} */	
 		}
-		
+
+		function _confirmHandler_(result){
+			var callback = $("#confirmActionModal").data("callback")
+			$("#confirmActionModal").data("callback", null)
+			if(callback){
+				callback(result);
+			}
+			hideModal("confirmActionModal")
+		}
+
+		function initConfirmModal(){
+			registerModal("confirmActionModal");
+		}
+
+		function showConfirmModal(message, callback){
+			var modal = $("#confirmActionModal")
+			modal.data("callback", callback)
+
+			if (!message){
+				message = "Confirm Action"
+			}
+
+			$("#confirmActionModalText").text(message)
+
+			showModal("confirmActionModal")
+		}
+
 		function showModal(name){
 			//var modal = document.getElementById(name);
 			//modal.style.display = "block";
@@ -310,7 +366,11 @@
 					var key = item.name;
 					var oldValue = getOrDefault(data, key, "");
 					if(oldValue.toDate){
-					   oldValue = dateToStr(oldValue.toDate());
+						var d = new Date(1971,01,01);
+						if(oldValue.toDate() < d){
+							return "";
+						}
+						oldValue = dateToStr(oldValue.toDate());
 					}
 					$(item).val(oldValue);
 				}
@@ -343,6 +403,8 @@
 			registerModal("accountTableEditFormModal");
 
 			registerModal("transactionTableFilterModal");
+
+			initConfirmModal();
 
 			//openNav('sidebar'); //TODO: The sidebar needs its defaults set
 			onDocumentReady();

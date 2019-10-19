@@ -2,6 +2,7 @@ var tables = {}
 var tableSchema = {}
 var enums = {}
 var lastSelection = null;
+var bucketNameMap = {}
 
 // Create our number formatter.
 var formatter = null;
@@ -12,47 +13,6 @@ function getOrDefault(object, property, def){
 	return (object[property] ? object[property] : def);
 }
 
-function addTableRows(tableName, rows, accessKey, appendRows){
-	var append = (appendRows != undefined);
-	if(_isTableSafe_(tableName, accessKey)){
-		console.log("Adding: [rows] to " + tableName + ", Append: " + append)
-		getTableData(tableName).table.loadRows(rows, append);
-	}
-}
-
-function deleteTableRows(tableName, rows, accessKey){
-	// TODO: rows is actually a single row object but should be an array of rows
-	if(_isTableSafe_(tableName, accessKey)){
-		rows.delete();
-	}
-}
-
-function updateTableRows(tableName, rows, accessKey){
-	if(_isTableSafe_(tableName, accessKey)){
-		console.log("Updating: [Rows] in " + tableName)
-		rows.forEach(function(item, index){
-			item.row.val(item.data)
-		});
-	}
-}
-
-function _isTableSafe_(tableName, accessKey){
-	if(!getTableData(tableName).isLocked(accessKey)){
-		return true;
-	} else {
-		console.log("Error: " + tableName + " is locked and cannot be modifed")
-	}
-	return false;
-}
-
-function formToSQLRow(data){
-	var obj = {};
-	data.forEach(function(item, index){
-		obj[item.name] = item.value;
-	});
-	return obj;
-}
-
 function getTableData(tableName){
 	var table = tables[tableName];
 	if(!table){
@@ -61,42 +21,29 @@ function getTableData(tableName){
 	return table;
 }
 
-function _getNodeForID_(id){
-	return $('#accountTree').jstree().get_node(id)
+function doesNodeHaveParent(node){
+    return node.parentId != undefined;
+}
+
+function cleanRowData(data){
+    // This converts objects of format [{name: ***, value: ***}, ..., ...]
+    // to {The name: The value, The next name: The next value}
+    var obj = {};
+
+    // This loop style is used because "data" doesn't have .forEach or .length
+    // for some reason
+    for(var index = 0; data[index] != undefined; index++){
+        obj[data[index].name] = data[index].value;
+    }
+    return obj;
 }
 
 function getBucketNameForID(id){
-	if(id < 0){
-	   return "N/A";
-	}
-	
-	var node = _getNodeForID_(id);
-	if(node != false){
-		return node.text;	
-	}
-	
-	return "Invalid ID: " + id;
-}
-
-function getBucketParentForID(id){
-	if(id < 0){
-	   return "N/A";
-	}
-	
-	var node = _getNodeForID_(id);
-	if(node != false){
-		var par = node.parent;
-		if(par == "#"){
-			return -1
-		}
-		return par;
-	}
-	
-	return "Invalid ID: " + id;
-}
-
-function getNodeType(node){
-	return (node.parent == "#" ? "account" : "bucket")
+    var name = bucketNameMap[id];
+    if(name == undefined){
+        return "Unknown ID: " + id;
+    }
+    return name;
 }
 
 // ########################## #### API Logic ##############################
@@ -109,12 +56,12 @@ function apiRequest(requestObj, callback){
 		dataType: "json",
 		data: JSON.stringify(requestObj),
 		success: function(data) {
-			if(apiRequestSuccessful(data)){
+		    if(apiRequestSuccessful(data)){
 			   	if(callback){
 				   callback(data);
 				}
-				return data;
 			}
+			return data
 		},
 		error: function(data) {
 			alert("Request Error!!\n" + JSON.stringify(data));
@@ -122,24 +69,34 @@ function apiRequest(requestObj, callback){
 	});
 }
 
-function createRequest(action, type, data, columns){
-	//TODO: Verify the input data
+function createRequest(action, type, data, columns, rules){
+	//TODO: Verify the input data and sanitize it
 	var request = {
 		action: action,
 		type: type
 	}
-	
-	if(data != undefined){
+
+	if(data != undefined && data != null){
 	   request.data = data;
 		if(data.length < 1){
 			request.data = null;
 		}
 	}
 	
-	if(columns != undefined){
+	if(columns != undefined && columns != null){
 	   request.columns = columns;
+	   	if(columns.length < 1){
+			request.columns = null;
+		}
 	}
-	
+
+	if(rules != undefined && rules != null){
+	   request.rules = rules;
+	   	/*if(rules.length < 1){
+			request.rules = null;
+		}*/
+	}
+
 	//request.debugTrace = new Error().stack;
 	
 	return request
@@ -153,65 +110,73 @@ function apiRequestSuccessful(response){
 	return false;
 }
 
-function apiResponseToJSTree(response){
+function apiResponseToTreeView(response){
 	var results = []
 	var data = response.data;
 	if (data != undefined) {
-		//alert(data);
-		results = responseToJSTreeNode(data);
-		//alert(JSON.stringify(results));
+		results = responseToTreeNode(data);
 	}
-	//alert(JSON.stringify(results));
 	return results;
 }
 
-function responseToJSTreeNode(data){
+function responseToTreeNode(data){
 	var results = []
 	data.forEach(function(item, index) {
 		var children = [];
 		item.Children.forEach(function(it, ind){
 			children.push({"id": it})
 		});
-		results.push({"id": item.ID, "text": item.Name, "children": (item.Children.length > 0 ? true : false), "childrenIDs": item.Children, "data": {"balance": item.Balance}})
+		results.push({"text": item.Name, "lazyLoad": (item.Children.length > 0), dataAttr: {"childrenIDs": item.Children, "ID": item.ID}, "tags": [item.Balance]})
 	});
 	return results
 }
 
 function apiTableSchemaToColumns(tableName){
-	//TODO: Consider removing the need for this function by using the tableSchema object as the columns
 	var columns = []
 	tableSchema[tableName].columns.forEach(function(item, index){
 		var obj = {"name": (item.name ? item.name : item.title ), "title": item.title};
+
+//Type: "text"|"number"|"checkbox"|"select"|"textarea"|"control" or custom type
+//Width??
+
+ /*   filtering: true,
+    editing: true,
+    sorting: true,
+    sorter: "string", // See list of sorting strategies
+
+    cellRenderer: null,  // Formatter replacement
+
+    validate: null*/
 
 		if(item.visible != undefined){
 		   obj.visible = item.visible
 		}
 		   
-		if(item.breakpoints){
+		/*if(item.breakpoints){
 			obj.breakpoints = item.breakpoints;
-		}
+		}*/
 		
-		if(item.formatString){
+		/*if(item.formatString){
 			obj.formatString = item.formatString;	
 		}
 
 		if(item.sortValue){
 			obj.sortValue = item.sortValue;
-		}
+		}*/
 		
 		if(item.formatter){
-			obj.formatter = item.formatter;
+		    obj.cellRenderer = item.formatter
 		}
-		
+
 		switch(item.type){
 			case "enum":
-				obj.type = "string"
-				obj.formatter = function(value, options, rowData){
-					return enums[tableName][obj.name][value];
+				obj.type = "text"
+				obj.cellRenderer = function(value, rowData){
+					return '<td>' + enums[tableName][obj.name][value] + '</td>';
 				};
 				break;
 			case "formatter":
-				obj.type = "string"
+				obj.type = "text"
 				break;
 			default:
 				obj.type = item.type;
@@ -243,16 +208,6 @@ function apiTableSchemaToEditForm(tableName){
 					var input = $('<input class="form-control" type="' + item.formType + '" value="' + "" + '" ' + (item.required ? " required " : "" ) + ' step="0.01" >');
 					input.attr("name", item.name)
 					div.append(input)
-					
-					//TODO: This is a quick fix; 
-					//The ID currently must be on the form in
-					//order for it to get sent to the server. 
-					//If it's not then the server can't determine
-					//where the updated data shoud go
-					if (item.name == "ID"){
-						input.prop("readonly", true);
-					}
-					
 					break;
 				case "select":
 					var select = $("<select class='form-control'></select>")
@@ -264,21 +219,18 @@ function apiTableSchemaToEditForm(tableName){
 					if (!item.formDynamicSelect) {
 						// If the option set is static
 						var optionArray = select.data("optionFunc")();
-						
-						//TODO: This is a quick fix
+
 						if(item.name == "Type"){
 							var option = $('<option value="" selected disabled hidden>Select a transaction type</option>');
 							select.append(option);
 						}
-						
+
 						optionArray.forEach(function(item, index){
 							var option = $('<option value="' + index + '">' + item + '</option>');
 							select.append(option);
 						});
 					}
-					
-					
-					
+
 					//TODO: This is a quick fix;
 					if(item.name == "Type"){
 					   select.change(function(data){
@@ -366,55 +318,129 @@ function initTable(tableName, apiDataType){
 			return result;
 		},
 		formCallback: function(tableRow, data){
-			if(tableRow){
-				onUpdateRow(tableName, tableRow, data);
-			} else {
-				onCreateRow(tableName, data);
-			}
-
-			refreshBalanceDisplay();
-			refreshSidebarAccountSelect();
+		    if (tableRow){
+		        $("#" + tableName).jsGrid("updateItem", tableRow, cleanRowData(data)).done(function() {
+                    console.log("update completed");
+                    refreshBalanceDisplay();
+		            refreshSidebarAccountSelect();
+                });
+		    } else {
+		        $("#" + tableName).jsGrid("insertItem", cleanRowData(data)).done(function() {
+                    console.log("insert completed");
+                    refreshBalanceDisplay();
+			        refreshSidebarAccountSelect();
+                });
+		    }
 			//TODO: make this actually reflect whether the callback completed sucessfully
 			return true;
 		},
-		deleteCallback: function(tableRow){
-			//alert("Delete Callback");
-			onDeleteRow(tableName, tableRow);
-			refreshBalanceDisplay();
-			refreshSidebarAccountSelect();
-			return true;
+		deleteCallback: function (tableRow){
+		    $("#" + tableName).jsGrid("deleteItem", tableRow).done(function() {
+                console.log("delete completed");
+                refreshBalanceDisplay();
+                refreshBucketTableAccountSelect();
+            });
 		}
 	};
 
-	$("#" + tableName).on('ready.ft.table', function(e, table){
-		onTableReady(tableName, table);
-	});
+    var fields = getTableData(tableName).columns;
+    fields.push({
+        type: "control",
+        modeSwitchButton: false,
+        editButton: true,
+        headerTemplate: function() {
+            var addBtn = $("<button>").attr("type", "button").attr("class", "btn").on("click", function () {
+                showFormModal(tableName, null, "New Row");
+            });
+            addBtn.append($("<i>").attr("class", "fas fa-plus-circle"))
 
+            return addBtn;
+        },
+        itemTemplate: function(a, b){
+            var editBtn = $("<button>").attr("type", "button").attr("class", "btn").on("click", function (e) {
+                e.stopPropagation();
+                var row = $("#" + tableName).jsGrid('rowByItem', b)
+                showFormModal(tableName, row, "Edit Row ID:" + row.data("JSGridItem").ID)
+            });
+            editBtn.append($("<i>").attr("class", "fas fa-edit"))
 
-	$("#" + tableName).footable({
-		columns: getTableData(tableName).columns,
-		editing: {
-			enabled: true,
-			addRow: function(){
-				showFormModal(tableName, null, "New Row")
-			},
-			editRow: function(row){
-				showFormModal(tableName, row, "Edit Row");
-			},
-			deleteRow: function(row){
-			    //TODO: Replace this with a modal
-				var table = getTableData(tableName).table;
-				var data = row.val();
-				//TODO: The amount field is the raw value, we really want the pretty amount string
-				//TODO: And this only works right for the transaction table's form
-				var rowText = data.Amount + " - " + data.Memo
+            var deleteBtn = $("<button>").attr("type", "button").attr("class", "btn").on("click", function (e) {
+                e.stopPropagation();
+                var row = $("#" + tableName).jsGrid('rowByItem', b)
+                showConfirmModal("Confirm Row Delete\n" + JSON.stringify(row.data("JSGridItem")), function(allClear){
+                    if(allClear){
+                        getTableData(tableName).deleteCallback(row);
+                    }
+                })
+            });
+            deleteBtn.append($("<i>").attr("class", "fas fa-trash"))
+            return [editBtn, deleteBtn];
+        }
+    })
 
-				if(confirm("Delete Row?\n" + rowText)){
-					getTableData(tableName).deleteCallback(row);
-				}
-			}
-		}
-	});
+    var table = $("#" + tableName).jsGrid({
+        fields: fields,
+        autoload: true,
+        controller: {
+            loadData: function (filter){
+                return apiRequest(createRequest("get", getTableData(tableName).apiDataType, null, null, getSelectedAccount().dataAttr.ID)).then(function(data){
+                    return data.data;
+                });
+            },
+            insertItem: function (data){
+                return apiRequest(createRequest("create", getTableData(tableName).apiDataType, [data])).then(function(data){
+                    return data.data[0];
+                });
+            },
+            updateItem: function (data){
+                return apiRequest(createRequest("update", getTableData(tableName).apiDataType, [data])).then(function(data){
+                    return data.data[0];
+                });
+            },
+            deleteItem: function (tableRow){
+                //TODO: This sends the entire row, it only needs to send the ID. This will reduce the request size and increase performance with sending batch deletes
+                return apiRequest(createRequest("delete", getTableData(tableName).apiDataType, [tableRow])).then(function(data){
+                    return data.data[0];
+                });
+            }
+        },
+
+        width: "100%",
+        height: "auto",
+
+        heading: true,
+        filtering: true,
+        inserting: false,
+        editing: true,
+        selecting: true,
+        sorting: true,
+        paging: false,
+        pageLoading: false,
+
+        rowClass: function(item, itemIndex) {}, //TODO: Use this to implement row color based on status
+        rowClick: function(data){}, // This must be empty
+
+        noDataContent: "No Data",
+
+        confirmDeleting: false, // Disable the builtin delete confirm because we have our own
+
+        invalidNotify: function(args) {},
+        invalidMessage: "Invalid data entered!",
+
+        loadIndication: true,
+        loadIndicationDelay: 100,
+        loadMessage: "Please, wait...",
+        loadShading: true,
+
+        updateOnResize: true,
+
+        //rowRenderer: null, // Use this to implement column condensing on small screens
+        //headerRowRenderer: null, // This might be useful
+
+        onInit: function(args){
+		    onTableReady(tableName, args.grid);
+	    }
+    });
 
 	// Create the row edit form
 	var editForm = $("#" + tableName + "EditFormDiv");
@@ -426,7 +452,7 @@ function initTable(tableName, apiDataType){
 function initTableEditForm(editFormDiv, editForm, tableName){
 	editFormDiv.append(editForm)
 
-		// Create the modal buttons in the footer
+	// Create the modal buttons in the footer
 	if (editFormDiv.data("submit")){
 	    var submitBtn = $('<button/>').attr({type: 'submit', class: 'btn btn-default btn-primary'});
 	    submitBtn.text('Submit')
@@ -511,87 +537,9 @@ function initFilterModal(){
     });
 }
 
-function refreshTable(tableName){
-	//alert("Table: " + tables[tableName].table);
-	if(getTableData(tableName).table){
-		console.log("Refreshing Table: " + tableName);
-		if(!getTableData(tableName).isLocked(null)){
-			
-			var unlockKey = getTableData(tableName).lockTable();
-			
-			switch(tableName){
-				case "accountTable":
-					apiRequest(createRequest("get", "account", null), function(response) {
-						var accounts = [];
-						response.data.forEach(function(item3, index3){
-							accounts.push({"ID": item3.ID, "Name": item3.Name});
-						});
-						
-						addTableRows(tableName, accounts, unlockKey);
-						getTableData(tableName).unlockTable(unlockKey);
-					});
-					break;
-				case "bucketTable":
-					apiRequest(createRequest("get", "bucket", [{"ID": getSelectedBucketTableAccount()}]), function(response) {
-						var buckets = [];
-						response.data.forEach(function(item3, index3){
-							buckets.push({"ID": item3.ID});
-						});
-
-						apiRequest(createRequest("get", "bucket", buckets, ["Transactions", "Name", "Parent"]), function(response) {
-							addTableRows(tableName, response.data, unlockKey);
-							getTableData(tableName).unlockTable(unlockKey);	
-						});
-					});
-					break;
-				case "transactionTable":
-					var node = _getNodeForID_(getSelectedAccount())
-					var parent = getBucketParentForID(node.id);
-					
-					requestColumns = ["Transactions"]
-					if(parent == -1){
-						requestColumns = ["AllTransactions"]
-					}
-
-					apiRequest(createRequest("get", getNodeType(node), [{"ID": parseInt(node.id)}], requestColumns), function(response) {
-						var data = []
-						var ids = new Set()
-						response.data.forEach(function(item, index){
-							item[requestColumns[0]].forEach(function(item2, index2){
-								ids.add(item2)
-							});
-						});
-
-						ids.forEach(function(item, index){
-							data.push({"ID": item})
-						})
-
-						if (data.length > 0) {
-							apiRequest(createRequest("get", "transaction", data, ["Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "Memo", "Payee", "Type"]), function(response) {
-								addTableRows(tableName, response.data, unlockKey);
-								getTableData(tableName).unlockTable(unlockKey);
-							});	
-						} else {
-							addTableRows(tableName, [], unlockKey);
-							getTableData(tableName).unlockTable(unlockKey);
-						}
-					});		
-					break;
-				default:
-					alert("Unknown table: " + tableName);
-			}
-
-			//console.log("Table: " + tableName + " Done Refreshing")
-		} else {
-			console.log("Error: " + tableName + " is locked and cannot be refreshed")
-		}
-	} else {
-		console.log("refreshTable: Table " + tableName + " is not ready yet!");
-	}
-}
-
 function refreshSidebarAccountSelect(){
-	$('#accountTree').jstree('refresh');
+    //TODO: Fix me
+	//$('#accountTree').jstree('refresh');
 }
 
 function refreshBucketTableAccountSelect() {
@@ -608,8 +556,8 @@ function refreshBucketTableAccountSelect() {
 
 function refreshBalanceDisplay() {
 	if (getSelectedAccount() != undefined) {
-		var node = _getNodeForID_(getSelectedAccount());
-		apiRequest(createRequest("get", getNodeType(node), [{"ID": node.id}], ["Balance", "PostedBalance"]), function(response) {
+		var node = getSelectedAccount();
+		apiRequest(createRequest("get", (!doesNodeHaveParent(node) ? "account" : "bucket"), [{"ID": node.dataAttr.ID}], ["Balance", "PostedBalance"]), function(response) {
 			$("#balanceDisplay").text("Available: \$" + response.data[0]["Balance"] + ", Posted: \$" + response.data[0]["PostedBalance"]);
 		});
 	} else {
@@ -618,10 +566,11 @@ function refreshBalanceDisplay() {
 }
 
 function getSelectedAccount() {
-	var selected = $('#accountTree').jstree('get_selected', false);
-	if (selected == "") {
-		$('#accountTree').jstree('select_node', 'ul > li:first');
-		selected = $('#accountTree').jstree('get_selected', false);
+    var selected = $('#accountTree').treeview('getSelected');
+	if (selected.length < 1) {
+	    var nodes = $("#accountTree").treeview('getNodes');
+	    $('#accountTree').treeview('selectNode', [ [nodes[0]], { silent: true } ]);
+		selected = $('#accountTree').treeview('getSelected');
 	}
 	return selected[0]
 }
@@ -634,7 +583,7 @@ $("#elementId :selected").val(); // The value of the selected option
 }
 
 function showFormModal(tableName, row, title){
-	var data = (row ? row.val() : {});
+	var data = (row ?  row.data("JSGridItem") : {});
 	var form = $(updateFormContent(tableName + "EditForm", data, title))
 	var inputs = form.find("select").toArray();
 	inputs.forEach(function(item, index){
@@ -644,7 +593,7 @@ function showFormModal(tableName, row, title){
 			if(needsUpdate()){
 				rowVal = -1;
 				if(row){
-					rowVal = row.val()[it[0].name];
+					rowVal = row[it[0].name];
 				}
 				updateDynamicInput(it, rowVal);
 			}
@@ -678,6 +627,12 @@ function updateDynamicInput(it, value){
 	});
 }
 
+function populateBucketNameMap(data){
+    data.data.forEach(function(item, index){
+        bucketNameMap[item.ID] = item.Name;
+    })
+}
+
 // ############################## Column Formatters ##############################
 
 function getBucketOptions(){
@@ -707,74 +662,60 @@ function getStatusOptions(){
 	return enums["transactionTable"]["Status"];
 }
 
-function getTransferDirection(rowData, bucketID){
+function getTransferDirection(rowData, node){
 	// True = Money Coming in; I.E. a positive value
 	// False = Money Going out; I.E. a negative value
 	switch(rowData.Type){
-		case "0":
-			return (rowData.DestBucket == bucketID);
+		case 0:
+			return (rowData.DestBucket == node.dataAttr.ID);
 			break;
-		case "1":
+		case 1:
 			return true;
 			break;
-		case "2":
+		case 2:
 			return false;
 			break;
 	}
 	return null;
 }
 
-function transactionTypeFormatter(value, options, rowData){
-	if(rowData.typeSort){
-	   return rowData.typeSort;
-	}
-	rowData.typeSort = rowData.Type
+function transactionTypeFormatter(value, rowData){
 	var fromToStr = "";
-	if (rowData.typeSort == "0"){//Transfer
+	if (value == "0"){//Transfer
 		fromToStr = (getTransferDirection(rowData, getSelectedAccount()) ? " from " : " to ");
 	}
-	return enums["transactionTable"]["Type"][rowData.typeSort] + fromToStr;
+	return '<td>' + enums["transactionTable"]["Type"][value] + fromToStr + '</td>';
 }
 
-function transactionAmountFormatter(value, options, rowData){
-	if(rowData.amountSort){
-	   return rowData.amountSort;
-	}
-
+function transactionAmountFormatter(value, rowData){
 	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
 	if (isDeposit){
 		// If deposit
-		rowData.amountSort = formatter.format(value);
-		return rowData.amountSort;
+		return '<td>' + formatter.format(value) + '</td>';
 	}
-	rowData.amountSort = formatter.format(value * -1);
-	return rowData.amountSort;
+	return '<td>' + formatter.format(value * -1) + '</td>';
 }
 
-function bucketFormatter(value, options, rowData){
-	if(rowData.bucketSort){
-	   return rowData.bucketSort;
-	}
+function bucketFormatter(value, rowData){
 	var id = -2; //This value will cause the name func to return "Invalid ID"
 
 	var transType = rowData.Type;
-	var isDeposit = (rowData, getSelectedAccount());
-	if(transType != "0"){
-		id = (transType == "1" ? rowData.DestBucket : rowData.SourceBucket);
+	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
+	if(transType != 0){
+		id = (transType == 1 ? rowData.DestBucket : rowData.SourceBucket);
 	} else {
 		id = (rowData.SourceBucket == getSelectedAccount() ? rowData.DestBucket : rowData.SourceBucket);
 	}
 
-	var par = getBucketParentForID(id);
+	//var par = getBucketParentForID(id);
 	//if(par != -1){
-	rowData.bucketSort = getBucketNameForID(id);
-	/*} else {
-		rowData.bucketSort = "Unassigned";
-	}*/
-	return rowData.bucketSort;
+	return '<td>' + getBucketNameForID(id) + '</td>';
+	//} else {
+		//rowData.bucketSort = "Unassigned";
+	//}//
 }
 
-function transactionDateFormatter(value, options, rowData){
+function transactionDateFormatter(value, rowData){
 	if(rowData.PostDate.toDate){
 		var d = new Date(1971,01,01);
 		if(rowData.PostDate.toDate() < d){
@@ -793,7 +734,9 @@ function onDocumentReady() {
 	  style: 'currency',
 	  currency: 'USD',
 	});
-	
+
+	bucketNameMap = {}
+
 	tableSchema = {
 		accountTable: {
 			columns: [
@@ -813,7 +756,7 @@ function onDocumentReady() {
 				{name: "ID", visible: false, formVisible: false},
 				{name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", formType: "select", options: getStatusOptions, required: true},
 				{name: "TransDate", title: "Date", type: "date", breakpoints:"xs", formatString:"YYYY-MM-DD", required: true, formType: "date"},
-				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date", formatter: transactionDateFormatter},
+				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date"/*, formatter: transactionDateFormatter*/},
 				{name: "Amount", title: "Amount", type: "formatter", breakpoints:"", required: true, formType: "number", formatterType: "number", formatter: transactionAmountFormatter},
 				{name: "Type", title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
 				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: bucketFormatter},
@@ -856,128 +799,94 @@ formDynamicSelect
 
 	lastSelection = null;
 	//initFilterModal()
+    /*conditionalselect : function (node, event) {
+        // TODO: A slightly more robust condition is better as the trans table is not the only table affected by this option
+        if(!getTableData("transactionTable").isLocked()){
+            return true;
+        }
+        console.log("Prevented changing the account selection")
+        return false;
+    },*/
 
-	//This is first so that the event will surely be registered before it is fired
-	$('#accountTree').on("ready.jstree", function(e, data) {
-		onJSTreeReady();
-	});
-	$('#accountTree').jstree({
-		core: {
-			animation: false,
-			data: {
-				method: "POST",
-				url: function(node) {
-					return '/database/apiRequest';
-				},
-				contentType: "application/json; charset=utf-8",
-				dataType: "json",
-				data: function(node) {
-					var data = []
-					
-					if(node.id == "#"){
-						data = null
-					} else {
-						if(node.original.childrenIDs){
-							node.original.childrenIDs.forEach(function(item, index){
-								data.push({ID: item, Children: null, Balance: null, Name: null})
-							});
-						} else {
-							alert("Requested nodes children, but this node has no children " + node.id);
-						}
-					}
-					
-					return JSON.stringify({	 
-						action: "get",
-						type: (node.id == "#" ? "account" : "bucket"),
-						data: data
-					})
-				},
-				dataFilter: function(data, type){
-					var json = JSON.parse(data);
-					if (apiRequestSuccessful(json)){
-						return JSON.stringify(apiResponseToJSTree(json));
-					}
-					return undefined;
-				}
-			}
-		},
-		conditionalselect : function (node, event) {
-			// TODO: A slightly more robust condition is better as the trans table is not the only table affected by this option
-			if(!getTableData("transactionTable").isLocked()){
-				return true;
-			}
-			console.log("Prevented changing the account selection")
-			return false;
-		},
-		plugins: [
-			//"checkbox",
-			//"contextmenu",
-			//"dnd",
-			//"massload",
-			//"search",
-			"sort",
-			//"state",
-			//"types",
-			"unique",
-			"wholerow",
-			//"changed",
-			"conditionalselect",
-			"grid"
-		],
-		grid: {
-			width: "100%",
-			columns: [{
-				tree: true,
-				header: "Accounts"
-			}, {
-				tree: false,
-				header: "Balance",
-				value: "balance"
-			}],
-		},
-	});
-	$('#accountTree').jstree().load_all();
+    apiRequest(createRequest("get", "account", null, ["ID", "Name"])).then(function(result){
+        populateBucketNameMap(result)
+        apiRequest(createRequest("get", "bucket", null, ["ID", "Name"])).then(function(result2){
+            populateBucketNameMap(result2);
+            $('#accountTree').treeview({
+                expandIcon: "fas fa-plus",
+                collapseIcon: "fas fa-minus",
+                //nodeIcon
+                //emptyIcon
+                //selectedIcon
+
+
+                showTags: true,
+                dataUrl: {
+                    method: "POST",
+                    url: '/database/apiRequest',
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(createRequest("get", "account", null, ["ID", "Name", "Balance", "Children"])),
+                    dataFilter: function(data, type){
+                        var json = JSON.parse(data);
+                        if (apiRequestSuccessful(json)){
+                            return JSON.stringify(apiResponseToTreeView(json));
+                        }
+                        return undefined;
+                    }
+                },
+                lazyLoad: function(node, resultFunc){
+                    var data = []
+                    //alert(JSON.stringify(node))
+                    if(node.dataAttr.childrenIDs){
+                        //alert(node.dataAttr.childrenIDs)
+                        node.dataAttr.childrenIDs.forEach(function(item, index){
+                            data.push({ID: item})
+                        });
+                    } else {
+                        alert("Requested nodes children, but this node has no children " + node.id);
+                    }
+                    apiRequest(createRequest("get", "bucket", data, ["ID", "Name", "Balance", "Children"]), function(data){
+                        resultFunc(apiResponseToTreeView(data))
+                    })
+                }
+            });
+            $('#accountTree').on('initialized', function(){
+               onTreeReady();
+            })
+        });
+    });
 }
 
-function onJSTreeReady() {
+function onTreeReady() {
 	lastSelection = getSelectedAccount(); // This will select the first list item and update the lastSelection for use later
 	refreshBalanceDisplay(); // Initial update since the usual event handler isn't registered yet
 	initTable("transactionTable", "transaction");
 	initTable("bucketTable", "bucket");
 	initTable("accountTable", "account");
 	
-	$('#accountTree').on("changed.jstree", function(e, data) {
-		onJSTreeChanged(e, data);
-	});
-	$('#accountTree').on("refresh.jstree", function(e, data) {
-		onJSTreeRefreshed(e, data);
+	$('#accountTree').on("nodeSelected", function(e, node) {
+		onTreeSelection(e, node);
 	});
 }
 
-function onJSTreeChanged(e, data) {
-	if (data.action == "select_node") {
-		console.log("JS TREE CHANGE------------------------------------------------")
-		if (lastSelection != getSelectedAccount()){
+function onTreeSelection(e, node) {
+    if (lastSelection != getSelectedAccount()){
+        if(!getTableData("transactionTable").isLocked()){
             refreshBalanceDisplay();
-            refreshTable("transactionTable");
+            $("#transactionTable").jsGrid("render")
             lastSelection = getSelectedAccount();
-		} else {
-		    console.log("Skipping because lastSel: " + lastSelection + " matched")
-		}
-	} else if (data.action == "deselect_all") {} else {
-		alert("onJSTreeChanged: Unknown action: " + data.action);
-	}
-}
-
-function onJSTreeRefreshed(e, data) {
-
+        } else {
+            console.log("The transaction table is locked...")
+        }
+    } else {
+        console.log("Skipping because lastSel: " + lastSelection + " matched")
+    }
 }
 
 function onTableReady(tableName, table){
-	// Load the table
 	tables[tableName].table = table;
 	console.log("Initialized Table: " + tableName);
-	refreshTable(tableName);
 }
 
 function onAccountSelectChanged() {
@@ -992,42 +901,11 @@ function onFormSubmit(self, tableName){
 	//TODO: Create and implement a generic data validation system
 	
 	// Call the submit callback for the affected table
-	console.log(tableName + ": " + JSON.stringify(data))
+	console.log("Form Data: " + tableName + ": " + JSON.stringify(data))
 	var result = getTableData(tableName).formCallback(row, data);
 	if(result == true){
 		hideModal(tableName + "EditFormModal");
 	}
 	// We return false to prevent the web page from being reloaded
 	return false;
-}
-
-function onCreateRow(tableName, data){
-	apiRequest(createRequest("create", getTableData(tableName).apiDataType, [formToSQLRow(data)]), function(result){
-		var unlockKey = getTableData(tableName).lockTable();
-		addTableRows(tableName, result.data, unlockKey, true);
-		getTableData(tableName).unlockTable(unlockKey);
-	});
-}
-
-function onDeleteRow(tableName, tableRow){
-	var data = {};
-	var rowData = tableRow.val()
-	getTableData(tableName).columns.forEach(function(item, index){
-		var key = item.name;
-		data[key] = rowData[key];
-	});
-	apiRequest(createRequest("delete", getTableData(tableName).apiDataType, [data]), function(result){
-		var unlockKey = getTableData(tableName).lockTable();
-		deleteTableRows(tableName, tableRow, unlockKey);
-		getTableData(tableName).unlockTable(unlockKey);
-	});
-}
-
-function onUpdateRow(tableName, tableRow, data){
-	apiRequest(createRequest("update", getTableData(tableName).apiDataType, [formToSQLRow(data)]), function(result){
-		var unlockKey = getTableData(tableName).lockTable();
-		var rows = [{row: tableRow, data: result.data[0]}] // Todo: Add support for updating multiple rows at once
-		updateTableRows(tableName, rows, unlockKey);
-		getTableData(tableName).unlockTable(unlockKey);
-	});
 }

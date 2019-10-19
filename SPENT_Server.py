@@ -280,12 +280,24 @@ class SPENTServer():
 		
 	def getTransaction(self, request, columns):
 		data = request.get("data", {})
-		
-		if data is None:
-			data = {}
-			
-		idList = [int(i.get("ID", -1)) for i in data]
-		transactions = self.accountMan.getTransactionsWhere(self.dataToWhere(data))
+		accountID = request.get("rules", -1)
+		account = None
+		try:
+			account = self.accountMan.getBucket(accountID)
+		except:
+			print("Failed to get account with id %s" % accountID)
+
+		where = None
+		if account is not None:
+			transList = []
+			if account.getParent() is None:
+				transList = self.spentUtil.getAllBucketTransactionsID(account)
+			else:
+				transList = self.spentUtil.getBucketTransactionsID(account)
+
+			where = SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, transList)))
+
+		transactions = self.accountMan.getTransactionsWhere(where)
 		return self.wrapData(self.SQLRowsToArray(transactions, columns))
 	
 	def createTransaction(self, request, columns):

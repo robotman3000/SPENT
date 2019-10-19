@@ -53,9 +53,6 @@ class TagManager:
 	def createTag(self):
 		pass
 
-	def renameTag(self):
-		pass
-
 	def deleteTag(self):
 		pass
 

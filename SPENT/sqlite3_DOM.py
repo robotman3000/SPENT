@@ -189,9 +189,14 @@ class DatabaseWrapper():
 				# Enum Table
 				defs = [{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": False, "KeepUnique": True},
 			 			{"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": True}]
-				
+
+			tableConstr = []
 			for column in defs:
 				options = []
+				if column.get("isConstraint", False):
+					tableConstr.append(column.get("constraintValue", None))
+					continue
+
 				if column.get("PreventNull", False):
 					options.append("NOT NULL")
 
@@ -205,7 +210,10 @@ class DatabaseWrapper():
 					options.append("UNIQUE")
 
 				columns.append("\"%s\" %s %s" % (column["name"], column["type"], " ".join(options)))
-				
+
+			for constr in tableConstr:
+				columns.append("CONSTRAINT %s" % constr)
+
 			sqlStr = "CREATE TABLE IF NOT EXISTS \"%s\" (%s)" % (tableName, ", ".join(columns))
 			self._rawSQL_(sqlStr, False)
 			

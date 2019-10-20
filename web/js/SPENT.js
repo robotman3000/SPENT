@@ -10,7 +10,7 @@ var formatter = null;
 // ############################## Utility Functions ##############################
 
 function getOrDefault(object, property, def){
-	return (object[property] ? object[property] : def);
+	return (object[property] != undefined ? object[property] : def);
 }
 
 function getTableData(tableName){
@@ -41,6 +41,9 @@ function cleanRowData(data){
 function getBucketNameForID(id){
     var name = bucketNameMap[id];
     if(name == undefined){
+        if(id == undefined){
+            alert("What?")
+        }
         return "Unknown ID: " + id;
     }
     return name;
@@ -116,6 +119,11 @@ function apiResponseToTreeView(response){
 	if (data != undefined) {
 		results = responseToTreeNode(data);
 	}
+
+	if(results.length < 1){
+	    results.push({"text": "No Accounts", "dataAttr": {"ID": -1, "childrenIDs": []}})
+	}
+
 	return results;
 }
 
@@ -148,6 +156,7 @@ function apiTableSchemaToColumns(tableName){
 
     validate: null*/
 
+        //obj.width = "1"
 		if(item.visible != undefined){
 		   obj.visible = item.visible
 		}
@@ -190,7 +199,7 @@ function apiTableSchemaToColumns(tableName){
 
 function apiTableSchemaToEditForm(tableName){
 	var columns = []
-
+	//alert("Edit Form for: " + tableName);
 	tableSchema[tableName].columns.forEach(function(item, index){
 		if(item.formVisible != false){
 			var titleStr = (item.title ? item.title : item.name); 
@@ -321,14 +330,14 @@ function initTable(tableName, apiDataType){
 		    if (tableRow){
 		        $("#" + tableName).jsGrid("updateItem", tableRow, cleanRowData(data)).done(function() {
                     console.log("update completed");
+                    refreshSidebarAccountSelect();
                     refreshBalanceDisplay();
-		            refreshSidebarAccountSelect();
                 });
 		    } else {
 		        $("#" + tableName).jsGrid("insertItem", cleanRowData(data)).done(function() {
                     console.log("insert completed");
+                    refreshSidebarAccountSelect();
                     refreshBalanceDisplay();
-			        refreshSidebarAccountSelect();
                 });
 		    }
 			//TODO: make this actually reflect whether the callback completed sucessfully
@@ -337,8 +346,8 @@ function initTable(tableName, apiDataType){
 		deleteCallback: function (tableRow){
 		    $("#" + tableName).jsGrid("deleteItem", tableRow).done(function() {
                 console.log("delete completed");
+                refreshSidebarAccountSelect();
                 refreshBalanceDisplay();
-                refreshBucketTableAccountSelect();
             });
 		}
 	};
@@ -409,7 +418,7 @@ function initTable(tableName, apiDataType){
         height: "auto",
 
         heading: true,
-        filtering: true,
+        filtering: false,
         inserting: false,
         editing: true,
         selecting: true,
@@ -450,6 +459,7 @@ function initTable(tableName, apiDataType){
 }
 
 function initTableEditForm(editFormDiv, editForm, tableName){
+    //alert("init Edit Form for: " + tableName);
 	editFormDiv.append(editForm)
 
 	// Create the modal buttons in the footer
@@ -464,82 +474,113 @@ function initTableEditForm(editFormDiv, editForm, tableName){
 }
 
 function initFilterModal(){
-    var rules_basic = {
-      condition: 'AND',
-      rules: [{
-        id: 'price',
-        operator: 'less',
-        value: 10.25
-      }, {
-        condition: 'OR',
-        rules: [{
-          id: 'category',
-          operator: 'equal',
-          value: 2
-        }, {
-          id: 'category',
-          operator: 'equal',
-          value: 1
-        }]
-      }]
-    };
-
     $('#transactionTableFilter').queryBuilder({
+        filters: [
+            {
+                id: 'status',
+                label: 'Status',
+                type: 'integer',
+                input: 'select',
+                values: {
+                  1: 'Uninitiated',
+                  2: 'Submitted',
+                  3: 'Post-Pending',
+                  4: 'Complete',
+                },
+                operators: ['equal', 'not_equal', 'less', 'less_or_equal', 'greater', 'greater_or_equal', 'between', 'not_between']
+            },
+            {
+                id: 'type',
+                label: 'Type',
+                type: 'integer',
+                input: 'select',
+                values: {
+                  1: 'Transfer',
+                  2: 'Deposit',
+                  3: 'Withdrawal',
+                },
+                operators: ['equal', 'not_equal']
+            },
+            {
+                id: 'amount',
+                label: 'Amount',
+                type: 'double',
+            },
+            {
+                id: 'payee',
+                label: 'Payee',
+                type: 'string',
+                operators: ['equal', 'not_equal', 'begins_with', 'not_begins_with', 'contains', 'not_contains', 'ends_with', 'not_ends_with', 'is_empty', 'is_not_empty', 'is_null', 'is_not_null'],
+            },
+            {
+                id: 'tag',
+                label: 'Tag',
+                type: 'string',
+                operators: ['equal', 'not_equal', 'begins_with', 'not_begins_with', 'contains', 'not_contains', 'ends_with', 'not_ends_with', 'is_empty', 'is_not_empty', 'is_null', 'is_not_null'],
+            },
+            {
+                id: 'date',
+                label: 'Date',
+                type: 'date',
+                validation: {
+                  format: 'YYYY-MM-DD'
+                },
+                plugin: 'datepicker',
+                plugin_config: {
+                  format: 'yyyy-mm-dd',
+                  todayBtn: 'linked',
+                  todayHighlight: true,
+                  autoclose: true
+                }
+            },
+            {
+                id: 'postdate',
+                label: 'Post Date',
+                type: 'date',
+                validation: {
+                  format: 'YYYY-MM-DD'
+                },
+                plugin: 'datepicker',
+                plugin_config: {
+                  format: 'yyyy-mm-dd',
+                  todayBtn: 'linked',
+                  todayHighlight: true,
+                  autoclose: true
+                }
+            },
+            {
+                id: 'sourcebucket',
+                label: 'Source',
+                type: 'integer',
+            },
+            {
+                id: 'destbucket',
+                label: 'Destination',
+                type: 'integer',
+            }
+        ],
+        plugins: [
+            'invert',
+            'not-group'
+        ]
+    });
 
-  filters: [{
-    id: 'name',
-    label: 'Name',
-    type: 'string'
-  }, {
-    id: 'category',
-    label: 'Category',
-    type: 'integer',
-    input: 'select',
-    values: {
-      1: 'Books',
-      2: 'Movies',
-      3: 'Music',
-      4: 'Tools',
-      5: 'Goodies',
-      6: 'Clothes'
-    },
-    operators: ['equal', 'not_equal', 'in', 'not_in', 'is_null', 'is_not_null']
-  }, {
-    id: 'in_stock',
-    label: 'In stock',
-    type: 'integer',
-    input: 'radio',
-    values: {
-      1: 'Yes',
-      0: 'No'
-    },
-    operators: ['equal']
-  }, {
-    id: 'price',
-    label: 'Price',
-    type: 'double',
-    validation: {
-      min: 0,
-      step: 0.01
-    }
-  }, {
-    id: 'id',
-    label: 'Identifier',
-    type: 'string',
-    placeholder: '____-____-____',
-    operators: ['equal', 'not_equal'],
-    validation: {
-      format: /^.{4}-.{4}-.{4}$/
-    }
-  }],
+    $('#btn-get').on('click', function() {
+      var result = $('#transactionTableFilter').queryBuilder('getRules');
 
-  rules: rules_basic
+      if (!$.isEmptyObject(result)) {
+        alert(JSON.stringify(result, null, 2));
+      }
     });
 }
 
 function refreshSidebarAccountSelect(){
-    //TODO: Fix me
-	//$('#accountTree').jstree('refresh');
+    //TODO: This is not my prefered way of making this work
+    // but the treeview doesn't have a proper refresh function
+    $("#accountTree").treeview(true).init($("#accountTree").treeview(true).options)
+    $('#accountTree').on("nodeSelected", function(e, node) {
+        onTreeSelection(e, node);
+    });
 }
 
 function refreshBucketTableAccountSelect() {
@@ -572,6 +613,8 @@ function getSelectedAccount() {
 	    $('#accountTree').treeview('selectNode', [ [nodes[0]], { silent: true } ]);
 		selected = $('#accountTree').treeview('getSelected');
 	}
+	//TODO: This is a very quick fix for the badges not appearing right
+    $(".node-accountTree .badge").attr("class", "badge badge-pill badge-secondary testClass float-right")
 	return selected[0]
 }
 
@@ -593,7 +636,7 @@ function showFormModal(tableName, row, title){
 			if(needsUpdate()){
 				rowVal = -1;
 				if(row){
-					rowVal = row[it[0].name];
+					rowVal = data[it[0].name];
 				}
 				updateDynamicInput(it, rowVal);
 			}
@@ -638,16 +681,17 @@ function populateBucketNameMap(data){
 function getBucketOptions(){
 	//TODO: Rewrite this to account for the selected account and whether the type is set as "transfer"
 	var array = [];
-	return apiRequest(createRequest("get", "account")).then(function(result){
+	return apiRequest(createRequest("get", "account", null, ["ID", "Name", "Parent", "Ancestor"])).then(function(result){
 		result.data.forEach(function(item, index){
+
 			array.push({"ID": item.ID, "Name": item.Name})
 		});
-		return apiRequest(createRequest("get", "bucket"));
+		return apiRequest(createRequest("get", "bucket", null, ["ID", "Name", "Parent", "Ancestor"]));
 	}).then(function(result2){
 		//alert("Hello World")
 
 		result2.data.forEach(function(item, index){
-			array.push({"ID": item.ID, "Name": "    " + item.Name})
+			array.push({"ID": item.ID, "Name": item.Name + " (" + (item.Ancestor != -1 ? getBucketNameForID(item.Ancestor) : "")  + ")"})
 		});
 
 		return Promise.resolve(array);
@@ -683,6 +727,8 @@ function transactionTypeFormatter(value, rowData){
 	var fromToStr = "";
 	if (value == "0"){//Transfer
 		fromToStr = (getTransferDirection(rowData, getSelectedAccount()) ? " from " : " to ");
+	} else { // Other
+	    fromToStr = (value == "2" ? " from " : " to ")
 	}
 	return '<td>' + enums["transactionTable"]["Type"][value] + fromToStr + '</td>';
 }
@@ -697,6 +743,10 @@ function transactionAmountFormatter(value, rowData){
 }
 
 function bucketFormatter(value, rowData){
+	return '<td>' + getBucketNameForID(value) + '</td>';
+}
+
+function transactionBucketFormatter(value, rowData){
 	var id = -2; //This value will cause the name func to return "Invalid ID"
 
 	var transType = rowData.Type;
@@ -704,7 +754,7 @@ function bucketFormatter(value, rowData){
 	if(transType != 0){
 		id = (transType == 1 ? rowData.DestBucket : rowData.SourceBucket);
 	} else {
-		id = (rowData.SourceBucket == getSelectedAccount() ? rowData.DestBucket : rowData.SourceBucket);
+		id = (isDeposit ? rowData.SourceBucket : rowData.DestBucket);
 	}
 
 	//var par = getBucketParentForID(id);
@@ -741,13 +791,13 @@ function onDocumentReady() {
 		accountTable: {
 			columns: [
 				{name: "ID", visible: false, formVisible: false},
-				{name: "Name", title: "Name", type: "string", required: true, formType: "text"}
+				{name: "Name", title: "Name", type: "text", required: true, formType: "text"}
 			]
 		},
 		bucketTable: {
 			columns: [
 				{name: "ID", visible: false, formVisible: false},
-				{name: "Name", title: "Name", type: "string", required: true, formType: "text"},
+				{name: "Name", title: "Name", type: "text", required: true, formType: "text"},
 				{name: "Parent", title: "Parent", type: "formatter", formatter: bucketFormatter, required: true, formType: "select", options: getBucketOptions, formDynamicSelect: function(){ return true; }}
 			]
 		},
@@ -759,11 +809,11 @@ function onDocumentReady() {
 				{name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", formatString:"YYYY-MM-DD", formType: "date"/*, formatter: transactionDateFormatter*/},
 				{name: "Amount", title: "Amount", type: "formatter", breakpoints:"", required: true, formType: "number", formatterType: "number", formatter: transactionAmountFormatter},
 				{name: "Type", title: "Type", type: "formatter", breakpoints:"xs sm md", required: true, formType: "select", options: getTypeOptions, formatter: transactionTypeFormatter},
-				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: bucketFormatter},
+				{title: "Bucket", type: "formatter", breakpoints:"xs sm md", formVisible: false, formatter: transactionBucketFormatter},
 				{title: "Source", name: "SourceBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: function(){ return true; }},
 				{title: "Destination", name: "DestBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: function(){ return true; }},
-				{name: "Memo", title: "Memo", type: "string", breakpoints:"", formType: "textbox"},
-				{name: "Payee", title: "Payee", type: "string", breakpoints:"xs sm", formType: "text"}
+				{name: "Memo", title: "Memo", type: "text", breakpoints:"", formType: "textbox"},
+				{name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm", formType: "text"}
 			]
 		}
 	}
@@ -798,7 +848,7 @@ formDynamicSelect
 	}
 
 	lastSelection = null;
-	//initFilterModal()
+	initFilterModal()
     /*conditionalselect : function (node, event) {
         // TODO: A slightly more robust condition is better as the trans table is not the only table affected by this option
         if(!getTableData("transactionTable").isLocked()){
@@ -818,7 +868,6 @@ formDynamicSelect
                 //nodeIcon
                 //emptyIcon
                 //selectedIcon
-
 
                 showTags: true,
                 dataUrl: {
@@ -848,11 +897,23 @@ formDynamicSelect
                     }
                     apiRequest(createRequest("get", "bucket", data, ["ID", "Name", "Balance", "Children"]), function(data){
                         resultFunc(apiResponseToTreeView(data))
+
+                        //TODO: This is a very quick fix for the badges not appearing right
+                        $(".node-accountTree .badge").attr("class", "badge badge-pill badge-secondary testClass float-right")
                     })
                 }
             });
+
+            var initComplete = false;
             $('#accountTree').on('initialized', function(){
-               onTreeReady();
+               if(!initComplete){
+                   onTreeReady();
+                   initComplete = true;
+               }
+
+               $('#accountTree').on("nodeSelected", function(e, node) {
+                   onTreeSelection(e, node);
+               });
             })
         });
     });
@@ -864,10 +925,6 @@ function onTreeReady() {
 	initTable("transactionTable", "transaction");
 	initTable("bucketTable", "bucket");
 	initTable("accountTable", "account");
-	
-	$('#accountTree').on("nodeSelected", function(e, node) {
-		onTreeSelection(e, node);
-	});
 }
 
 function onTreeSelection(e, node) {

@@ -1,6 +1,6 @@
 from datetime import date
 from SPENT.sqlite3_DOM import *
-from typing import Set, cast
+from typing import Set, cast, List, Any, Optional, Dict
 
 #Verb layer features
 #	Reconcile
@@ -33,30 +33,80 @@ def asStr(obj: Any) -> str:
 		return obj
 	return str(obj)
 
-class Tag:
-	def getName(self):
-		pass
+class Tag(SQL_RowMutable):
+	def __init__(self, database: 'SpentDBManager', ID: int):
+		super().__init__(database, "Tags", ID)
 
-	def getTransactions(self):
-		pass
+	def getID(self) -> int:
+		return asInt(self.getValue("ID"))
+
+	def getName(self) -> str:
+		return asStr(self.getValue("Name"))
+
+	def setName(self, name: str) -> None:
+		self.updateValue("Name", name)
+
+	def getTransactions(self) -> List['Transaction']:
+		transIDs = self.database.selectTableRowsColumnsWhere("TransactionTags", ["TransactionID"], SQL_WhereStatementBuilder("TagID == %d" % self.getID()))
+		if len(transIDs) > 0:
+			transList = self.database.getTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join([asStr(row.getValue("TransactionID")) for row in transIDs])))
+			return transList
+		return []
+
+	def applyToTransactions(self, transactions: List['Transaction']) -> None:
+		myID = self.getID() # No need to query the table N > 1 times for the same thing, once will do
+		for t in transactions:
+			self.database._tableInsertInto_("TransactionTags", {"TransactionID": t.getID(), "TagID": myID})
+
+	def removeFromTransactions(self, transactions: List['Transaction']) -> None:
+		idList = [asStr(t.getID()) for t in transactions if t is not None]
+		if len(idList) > 0:
+			where = SQL_WhereStatementBuilder("TagID == %s" % self.getID()).AND("TransactionID in (%s)" % ", ".join(idList))
+			self.database.deleteTableRowsWhere("TransactionTags", where)
 
 class TagManager:
 	def __init__(self, database: 'SpentDBManager'):
 		self.db = database
 
-	def getTransactionTags(self, transaction: 'Transation') -> List[Tag]:
-		pass
+	def getTransactionTags(self, transaction: 'Transaction') -> List[Tag]:
+		return self.getTagsWhere(SQL_WhereStatementBuilder("TransactionID == %d" % transaction.getID()))
 
-	def getTag(self):
-		pass
+	def getTag(self, id: int) -> Optional[Tag]:
+		return Tag(self.db, id);
 
-	def createTag(self):
-		pass
+	#TODO: Implement a getTag by name
 
-	def deleteTag(self):
-		pass
+	def getTagsWhere(self, where: Optional[SQL_WhereStatementBuilder] = None) -> List[Tag]:
+		if where is None:
+			where = SQL_WhereStatementBuilder()
 
-class SpentUtil():
+		result = self.db.selectTableRowsColumnsWhere("Tags", columnNames=["ID"], where=where)
+		tags = []
+		for i in result:
+			tag = self.getTag(asInt(i.getValue("ID")))
+			if tag is not None:
+				tags.append(tag)
+			else:
+				print("Error: TagManager.getTagsWhere: Encountered a None tag")
+		return tags
+
+	def createTag(self, name: str) -> Optional[Tag]:
+		return self.getTag(self.db._tableInsertInto_("Tags", {"Name": str(name)})[0][0])
+
+	def deleteTag(self, tag: Tag) -> None:
+		self.deleteTagsWhere(self.db.rowsToWhere([tag.getID()]))
+		del tag
+
+	def deleteTagsWhere(self, where: SQL_WhereStatementBuilder) -> List[int]:
+		tags = self.getTagsWhere(where)
+		tagIDs = []
+		for tag in tags:
+			tagIDs.append(tag.getID())
+			tag.removeFromTransactions(tag.getTransactions())
+		self.db.deleteTableRowsWhere("Tags", where)
+		return tagIDs
+
+class SpentUtil:
 	def __init__(self, spentDB):
 		self._spentDB_ = spentDB
 
@@ -180,8 +230,18 @@ class SpentDBManager(DatabaseWrapper):
 			 {"name": "Payee", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
 
 		self.registerTableSchema("Tags",
+			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
+			 {"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": True}])
+
+		self.registerTableSchema("TransactionTags",
 			[{"name": "TransactionID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
+			 {"name": "TagID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
+			 {"isConstraint": True, "constraintValue": "unq UNIQUE (TransactionID, TagID)"}])
+
+		def getTagName(source, tableName, columnName):
+			return self.selectTableRowsColumns("Tags", [source.getValue("TagID")], ["Name"])[0]
+
+		self.registerVirtualColumn("TransactionTags", "TagName", getTagName)
 
 		self.registerTableSchema("StatusMap", None, ["Uninitiated", "Submitted", "Post-Pending", "Complete"])
 		

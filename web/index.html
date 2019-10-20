@@ -95,7 +95,7 @@
 						</div>
 						<div class="col-md-8 col-lg-9 p-0">
 							<!-- Transaction Table -->
-							<table id="transactionTable" class="table-striped table-hover" data-editing-always-show="true" data-paging="false" data-filtering="true" data-sorting="true" data-editing="true" data-state="false"></table>
+							<table id="transactionTable" class="table-striped table-hover table-responsive"></table>
 						</div>
 					</div>
 				</div>
@@ -121,6 +121,7 @@
 
 				</div>
 				<div class="modal-footer">
+					<button type="button" class="btn" id="btn-get">Get Rules</button>
 					<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
 				</div>
 			</div>
@@ -255,8 +256,8 @@
 
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-default" id="confirmActionModal-True" onclick="_confirmHandler_(true)">Yes</button>
-        			<button type="button" class="btn btn-primary" id="confirmActionModal-False" onclick="_confirmHandler_(false)">No</button>
+					<button type="button" class="btn btn-primary" id="confirmActionModal-False" onclick="_confirmHandler_(false)">No</button>
+					<button type="button" class="btn btn-secondary" id="confirmActionModal-True" onclick="_confirmHandler_(true)">Yes</button>
 				</div>
 			</div>
 		</div>

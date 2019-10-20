@@ -102,8 +102,12 @@ class ListCommand(Command):
 accountMan = SpentDBManager()
 spentUtil = SpentUtil(accountMan)
 spentUtil.registerUtilityColumns()
+tagMan = TagManager(accountMan)
 accountMan.printDebug = True
 accountMan.connect()
+
+
+
 
 def printTree(bucket: Bucket, depth: int = 0) -> None:
 	print("%s %d - %s ($%s, $%s)" % (" ".join([" | " for i in range(0, depth)]), bucket.getID(), bucket.getName(), spentUtil.getAvailableBalance(bucket), spentUtil.getPostedBalance(bucket)))
@@ -184,26 +188,77 @@ def saveDB(command: Optional[List[str]]) -> None:
 	accountMan.save()
 	print("Changes Saved.")
 
+def addTag(command: List[str]) -> None:
+	tagMan.createTag(command[0])
+
+def deleteTag(command: List[str]) -> None:
+	tagMan.deleteTag(tagMan.getTag(asInt(command[0])))
+
+def showTag(command: List[str]) -> None:
+	tag = tagMan.getTag(asInt(command[0]))
+	propList = ["ID", "Name"]
+	for i in propList:
+		print("%s: %s" % (i, tag.getValue(i)))
+
+	print("Transactions:")
+	transList = tag.getTransactions()
+	for trans in transList:
+		propList = ["ID", "Status", "TransDate", "PostDate", "Amount", "SourceBucket", "DestBucket", "IsTransfer"]
+		res = ", ".join(map(str, [("%s: %s" % (i, trans.getValueRemapped(i))) for i in propList]))
+		print(res)
+
+def applyTag(command: List[str]) -> None:
+	transaction = accountMan.getTransaction(asInt(command[1]))
+	tag = tagMan.getTag(asInt(command[0]))
+
+	if tag is not None:
+		if transaction is not None:
+			tag.applyToTransactions([transaction])
+		else:
+			print("No transaction with ID %s exists" % command[1])
+	else:
+		print("No tag with ID %s exists" % command[0])
+
+def removeTag(command: List[str]) -> None:
+	transaction = accountMan.getTransaction(asInt(command[1]))
+	tag = tagMan.getTag(asInt(command[0]))
+
+	if tag is not None:
+		if transaction is not None:
+			tag.removeFromTransactions([transaction])
+		else:
+			print("No transaction with ID %s exists" % command[1])
+	else:
+		print("No tag with ID %s exists" % command[0])
+
 repl = REPL(callback, {
 	'raw' : Command(rawSQL),
 	'save' : Command(saveDB),
 
 	'UpdateBucket' : UpdateCommand(accountMan.getBucket), #ScrollMenu Item (i) Button
 	'UpdateTransaction' : UpdateCommand(accountMan.getTransaction),  #ScrollMenu Item (i) Button
+	'UpdateTag' : UpdateCommand(tagMan.getTag),
 
 	'CreateBucket' : Command(addBucket, "Name; Parent ID"), #Header Plus Button
 	'CreateTransaction' : Command(addTransaction, "Amount; Source Bucket ID, Dest Bucket ID, YYYY-MM-DD; Memo"), #Header Plus Button
-	
+	'CreateTag' : Command(addTag, "Name"),
+
 	'DeleteBucket' : Command(deleteBucket, "ID"), #Swipe To Delete
 	'DeleteTransation' : Command(deleteTransaction, "ID"), #Swipe To Delete
+	'DeleteTag' : Command(deleteTag, "ID"),
 
 	'ListBuckets' : ListCommand(accountMan.getBucketsWhere), # ScrollMenu
 	'ListAccounts' : ListCommand(accountMan.getAccountsWhere), # ScrollMenu
 	'ListTransactions' : ListCommand(accountMan.getTransactionsWhere), # ScrollMenu
+	'ListTags' : ListCommand(tagMan.getTagsWhere),
 
 	'ShowBucket' : Command(showBucket, "ID"), #ScrollMenu Item Tapped
 	'ShowTransaction' : Command(showTransaction, "ID"), #ScrollMenu Item Tapped
-	
+	'ShowTag' : Command(showTag, "ID"),
+
+	'ApplyTag' : Command(applyTag, "TagID; TransactionID"),
+	'RemoveTag' : Command(removeTag, "TagID; TransactionID"),
+
 	'ls' : Command(showAccountTree),
 	'ToggleDebug' : Command(toggleDebug),
 })

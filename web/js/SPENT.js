@@ -72,7 +72,8 @@ function apiRequest(requestObj, callback){
 	});
 }
 
-function createRequest(action, type, data, columns, rules){
+//TODO: The selAccount parameter is temperary until a proper API change for this type of data is designed
+function createRequest(action, type, data, columns, rules, selAccount){
 	//TODO: Verify the input data and sanitize it
 	var request = {
 		action: action,
@@ -95,13 +96,16 @@ function createRequest(action, type, data, columns, rules){
 
 	if(rules != undefined && rules != null){
 	   request.rules = rules;
-	   	/*if(rules.length < 1){
+	   	if(rules.length < 1){
 			request.rules = null;
-		}*/
+		}
 	}
 
-	//request.debugTrace = new Error().stack;
-	
+	if(selAccount != undefined && selAccount != null){
+	   request.selAccount = selAccount;
+	}
+
+	request.debugTrace = new Error().stack;
 	return request
 }
 
@@ -392,7 +396,14 @@ function initTable(tableName, apiDataType){
         autoload: true,
         controller: {
             loadData: function (filter){
-                return apiRequest(createRequest("get", getTableData(tableName).apiDataType, null, null, getSelectedAccount().dataAttr.ID)).then(function(data){
+                var selID = (getTableData(tableName).apiDataType == "transaction" ? getSelectedAccount().dataAttr.ID : getSelectedBucketTableAccount().ID)
+
+                var rules = null;
+                if(getTableData(tableName).apiDataType == "transaction"){
+                    rules = getTransactionFilterRules();
+                }
+
+                return apiRequest(createRequest("get", getTableData(tableName).apiDataType, null, null, rules, selID)).then(function(data){
                     return data.data;
                 });
             },
@@ -566,12 +577,17 @@ function initFilterModal(){
     });
 
     $('#btn-get').on('click', function() {
-      var result = $('#transactionTableFilter').queryBuilder('getRules');
-
-      if (!$.isEmptyObject(result)) {
-        alert(JSON.stringify(result, null, 2));
-      }
+         alert(JSON.stringify(getTransactionFilterRules(), null, 2));
     });
+}
+
+function getTransactionFilterRules(){
+    var result = $('#transactionTableFilter').queryBuilder('getRules');
+
+    if ($.isEmptyObject(result)) {
+        return null;
+    }
+    return result;
 }
 
 function refreshSidebarAccountSelect(){
@@ -585,14 +601,20 @@ function refreshSidebarAccountSelect(){
 
 function refreshBucketTableAccountSelect() {
 	// Bucket Editor
-	$.get({
-		url: "/database/getAccounts?format=html-select",
-		success: function(data) {
-			var select = $("#bucketEditAccountSelect");
-			select.options.length = 0; // Clear the options
-			//TODO Finish me!!!
-		}
-	});
+	var select = $("#bucketEditAccountSelect");
+	if(select.data("optionFunc") == undefined){
+	    select.data("optionFunc", function(){
+	        return apiRequest(createRequest("get", "account", null, ["ID", "Name"], null, null)).then(function(result){
+	            var array = [];
+                result.data.forEach(function(item, index){
+                    array.push({"ID": item.ID, "Name": item.Name})
+                });
+                return Promise.resolve(array);
+            })
+	    })
+	}
+
+	updateDynamicInput(select, -1, select.data("optionFunc"))
 }
 
 function refreshBalanceDisplay() {
@@ -619,10 +641,11 @@ function getSelectedAccount() {
 }
 
 function getSelectedBucketTableAccount(){
-	/*
-	$("#elementId :selected").text(); // The text content of the selected option
-$("#elementId :selected").val(); // The value of the selected option
-	*/
+    var selectedVal = $("#bucketEditAccountSelect :selected")
+    if (selectedVal.val() == undefined){
+        return {ID: -1, Name: "Error!"}
+    }
+    return {ID: parseInt(selectedVal.val()), Name: selectedVal.text()}
 }
 
 function showFormModal(tableName, row, title){
@@ -638,7 +661,7 @@ function showFormModal(tableName, row, title){
 				if(row){
 					rowVal = data[it[0].name];
 				}
-				updateDynamicInput(it, rowVal);
+				updateDynamicInput(it, rowVal, it.data("optionFunc"));
 			}
 		}
 	});
@@ -647,11 +670,11 @@ function showFormModal(tableName, row, title){
 	showModal(tableName + "EditFormModal");
 }
 
-function updateDynamicInput(it, value){
+function updateDynamicInput(it, value, optionFunction){
 	it.prop("disabled", true);
 
 	// After the function completes it shoud re-enable the input
-	it.data("optionFunc")().then(function(result){
+	optionFunction().then(function(result){
 		if(result == null){
 			alert("Failed to update input: " + it)
 		} else {
@@ -858,6 +881,10 @@ formDynamicSelect
         return false;
     },*/
 
+    $("#bucketEditAccountSelect").change(function(){
+        onAccountSelectChanged();
+    })
+
     apiRequest(createRequest("get", "account", null, ["ID", "Name"])).then(function(result){
         populateBucketNameMap(result)
         apiRequest(createRequest("get", "bucket", null, ["ID", "Name"])).then(function(result2){
@@ -947,7 +974,7 @@ function onTableReady(tableName, table){
 }
 
 function onAccountSelectChanged() {
-
+    $("#bucketTable").jsGrid("render")
 }
 
 function onFormSubmit(self, tableName){

@@ -247,7 +247,18 @@ class SPENTServer():
 
 	def getBucket(self, request, columns):
 		data = request.get("data", [])
-		rows = self.accountMan.getBucketsWhere(self.dataToWhere(data))
+		accountID = request.get("selAccount", -1)
+		account = None
+		try:
+			account = self.accountMan.getBucket(accountID)
+		except:
+			print("Failed to get account with id %s" % accountID)
+
+		where = self.dataToWhere(data)
+		if account is not None:
+			where.AND("Ancestor == %s" % account.getID())
+
+		rows = self.accountMan.getBucketsWhere(where)
 		result = self.SQLRowsToArray(rows, columns)
 		return self.wrapData(result)
 
@@ -280,7 +291,7 @@ class SPENTServer():
 		
 	def getTransaction(self, request, columns):
 		data = request.get("data", {})
-		accountID = request.get("rules", -1)
+		accountID = request.get("selAccount", -1)
 		account = None
 		try:
 			account = self.accountMan.getBucket(accountID)

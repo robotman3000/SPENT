@@ -1,8 +1,10 @@
-var tables = {}
-var tableSchema = {}
-var enums = {}
+var tables = {};
+var tableSchema = {};
+var enums = {};
 var lastSelection = null;
-var bucketNameMap = {}
+var bucketNameMap = {};
+//var dirtyList = {};
+//var resourceChangeListeners = {};
 
 // Create our number formatter.
 var formatter = null;
@@ -126,7 +128,7 @@ function getStatusOptions(){
 
 // ########################## #### API Logic ##############################
 
-function apiRequest(requestObj, callback){
+function apiRequest(requestObj){
 	return $.ajax({
 		url: '/database/apiRequest',
 		type: "POST",
@@ -134,15 +136,11 @@ function apiRequest(requestObj, callback){
 		dataType: "json",
 		data: JSON.stringify(requestObj),
 		success: function(data) {
-		    if(apiRequestSuccessful(data)){
-			   	if(callback){
-				   callback(data);
-				}
-			}
+		    apiRequestSuccessful(data);
 			return data
 		},
 		error: function(data) {
-			alert("Request Error!!\n" + JSON.stringify(data));
+			alert("Request Error!! " + JSON.stringify(data));
 		}
 	});
 }
@@ -155,26 +153,15 @@ function createRequest(action, type, data, columns, rules, selAccount){
 		type: type
 	}
 
-	if(data != undefined && data != null){
-	   request.data = data;
-		if(data.length < 1){
-			request.data = null;
-		}
-	}
-	
-	if(columns != undefined && columns != null){
-	   request.columns = columns;
-	   	if(columns.length < 1){
-			request.columns = null;
-		}
-	}
-
-	if(rules != undefined && rules != null){
-	   request.rules = rules;
-	   	if(rules.length < 1){
-			request.rules = null;
-		}
-	}
+    var properties = [{name: "data", value: data}, {name: "columns", value: columns}, {name: "rules", value: rules}]
+    properties.forEach(function(item, index){
+        if(item.value != undefined && item.value != null){
+           request[item.name] = item.value;
+            if(item.value.length < 1){
+                request[item.name] = null;
+            }
+        }
+    });
 
 	if(selAccount != undefined && selAccount != null){
 	   request.selAccount = selAccount;
@@ -715,7 +702,7 @@ function refreshBucketTableAccountSelect() {
 function refreshBalanceDisplay() {
 	if (getSelectedAccount() != undefined) {
 		var node = getSelectedAccount();
-		apiRequest(createRequest("get", (!doesNodeHaveParent(node) ? "account" : "bucket"), [{"ID": node.dataAttr.ID}], ["Balance", "PostedBalance"]), function(response) {
+		apiRequest(createRequest("get", (!doesNodeHaveParent(node) ? "account" : "bucket"), [{"ID": node.dataAttr.ID}], ["Balance", "PostedBalance"])).then(function(response) {
 			$("#balanceDisplay").text("Available: \$" + response.data[0]["Balance"] + ", Posted: \$" + response.data[0]["PostedBalance"]);
 		});
 	} else {
@@ -974,12 +961,12 @@ formDynamicSelect
                     } else {
                         alert("Requested nodes children, but this node has no children " + node.id);
                     }
-                    apiRequest(createRequest("get", "bucket", data, ["ID", "Name", "Balance", "Children"]), function(data){
+                    apiRequest(createRequest("get", "bucket", data, ["ID", "Name", "Balance", "Children"])).then(function(data){
                         resultFunc(apiResponseToTreeView(data))
 
                         //TODO: This is a very quick fix for the badges not appearing right
                         $(".node-accountTree .badge").attr("class", "badge badge-pill badge-secondary testClass float-right")
-                    })
+                    });
                 }
             });
 

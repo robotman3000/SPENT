@@ -38,6 +38,23 @@ function cleanRowData(data){
     return obj;
 }
 
+function getTransferDirection(rowData, node){
+	// True = Money Coming in; I.E. a positive value
+	// False = Money Going out; I.E. a negative value
+	switch(rowData.Type){
+		case 0:
+			return (rowData.DestBucket == node.dataAttr.ID);
+			break;
+		case 1:
+			return true;
+			break;
+		case 2:
+			return false;
+			break;
+	}
+	return null;
+}
+
 function getBucketNameForID(id){
     var name = bucketNameMap[id];
     if(name == undefined){
@@ -48,6 +65,64 @@ function getBucketNameForID(id){
     }
     return name;
 }
+
+function getTransactionFilterRules(){
+    var result = $('#transactionTableFilter').queryBuilder('getRules');
+
+    if ($.isEmptyObject(result)) {
+        return null;
+    }
+    return result;
+}
+
+function getSelectedAccount() {
+    var selected = $('#accountTree').treeview('getSelected');
+	if (selected.length < 1) {
+	    var nodes = $("#accountTree").treeview('getNodes');
+	    $('#accountTree').treeview('selectNode', [ [nodes[0]], { silent: true } ]);
+		selected = $('#accountTree').treeview('getSelected');
+	}
+	//TODO: This is a very quick fix for the badges not appearing right
+    $(".node-accountTree .badge").attr("class", "badge badge-pill badge-secondary testClass float-right")
+	return selected[0]
+}
+
+function getSelectedBucketTableAccount(){
+    var selectedVal = $("#bucketEditAccountSelect :selected")
+    if (selectedVal.val() == undefined){
+        return {ID: -1, Name: "Error!"}
+    }
+    return {ID: parseInt(selectedVal.val()), Name: selectedVal.text()}
+}
+
+function getBucketOptions(){
+	//TODO: Rewrite this to account for the selected account and whether the type is set as "transfer"
+	var array = [];
+	return apiRequest(createRequest("get", "account", null, ["ID", "Name", "Parent", "Ancestor"])).then(function(result){
+		result.data.forEach(function(item, index){
+
+			array.push({"ID": item.ID, "Name": item.Name})
+		});
+		return apiRequest(createRequest("get", "bucket", null, ["ID", "Name", "Parent", "Ancestor"]));
+	}).then(function(result2){
+		//alert("Hello World")
+
+		result2.data.forEach(function(item, index){
+			array.push({"ID": item.ID, "Name": item.Name + " (" + (item.Ancestor != -1 ? getBucketNameForID(item.Ancestor) : "")  + ")"})
+		});
+
+		return Promise.resolve(array);
+	});
+}
+
+function getTypeOptions(){
+	return enums["transactionTable"]["Type"];
+}
+
+function getStatusOptions(){
+	return enums["transactionTable"]["Status"];
+}
+
 
 // ########################## #### API Logic ##############################
 
@@ -610,15 +685,6 @@ function initFilterModal(){
     });
 }
 
-function getTransactionFilterRules(){
-    var result = $('#transactionTableFilter').queryBuilder('getRules');
-
-    if ($.isEmptyObject(result)) {
-        return null;
-    }
-    return result;
-}
-
 function refreshSidebarAccountSelect(){
     //TODO: This is not my prefered way of making this work
     // but the treeview doesn't have a proper refresh function
@@ -655,26 +721,6 @@ function refreshBalanceDisplay() {
 	} else {
 		$("#balanceDisplay").text("Error fetching balance");
 	}
-}
-
-function getSelectedAccount() {
-    var selected = $('#accountTree').treeview('getSelected');
-	if (selected.length < 1) {
-	    var nodes = $("#accountTree").treeview('getNodes');
-	    $('#accountTree').treeview('selectNode', [ [nodes[0]], { silent: true } ]);
-		selected = $('#accountTree').treeview('getSelected');
-	}
-	//TODO: This is a very quick fix for the badges not appearing right
-    $(".node-accountTree .badge").attr("class", "badge badge-pill badge-secondary testClass float-right")
-	return selected[0]
-}
-
-function getSelectedBucketTableAccount(){
-    var selectedVal = $("#bucketEditAccountSelect :selected")
-    if (selectedVal.val() == undefined){
-        return {ID: -1, Name: "Error!"}
-    }
-    return {ID: parseInt(selectedVal.val()), Name: selectedVal.text()}
 }
 
 function showFormModal(tableName, row, title){
@@ -729,51 +775,6 @@ function populateBucketNameMap(data){
 }
 
 // ############################## Column Formatters ##############################
-
-function getBucketOptions(){
-	//TODO: Rewrite this to account for the selected account and whether the type is set as "transfer"
-	var array = [];
-	return apiRequest(createRequest("get", "account", null, ["ID", "Name", "Parent", "Ancestor"])).then(function(result){
-		result.data.forEach(function(item, index){
-
-			array.push({"ID": item.ID, "Name": item.Name})
-		});
-		return apiRequest(createRequest("get", "bucket", null, ["ID", "Name", "Parent", "Ancestor"]));
-	}).then(function(result2){
-		//alert("Hello World")
-
-		result2.data.forEach(function(item, index){
-			array.push({"ID": item.ID, "Name": item.Name + " (" + (item.Ancestor != -1 ? getBucketNameForID(item.Ancestor) : "")  + ")"})
-		});
-
-		return Promise.resolve(array);
-	});
-}
-
-function getTypeOptions(){
-	return enums["transactionTable"]["Type"];
-}
-
-function getStatusOptions(){
-	return enums["transactionTable"]["Status"];
-}
-
-function getTransferDirection(rowData, node){
-	// True = Money Coming in; I.E. a positive value
-	// False = Money Going out; I.E. a negative value
-	switch(rowData.Type){
-		case 0:
-			return (rowData.DestBucket == node.dataAttr.ID);
-			break;
-		case 1:
-			return true;
-			break;
-		case 2:
-			return false;
-			break;
-	}
-	return null;
-}
 
 function transactionTypeFormatter(value, rowData){
 	var fromToStr = "";

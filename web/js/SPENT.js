@@ -43,9 +43,13 @@ function cleanRowData(data){
 function getTransferDirection(rowData, node){
 	// True = Money Coming in; I.E. a positive value
 	// False = Money Going out; I.E. a negative value
+	var ID = -1;
+	if (node.dataAttr){
+	    ID = node.dataAttr.ID;
+	}
 	switch(rowData.Type){
 		case 0:
-			return (rowData.DestBucket == node.dataAttr.ID);
+			return (rowData.DestBucket == ID);
 			break;
 		case 1:
 			return true;
@@ -86,7 +90,12 @@ function getSelectedAccount() {
 	}
 	//TODO: This is a very quick fix for the badges not appearing right
     $(".node-accountTree .badge").attr("class", "badge badge-pill badge-secondary testClass float-right")
-	return selected[0]
+    var result = selected[0]
+
+    /*if(result == undefined){
+        result = {text: "Error", dataAttr: {ID: -1, childrenIDs: []}}
+    }*/
+	return result
 }
 
 function getSelectedBucketTableAccount(){
@@ -124,7 +133,6 @@ function getTypeOptions(){
 function getStatusOptions(){
 	return enums["transactionTable"]["Status"];
 }
-
 
 // ########################## #### API Logic ##############################
 
@@ -210,17 +218,17 @@ function apiTableSchemaToColumns(tableName){
 	tableSchema[tableName].columns.forEach(function(item, index){
 		var obj = {"name": (item.name ? item.name : item.title ), "title": item.title};
 
-//Type: "text"|"number"|"checkbox"|"select"|"textarea"|"control" or custom type
-//Width??
+        //Type: "text"|"number"|"checkbox"|"select"|"textarea"|"control" or custom type
+        //Width??
 
- /*   filtering: true,
-    editing: true,
-    sorting: true,
-    sorter: "string", // See list of sorting strategies
+        /*filtering: true,
+        editing: true,
+        sorting: true,
+        sorter: "string", // See list of sorting strategies
 
-    cellRenderer: null,  // Formatter replacement
+        cellRenderer: null,  // Formatter replacement
 
-    validate: null*/
+        validate: null*/
 
         //obj.width = "1"
 		if(item.visible != undefined){
@@ -240,7 +248,9 @@ function apiTableSchemaToColumns(tableName){
 		}*/
 		
 		if(item.formatter){
-		    obj.cellRenderer = item.formatter
+		    obj.cellRenderer = function(value, rowData){
+		        return '<td>' + item.formatter(value, rowData) + '</td>';
+		    }
 		}
 
 		switch(item.type){
@@ -282,6 +292,7 @@ function apiTableSchemaToEditForm(tableName){
 				default:
 					var input = $('<input class="form-control" type="' + item.formType + '" value="' + "" + '" ' + (item.required ? " required " : "" ) + ' step="0.01" >');
 					input.attr("name", item.name)
+					input.attr("id", tableName + item.name)
 					div.append(input)
 					break;
 				case "select":
@@ -487,7 +498,13 @@ function initTable(tableName, apiDataType){
         autoload: true,
         controller: {
             loadData: function (filter){
-                var selID = (getTableData(tableName).apiDataType == "transaction" ? getSelectedAccount().dataAttr.ID : getSelectedBucketTableAccount().ID)
+                var selID = -1;
+                try {
+                    selID = (getTableData(tableName).apiDataType == "transaction" ? getSelectedAccount().dataAttr.ID : getSelectedBucketTableAccount().ID)
+                }
+                catch(err) {
+                    console.log(err.message);
+                }
 
                 var rules = null;
                 if(getTableData(tableName).apiDataType == "transaction"){
@@ -557,21 +574,6 @@ function initTable(tableName, apiDataType){
 	var editForm = $("#" + tableName + "EditFormDiv");
 	if(editForm){
 		initTableEditForm(editForm, apiTableSchemaToEditForm(tableName), tableName);
-	}
-}
-
-function initTableEditForm(editFormDiv, editForm, tableName){
-    //alert("init Edit Form for: " + tableName);
-	editFormDiv.append(editForm)
-
-	// Create the modal buttons in the footer
-	if (editFormDiv.data("submit")){
-	    var submitBtn = $('<button/>').attr({type: 'submit', class: 'btn btn-default btn-primary'});
-	    submitBtn.text('Submit')
-	    submitBtn.click(function(){
-            editForm.submit();
-        })
-	    $("#" + tableName + "EditFormModal" + " .modal-footer").append(submitBtn)
 	}
 }
 
@@ -672,6 +674,97 @@ function initFilterModal(){
     });
 }
 
+function initTreeView(){
+    $('#accountTree').treeview({
+        expandIcon: "fas fa-plus",
+        collapseIcon: "fas fa-minus",
+        nodeIcon: "",
+        emptyIcon: "",
+        selectedIcon: "",
+
+        showTags: true,
+        dataUrl: {
+            method: "POST",
+            url: '/database/apiRequest',
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify(createRequest("get", "account", null, ["ID", "Name", "Balance", "Children"])),
+            dataFilter: function(data, type){
+                var json = JSON.parse(data);
+                if (apiRequestSuccessful(json)){
+                    return JSON.stringify(apiResponseToTreeView(json));
+                }
+                return undefined;
+            }
+        }, //TODO: This really should be done using apiRequest rather than a copy of it
+        lazyLoad: function(node, resultFunc){
+            var data = []
+            if(node.dataAttr.childrenIDs){
+                node.dataAttr.childrenIDs.forEach(function(item, index){
+                    data.push({ID: item})
+                });
+            } else {
+                alert("Requested nodes children, but this node has no children " + node.id);
+            }
+            apiRequest(createRequest("get", "bucket", data, ["ID", "Name", "Balance", "Children"])).then(function(data){
+                resultFunc(apiResponseToTreeView(data))
+
+                //TODO: This is a very quick fix for the badges not appearing right
+                $(".node-accountTree .badge").attr("class", "badge badge-pill badge-secondary float-right")
+            });
+        }
+    });
+
+
+    $('#accountTree').on('initialized', function(){
+        //TODO: This is a quick fix for the way the tree is refreshed, fix it
+        lastSelection = getSelectedAccount(); // This will select the first list item and update the lastSelection for use later
+	    refreshBalanceDisplay(); // Initial update since the usual event handler isn't registered yet
+
+       $("#bucketEditAccountSelect").change(function(){
+            onAccountSelectChanged();
+       })
+       $('#accountTree').on("nodeSelected", function(e, node) {
+           onTreeSelection(e, node);
+       });
+    })
+}
+
+function initTableEditForm(editFormDiv, editForm, tableName){
+    //alert("init Edit Form for: " + tableName);
+	editFormDiv.append(editForm)
+
+	// Create the modal buttons in the footer
+	if (editFormDiv.data("submit")){
+	    var submitBtn = $('<button/>').attr({type: 'submit', class: 'btn btn-default btn-primary'});
+	    submitBtn.text('Submit')
+	    submitBtn.click(function(){
+            editForm.submit();
+        })
+	    $("#" + tableName + "EditFormModal" + " .modal-footer").append(submitBtn)
+	}
+}
+
+function initTransactionTagEditForm(){
+    var tagForm = $("#transactionTagEditFormDiv");
+	if(tagForm){
+	    var form = $("<form id=\"transactionTagEditForm\" onsubmit='return onFormSubmit(this, \"transactionTag\")' method='GET'></form>")
+
+	    var div = $("<div class='form-group'></div>");
+        div.append($('<label>Tags</label>').attr('for', "tags"));
+
+        var input = $('<input class="form-control" type="text">');
+        input.attr("name", "tags")
+        input.attr("id", "transactionTagTags")
+
+        div.append(input)
+
+	    form.append(div)
+
+		initTableEditForm(tagForm, form, "transactionTag");
+	}
+}
+
 function refreshSidebarAccountSelect(){
     //TODO: This is not my prefered way of making this work
     // but the treeview doesn't have a proper refresh function
@@ -770,20 +863,20 @@ function transactionTypeFormatter(value, rowData){
 	} else { // Other
 	    fromToStr = (value == "2" ? " from " : " to ")
 	}
-	return '<td>' + enums["transactionTable"]["Type"][value] + fromToStr + '</td>';
+	return enums["transactionTable"]["Type"][value] + fromToStr;
 }
 
 function transactionAmountFormatter(value, rowData){
 	var isDeposit = getTransferDirection(rowData, getSelectedAccount());
 	if (isDeposit){
 		// If deposit
-		return '<td>' + formatter.format(value) + '</td>';
+		return formatter.format(value);
 	}
-	return '<td>' + formatter.format(value * -1) + '</td>';
+	return formatter.format(value * -1);
 }
 
 function bucketFormatter(value, rowData){
-	return '<td>' + getBucketNameForID(value) + '</td>';
+	return getBucketNameForID(value);
 }
 
 function transactionBucketFormatter(value, rowData){
@@ -799,7 +892,7 @@ function transactionBucketFormatter(value, rowData){
 
 	//var par = getBucketParentForID(id);
 	//if(par != -1){
-	return '<td>' + getBucketNameForID(id) + '</td>';
+	return getBucketNameForID(id);
 	//} else {
 		//rowData.bucketSort = "Unassigned";
 	//}//
@@ -816,17 +909,21 @@ function transactionDateFormatter(value, rowData){
 	return value;
 }
 
+function transactionTagsFormatter(value, rowData){
+    return 'No Tags'
+}
+
 // ############################## Event Handlers ##############################
 
 function onDocumentReady() {
-	// Undefined causes it to use the system local
+    // Initialize global variables
+
+	//// Undefined causes it to use the system local
 	formatter = new Intl.NumberFormat(undefined, {
 	  style: 'currency',
 	  currency: 'USD',
 	});
-
 	bucketNameMap = {}
-
 	tableSchema = {
 		accountTable: {
 			columns: [
@@ -854,25 +951,13 @@ function onDocumentReady() {
 				{title: "Destination", name: "DestBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: function(){ return true; }},
 				{name: "Memo", title: "Memo", type: "text", breakpoints:"", formType: "textbox"},
 				{name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm", formType: "text"},
-				{name: "Tags", title: "Tags", type: "text", breakpoints:"xs sm md", formVisible: true, formType: "text"},
+
+				// TODO: this is formVisible = false until the server is updated to handle tags properly
+				{name: "Tags", title: "Tags", type: "formatter", breakpoints:"xs sm md", formVisible: false, formType: "text", formatter: transactionTagsFormatter},
 			]
 		}
 	}
-
-/*
-title
-breakpoints
-required
-options
-formatter
-type
-formType
-visible
-formVisible
-formDynamicSelect
-*/
-
-	enums = {
+	enums = { //TODO: This should be populated using an api request
 		transactionTable: {
 			Status: [
 				"Uninitiated",
@@ -887,124 +972,43 @@ formDynamicSelect
 			]
 		}
 	}
-
 	lastSelection = null;
+
+	// Initialize / Generate dynamic gui elements
 	initFilterModal()
-
-    // Create the transaction tag edit form
-	var tagForm = $("#transactionTagEditFormDiv");
-	if(tagForm){
-	    var form = $("<form id=\"transactionTagEditForm\" onsubmit='return onFormSubmit(this, \"transactionTag\")' method='GET'></form>")
-
-	    var div = $("<div class='form-group'></div>");
-        div.append($('<label>Tags</label>').attr('for', "tags"));
-
-        var input = $('<input class="form-control" type="text">');
-        input.attr("name", "tags")
-        div.append(input)
-
-	    form.append(div)
-
-		initTableEditForm(tagForm, form, "transactionTag");
-	}
-
-
-    /*conditionalselect : function (node, event) {
-        // TODO: A slightly more robust condition is better as the trans table is not the only table affected by this option
-        if(!getTableData("transactionTable").isLocked()){
-            return true;
-        }
-        console.log("Prevented changing the account selection")
-        return false;
-    },*/
-
-    $("#bucketEditAccountSelect").change(function(){
-        onAccountSelectChanged();
-    })
-
     refreshBucketTableAccountSelect();
+    initTransactionTagEditForm();
+
+    initTable("transactionTable", "transaction");
+	initTable("bucketTable", "bucket");
+	initTable("accountTable", "account");
 
     apiRequest(createRequest("get", "account", null, ["ID", "Name"])).then(function(result){
         populateBucketNameMap(result)
-        apiRequest(createRequest("get", "bucket", null, ["ID", "Name"])).then(function(result2){
-            populateBucketNameMap(result2);
-            $('#accountTree').treeview({
-                expandIcon: "fas fa-plus",
-                collapseIcon: "fas fa-minus",
-                //nodeIcon
-                //emptyIcon
-                //selectedIcon
+        return apiRequest(createRequest("get", "bucket", null, ["ID", "Name"]));
+    }).then(function(result2){
+        populateBucketNameMap(result2);
 
-                showTags: true,
-                dataUrl: {
-                    method: "POST",
-                    url: '/database/apiRequest',
-                    contentType: "application/json; charset=utf-8",
-                    dataType: "json",
-                    data: JSON.stringify(createRequest("get", "account", null, ["ID", "Name", "Balance", "Children"])),
-                    dataFilter: function(data, type){
-                        var json = JSON.parse(data);
-                        if (apiRequestSuccessful(json)){
-                            return JSON.stringify(apiResponseToTreeView(json));
-                        }
-                        return undefined;
-                    }
-                },
-                lazyLoad: function(node, resultFunc){
-                    var data = []
-                    //alert(JSON.stringify(node))
-                    if(node.dataAttr.childrenIDs){
-                        //alert(node.dataAttr.childrenIDs)
-                        node.dataAttr.childrenIDs.forEach(function(item, index){
-                            data.push({ID: item})
-                        });
-                    } else {
-                        alert("Requested nodes children, but this node has no children " + node.id);
-                    }
-                    apiRequest(createRequest("get", "bucket", data, ["ID", "Name", "Balance", "Children"])).then(function(data){
-                        resultFunc(apiResponseToTreeView(data))
-
-                        //TODO: This is a very quick fix for the badges not appearing right
-                        $(".node-accountTree .badge").attr("class", "badge badge-pill badge-secondary testClass float-right")
-                    });
-                }
-            });
-
-            var initComplete = false;
-            $('#accountTree').on('initialized', function(){
-               if(!initComplete){
-                   onTreeReady();
-                   initComplete = true;
-               }
-
-               $('#accountTree').on("nodeSelected", function(e, node) {
-                   onTreeSelection(e, node);
-               });
-            })
-        });
+        initTreeView();
     });
-}
 
-function onTreeReady() {
-	lastSelection = getSelectedAccount(); // This will select the first list item and update the lastSelection for use later
-	refreshBalanceDisplay(); // Initial update since the usual event handler isn't registered yet
-	initTable("transactionTable", "transaction");
-	initTable("bucketTable", "bucket");
-	initTable("accountTable", "account");
+	//// Init the tag editor
+	$('#transactionTableTags').tagEditor({ initialTags: ['tag1', 'tag2', 'tag3'] });
+	$('#transactionTagTags').tagEditor({ initialTags: ['tag1', 'tag2', 'tag3'] });
 }
 
 function onTreeSelection(e, node) {
-    if (lastSelection != getSelectedAccount()){
-        if(!getTableData("transactionTable").isLocked()){
+    //if (lastSelection != getSelectedAccount()){
+        //if(!getTableData("transactionTable").isLocked()){
             refreshBalanceDisplay();
             $("#transactionTable").jsGrid("render")
-            lastSelection = getSelectedAccount();
-        } else {
-            console.log("The transaction table is locked...")
-        }
-    } else {
-        console.log("Skipping because lastSel: " + lastSelection + " matched")
-    }
+            //lastSelection = getSelectedAccount();
+        //} else {
+        //    console.log("The transaction table is locked...")
+        //}
+    //} else {
+    //    console.log("Skipping because lastSel: " + lastSelection + " matched")
+    //}
 }
 
 function onTableReady(tableName, table){

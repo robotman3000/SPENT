@@ -9,10 +9,15 @@
 	<meta content="" name="author">
 	<title>SPENT</title>
 
-	<link href="/css/glyphicons-fontawesome.css" rel="stylesheet" type="text/css" />
-
 	<!-- JQuery -->
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js"></script>
+
+	<!-- Support -->
+	<link href="/css/glyphicons-fontawesome.css" rel="stylesheet" type="text/css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.15.0/umd/popper.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/jquery-extendext@0.1.2/jQuery.extendext.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/dot@1.1.2/doT.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.js"></script><!-- v2.24.0 -->
 
 	<!-- Bootstrap v4 -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.css"><!-- v4.3.1 -->
@@ -25,18 +30,9 @@
 	<!-- JS-Grid -->
     <link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.css" />
     <link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid-theme.css" />
-
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.js"></script>
 
-	<!-- FooTable -->
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.js"></script><!-- v2.24.0 -->
-	
-	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-footable/3.1.6/footable.bootstrap.css">
-	<script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-footable/3.1.6/footable.js"></script>
-
 	<!-- jQuery-QueryBuilder -->
-	<script src="https://cdn.jsdelivr.net/npm/jquery-extendext@0.1.2/jQuery.extendext.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/dot@1.1.2/doT.js"></script>
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.5.2/dist/css/query-builder.default.css">
 	<script src="https://cdn.jsdelivr.net/npm/jQuery-QueryBuilder@2.5.2/dist/js/query-builder.min.js"></script>
 
@@ -49,7 +45,7 @@
 		
 		<div class="row no-gutters">
 			<div class="col">
-				<nav class="navbar navbar-expand-sm bg-light navbar-light fixed-top" style="height: 56px">
+				<nav class="navbar bg-light navbar-light fixed-top" style="height: 56px">
 					<a class="navbar-brand" href="#">SPENT</a>
 					
 					<!-- Toggler/collapsibe Button -->
@@ -61,16 +57,20 @@
 							<li class="nav-item">
 								<a class="nav-link active" data-toggle="pill" href="#transactionTableTab">Trans</a>
 							</li>
+						</ul>
+
+						<ul class="nav nav-pills">
 							<li class="nav-item dropdown">
-								<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">Manage</a>
-								<div class="dropdown-menu">
-									<button id="accountTableModalToggle" class="dropdown-item">Accounts</button>
-									<button id="bucketTableModalToggle" class="dropdown-item">Buckets</button>
-									<div class="dropdown-divider"></div>
-									<button id="transactionTableFilterModalToggle" class="dropdown-item">Transaction Filters</button>
+								<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"><i class="fas fa-bars"></i></a>
+								<div class="dropdown-menu dropdown-menu-right">
+									<button id="accountTableModalToggle" class="dropdown-item">Edit Accounts</button>
+									<button id="bucketTableModalToggle" class="dropdown-item">Edit Buckets</button>
+									<button id="tagManagerModalToggle" class="dropdown-item">Manage Tags</button>
+									<!--div class="dropdown-divider"></div>
+									<button id="something" class="dropdown-item">Seperated Link</button-->
 								</div>
 							</li>
-							
+
 						</ul>
 					
 					<!--/div-->
@@ -105,9 +105,51 @@
 		</div>
 	</div>
 
+	<!-- Tag Manager Modal -->
+	<div class="modal fade" id="tagManagerModal" tabindex="-1" role="dialog" aria-labelledby="transactionTableFilterModal-label" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="tagManagerModal-label">Tag Manager</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Transaction Tag Editor Modal -->
+	<div class="modal fade" id="transactionTagEditFormModal" tabindex="-1" role="dialog" aria-labelledby="transactionTableFilterModal-label" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="transactionTagEditorModal-label">Transaction Tags</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+
+					<div id="transactionTagEditFormDiv" data-submit="true"></div>
+
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
 	<!-- Transaction Table Filter Modal -->
 	<div class="modal fade" id="transactionTableFilterModal" tabindex="-1" role="dialog" aria-labelledby="transactionTableFilterModal-label" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-scrollable" role="document">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="transactionTableFilterModal-label">Transaction Filters</h5>
@@ -130,7 +172,7 @@
 
 	<!-- Account Table Modal -->
 	<div class="modal fade" id="accountTableModal" tabindex="-1" role="dialog" aria-labelledby="accountTableModal-label" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-scrollable" role="document">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="accountTableModal-label">Accounts</h5>
@@ -153,7 +195,7 @@
 
 	<!-- Bucket Table Modal -->
 	<div class="modal fade" id="bucketTableModal" tabindex="-1" role="dialog" aria-labelledby="bucketTableModal-label" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-scrollable" role="document">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="bucketTableModal-label">Buckets</h5>
@@ -175,7 +217,7 @@
 
 	<!-- Transaction Edit Form Modal -->
 	<div class="modal fade" id="transactionTableEditFormModal" tabindex="-1" role="dialog" aria-labelledby="transactionTableEditFormModal-label" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-scrollable" role="document">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="transactionTableEditFormModal-label">{Modal Heading}</h5>
@@ -197,7 +239,7 @@
 
 	<!-- Account Edit Form Modal -->
 	<div class="modal fade" id="accountTableEditFormModal" tabindex="-1" role="dialog" aria-labelledby="accountTableEditFormModal-label" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-scrollable" role="document">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="accountTableEditFormModal-label">{Modal Heading}</h5>
@@ -219,7 +261,7 @@
 
 	<!-- Bucket Edit Form Modal -->
 	<div class="modal fade" id="bucketTableEditFormModal" tabindex="-1" role="dialog" aria-labelledby="bucketTableEditFormModal-label" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-scrollable" role="document">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="bucketTableEditFormModal-label">{Modal Heading}</h5>
@@ -241,7 +283,7 @@
 
 	<!-- Action Confirmation Modal -->
 	<div class="modal fade" id="confirmActionModal" tabindex="-1" role="dialog" aria-labelledby="confirmActionModal-label" aria-hidden="true">
-		<div class="modal-dialog modal-dialog-scrollable" role="document">
+		<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="confirmActionModal-label">Confirm</h5>
@@ -401,12 +443,13 @@
 			registerModal("transactionTableEditFormModal");
 			registerModal("bucketTableEditFormModal");
 			registerModal("accountTableEditFormModal");
+			registerModal("transactionTagEditFormModal");
 
 			registerModal("transactionTableFilterModal");
+			registerModal("tagManagerModal");
 
 			initConfirmModal();
 
-			//openNav('sidebar'); //TODO: The sidebar needs its defaults set
 			onDocumentReady();
 		});
 	</script>

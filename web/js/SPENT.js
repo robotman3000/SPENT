@@ -362,20 +362,34 @@ function initTable(tableName, apiDataType){
         modeSwitchButton: false,
         editButton: true,
         headerTemplate: function() {
+            var div = $("<div>").attr("role", "group").attr("class", "btn-group");
+
             var addBtn = $("<button>").attr("type", "button").attr("class", "btn").on("click", function () {
                 showFormModal(tableName, null, "New Row");
             });
             addBtn.append($("<i>").attr("class", "fas fa-plus-circle"))
+            div.append(addBtn);
 
-            return addBtn;
+            if(tableName == "transactionTable"){
+                var filterBtn = $("<button>").attr("type", "button").attr("class", "btn").on("click", function () {
+                    showModal("transactionTableFilterModal", null, "New Row");
+                });
+                filterBtn.append($("<i>").attr("class", "fas fa-filter"))
+                div.append(filterBtn);
+            }
+
+            return div;
         },
         itemTemplate: function(a, b){
+            var div = $("<div>").attr("role", "group").attr("class", "btn-group");
+
             var editBtn = $("<button>").attr("type", "button").attr("class", "btn").on("click", function (e) {
                 e.stopPropagation();
                 var row = $("#" + tableName).jsGrid('rowByItem', b)
                 showFormModal(tableName, row, "Edit Row ID:" + row.data("JSGridItem").ID)
             });
             editBtn.append($("<i>").attr("class", "fas fa-edit"))
+            div.append(editBtn);
 
             var deleteBtn = $("<button>").attr("type", "button").attr("class", "btn").on("click", function (e) {
                 e.stopPropagation();
@@ -387,7 +401,22 @@ function initTable(tableName, apiDataType){
                 })
             });
             deleteBtn.append($("<i>").attr("class", "fas fa-trash"))
-            return [editBtn, deleteBtn];
+            div.append(deleteBtn);
+
+            if(tableName == "transactionTable"){
+                var tagBtn = $("<button>").attr("type", "button").attr("class", "btn").on("click", function (e) {
+                    e.stopPropagation();
+                    var row = $("#" + tableName).jsGrid('rowByItem', b)
+
+                    //TODO: This should open a form modal, but the function currently assumes a table is associated with the form
+                    //showModal("transactionTagEditorModal");
+                    showFormModal("transactionTag", row, "Tags:" + row.data("JSGridItem").ID)
+                });
+                tagBtn.append($("<i>").attr("class", "fas fa-tags"))
+                div.append(tagBtn);
+            }
+
+            return div;
         }
     })
 
@@ -836,7 +865,8 @@ function onDocumentReady() {
 				{title: "Source", name: "SourceBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: function(){ return true; }},
 				{title: "Destination", name: "DestBucket", required: true, formType: "select", options: getBucketOptions, visible: false, formDynamicSelect: function(){ return true; }},
 				{name: "Memo", title: "Memo", type: "text", breakpoints:"", formType: "textbox"},
-				{name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm", formType: "text"}
+				{name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm", formType: "text"},
+				{name: "Tags", title: "Tags", type: "text", breakpoints:"xs sm md", formVisible: true, formType: "text"},
 			]
 		}
 	}
@@ -872,6 +902,25 @@ formDynamicSelect
 
 	lastSelection = null;
 	initFilterModal()
+
+    // Create the transaction tag edit form
+	var tagForm = $("#transactionTagEditFormDiv");
+	if(tagForm){
+	    var form = $("<form id=\"transactionTagEditForm\" onsubmit='return onFormSubmit(this, \"transactionTag\")' method='GET'></form>")
+
+	    var div = $("<div class='form-group'></div>");
+        div.append($('<label>Tags</label>').attr('for', "tags"));
+
+        var input = $('<input class="form-control" type="text">');
+        input.attr("name", "tags")
+        div.append(input)
+
+	    form.append(div)
+
+		initTableEditForm(tagForm, form, "transactionTag");
+	}
+
+
     /*conditionalselect : function (node, event) {
         // TODO: A slightly more robust condition is better as the trans table is not the only table affected by this option
         if(!getTableData("transactionTable").isLocked()){
@@ -884,6 +933,8 @@ formDynamicSelect
     $("#bucketEditAccountSelect").change(function(){
         onAccountSelectChanged();
     })
+
+    refreshBucketTableAccountSelect();
 
     apiRequest(createRequest("get", "account", null, ["ID", "Name"])).then(function(result){
         populateBucketNameMap(result)

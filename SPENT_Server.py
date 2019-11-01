@@ -49,14 +49,28 @@ class SPENTServer():
 		self.accountMan.connect()
 		
 		self.port = port
-		
+
 		self.handler = RequestHandler()
 		self.handler.registerRequestHandler("POST", "/database/apiRequest", self.apiRequest)
-	
+
+		def transaction(query):
+			result = self.getTransaction({}, [])
+			responseBody = time_it(json.dumps, result)
+
+			if args.debugServer:
+				print("Serialization Took: %s" % responseBody[1])
+			headers = [('Content-type', "text/json"),
+					   ('Content-Length', str(len(responseBody[0])))]
+			return ServerResponse("200 OK", headers, responseBody[0])
+
+		self.handler.registerRequestHandler("GET", "/database/transaction", transaction)
+
+
 		self.apiTree = {}
 		self.apiTree["account"] = {"get": self.getAccount, "create": self.createAccount, "update": self.updateAccount, "delete": self.deleteAccount}
 		self.apiTree["bucket"] = {"get": self.getBucket, "create": self.createBucket, "update": self.updateBucket, "delete": self.deleteBucket}
 		self.apiTree["transaction"] = {"get": self.getTransaction, "create": self.createTransaction, "update": self.updateTransaction, "delete": self.deleteTransaction}
+		self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag}
 		self.apiTree["property"] = {"get": self.getProperty, "update": self.updateProperty}
 		self.apiTree["enum"] = {"get": self.getEnum}
 
@@ -341,7 +355,19 @@ class SPENTServer():
 		idList = [int(i.get("ID", -1)) for i in data]
 		deleteList = self.accountMan.deleteTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
 		return self.wrapData([{"ID": idVal} for idVal in idList])
-	
+
+	def getTag(self, request, columns):
+		return self.unimp
+
+	def createTag(self, request, columns):
+		return self.unimp
+
+	def updateTag(self, request, columns):
+		return self.unimp
+
+	def deleteTag(self, request, columns):
+		return self.unimp
+
 	def getProperty(self, request, columns):
 		return self.unimp	
 	

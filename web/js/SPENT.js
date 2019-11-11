@@ -239,10 +239,16 @@ function onDocumentReady() {
             return object;
         },
         parse: function(response, options){
+            var result = response
             if(getOrDefault(options, "isRaw", true)){
-                return response.data[0];
+               result = response.data[0];
             }
-            return response;
+
+            if(getOrDefault(result, "ID", null) != null){
+                result["id"] = result["ID"];
+            }
+
+            return result;
         },
     });
     var BaseCollection = Backbone.Collection.extend({
@@ -1423,10 +1429,12 @@ function onDocumentReady() {
     });
 
     var saveFunction = function(data, model){
+        //TODO: Any empty values should be sent to the server as null or not at all
+
         // Perform updates to the model
         if(model == null){
             // We are creating a new table entry
-            this.create(cleanData(data));
+            this.create(cleanData(data), {wait: true});
         } else {
             model.save(cleanData(data));
         }

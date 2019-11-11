@@ -882,7 +882,8 @@ function onDocumentReady() {
                     check_callback: true,
                     animation: false,
                     themes: {
-                        variant: "large",
+                        name: "proton",
+                        responsive: true,
                     },
                 },
                 conditionalselect : function (node, event) {

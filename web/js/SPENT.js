@@ -34,11 +34,67 @@ function dateToStr(d){
     return [year, month, day].join('-');
 }
 
+function getTransferDirection(rowData, selectedAccount){
+    // True = Money Coming in; I.E. a positive value
+    // False = Money Going out; I.E. a negative value
+    var ID = selectedAccount;
+    switch(rowData.Type){
+        case 0:
+            return (rowData.DestBucket == ID);
+            break;
+        case 1:
+            return true;
+            break;
+        case 2:
+            return false;
+            break;
+    }
+    return null;
+}
+
 function getOrDefault(object, property, def){
     if (object){
         return (object[property] != undefined ? object[property] : def);
     }
 	return def;
+}
+
+function cleanData(data){
+    // This converts objects of format [{name: ***, value: ***}, ..., ...]
+    // to {The name: The value, The next name: The next value}
+    var obj = {};
+
+    // This loop style is used because "data" doesn't have .forEach or .length
+    // for some reason
+    for(var index = 0; data[index] != undefined; index++){
+        obj[data[index].name] = data[index].value;
+    }
+    return obj;
+};
+
+function findModelsWhere(collections, filter){ // "OR" based results
+    var result = null;
+    if(collections && collections.length > 0){
+        collections.forEach(function(item, index){
+            if(result == null){
+                var models = item.where(filter);
+                if(models && models.length > 0){
+                    result = models;
+                }
+            }
+        });
+    }
+    return result;
+}
+
+//function findCollectionsWhere(collections, filter){} // "AND" based results
+
+function getBucketNameForID(accounts, buckets, id){
+    var models = findModelsWhere([accounts, buckets], {ID: id});
+    if(models != null && models.length > 0){
+        return models[0].get("Name");
+    }
+    return "Invalid ID: " + id;
 }
 
 function apiRequest(requestObj, suc, err){
@@ -50,12 +106,15 @@ function apiRequest(requestObj, suc, err){
 		data: JSON.stringify(requestObj),
 		success: function(data) {
 		    apiRequestSuccessful(data);
-		    suc(data)
-			//return data.data
+		    if(suc){
+		        suc(data)
+		    }
 		},
 		error: function(data) {
 			alert("Request Error!! " + JSON.stringify(data));
-			err(data)
+			if(err){
+		        err(data)
+		    }
 		}
 	});
 }
@@ -98,24 +157,51 @@ function onDocumentReady() {
     // Initialize global variables
     initGlobals();
 
-    Backbone.ajax = function(){
-        var apiAction = null;
-        switch(arguments[0].type){
-            case "POST": // create
-            case "PUT": // update
-            case "DELETE": // delete
-                apiAction = method
+    var methodMap = {
+        create: 'create',
+        update: 'update',
+        patch: 'update',
+        delete: 'delete',
+        read: 'get'
+    };
+
+    Backbone.sync = function(method, model, options){
+        // Pass along `textStatus` and `errorThrown` from jQuery.
+        var error = getOrDefault(options, "error", null);
+        options.error = function(xhr, textStatus, errorThrown) {
+            options.textStatus = textStatus;
+            options.errorThrown = errorThrown;
+            if (error) error.call(options.context, xhr, textStatus, errorThrown);
+        };
+
+        var apiAction = methodMap[method];
+        var recordType = _.result(model, 'url') || urlError();
+        var data = null;
+        var requestColumns = options.columns || null;
+        var rules = options.rules || null;
+
+        var changed = false;
+        switch (method){
+            case "update":
+            case "patch":
+                changed = true;
+            case "create":
+                data = [model.asJSON({changed: changed})];
                 break;
-            case "GET": // read
-                apiAction = "get"
+            case "delete":
+                data = [{ID: model.get("ID")}];
+                break;
+            case "read": // TODO: This "case" doesn't account for the servers ability to return based on a list of id's
             default:
+                data = null;
                 break;
         }
 
-        console.log("AJAX: " + apiAction + " - " + arguments[0].url)
-        var req = apiRequest(createRequest(apiAction, arguments[0].url), arguments[0].success, arguments[0].error)
+        console.log("AJAX: " + apiAction + " - " + recordType)
+        var req = apiRequest(createRequest(apiAction, recordType, data, requestColumns, rules), options.success, options.error)
+        model.trigger('request', model, req, options);
         return req;
-    }
+    };
 
     var UIState = Backbone.Model.extend({
         defaults: function(){
@@ -128,34 +214,67 @@ function onDocumentReady() {
     var uiState = new UIState;
 
     // Model Objects
-    var Bucket = Backbone.Model.extend({
+    var BaseModel = Backbone.Model.extend({
+        initialize: function(){
+            this.set("id", this.get("ID"));
+        },
+        url: function() {
+          var base = _.result(this.collection, 'url') || urlError();
+          return base;
+        },
+        asJSON: function(options){
+            var keys = Object.keys(this.defaults());
+            var object = {};
+            var attrib = cleanData(this.changedAttributes());
+            var self = this;
+            keys.forEach(function(key, index){
+                var value = undefined;
+                if(getOrDefault(options, "changed", false) && attrib[key]){
+                    value = attrib[key];
+                } else {
+                    value = self.get(key);
+                }
+                object[key] = value;
+            });
+            return object;
+        },
+        parse: function(response, options){
+            if(getOrDefault(options, "isRaw", true)){
+                return response.data[0];
+            }
+            return response;
+        },
+    });
+    var BaseCollection = Backbone.Collection.extend({
+        parse: function(resp, options) {
+            options.isRaw = false;
+            return resp.data;
+        },
+    });
+
+    var Bucket = BaseModel.extend({
         defaults: function(){
             return {
                 ID: null,
                 Name: null,
                 Parent: -1,
                 Ancestor: -1,
+                Children: [],
             };
         },
     });
-    var Buckets = Backbone.Collection.extend({
+    var Buckets = BaseCollection.extend({
         model: Bucket,
         url: "bucket",
-        parse: function(resp, options) {
-            return resp.data;
-        },
     });
 
     var Account = Bucket.extend({});
-    var Accounts = Backbone.Collection.extend({
+    var Accounts = BaseCollection.extend({
         model: Account,
         url: "account",
-        parse: function(resp, options) {
-            return resp.data;
-        },
     });
 
-    var Transaction = Backbone.Model.extend({
+    var Transaction = BaseModel.extend({
         defaults: function(){
             return {
                 ID: null,
@@ -169,11 +288,11 @@ function onDocumentReady() {
             };
         },
     });
-    var Transactions = Backbone.Collection.extend({
+    var Transactions = BaseCollection.extend({
         model: Transaction,
         url: "transaction",
-        parse: function(resp, options) {
-            return resp.data;
+        initialize: function(){
+            this.listenTo(this, "update", this.update);
         },
     });
 
@@ -183,19 +302,27 @@ function onDocumentReady() {
     var transactions = new Transactions;
 
     // Base Views
-    var BaseModelView = {
-        model: null,
-        setModel: function(newModel){
-            this.model = newModel;
-            this.trigger("modelChanged");
-        },
-        getModel: function(){
-            return this.model;
-        },
+    var BaseModelView = Object.create(null);
+    BaseModelView.model = null;
+    BaseModelView.setModel = function(newModel){
+        if(this.model){
+            this.model.stopListening()
+        }
+        this.model = newModel;
+        this.trigger("modelChanged", newModel);
     };
+    BaseModelView.getModel = function(){
+        return this.model || null;
+    };
+    BaseModelView.getModelConstructor = function(){
+        return this.constructor || null;
+    };
+
     var TriggerButton = Backbone.View.extend({
         initialize: function(item, preClick){
-            this.setElement(item)
+            if(item){
+                this.setElement(item);
+            }
             this.preClick = preClick;
         },
         events: {
@@ -208,23 +335,34 @@ function onDocumentReady() {
             this.trigger("buttonClick")
         },
     });
-    var DynamicSelectViewTemp = Backbone.View.extend({
-        initUnselected: false,
-        initialize: function(){
+    var DynamicSelectView = Backbone.View.extend({
+        initialize: function(args){
+            this.initUnselected = getOrDefault(args, "initUnselected", false);
+            this.noSelection = getOrDefault(args, "noSelection", null);// {text: "N/A", value: -1}
             this.on("modelChanged", this.modelChanged, this)
         },
-        modelChanged: function(){
-            this.listenTo(this.model, "update", this.render)
-            this.listenTo(this.model, "reset", this.render)
+        modelChanged: function(newModel){
+            //TODO: this.listenTo(newModel, "add", this.render)
+            //TODO: this.listenTo(newModel, "remove", this.render)
+            this.listenTo(newModel, "update", this.render)
+            this.listenTo(newModel, "reset", this.render)
+            this.listenTo(newModel, "sort", this.render)
+            this.listenTo(newModel, "change:Name", this.render) //TODO: Inefficient
+            //TODO: this.listenTo(newModel, "request", this.render)
+            //TODO: this.listenTo(newModel, "sync", this.render)
         },
         render: function(){
             console.log("DynamicSelectView.render")
             this.$el.prop("disabled", true);
 
             this.$el[0].options.length=0
-            //it[0].options.add(new Option("N/A", -1, true, (value == -1)));
 
             var value = -1; // TODO: this is a placeholder
+
+            if(this.noSelection){
+                this.$el[0].options.add(new Option(this.noSelection.text, this.noSelection.value, true, (this.noSelection.value == value)));
+            }
+
             var self = this;
             this.model.where().forEach(function(ite, ind){
                 self.$el[0].options.add(new Option(ite.get("Name"), ite.get("ID"), false, (value == ite.get("ID"))))
@@ -238,8 +376,25 @@ function onDocumentReady() {
                 it.prop("disabled", false);
             }*/
         },
-    });
-    var DynamicSelectView = DynamicSelectViewTemp.extend(BaseModelView);
+    }).extend(BaseModelView);
+    var TableRowView = Backbone.View.extend({
+        initialize: function(rowRenderer){
+            this.setElement($("<tr>"));
+
+            if(rowRenderer){
+                this.render = rowRenderer;
+            }
+
+            this.listenTo(this, "modelChanged", function(newModel){
+                this.listenTo(newModel, "change", this.render) //TODO: Inefficient
+                this.listenTo(newModel, "destroy", this.render)
+                this.render();
+            });
+        },
+        render: function(){
+            console.log("Warning: Row renderer is uninitialized!");
+        },
+    }).extend(BaseModelView);
 
     var BaseModal = Backbone.View.extend({
         modalName: null,
@@ -270,6 +425,7 @@ function onDocumentReady() {
 			this.$el.modal('hide');
 		},
 		render: function(){
+		    console.log("Render: BaseModal");
 		    if (this.title == undefined){
 				this.title = "No Title";
 			}
@@ -277,7 +433,7 @@ function onDocumentReady() {
 		},
 		triggers: [],
     });
-    var BaseFormTemp = Backbone.View.extend({
+    var BaseForm = Backbone.View.extend({
         formName: null,
         initialize: function(){
             if(this.formName == null || this.formName == undefined){
@@ -289,17 +445,7 @@ function onDocumentReady() {
             formDiv.append(form);
             this.setElement(form);
 
-            this.on("modelChanged", this.render, this)
-            // Create the modal buttons in the footer
-            //TODO: This needs reimplemented; Feature [1]
-            /*if (formDiv.data("submit")){
-                var submitBtn = $('<button/>').attr({type: 'submit', class: 'btn btn-default btn-primary'});
-                submitBtn.text('Submit')
-                submitBtn.click(function(){
-                    //editForm.submit();
-                })
-                //$("#" + tableName + "EditFormModal" + " .modal-footer").append(submitBtn)
-            }*/
+            this.on("modelChanged", this.render);
         },
         generateForm: function(){
             var cols = []
@@ -367,6 +513,7 @@ function onDocumentReady() {
                         case "dynamicSelect":
                             input = $("<select></select>");
                             var dynamicSelect = new DynamicSelectView;
+                            dynamicSelect.noSelection = {text: "N/A", value: -1};
                             dynamicSelect.setElement(input);
 
                             var model = (item.options ? getOrDefault(item.options, "model", null) : null);
@@ -394,7 +541,8 @@ function onDocumentReady() {
             return form;
         },
         render: function(){
-			var data = (this.getModel() ?  this.getModel()[0].toJSON() : {});
+            console.log("Render: BaseForm");
+			var data = (this.getModel() ?  this.getModel().toJSON() : {});
 			//alert(JSON.stringify(data));
 
 			// Input Elements
@@ -426,31 +574,268 @@ function onDocumentReady() {
 				}
 			});
 		},
-		onSubmit: function(){
-		    alert("Form Submit!!");
+		submit: function(){
+		    //alert("Form Submit!!");
             var data = this.$el.serializeArray()
 
-            //TODO: Create and implement a generic data validation system
             // Call the submit callback for the affected table
             console.log("Form Data: " + JSON.stringify(data))
-            var result = this.submit(data);
+            var isValid = this.validate(data);
 
-            /*if(result == true){ //TODO: This needs reimplemented; Feature [3]
-                hideModal(tableName + "EditFormModal");
-            }*/
+            if (isValid){
+                this.trigger("formSubmit", data, this.getModel());
+            }
+
             // We return false to prevent the web page from being reloaded
             return false;
         },
-        submit: function(data){},
+        validate: function(data){return true},
         columns: [],
-        events: {
-            "submit" : "onSubmit",
+    }).extend(BaseModelView);
+    var BaseFormModal = BaseModal.extend({
+        initialize: function(){
+            BaseModal.prototype.initialize.apply(this);
+            // Create the modal buttons in the footer for the form
+            var submitBtn = $('<button/>').attr({type: 'submit', class: 'btn btn-default btn-primary'});
+            submitBtn.text('Submit');
+            this.submitBtn = new TriggerButton(submitBtn);
+            this.$el.find(".modal-footer").append(submitBtn)
+        },
+        bindSubmitToForm: function(form){
+            form.listenTo(this.submitBtn, "buttonClick", form.submit);
         },
     });
-    var BaseForm = BaseFormTemp.extend(BaseModelView);
+    var BaseTableView = Backbone.View.extend({
+        model: null,
+        apiDataType: null,
+        initialize: function(actionModals){
+        	console.log("BaseTableView.initialize: " + this.tableName);
+        	this.setElement($("#" + this.tableName))
+
+            var self = this;
+
+            this.loadData = function(){
+                self.$el.jsGrid("loadData");
+            };
+
+            //TODO: this.listenTo(this.model, "add", this.loadData);
+            //TODO: this.listenTo(this.model, "remove", this.loadData);
+            this.listenTo(this.model, "update", this.loadData);
+            this.listenTo(this.model, "reset", this.loadData);
+            //TODO: this.listenTo(this.model, "request", );
+            //TODO: this.listenTo(this.model, "sync", );
+
+            // Initialize the enum formatters
+            this.columns.forEach(function(item, index){
+                if(getOrDefault(item, "type", "text") == "enum"){
+                    var enumKey = (item.options ? getOrDefault(item.options, "enumKey", null) : null);
+                    if(enumKey != null){
+                        var optionsArray = getOrDefault(enums, enumKey, ["Invalid enum: " + enumKey]);
+                        item.type = "text";
+                        self.formatters[item.name] = function(value, rowData){
+                            return optionsArray[value];
+                        };
+                    }
+                }
+            });
+
+            var table = this.$el.jsGrid({
+                autoload: false,
+                controller: self.getController(),
+
+                width: "100%",
+                height: "auto",
+
+                heading: true,
+                filtering: false,
+                inserting: false,
+                editing: true,
+                selecting: true,
+                sorting: true,
+                paging: false,
+                pageLoading: false,
+
+                rowClass: function(item, itemIndex) {}, //TODO: Use this to implement row color based on status
+                rowClick: function(data){}, // This must be empty
+
+                noDataContent: "No Data",
+
+                confirmDeleting: false, // Disable the builtin delete confirm because we have our own
+
+                loadIndication: true,
+                loadIndicationDelay: 100,
+                loadMessage: "Please, wait...",
+                loadShading: true,
+
+                updateOnResize: true,
+
+                rowRenderer: self.getRowRenderer(actionModals),
+                headerRowRenderer: self.getHeaderRowRenderer(actionModals),
+
+                onInit: function(args){
+                    console.log("Initialized Table: " + self.tableName);
+                }
+            });
+        },
+        getController: function(){
+            var self = this;
+            return {
+                loadData: function (filter){
+                    return new Promise(function(resolve, reject){
+                        var result = [];
+                        self.model.where().forEach(function(item, index){
+                            result.push(item.toJSON());
+                        });
+                        resolve(result);
+                    });
+                },
+            }
+        },
+        getRowRenderer: function(actionModals){
+            var self = this; // this = The Current Table
+            var renderRow = function(){
+                // this = The row view
+                this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
+                var model = this.getModel();
+
+                var rowSelf = this;
+                self.columns.forEach(function(item, index){
+                    if(!(item.visible == false)){
+                        var formatter = getOrDefault(self.formatters, item.name, null);
+                        var value = model.get(item.name);
+                        if(formatter){
+                            value = formatter(value, model.toJSON()); //TODO: switch to passing the model rather than the json
+                        }
+                        rowSelf.$el.append($("<td>").text(value));
+                    }
+                });
+
+
+                var div = $("<div>").attr("role", "group").attr("class", "btn-group");
+                this.buttons.forEach(function(item, index){
+                    var btn = $("<button>").attr("type", "button").attr("class", "btn");
+                    btn.append($("<i>").attr("class", item.cssClass))
+                    div.append(btn);
+                    var button = new TriggerButton(btn, item.preClick);
+                    //console.log("Created button for action: " + item.name);
+
+                    item.listeners.forEach(function(item, index){
+                        item.listener.listenTo(button, "buttonClick", item.callback)
+                    });
+                });
+
+                this.$el.append($("<td>").append(div))
+            }
+
+            var renderer = function(item, index){
+                // this = The function caller, (The current table?)
+                var row = new TableRowView(renderRow);
+                row.buttons = [];
+
+                if (actionModals["edit"]){
+                    var editPreClick = function(){
+                        actionModals["edit"].modal.setTitle("Edit " + self.apiDataType)
+                        actionModals["edit"].form.setModel(row.getModel());
+                    };
+                    row.buttons.push({
+                        name: "edit",
+                        cssClass: "fas fa-edit",
+                        preClick: editPreClick,
+                        listeners: [{listener: actionModals["edit"].modal, callback: actionModals["edit"].modal.showModal}],
+                    });
+                }
+
+                if (actionModals["delete"]){
+                    var deletePreClick = function(){
+                        actionModals["delete"].modal.setTitle("Delete " + self.apiDataType)
+                        actionModals["delete"].form.setModel(row.getModel());
+                        actionModals["delete"].form.setMessage("Confirm Row Delete\n" + JSON.stringify(row.getModel().toJSON()));
+                        actionModals["delete"].form.setConfirmCallback(function(allClear){
+                            if(allClear){
+                                actionModals["delete"].form.getModel().destroy();
+                            }
+                        });
+                    };
+                    row.buttons.push({
+                        name: "delete",
+                        cssClass: "fas fa-trash",
+                        preClick: deletePreClick,
+                        listeners: [{listener: actionModals["delete"].modal, callback: actionModals["delete"].modal.showModal}],
+                    });
+                }
+
+                row.setModel(self.model.get(item.ID));
+                return row.$el;
+            };
+            return renderer;
+        },
+        getHeaderRowRenderer: function(actionModals){
+            var self = this;
+
+            var renderRow = function(){
+                var rowSelf = this;
+                this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
+                self.columns.forEach(function(item, index){
+                    if(!(item.visible == false)){
+                        rowSelf.$el.append($("<td>").text(item.title));
+                    }
+                });
+
+                var div = $("<div>").attr("role", "group").attr("class", "btn-group");
+                this.buttons.forEach(function(item, index){
+                    var btn = $("<button>").attr("type", "button").attr("class", "btn");
+                    btn.append($("<i>").attr("class", item.cssClass))
+                    div.append(btn);
+                    var button = new TriggerButton(btn, item.preClick);
+                    //console.log("Created button for action: " + item.name);
+
+                    item.listeners.forEach(function(item, index){
+                        item.listener.listenTo(button, "buttonClick", item.callback)
+                    });
+                });
+                this.$el.append($("<td>").append(div));
+            }
+
+            var renderer = function(item, index){
+                var row = new TableRowView(renderRow);
+                row.buttons = [];
+
+                if (actionModals["new"]){
+                    var addPreClick = function(){
+                            actionModals["new"].modal.setTitle("New " + self.apiDataType)
+                            actionModals["new"].form.setModel(null);
+                    };
+                    row.buttons.push({
+                        name: "new",
+                        cssClass: "fas fa-plus-circle",
+                        preClick: addPreClick,
+                        listeners: [{listener: actionModals["new"].modal, callback: actionModals["new"].modal.showModal}],
+                    });
+                }
+
+                if (actionModals["filters"]){
+                    row.buttons.push({
+                        name: "filter",
+                        cssClass: "fas fa-filter",
+                        listeners: [{listener: actionModals["filters"].modal, callback: actionModals["filters"].modal.showModal}],
+                    });
+                }
+
+                row.render();
+                return row.$el;
+            };
+            return renderer;
+        },
+
+        formatters: {},
+        columns: [],
+    });
+    var BaseTableEditForm = BaseForm.extend({
+        //validate: ....
+    });
 
     // Utility Views
-    var ConfirmActionModalTemp = BaseModal.extend({
+    var ConfirmActionModal = BaseModal.extend({
         modalName: "confirmActionModal",
         events: {
             "click #confirmActionModal-False" : "confirmFalse",
@@ -482,48 +867,175 @@ function onDocumentReady() {
 		    return this.message;
 		},
 		render: function(){
+		    console.log("Render: ConfirmActionModal");
 			$("#confirmActionModalText").text(this.message)
 		}
-    });
-    var ConfirmActionModal = ConfirmActionModalTemp.extend(BaseModelView);
+    }).extend(BaseModelView);
 
     // Account Views
     var AccountTreeView = Backbone.View.extend({
         el: $("#accountTree"),
+        _waitingList_: {},
         initialize: function(){
-            this.$el.treeview({
-                expandIcon: "fas fa-plus",
-                collapseIcon: "fas fa-minus",
-                nodeIcon: "",
-                emptyIcon: "",
-                selectedIcon: "",
-
-                preventUnselect: true,
-                allowReselect: false,
-                showTags: true,
-                tagsClass: "badge badge-pill badge-secondary float-right",
+            this.$el.jstree({
+                core: {
+                    check_callback: true,
+                    animation: false,
+                    themes: {
+                        variant: "large",
+                    },
+                },
+                conditionalselect : function (node, event) {
+                    // TODO: A slightly more robust condition is better as the trans table is not the only table affected by this option
+                    if(!getTableData("transactionTable").isLocked()){
+                        return true;
+                    }
+                    console.log("Prevented changing the account selection")
+                    return false;
+                },
+                plugins: [
+                    //"checkbox",
+                    //"contextmenu",
+                    //"dnd",
+                    //"massload",
+                    //"search",
+                    "sort",
+                    //"state",
+                    //"types",
+                    "unique",
+                    "wholerow",
+                    //"changed",
+                    //"conditionalselect",
+                    //"grid"
+                ],
+                /*grid: {
+                    width: "100%",
+                    columns: [{
+                        tree: true,
+                        header: "Accounts"
+                    }, {
+                        tree: false,
+                        header: "Balance",
+                        value: "balance"
+                    }],
+                },*/
             });
 
-            this.$el.on("nodeSelected", this.nodeSelected)
+            this.$el.on("select_node.jstree", this.nodeSelected)
 
             this.listenTo(accounts, "add", this.nodeAdded)
             this.listenTo(accounts, "remove", this.nodeRemoved)
+            //TODO: this.listenTo(accounts, "update", )
+            //TODO: this.listenTo(accounts, "reset", )
+            this.listenTo(accounts, "change", this.nodeChanged)
 
             this.listenTo(buckets, "add", this.nodeAdded)
             this.listenTo(buckets, "remove", this.nodeRemoved)
+            //TODO: this.listenTo(buckets, "update", )
+            //TODO: this.listenTo(buckets, "reset", )
+            this.listenTo(buckets, "change", this.nodeChanged)
+
+            //TODO: this.listenTo(accounts, "sync", this.treeReset);
+            //TODO: this.listenTo(buckets, "sync", this.treeReset);
+        },
+        forceSelection: function(){
+            var nodes = this.$el.treeview(true).findNodes(uiState.get("selectedAccount"), "dataAttr.ID");
+            if(nodes.length > 0){
+                this.$el.treeview(true).selectNode(nodes[0])
+            }
         },
         nodeAdded: function(model, collection, options){
-            var nodes = this.responseToTreeNode([model.attributes])
-            this.$el.treeview(true).addNode(nodes)
-            //console.log(JSON.stringify(options))
+            //var nodes = this.responseToTreeNode([model.attributes])
+            //this.$el.jstree("create_node", "#", nodes[0]);
+            // Decide whether to add the node or wait for it's parent
+            var addNode = false;
+            if(model.get("Ancestor") == -1){
+                addNode = true;
+            }
+
+            // Skip this check if the node is an Account
+            var parentNode = null;
+            if(!addNode){
+                var node = this.$el.jstree().get_node(model.get("Parent"))
+
+                // Debug print
+                console.log("Matched parent " + model.get("Parent") + " to " + JSON.stringify(node))
+                if(node != false){
+                    addNode = true;
+                    parentNode = node;
+                }
+            }
+
+            // Carry out that decision
+            if(addNode){
+                var nodes = this.responseToTreeNode([model.toJSON()]);
+                this.$el.jstree().create_node((parentNode != null ? parentNode.id : "#"), nodes[0]);
+
+                // Check whether this node is the parent of any waiting nodes
+                var list = this._waitingList_[model.get("ID")];
+                if(list){
+                    // If yes, then add the waiting nodes too
+                    var self = this;
+                    list.forEach(function(item, index){
+
+                        // We can safely assume that all ID's in the waiting list belong to Buckets
+                        // since Accounts are never on the waiting list because they have no parent to wait for.
+                        var model = buckets.get(item);
+                        if(model){ // The model should never be undefined, but just in case; we will quietly fail.
+                            var nodes = self.responseToTreeNode([model.toJSON()]);
+                            self.$el.jstree().create_node(model.get("Parent"), nodes[0]);
+                        }
+                    });
+                }
+            } else {
+                // Add the node to the waiting list
+                var list = this._waitingList_[model.get("Parent")];
+                if(!list){ // Lazy init the list
+                    list = [];
+                    this._waitingList_[model.get("Parent")] = list;
+                }
+                list.push(model.get("ID"));
+            }
+
+            //this.forceSelection();
+            this.$el.jstree().redraw(true);
         },
         nodeRemoved: function(model, collection, options){
-            var nodes = this.responseToTreeNode([model.attributes])
+            /*var nodes = this.responseToTreeNode([model.toJSON()])
             this.$el.treeview(true).removeNode(nodes)
-            //console.log(JSON.stringify(options))
+
+            this.forceSelection();*/
         },
-        nodeSelected: function(event, node){
-            uiState.set("selectedAccount", node.dataAttr.ID)
+        nodeChanged: function(model, options){
+            /*var self = this;
+            var nodes = this.$el.treeview(true).findNodes(model.get("ID"), "dataAttr.ID");
+            var changedModel = model.asJSON({changed: true});
+            var newNodes = this.responseToTreeNode([changedModel]);
+
+            var updatedNode = $.extend({}, nodes[0], newNodes[0]);
+            updatedNode.$el = undefined;
+            this.$el.treeview(true).updateNode(nodes[0], updatedNode)*/
+
+            //this.forceSelection();
+        },
+        nodeSelected: function(node, selected, event){
+            uiState.set("selectedAccount", parseInt(selected.node.id))
+        },
+        treeReset(model, response, options){
+
+        },
+        apiResponseToTreeView: function(response){
+            var results = []
+            var data = response.data;
+            if (data != undefined) {
+                results = responseToTreeNode(data);
+            }
+
+            if(results.length < 1){
+                results.push({"text": "No Accounts", "dataAttr": {"ID": -1, "childrenIDs": []}})
+            }
+
+            return results;
         },
         responseToTreeNode(data){
             var results = []
@@ -532,7 +1044,8 @@ function onDocumentReady() {
                 item.Children.forEach(function(it, ind){
                     children.push({"id": it})
                 });
-                results.push({"text": item.Name, "lazyLoad": (item.Children.length > 0), dataAttr: {"childrenIDs": item.Children, "ID": item.ID}, "tags": [item.Balance]})
+                //"lazyLoad": (item.Children.length > 0), dataAttr: {"childrenIDs": item.Children, }, "tags": [item.Balance]
+                results.push({"id": item.ID, "text": item.Name})
             });
             return results
         },
@@ -540,280 +1053,50 @@ function onDocumentReady() {
     var AccountStatusView = Backbone.View.extend({
         el: $("#accountStatusText"),
         initialize: function(){
-            this.listenTo(uiState, "change:selectedAccount", this.render);
+            this.listenTo(uiState, "change:selectedAccount", function(model, selectedAccountID, options){
+                var models = findModelsWhere([accounts, buckets], {ID: selectedAccountID});
+                if(models.length > 0){
+                    this.setModel(models[0]);
+                }
+            });
+
+            this.listenTo(this, "modelChanged", function(newModel){
+                this.listenTo(newModel, "change:Balance", this.render);
+                this.listenTo(newModel, "change:PostedBalance", this.render);
+                this.render();
+            })
         },
         render: function(){
             console.log("Render: AccountStatusView")
-        	if (uiState.get("selectedAccount") != undefined) {
-        	    var account = accounts.where({ID: uiState.get("selectedAccount")});
-
-        	    if(!account || account.length < 1){
-        	        account = buckets.where({ID: uiState.get("selectedAccount")});
-        	    }
-
-        	    if(account && account.length > 0){
-        	        this.$el.text("Available: \$" + account[0].get("Balance") + ", Posted: \$" + account[0].get("PostedBalance"));
-        	        return;
-        	    }
+        	if (this.getModel() != null) {
+        	    this.$el.text("Available: \$" + this.getModel().get("Balance") + ", Posted: \$" + this.getModel().get("PostedBalance"));
+        	    return;
             }
-            this.$el.text("Error displaying balance");
+            this.$el.text("Error: model is null");
         },
-    });
+    }).extend(BaseModelView);
 
     // Table Views
-    var BaseTableView = Backbone.View.extend({
-        model: null,
-        apiDataType: null,
-        initialize: function(actionModals){
-        	console.log("BaseTableView.initialize: " + this.tableName);
-        	this.setElement($("#" + this.tableName))
-
-            var self = this;
-
-            updateTable = function(){
-                console.log("Loading Data: " + this.tableName);
-                self.$el.jsGrid("loadData");
-            };
-
-            this.listenTo(this.model, "update", updateTable);
-            this.listenTo(this.model, "reset", updateTable);
-
-            var fields = this.apiTableSchemaToColumns();
-            fields.push({
-                type: "control",
-                modeSwitchButton: false,
-                editButton: true,
-                headerTemplate: function() {
-                    var div = $("<div>").attr("role", "group").attr("class", "btn-group");
-
-                    var addBtn = $("<button>").attr("type", "button").attr("class", "btn");
-                    addBtn.append($("<i>").attr("class", "fas fa-plus-circle"))
-                    div.append(addBtn);
-
-                    if (actionModals["new"]){
-                        var button = new TriggerButton(addBtn, function(){
-                            actionModals["new"].modal.setTitle("New " + self.apiDataType)
-                            actionModals["new"].form.setModel(null);
-                        });
-                        button.on("buttonClick", actionModals["new"].modal.showModal, actionModals["new"].modal)
-                    }
-
-                    if(self.tableName == "transactionTable"){
-                        var filterBtn = $("<button>").attr("type", "button").attr("class", "btn");
-                        filterBtn.append($("<i>").attr("class", "fas fa-filter"))
-                        div.append(filterBtn);
-
-                        if (actionModals["filter"]){
-                            var button = new TriggerButton(filterBtn);
-                            button.on("buttonClick", actionModals["filter"].modal.showModal, actionModals["filter"].modal)
-                        }
-                    }
-                    return div;
-                },
-                itemTemplate: function(a, b){
-                    var div = $("<div>").attr("role", "group").attr("class", "btn-group");
-
-                    var editBtn = $("<button>").attr("type", "button").attr("class", "btn");
-                    editBtn.append($("<i>").attr("class", "fas fa-edit"))
-                    div.append(editBtn);
-
-                    if (actionModals["edit"]){
-                        var button = new TriggerButton(editBtn, function(){
-                            var row = self.$el.jsGrid('rowByItem', b)
-                            actionModals["edit"].modal.setTitle("Edit " + self.apiDataType)
-                            actionModals["edit"].form.setModel(self.model.where({ID: row.data("JSGridItem").ID}));
-                        });
-                        button.on("buttonClick", actionModals["edit"].modal.showModal, actionModals["edit"].modal)
-                    }
-
-                    var deleteBtn = $("<button>").attr("type", "button").attr("class", "btn");
-                    deleteBtn.append($("<i>").attr("class", "fas fa-trash"))
-                    div.append(deleteBtn);
-
-                    if (actionModals["delete"]){
-                        var button = new TriggerButton(deleteBtn, function(){
-                            var row = self.$el.jsGrid('rowByItem', b)
-                            actionModals["delete"].modal.setTitle("Delete " + self.apiDataType)
-                            actionModals["delete"].form.setModel(self.model.where({ID: row.data("JSGridItem").ID}));
-                            actionModals["delete"].form.setMessage("Confirm Row Delete\n" + JSON.stringify(row.data("JSGridItem")));
-                            actionModals["delete"].form.setConfirmCallback(function(allClear){
-                                if(allClear){
-                                    self.$el.jsGrid("deleteItem", row).done(function() {
-                                        console.log("delete completed");
-                                    });
-                                }
-                            });
-                        });
-                        button.on("buttonClick", actionModals["delete"].modal.showModal, actionModals["delete"].modal)
-                    }
-
-                    return div;
-                }
-            })
-
-            var table = this.$el.jsGrid({
-                fields: fields,
-                autoload: false,
-                controller: {
-                    loadData: function (filter){
-                        var selID = null;
-                        try {
-                            selID = (self.apiDataType == "transaction" ? uiState.get("selectedAccount") : uiState.get("bucketModalSelectedAccount"))
-                        }
-                        catch(err) {
-                            console.log(err.message);
-                        }
-
-                        /*var rules = null;
-                        if(getTableData(tableName).apiDataType == "transaction"){
-                            rules = getTransactionFilterRules();
-                        }*/
-
-
-                        var result = [];
-                        //if(selID != null && selID > -1){
-                            self.model.where().forEach(function(item, index){
-                                result.push(item.toJSON());
-                            });
-                        //}
-                        return Promise.resolve(result);
-                    },
-                    /*insertItem: function (data){
-                        return apiRequest(createRequest("create", getTableData(tableName).apiDataType, [data])).then(function(data){
-                            return data.data[0];
-                        });
-                    },
-                    updateItem: function (data){
-                        return apiRequest(createRequest("update", getTableData(tableName).apiDataType, [data])).then(function(data){
-                            return data.data[0];
-                        });
-                    },
-                    deleteItem: function (tableRow){
-                        //TODO: This sends the entire row, it only needs to send the ID. This will reduce the request size and increase performance with sending batch deletes
-                        return apiRequest(createRequest("delete", getTableData(tableName).apiDataType, [tableRow])).then(function(data){
-                            return data.data[0];
-                        });
-                    }*/
-                },
-
-                width: "100%",
-                height: "auto",
-
-                heading: true,
-                filtering: false,
-                inserting: false,
-                editing: true,
-                selecting: true,
-                sorting: true,
-                paging: false,
-                pageLoading: false,
-
-                rowClass: function(item, itemIndex) {}, //TODO: Use this to implement row color based on status
-                rowClick: function(data){}, // This must be empty
-
-                noDataContent: "No Data",
-
-                confirmDeleting: false, // Disable the builtin delete confirm because we have our own
-
-                invalidNotify: function(args) {},
-                invalidMessage: "Invalid data entered!",
-
-                loadIndication: true,
-                loadIndicationDelay: 100,
-                loadMessage: "Please, wait...",
-                loadShading: true,
-
-                updateOnResize: true,
-
-                //rowRenderer: null, // Use this to implement column condensing on small screens
-                //headerRowRenderer: null, // This might be useful
-
-                onInit: function(args){
-                    console.log("Initialized Table: " + self.tableName);
-                }
-            });
-        },
-        /*formCallback: function(tableRow, data){
-            if (tableRow){
-                $("#" + tableName).jsGrid("updateItem", tableRow, this.cleanRowData(data)).done(function() {
-                    console.log("update completed");
-                });
-            } else {
-                $("#" + tableName).jsGrid("insertItem", this.cleanRowData(data)).done(function() {
-                    console.log("insert completed");
-                });
-            }
-            //TODO: make this actually reflect whether the callback completed sucessfully
-            return true;
-        },*/
-        apiTableSchemaToColumns: function(){
-            var columns = []
-            this.columns.forEach(function(item, index){
-                var obj = {"name": (item.name ? item.name : item.title ), "title": item.title};
-                if(item.visible != undefined){
-                   obj.visible = item.visible
-                }
-
-                var formatter = getOrDefault(this.formatters, item.name, null);
-                if(formatter != null){
-                    obj.cellRenderer = function(value, rowData){
-                        return '<td>' + formatter(value, rowData) + '</td>';
-                    }
-                }
-
-                switch(item.type){
-                    case "enum":
-                        obj.type = "text"
-                        obj.cellRenderer = function(value, rowData){
-                            var enumKey = (item.options ? getOrDefault(item.options, "enumKey", "") : "");
-                            var optionsArray = getOrDefault(enums, enumKey, ["Invalid enum: " + enumKey]);
-                            return '<td>' + optionsArray[value] + '</td>';
-                        };
-                        break;
-                    default:
-                        obj.type = item.type;
-                        break;
-                }
-                columns.push(obj);
-            });
-            return columns;
-        },
-        /*cleanRowData: function(data){
-            // This converts objects of format [{name: ***, value: ***}, ..., ...]
-            // to {The name: The value, The next name: The next value}
-            var obj = {};
-
-            // This loop style is used because "data" doesn't have .forEach or .length
-            // for some reason
-            for(var index = 0; data[index] != undefined; index++){
-                obj[data[index].name] = data[index].value;
-            }
-            return obj;
-        },*/
-        formatters: {},
-        columns: [],
-    });
-
     var TransactionTable = BaseTableView.extend({
         model: transactions,
         tableName: "transactionTable",
         apiDataType: "transaction",
         initialize: function(actionModals){
             BaseTableView.prototype.initialize.apply(this, [actionModals]);
-            this.listenTo(uiState, "change:selectedAccount", updateTable); //TODO: ??
+            this.listenTo(uiState, "change:selectedAccount", this.loadData); //TODO: ??
         },
         formatters: {
             "Type": function(value, rowData){
                 var fromToStr = "";
-                if (value == "0"){//Transfer
-                    fromToStr = (this.getTransferDirection(rowData, getSelectedAccount()) ? " from " : " to ");
+                if (value == 0){//Transfer
+                    fromToStr = (this.getTransferDirection(rowData, uiState.get("selectedAccount")) ? " from " : " to ");
                 } else { // Other
-                    fromToStr = (value == "2" ? " from " : " to ")
+                    fromToStr = (value == 2 ? " from " : " to ")
                 }
-                return enums["transactionTable"]["Type"][value] + fromToStr;
+                return enums["transactionType"][value] + fromToStr;
             },
             "Amount": function(value, rowData){
-                var isDeposit = this.getTransferDirection(rowData, getSelectedAccount());
+                var isDeposit = this.getTransferDirection(rowData, uiState.get("selectedAccount"));
                 if (isDeposit){
                     // If deposit
                     return formatter.format(value);
@@ -824,7 +1107,7 @@ function onDocumentReady() {
                 var id = -2; //This value will cause the name func to return "Invalid ID"
 
                 var transType = rowData.Type;
-                var isDeposit = this.getTransferDirection(rowData, getSelectedAccount());
+                var isDeposit = this.getTransferDirection(rowData, uiState.get("selectedAccount"));
                 if(transType != 0){
                     id = (transType == 1 ? rowData.DestBucket : rowData.SourceBucket);
                 } else {
@@ -833,13 +1116,13 @@ function onDocumentReady() {
 
                 //var par = getBucketParentForID(id);
                 //if(par != -1){
-                return getBucketNameForID(id);
+                return getBucketNameForID(accounts, buckets, id);
                 //} else {
                     //rowData.bucketSort = "Unassigned";
                 //}//
             },
             "TransDate": function(value, rowData){
-                if(rowData.PostDate.toDate){
+                if(rowData.PostDate && rowData.PostDate.toDate){
                     var d = new Date(1971,01,01);
                     if(rowData.PostDate.toDate() < d){
                         return "N/A";
@@ -856,29 +1139,36 @@ function onDocumentReady() {
             {name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", options: {formatString:"YYYY-MM-DD"}},
             {name: "Amount", title: "Amount", type: "number", breakpoints:""},
             {name: "Type", title: "Type", type: "text", breakpoints:"xs sm md"},
-            {title: "Bucket", type: "text", breakpoints:"xs sm md"},
+            {name: "Bucket", title: "Bucket", type: "text", breakpoints:"xs sm md"},
             {name: "Memo", title: "Memo", type: "text", breakpoints:""},
             {name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm"},
         ],
-        getTransferDirection: function(rowData, node){
-            // True = Money Coming in; I.E. a positive value
-            // False = Money Going out; I.E. a negative value
-            var ID = -1;
-            if (node.dataAttr){
-                ID = node.dataAttr.ID;
+
+        getController: function(){
+            var self = this;
+            var def = BaseTableView.prototype.getController.apply(this);
+            def.loadData = function (filter){
+                var selID = uiState.get("selectedAccount");
+
+                /*var rules = null;
+                if(getTableData(tableName).apiDataType == "transaction"){
+                    rules = getTransactionFilterRules();
+                }*/
+
+                if(selID != null && selID > -1){
+                    return new Promise(function(resolve, reject){
+                        var result = [];
+                        var a = self.model.where({SourceBucket: selID})
+                        var b = self.model.where({DestBucket: selID})
+                        var c = _.union(a, b);
+                        c.forEach(function(item, index){
+                            result.push(item.toJSON());
+                        });
+                        resolve(result);
+                    });
+                }
             }
-            switch(rowData.Type){
-                case 0:
-                    return (rowData.DestBucket == ID);
-                    break;
-                case 1:
-                    return true;
-                    break;
-                case 2:
-                    return false;
-                    break;
-            }
-            return null;
+            return def;
         },
     });
     var BucketTable = BaseTableView.extend({
@@ -888,14 +1178,11 @@ function onDocumentReady() {
         apiDataType: "bucket",
         initialize: function(actionModals){
             BaseTableView.prototype.initialize.apply(this, [actionModals]);
-            this.listenTo(uiState, "change:bucketModalSelectedAccount", updateTable); //TODO: ??
-        },
-        events: {
-            "click bucketTableModalToggle" : "showModal"
+            this.listenTo(uiState, "change:bucketModalSelectedAccount", this.loadData); //TODO: ??
         },
         formatters: {
             "Parent": function(value, rowData){
-                return getBucketNameForID(value);
+                return getBucketNameForID(accounts, buckets, value);
             },
         },
         columns: [
@@ -903,6 +1190,24 @@ function onDocumentReady() {
             {name: "Name", title: "Name", type: "text"},
             {name: "Parent", title: "Parent", type: "text"}
         ],
+        getController: function(){
+            var self = this;
+            var def = BaseTableView.prototype.getController.apply(this);
+            def.loadData = function (filter){
+                var selID = uiState.get("bucketModalSelectedAccount");
+                if(selID != null && selID > -1){
+                    return new Promise(function(resolve, reject){
+                        var result = [];
+                        var a = self.model.where({Ancestor: selID})
+                        a.forEach(function(item, index){
+                            result.push(item.toJSON());
+                        });
+                        resolve(result);
+                    });
+                }
+            }
+            return def;
+        },
     });
     var AccountTable = BaseTableView.extend({
         model: accounts,
@@ -915,8 +1220,6 @@ function onDocumentReady() {
     });
 
     // Form Views
-    var BaseTableEditForm = BaseForm.extend({});
-
     var TransactionTableEditForm = BaseTableEditForm.extend({
         formName: "transactionTableEditForm",
         tableName: "transactionTable",
@@ -959,7 +1262,7 @@ function onDocumentReady() {
             "#accountTableModalToggle"
         ]
     });
-    var AccountTableFormModal = BaseModal.extend({
+    var AccountTableFormModal = BaseFormModal.extend({
         modalName: "accountTableEditFormModal",
     });
 
@@ -970,15 +1273,17 @@ function onDocumentReady() {
             "#bucketTableModalToggle"
         ]
     });
-    var BucketTableFormModal = BaseModal.extend({
+    var BucketTableFormModal = BaseFormModal.extend({
         modalName: "bucketTableEditFormModal",
     });
 
-    var TransactionTableFormModal = BaseModal.extend({
+    var TransactionTableFormModal = BaseFormModal.extend({
         modalName: "transactionTableEditFormModal",
     });
 
     // Other
+
+    //TODO: Finish the filter modal
     var TransactionTableFilterModal = BaseModal.extend({
         title: "Transaction Filters",
         modalName: "transactionTableFilterModal",
@@ -1087,10 +1392,16 @@ function onDocumentReady() {
             return result;
         },
     });
-
     var BucketTableAccountSelect = DynamicSelectView.extend({
         el: $("#bucketEditAccountSelect"),
         initUnselected: false,
+        events: {
+            "change" : "onChange",
+        },
+        onChange: function(data){
+            var val = parseInt(this.$el.val());
+            uiState.set("bucketModalSelectedAccount", val);
+        },
     });
 
     // Initialize the views in order of dependency
@@ -1110,6 +1421,20 @@ function onDocumentReady() {
         "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
     });
 
+    var saveFunction = function(data, model){
+        // Perform updates to the model
+        if(model == null){
+            // We are creating a new table entry
+            this.create(cleanData(data));
+        } else {
+            model.save(cleanData(data));
+        }
+    };
+
+    transactionEditFormModal.bindSubmitToForm(transactionEditForm);
+    transactions.listenTo(transactionEditForm, "formSubmit", saveFunction);
+    transactionEditFormModal.listenTo(transactionEditForm, "formSubmit", transactionEditFormModal.hideModal)
+
     var bucketTableModal = new BucketTableModal;
     var bucketTableAccountSelect = new BucketTableAccountSelect;
     var bucketEditForm = new BucketTableEditForm;
@@ -1119,6 +1444,9 @@ function onDocumentReady() {
         "new" : {form: bucketEditForm, modal: bucketEditFormModal},
         "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
     });
+    bucketEditFormModal.bindSubmitToForm(bucketEditForm);
+    buckets.listenTo(bucketEditForm, "formSubmit", saveFunction);
+    bucketEditFormModal.listenTo(bucketEditForm, "formSubmit", bucketEditFormModal.hideModal)
 
     var accountTableModal = new AccountTableModal;
     var accountEditForm = new AccountTableEditForm;
@@ -1128,11 +1456,14 @@ function onDocumentReady() {
         "new" : {form: accountEditForm, modal: accountEditFormModal},
         "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
     });
+    accountEditFormModal.bindSubmitToForm(accountEditForm);
+    accounts.listenTo(accountEditForm, "formSubmit", saveFunction);
+    accountEditFormModal.listenTo(accountEditForm, "formSubmit", accountEditFormModal.hideModal)
 
     // Fetch the data from the server
     accounts.fetch();
     buckets.fetch();
-    transactions.fetch({reset: true});
+    transactions.fetch();
 
     bucketTableAccountSelect.setModel(accounts);
 
@@ -1141,4 +1472,13 @@ function onDocumentReady() {
     Bucket Select (Bucket Edit Form [Parent])
     */
 
+
+    $("#saveChanges").click(function(){
+        var collections = {Accounts: accounts, Buckets: buckets, Transactions: transactions}
+
+        Object.keys(collections).forEach(function(key, index){
+            console.log("Saving " + key + ".....");
+            collections[key].sync();
+        });
+    });
 }

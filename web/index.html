@@ -29,9 +29,9 @@
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.css"><!-- v4.3.1 -->
 	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.bundle.js"></script><!-- v4.3.1 -->
 
-	<!-- Bootstrap-Treeview -->
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/patternfly-bootstrap-treeview@2.1.10/dist/bootstrap-treeview.css">
-	<script src="https://cdn.jsdelivr.net/npm/patternfly-bootstrap-treeview@2.1.10/dist/bootstrap-treeview.js"></script>
+	<!-- jsTree -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.8/jstree.min.js"></script>
 
 	<!-- JS-Grid -->
     <link type="text/css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jsgrid/1.5.3/jsgrid.css" />
@@ -66,8 +66,8 @@
 							<div class="dropdown-menu dropdown-menu-right">
 								<button id="accountTableModalToggle" class="dropdown-item">Edit Accounts</button>
 								<button id="bucketTableModalToggle" class="dropdown-item">Edit Buckets</button>
-								<!--div class="dropdown-divider"></div>
-								<button id="something" class="dropdown-item">Seperated Link</button-->
+								<div class="dropdown-divider"></div>
+								<button id="saveChanges" class="dropdown-item">Save</button>
 							</div>
 						</li>
 
@@ -201,7 +201,7 @@
 						</button>
 					</div>
 					<div class="modal-body">
-						<div id="bucketTableEditToolbar"><select id="bucketEditAccountSelect"></select></div>
+						<div id="bucketTableEditToolbar"> <h6>Account: </h6> <select id="bucketEditAccountSelect"></select></div>
 						<table id="bucketTable" class="table-striped table-hover" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
 
 					</div>

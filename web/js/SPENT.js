@@ -287,6 +287,7 @@ function onDocumentReady() {
                 Status: 0,
                 TransDate: null,
                 PostDate: null,
+                Amount: 0,
                 SourceBucket: -1,
                 DestBucket: -1,
                 Memo: "",
@@ -374,13 +375,6 @@ function onDocumentReady() {
                 self.$el[0].options.add(new Option(ite.get("Name"), ite.get("ID"), false, (value == ite.get("ID"))))
             });
             this.$el.prop("disabled", false);
-
-            //TODO: This needs reimplemented; Feature [2]
-            /*if (it.attr('name') == "DestBucket" || it.attr('name') == "SourceBucket") {
-                $("#transactionTableType").change();
-            } else {
-                it.prop("disabled", false);
-            }*/
         },
     }).extend(BaseModelView);
     var TableRowView = Backbone.View.extend({
@@ -485,37 +479,6 @@ function onDocumentReady() {
                                 input.append(option);
                             });
                             break;
-                            /*if(item.name == "Type"){ // TODO: This needs reimplemented; Feature [2]
-                               select.change(function(data){
-                                   //alert(this.value);
-                                   sourceVisible = false;
-                                   destVisible = false;
-                                   switch(this.value){
-                                       case "0":
-                                           sourceVisible = true;
-                                           destVisible = true;
-                                           break;
-                                       case "1":
-                                           sourceVisible = false;
-                                           destVisible = true;
-                                           break;
-                                       case "2":
-                                           sourceVisible = true;
-                                           destVisible = false;
-                                           break;
-                                   }
-                                   $("#" + self.tableName + "SourceBucket").prop("disabled", !sourceVisible);
-                                   $("#" + self.tableName + "DestBucket").prop("disabled", !destVisible);
-
-                                   if(!sourceVisible){
-                                       $("#" + self.tableName + "SourceBucket").val(-1)
-                                   }
-
-                                   if(!destVisible){
-                                       $("#" + self.tableName + "DestBucket").val(-1)
-                                   }
-                               });
-                            }*/
                         case "dynamicSelect":
                             input = $("<select></select>");
                             var dynamicSelect = new DynamicSelectView;
@@ -655,7 +618,7 @@ function onDocumentReady() {
                 heading: true,
                 filtering: false,
                 inserting: false,
-                editing: true,
+                editing: false,
                 selecting: true,
                 sorting: true,
                 paging: false,
@@ -703,6 +666,8 @@ function onDocumentReady() {
                 // this = The row view
                 this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
                 var model = this.getModel();
+
+                console.log("TableRowView.render: " + self.apiDataType + ", ID: " + model.get("ID"))
 
                 var rowSelf = this;
                 self.columns.forEach(function(item, index){
@@ -755,7 +720,7 @@ function onDocumentReady() {
                     var deletePreClick = function(){
                         actionModals["delete"].modal.setTitle("Delete " + self.apiDataType)
                         actionModals["delete"].form.setModel(row.getModel());
-                        actionModals["delete"].form.setMessage("Confirm Row Delete\n" + JSON.stringify(row.getModel().toJSON()));
+                        actionModals["delete"].form.setMessage(JSON.stringify(row.getModel().toJSON()));
                         actionModals["delete"].form.setConfirmCallback(function(allClear){
                             if(allClear){
                                 actionModals["delete"].form.getModel().destroy();
@@ -934,13 +899,15 @@ function onDocumentReady() {
             this.listenTo(accounts, "remove", this.nodeRemoved)
             //TODO: this.listenTo(accounts, "update", )
             //TODO: this.listenTo(accounts, "reset", )
-            this.listenTo(accounts, "change", this.nodeChanged)
+            this.listenTo(accounts, "change:Name", this.nodeChanged)
+            this.listenTo(accounts, "change:Balance", this.nodeChanged)
 
             this.listenTo(buckets, "add", this.nodeAdded)
             this.listenTo(buckets, "remove", this.nodeRemoved)
             //TODO: this.listenTo(buckets, "update", )
             //TODO: this.listenTo(buckets, "reset", )
-            this.listenTo(buckets, "change", this.nodeChanged)
+            this.listenTo(buckets, "change:Name", this.nodeChanged)
+            this.listenTo(buckets, "change:Balance", this.nodeChanged)
 
             //TODO: this.listenTo(accounts, "sync", this.treeReset);
             //TODO: this.listenTo(buckets, "sync", this.treeReset);
@@ -952,8 +919,6 @@ function onDocumentReady() {
             }
         },
         nodeAdded: function(model, collection, options){
-            //var nodes = this.responseToTreeNode([model.attributes])
-            //this.$el.jstree("create_node", "#", nodes[0]);
             // Decide whether to add the node or wait for it's parent
             var addNode = false;
             if(model.get("Ancestor") == -1){
@@ -1008,23 +973,18 @@ function onDocumentReady() {
             this.$el.jstree().redraw(true);
         },
         nodeRemoved: function(model, collection, options){
-            /*var nodes = this.responseToTreeNode([model.toJSON()])
-            this.$el.treeview(true).removeNode(nodes)
-
-            this.forceSelection();*/
-        },
-        nodeChanged: function(model, options){
-            /*var self = this;
-            var nodes = this.$el.treeview(true).findNodes(model.get("ID"), "dataAttr.ID");
-            var changedModel = model.asJSON({changed: true});
-            var newNodes = this.responseToTreeNode([changedModel]);
-
-            var updatedNode = $.extend({}, nodes[0], newNodes[0]);
-            updatedNode.$el = undefined;
-            this.$el.treeview(true).updateNode(nodes[0], updatedNode)*/
+            var node = this.$el.jstree().get_node(model.get("ID"))
+            this.$el.jstree().delete_node(node)
 
             //this.forceSelection();
         },
+        nodeChanged: function(model, value, options){
+            var node = this.$el.jstree().get_node(model.get("ID"))
+            this.$el.jstree().rename_node(node, this.getNodeText(model.toJSON()))
+
+            //this.forceSelection();
+        },
+
         nodeSelected: function(node, selected, event){
             uiState.set("selectedAccount", parseInt(selected.node.id))
         },
@@ -1046,15 +1006,20 @@ function onDocumentReady() {
         },
         responseToTreeNode(data){
             var results = []
+            var self = this;
             data.forEach(function(item, index) {
                 var children = [];
                 item.Children.forEach(function(it, ind){
                     children.push({"id": it})
                 });
                 //"lazyLoad": (item.Children.length > 0), dataAttr: {"childrenIDs": item.Children, }, "tags": [item.Balance]
-                results.push({"id": item.ID, "text": item.Name})
+                results.push({"id": item.ID, "text": self.getNodeText(item)})
             });
             return results
+        },
+        getNodeText(model){
+            var badgeClasses = "badge badge-pill float-right " + (parseInt(model.Balance) < 0 ? "badge-danger" : "badge-dark");
+            return $("<span>").text(model.Name)[0].outerHTML + $("<span>").attr("class", badgeClasses).text(model.Balance)[0].outerHTML;
         },
     });
     var AccountStatusView = Backbone.View.extend({
@@ -1185,7 +1150,7 @@ function onDocumentReady() {
         apiDataType: "bucket",
         initialize: function(actionModals){
             BaseTableView.prototype.initialize.apply(this, [actionModals]);
-            this.listenTo(uiState, "change:bucketModalSelectedAccount", this.loadData); //TODO: ??
+            this.listenTo(uiState, "change:bucketModalSelectedAccount", this.loadData);
         },
         formatters: {
             "Parent": function(value, rowData){
@@ -1474,7 +1439,8 @@ function onDocumentReady() {
     buckets.fetch();
     transactions.fetch();
 
-    bucketTableAccountSelect.setModel(accounts);
+    bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
+
 
     /* Selects
     Account+Bucket Select (Transaction Edit Form [SourceBucket, DestBucket])

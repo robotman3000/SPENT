@@ -956,9 +956,16 @@ function onDocumentReady() {
             //TODO: this.listenTo(buckets, "sync", this.treeReset);
         },
         forceSelection: function(){
-            var nodes = this.$el.treeview(true).findNodes(uiState.get("selectedAccount"), "dataAttr.ID");
-            if(nodes.length > 0){
-                this.$el.treeview(true).selectNode(nodes[0])
+            // Get node for the last selected account
+            var node = this.$el.jstree().get_node(uiState.get("selectedAccount"));
+
+            if(!node){
+                // The node doesn't exist...
+                // so select the first node in the tree
+                this.$el.jstree('select_node', 'ul > li:first');
+            } else {
+                // Select the last selected node
+                this.$el.jstree().select_node(node, false, false);
             }
         },
         nodeAdded: function(model, collection, options){
@@ -1012,22 +1019,20 @@ function onDocumentReady() {
                 list.push(model.get("ID"));
             }
 
-            //this.forceSelection();
-            this.$el.jstree().redraw(true);
+            this.forceSelection();
         },
         nodeRemoved: function(model, collection, options){
             var node = this.$el.jstree().get_node(model.get("ID"))
             this.$el.jstree().delete_node(node)
 
-            //this.forceSelection();
+            this.forceSelection();
         },
         nodeChanged: function(model, value, options){
             var node = this.$el.jstree().get_node(model.get("ID"))
             this.$el.jstree().rename_node(node, this.getNodeText(model.toJSON()))
 
-            //this.forceSelection();
+            this.forceSelection();
         },
-
         nodeSelected: function(node, selected, event){
             uiState.set("selectedAccount", parseInt(selected.node.id))
         },

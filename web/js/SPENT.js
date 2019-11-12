@@ -265,7 +265,6 @@ function onDocumentReady() {
                 Name: null,
                 Parent: -1,
                 Ancestor: -1,
-                Children: [],
             };
         },
     });
@@ -357,9 +356,11 @@ function onDocumentReady() {
             this.listenTo(newModel, "change:Name", this.render) //TODO: Inefficient
             //TODO: this.listenTo(newModel, "request", this.render)
             //TODO: this.listenTo(newModel, "sync", this.render)
+            this.render();
         },
         render: function(){
             console.log("DynamicSelectView.render")
+            var lastState =  this.$el.prop("disabled");
             this.$el.prop("disabled", true);
 
             this.$el[0].options.length=0
@@ -374,7 +375,9 @@ function onDocumentReady() {
             this.model.where().forEach(function(ite, ind){
                 self.$el[0].options.add(new Option(ite.get("Name"), ite.get("ID"), false, (value == ite.get("ID"))))
             });
-            this.$el.prop("disabled", false);
+            this.$el.prop("disabled", lastState);
+
+            this.$el.change();
         },
     }).extend(BaseModelView);
     var TableRowView = Backbone.View.extend({
@@ -450,6 +453,9 @@ function onDocumentReady() {
         generateForm: function(){
             var cols = []
             var self = this;
+
+            var listeners = {};
+            var inputs = [];
             this.columns.forEach(function(item, index){
                 if(item.visible != false){
                     var div = $("<div class='form-group'></div>");
@@ -496,10 +502,34 @@ function onDocumentReady() {
                         input.attr("name", item.name);
                         input.attr("class", "form-control");
                         input.attr("required", (item.required == true));
+
+                        if (item.options){
+                            var value = getOrDefault(item.options, "listenTo", null);
+                            if(value != null){
+                                Object.keys(value).forEach(function(key, index){
+                                    var array = listeners[key];
+                                    if(!array){
+                                        array = {};
+                                        listeners[key] = array;
+                                    }
+                                    array[item.name] = value[key];
+                                });
+                            }
+                        }
+                        inputs[item.name] = input;
+
                         div.append(input);
                         cols.push(div);
                     }
                 }
+            });
+
+            Object.keys(listeners).forEach(function(triggerName, index){
+                var listenList = listeners[triggerName];
+                Object.keys(listenList).forEach(function(listenName, index2){
+                    var handlerFunction = listenList[listenName];
+                    inputs[triggerName].change({self: inputs[listenName]}, handlerFunction);
+                });
             });
 
             var form = $("<form></form>");
@@ -541,6 +571,8 @@ function onDocumentReady() {
 				} else {
 					$(item).val(oldValue);
 				}
+
+				$(item).change();
 			});
 		},
 		submit: function(){
@@ -602,7 +634,9 @@ function onDocumentReady() {
                         var optionsArray = getOrDefault(enums, enumKey, ["Invalid enum: " + enumKey]);
                         item.type = "text";
                         self.formatters[item.name] = function(value, rowData){
-                            return optionsArray[value];
+                            return {
+                                text: optionsArray[value],
+                            };
                         };
                     }
                 }
@@ -670,14 +704,23 @@ function onDocumentReady() {
                 console.log("TableRowView.render: " + self.apiDataType + ", ID: " + model.get("ID"))
 
                 var rowSelf = this;
+
+                var formatterFunction = function(value, model, formatter){
+                    var result = formatter(value, model.toJSON());
+                    var tag = getOrDefault(result, "tag", "span");
+                    var text = getOrDefault(result, "text", "Format Error");
+                    var classes = getOrDefault(result, "class", "");
+                    return $("<" + tag + ">").attr("class", classes).text(text);
+                };
+
                 self.columns.forEach(function(item, index){
                     if(!(item.visible == false)){
                         var formatter = getOrDefault(self.formatters, item.name, null);
                         var value = model.get(item.name);
                         if(formatter){
-                            value = formatter(value, model.toJSON()); //TODO: switch to passing the model rather than the json
+                            value = formatterFunction(value, model, formatter); //TODO: switch to passing the model rather than the json
                         }
-                        rowSelf.$el.append($("<td>").text(value));
+                        rowSelf.$el.append($("<td>").append(value));
                     }
                 });
 
@@ -991,28 +1034,10 @@ function onDocumentReady() {
         treeReset(model, response, options){
 
         },
-        apiResponseToTreeView: function(response){
-            var results = []
-            var data = response.data;
-            if (data != undefined) {
-                results = responseToTreeNode(data);
-            }
-
-            if(results.length < 1){
-                results.push({"text": "No Accounts", "dataAttr": {"ID": -1, "childrenIDs": []}})
-            }
-
-            return results;
-        },
         responseToTreeNode(data){
             var results = []
             var self = this;
             data.forEach(function(item, index) {
-                var children = [];
-                item.Children.forEach(function(it, ind){
-                    children.push({"id": it})
-                });
-                //"lazyLoad": (item.Children.length > 0), dataAttr: {"childrenIDs": item.Children, }, "tags": [item.Balance]
                 results.push({"id": item.ID, "text": self.getNodeText(item)})
             });
             return results
@@ -1065,15 +1090,16 @@ function onDocumentReady() {
                 } else { // Other
                     fromToStr = (value == 2 ? " from " : " to ")
                 }
-                return enums["transactionType"][value] + fromToStr;
+                return {
+                    text: enums["transactionType"][value] + fromToStr,
+                };
             },
             "Amount": function(value, rowData){
                 var isDeposit = this.getTransferDirection(rowData, uiState.get("selectedAccount"));
-                if (isDeposit){
-                    // If deposit
-                    return formatter.format(value);
-                }
-                return formatter.format(value * -1);
+                return {
+                    text: formatter.format(value * (isDeposit ? 1 : -1)),
+                    class: (isDeposit ? "" : "text-danger"),
+                };
             },
             "Bucket": function(value, rowData){
                 var id = -2; //This value will cause the name func to return "Invalid ID"
@@ -1086,22 +1112,25 @@ function onDocumentReady() {
                     id = (isDeposit ? rowData.SourceBucket : rowData.DestBucket);
                 }
 
-                //var par = getBucketParentForID(id);
-                //if(par != -1){
-                return getBucketNameForID(accounts, buckets, id);
-                //} else {
-                    //rowData.bucketSort = "Unassigned";
-                //}//
+                return {
+                    text: getBucketNameForID(accounts, buckets, id),
+                };
             },
             "TransDate": function(value, rowData){
+                var text = value;
+
+                /*label: //TODO: This code needs reimplemented; Feature [3]
                 if(rowData.PostDate && rowData.PostDate.toDate){
                     var d = new Date(1971,01,01);
                     if(rowData.PostDate.toDate() < d){
-                        return "N/A";
+                        text = "N/A";
+                        break label;
                     }
-                    return rowData.PostDate.format("YYYY-MM-DD");
-                }
-                return value;
+                    text = rowData.PostDate.format("YYYY-MM-DD");
+                }*/
+                return {
+                    text: text,
+                };
             },
         },
         columns: [
@@ -1154,7 +1183,9 @@ function onDocumentReady() {
         },
         formatters: {
             "Parent": function(value, rowData){
-                return getBucketNameForID(accounts, buckets, value);
+                return {
+                    text: getBucketNameForID(accounts, buckets, value),
+                };
             },
         },
         columns: [
@@ -1192,6 +1223,40 @@ function onDocumentReady() {
     });
 
     // Form Views
+    var onStatusChange = function(data){
+        //TODO: these are magic numbers. use variable names instead
+        var self = data.data.self;
+        switch(parseInt(data.target.value)){
+            case 3:
+                self.attr("required", true);
+                break;
+            default:
+                self.attr("required", false);
+        }
+    };
+
+    var onTypeChange = function(data){
+        var visible = false;
+        var self = data.data.self;
+        var flipFlop = (self.attr("name") == "SourceBucket");
+        switch(parseInt(data.target.value)){
+            case 0:
+                visible = true;
+                break;
+            case 1:
+                visible = !flipFlop
+                break;
+            case 2:
+                visible = flipFlop;
+                break;
+        }
+        self.prop("disabled", !visible);
+
+        if(!visible){
+            self.val(-1);
+        }
+    };
+
     var TransactionTableEditForm = BaseTableEditForm.extend({
         formName: "transactionTableEditForm",
         tableName: "transactionTable",
@@ -1199,11 +1264,11 @@ function onDocumentReady() {
             {name: "ID", visible: false},
             {name: "Status", title: "Status", type: "select", required: true, options: {enumKey: "transactionStatus"}},
             {name: "TransDate", title: "Date", type: "date", required: true},
-            {name: "PostDate", title: "Posted", type: "date"},
+            {name: "PostDate", title: "Posted", type: "date", options: {listenTo: {"Status": onStatusChange}}},
             {name: "Amount", title: "Amount", type: "number", options: {step: 0.01}},
             {name: "Type", title: "Type", type: "select", required: true, options: {enumKey: "transactionType"}},
-            {title: "Source", name: "SourceBucket", required: true, type: "dynamicSelect", options: {model: accounts}},
-            {title: "Destination", name: "DestBucket", required: true, type: "dynamicSelect", options: {model: accounts}},
+            {title: "Source", name: "SourceBucket", required: true, type: "dynamicSelect", options: {model: accounts, listenTo: {"Type": onTypeChange}}},
+            {title: "Destination", name: "DestBucket", required: true, type: "dynamicSelect", options: {model: accounts, listenTo: {"Type": onTypeChange}}},
             {name: "Memo", title: "Memo", type: "textbox"},
             {name: "Payee", title: "Payee", type: "text"},
         ]
@@ -1418,6 +1483,9 @@ function onDocumentReady() {
         "new" : {form: bucketEditForm, modal: bucketEditFormModal},
         "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
     });
+
+    bucketTable.listenTo(bucketTableAccountSelect, "modelChanged", bucketTable.loadData)
+
     bucketEditFormModal.bindSubmitToForm(bucketEditForm);
     buckets.listenTo(bucketEditForm, "formSubmit", saveFunction);
     bucketEditFormModal.listenTo(bucketEditForm, "formSubmit", bucketEditFormModal.hideModal)
@@ -1440,7 +1508,7 @@ function onDocumentReady() {
     transactions.fetch();
 
     bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
-
+    //bucketTableAccountSelect.$el.change();
 
     /* Selects
     Account+Bucket Select (Transaction Edit Form [SourceBucket, DestBucket])

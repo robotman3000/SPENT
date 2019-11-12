@@ -10,10 +10,12 @@ function initGlobals(){
 
 	enums = { //TODO: This should be populated using an api request
 		transactionStatus:  [
+		    "Void",
             "Uninitiated",
             "Submitted",
             "Post-Pending",
-            "Complete"
+            "Complete",
+            "Reconciled",
         ],
         transactionType: [
             "Transfer", //0
@@ -1286,7 +1288,8 @@ function onDocumentReady() {
         //TODO: these are magic numbers. use variable names instead
         var self = data.data.self;
         switch(parseInt(data.target.value)){
-            case 3:
+            case 4:
+            case 5:
                 self.attr("required", true);
                 break;
             default:

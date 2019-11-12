@@ -151,9 +151,9 @@ class SpentUtil:
 
 		statusStr = ""
 		if posted:
-			statusStr = "AND Status IN (2, 3)"
+			statusStr = "AND Status IN (3, 4, 5)"
 
-		query = "SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) %s)" % (
+		query = "SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) %s AND Status != 0 UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) %s AND Status != 0)" % (
 		idStr, statusStr, idStr, statusStr)
 		column = "Amount"
 
@@ -243,7 +243,7 @@ class SpentDBManager(DatabaseWrapper):
 
 		self.registerVirtualColumn("TransactionTags", "TagName", getTagName)
 
-		self.registerTableSchema("StatusMap", None, ["Uninitiated", "Submitted", "Post-Pending", "Complete"])
+		self.registerTableSchema("StatusMap", None, ["Void", "Uninitiated", "Submitted", "Post-Pending", "Complete", "Reconciled"])
 		
 		def checkIsTransfer(source, tableName, columnName):
 			return (source.getSourceBucket() is not None) and (source.getDestBucket() is not None)

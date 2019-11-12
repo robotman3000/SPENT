@@ -267,6 +267,13 @@ function onDocumentReady() {
                 Ancestor: -1,
             };
         },
+        getAncestorName: function(){
+            var ancestor = accounts.get(this.get("Ancestor"));
+            if(ancestor){
+                return ancestor.get("Name");
+            }
+            return null;
+        },
     });
     var Buckets = BaseCollection.extend({
         model: Bucket,
@@ -302,10 +309,44 @@ function onDocumentReady() {
         },
     });
 
+    var MergedCollection = Backbone.Collection.extend({
+        initialize: function(collections){
+            var self = this;
+
+            var onEvent = function(eventName, arg1, arg2, arg3){
+                self.trigger(eventName, arg1, arg2, arg3)
+            };
+
+            collections.forEach(function(item, index){
+                self.listenTo(item, "all", onEvent);
+            });
+
+            this.collections = collections;
+        },
+        get: function(id){
+            var result = this.collections.forEach(function(item, index){
+                var model = item.get(id);
+                if(model){
+                    return model;
+                }
+            });
+            return result;
+        },
+        where: function(attributes){
+            var models = [];
+            this.collections.forEach(function(item, index){
+                var res = item.where(attributes);
+                models.push(res);
+            });
+            return _.union(...models);
+        },
+    });
+
     // Create instances of the model collections
     var accounts = new Accounts;
     var buckets = new Buckets;
     var transactions = new Transactions;
+    var accountBuckets = new MergedCollection([accounts, buckets]);
 
     // Base Views
     var BaseModelView = Object.create(null);
@@ -345,6 +386,7 @@ function onDocumentReady() {
         initialize: function(args){
             this.initUnselected = getOrDefault(args, "initUnselected", false);
             this.noSelection = getOrDefault(args, "noSelection", null);// {text: "N/A", value: -1}
+            this.nameFormatter = getOrDefault(args, "formatter", null);
             this.on("modelChanged", this.modelChanged, this)
         },
         modelChanged: function(newModel){
@@ -372,8 +414,13 @@ function onDocumentReady() {
             }
 
             var self = this;
+
             this.model.where().forEach(function(ite, ind){
-                self.$el[0].options.add(new Option(ite.get("Name"), ite.get("ID"), false, (value == ite.get("ID"))))
+                var text = ite.get("Name");
+                if(self.nameFormatter){
+                    text = self.nameFormatter(ite);
+                }
+                self.$el[0].options.add(new Option(text, ite.get("ID"), false, (value == ite.get("ID"))))
             });
             this.$el.prop("disabled", lastState);
 
@@ -488,8 +535,15 @@ function onDocumentReady() {
                         case "dynamicSelect":
                             input = $("<select></select>");
                             var dynamicSelect = new DynamicSelectView;
-                            dynamicSelect.noSelection = {text: "N/A", value: -1};
+
+                            if ((item.options ? getOrDefault(item.options, "showNA", false) : false)){
+                                dynamicSelect.noSelection = {text: "N/A", value: -1};
+                            }
                             dynamicSelect.setElement(input);
+
+                            if ((item.options ? getOrDefault(item.options, "formatter", false) : false)){
+                                dynamicSelect.nameFormatter = item.options.formatter;
+                            }
 
                             var model = (item.options ? getOrDefault(item.options, "model", null) : null);
                             if(model){
@@ -1262,6 +1316,16 @@ function onDocumentReady() {
         }
     };
 
+    var bucketNameFormatter = function(model){
+        var text = model.get("Name");
+
+        var ancestor = model.getAncestorName();
+        if(ancestor != null){
+            text = text + " (" + ancestor + ")";
+        }
+        return text;
+    }
+
     var TransactionTableEditForm = BaseTableEditForm.extend({
         formName: "transactionTableEditForm",
         tableName: "transactionTable",
@@ -1272,8 +1336,8 @@ function onDocumentReady() {
             {name: "PostDate", title: "Posted", type: "date", options: {listenTo: {"Status": onStatusChange}}},
             {name: "Amount", title: "Amount", type: "number", options: {step: 0.01}},
             {name: "Type", title: "Type", type: "select", required: true, options: {enumKey: "transactionType"}},
-            {title: "Source", name: "SourceBucket", required: true, type: "dynamicSelect", options: {model: accounts, listenTo: {"Type": onTypeChange}}},
-            {title: "Destination", name: "DestBucket", required: true, type: "dynamicSelect", options: {model: accounts, listenTo: {"Type": onTypeChange}}},
+            {title: "Source", name: "SourceBucket", required: true, type: "dynamicSelect", options: {showNA: true, model: accountBuckets, formatter: bucketNameFormatter, listenTo: {"Type": onTypeChange}}},
+            {title: "Destination", name: "DestBucket", required: true, type: "dynamicSelect", options: {showNA: true, model: accountBuckets, formatter: bucketNameFormatter, listenTo: {"Type": onTypeChange}}},
             {name: "Memo", title: "Memo", type: "textbox"},
             {name: "Payee", title: "Payee", type: "text"},
         ]
@@ -1284,7 +1348,7 @@ function onDocumentReady() {
         columns: [
             {name: "ID", visible: false},
             {name: "Name", title: "Name", type: "text", required: true},
-            {name: "Parent", title: "Parent", required: true, type: "dynamicSelect", options: {model: accounts}}
+            {name: "Parent", title: "Parent", required: true, type: "dynamicSelect", options: {model: accountBuckets, formatter: bucketNameFormatter}}
         ],
     });
     var AccountTableEditForm = BaseTableEditForm.extend({
@@ -1513,13 +1577,6 @@ function onDocumentReady() {
     transactions.fetch();
 
     bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
-    //bucketTableAccountSelect.$el.change();
-
-    /* Selects
-    Account+Bucket Select (Transaction Edit Form [SourceBucket, DestBucket])
-    Bucket Select (Bucket Edit Form [Parent])
-    */
-
 
     $("#saveChanges").click(function(){
         var collections = {Accounts: accounts, Buckets: buckets, Transactions: transactions}

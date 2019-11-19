@@ -3,3 +3,50 @@ input[disabled], select[disabled], textarea[disabled], input[readonly], select[r
     background-color: #EEE;
     color: #9E9999;
 }
+
+.jsgrid-cell {
+    overflow-x: hidden;
+}
+
+
+.responsive-hidden {
+    /*We don't care whether something is visible or not right now*/
+    /*display: none;*/
+}
+
+.responsive-visible {
+    display: none;
+}
+
+.SPENT-responsive-cell-title {
+    float: left;
+}
+
+@media (max-width: 800px) {
+
+    /* On small screens */
+    .jsgrid-grid-header {
+        /*display: none;*/
+    }
+
+    .jsgrid-grid-body {
+        overflow: hidden !important;
+    }
+
+    .jsgrid-row, .jsgrid-alt-row {
+        display: grid;
+    }
+
+    .responsive-hidden {
+        display: none;
+    }
+
+    .responsive-visible {
+        display: inline;
+    }
+
+    .SPENT-cell-value {
+        float: right;
+    }
+}
+

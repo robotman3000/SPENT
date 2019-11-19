@@ -35,7 +35,6 @@ def time_it(f, *args):
 	return [result, (getTimeStr((time.time_ns() - start) / 1000000))]
 #End Flag
 
-
 class SPENTServer():
 	def __init__(self, port=8080):
 		self.unimp = {"successful": False, "message": "Unimplemented!"}

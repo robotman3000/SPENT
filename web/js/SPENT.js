@@ -1,5 +1,7 @@
 var enums = {};
 var formatter = null;
+var crossModelUupdateMap = {};
+
 
 function initGlobals(){
 	//// Undefined causes it to use the system local
@@ -23,6 +25,23 @@ function initGlobals(){
             "Withdrawal" //2
         ],
 	}
+
+	/*crossModelUupdateMap = {
+	    transaction: {
+	        // If "foreignKey" isn't defined then we update all the models of "foreignType"
+	        {action: "change", property: "Amount", foreignType: "bucket", foreignMatchKey: "Balance"},
+	        {action: "change", property: "Amount", foreignType: "bucket", foreignMatchKey: "PostedBalance"},
+	        {action: "change", property: "Amount", foreignType: "account", foreignMatchKey: "Balance"},
+	        {action: "change", property: "Amount", foreignType: "account", foreignMatchKey: "PostedBalance"},
+
+	        {action: "create", foreignMatch: "bucket"},
+	        {action: "delete", foreignMatch: "bucket"},
+	    },
+	    bucket: {
+	        {action: "change", property: "Name", foreignKey: "ID", foreignMatch: "transaction", foreignMatchKey: "SourceBucket"},
+	        {foreignKey: "Name", foreignMatch: "transaction", foreignMatchKey: "DestBucket"},
+	    }
+	}*/
 }
 
 function dateToStr(d){
@@ -256,7 +275,15 @@ function onDocumentReady() {
     var BaseCollection = Backbone.Collection.extend({
         parse: function(resp, options) {
             options.isRaw = false;
-            return resp.data;
+            var newData = [];
+            resp.data.forEach(function(item, index){
+                if(getOrDefault(item, "ID", null) != null){
+                    item["id"] = item["ID"];
+                }
+                newData.push(item);
+            });
+
+            return newData;
         },
     });
 
@@ -280,6 +307,10 @@ function onDocumentReady() {
     var Buckets = BaseCollection.extend({
         model: Bucket,
         url: "bucket",
+        refresh: function(){
+            this.fetch({wait: true})
+            console.log("Fetch")
+        },
     });
 
     var Account = Bucket.extend({});
@@ -440,6 +471,20 @@ function onDocumentReady() {
             this.listenTo(this, "modelChanged", function(newModel){
                 this.listenTo(newModel, "change", this.render) //TODO: Inefficient
                 this.listenTo(newModel, "destroy", this.render)
+
+                //TODO: This is a quick fix
+                // Watch the models of my source and dest bucket for name changes
+                var source = (newModel.get("SourceBucket") != -1 ? accountBuckets.where({ID: newModel.get("SourceBucket")}) : []);
+                var dest = (newModel.get("DestBucket") != -1 ? accountBuckets.where({ID: newModel.get("DestBucket")}) : []);
+
+                if (source.length > 0){
+                    this.listenTo(source[0], "change:Name", this.render)
+                }
+
+                if (dest.length > 0){
+                    this.listenTo(dest[0], "change:Name", this.render)
+                }
+
                 this.render();
             });
         },
@@ -754,47 +799,68 @@ function onDocumentReady() {
             var self = this; // this = The Current Table
             var renderRow = function(){
                 // this = The row view
-                this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
                 var model = this.getModel();
+                if(model){
+                    this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
+                    console.log("TableRowView.render: " + self.apiDataType + ", ID: " + model.get("ID"))
 
-                console.log("TableRowView.render: " + self.apiDataType + ", ID: " + model.get("ID"))
+                    var rowSelf = this;
 
-                var rowSelf = this;
-
-                var formatterFunction = function(value, model, formatter){
-                    var result = formatter(value, model.toJSON());
-                    var tag = getOrDefault(result, "tag", "span");
-                    var text = getOrDefault(result, "text", "Format Error");
-                    var classes = getOrDefault(result, "class", "");
-                    return $("<" + tag + ">").attr("class", classes).text(text);
-                };
-
-                self.columns.forEach(function(item, index){
-                    if(!(item.visible == false)){
-                        var formatter = getOrDefault(self.formatters, item.name, null);
-                        var value = model.get(item.name);
+                    var formatterFunction = function(value, model, formatter){
+                        var result = {text: value};
                         if(formatter){
-                            value = formatterFunction(value, model, formatter); //TODO: switch to passing the model rather than the json
+                            result = formatter(value, model.toJSON());
                         }
-                        rowSelf.$el.append($("<td>").append(value));
-                    }
-                });
+                        var tag = getOrDefault(result, "tag", "span");
+                        var text = getOrDefault(result, "text", "Format Error");
+                        var classes = getOrDefault(result, "class", "");
 
+                        var elem = $("<" + tag + ">").attr("class", classes).text(text);
+                        elem.addClass("SPENT-cell-value")
+                        return elem;
+                    };
 
-                var div = $("<div>").attr("role", "group").attr("class", "btn-group");
-                this.buttons.forEach(function(item, index){
-                    var btn = $("<button>").attr("type", "button").attr("class", "btn");
-                    btn.append($("<i>").attr("class", item.cssClass))
-                    div.append(btn);
-                    var button = new TriggerButton(btn, item.preClick);
-                    //console.log("Created button for action: " + item.name);
+                    self.columns.forEach(function(item, index){
+                        if(!(item.visible == false)){
+                            var formatter = getOrDefault(self.formatters, item.name, null);
+                            var value = formatterFunction(model.get(item.name), model, formatter); //TODO: switch to passing the model rather than the json
 
-                    item.listeners.forEach(function(item, index){
-                        item.listener.listenTo(button, "buttonClick", item.callback)
+                            var td = $("<td>");
+                            var responsive = getOrDefault(item, "responsive", null);
+
+                            var newValue = value;
+
+                            var columnName = $("<h6>").attr("class", "responsive-visible SPENT-responsive-cell-title").text(item.title + ": ");
+                            newValue = $("<div>").append(columnName).append(value);
+
+                            if(responsive){
+                                var shouldHide = getOrDefault(responsive, "hide", false);
+                                if(shouldHide){
+                                    td.addClass("responsive-hidden");
+                                }
+                            }
+                            td.append(newValue);
+                            rowSelf.$el.append(td);
+                        }
                     });
-                });
 
-                this.$el.append($("<td>").append(div))
+                    var div = $("<div>").attr("role", "group").attr("class", "btn-group");
+                    this.buttons.forEach(function(item, index){
+                        var btn = $("<button>").attr("type", "button").attr("class", "btn");
+                        btn.append($("<i>").attr("class", item.cssClass))
+                        div.append(btn);
+                        var button = new TriggerButton(btn, item.preClick);
+                        //console.log("Created button for action: " + item.name);
+
+                        item.listeners.forEach(function(item, index){
+                            item.listener.listenTo(button, "buttonClick", item.callback)
+                        });
+                    });
+
+                    this.$el.append($("<td>").append(div))
+                } else {
+                    console.log("Failed to render row");
+                }
             }
 
             var renderer = function(item, index){
@@ -822,7 +888,7 @@ function onDocumentReady() {
                         actionModals["delete"].form.setMessage(JSON.stringify(row.getModel().toJSON()));
                         actionModals["delete"].form.setConfirmCallback(function(allClear){
                             if(allClear){
-                                actionModals["delete"].form.getModel().destroy();
+                                actionModals["delete"].form.getModel().destroy({wait: true});
                             }
                         });
                     };
@@ -847,7 +913,7 @@ function onDocumentReady() {
                 this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
                 self.columns.forEach(function(item, index){
                     if(!(item.visible == false)){
-                        rowSelf.$el.append($("<td>").text(item.title));
+                        rowSelf.$el.append($("<td>").text(item.title).attr("class", "responsive-hidden"));
                     }
                 });
 
@@ -1025,6 +1091,11 @@ function onDocumentReady() {
             }
         },
         nodeAdded: function(model, collection, options){
+            if(this.$el.jstree().get_node(model.get("ID"))){
+                console.log("Warning: Attempted to add a node that already existed!!")
+                return;
+            }
+
             // Decide whether to add the node or wait for it's parent
             var addNode = false;
             if(model.get("Ancestor") == -1){
@@ -1113,7 +1184,7 @@ function onDocumentReady() {
         initialize: function(){
             this.listenTo(uiState, "change:selectedAccount", function(model, selectedAccountID, options){
                 var models = findModelsWhere([accounts, buckets], {ID: selectedAccountID});
-                if(models.length > 0){
+                if(models && models.length > 0){
                     this.setModel(models[0]);
                 }
             });
@@ -1196,14 +1267,14 @@ function onDocumentReady() {
         },
         columns: [
             {name: "ID", visible: false},
-            {name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", options: {enumKey: "transactionStatus"}},
-            {name: "TransDate", title: "Date", type: "date", breakpoints:"xs", options: {formatString:"YYYY-MM-DD"}},
-            {name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", options: {formatString:"YYYY-MM-DD"}},
-            {name: "Amount", title: "Amount", type: "number", breakpoints:""},
-            {name: "Type", title: "Type", type: "text", breakpoints:"xs sm md"},
-            {name: "Bucket", title: "Bucket", type: "text", breakpoints:"xs sm md"},
-            {name: "Memo", title: "Memo", type: "text", breakpoints:""},
-            {name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm"},
+            {name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", options: {enumKey: "transactionStatus"}, responsive: {hide: false}},
+            {name: "TransDate", title: "Date", type: "date", breakpoints:"xs", options: {formatString:"YYYY-MM-DD"}, responsive: {hide: false}},
+            {name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", options: {formatString:"YYYY-MM-DD"}, responsive: {hide: true}},
+            {name: "Amount", title: "Amount", type: "number", breakpoints:"", responsive: {hide: false}},
+            {name: "Type", title: "Type", type: "text", breakpoints:"xs sm md", responsive: {hide: true}},
+            {name: "Bucket", title: "Bucket", type: "text", breakpoints:"xs sm md", responsive: {hide: false}},
+            {name: "Memo", title: "Memo", type: "text", breakpoints:"", responsive: {hide: false}},
+            {name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm", responsive: {hide: true}},
         ],
 
         getController: function(){
@@ -1251,8 +1322,8 @@ function onDocumentReady() {
         },
         columns: [
             {name: "ID", visible: false},
-            {name: "Name", title: "Name", type: "text"},
-            {name: "Parent", title: "Parent", type: "text"}
+            {name: "Name", title: "Name", type: "text", responsive: {hide: false}},
+            {name: "Parent", title: "Parent", type: "text", responsive: {hide: false}}
         ],
         getController: function(){
             var self = this;
@@ -1279,7 +1350,7 @@ function onDocumentReady() {
         apiDataType: "account",
         columns: [
             {name: "ID", visible: false},
-            {name: "Name", title: "Name", type: "text"}
+            {name: "Name", title: "Name", type: "text", responsive: {hide: false}}
         ],
     });
 
@@ -1538,7 +1609,7 @@ function onDocumentReady() {
             // We are creating a new table entry
             this.create(cleanData(data), {wait: true});
         } else {
-            model.save(cleanData(data));
+            model.save(cleanData(data), {wait: true});
         }
     };
 
@@ -1575,12 +1646,25 @@ function onDocumentReady() {
     accountEditFormModal.listenTo(accountEditForm, "formSubmit", accountEditFormModal.hideModal)
 
     // Fetch the data from the server
-    accounts.fetch();
-    buckets.fetch();
-    transactions.fetch();
+    accounts.fetch({wait: true});
+    buckets.fetch({wait: true});
+    transactions.fetch({wait: true});
 
     bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
 
+    var refreshBalanceFunction = function(){
+        console.log("Refreshing Balance...");
+        this.fetch({wait: true})
+    }
+
+    // TODO: These event listeners are a quick fix
+    accounts.listenTo(transactions, "change", refreshBalanceFunction)
+    buckets.listenTo(transactions, "change", refreshBalanceFunction)
+
+    accounts.listenTo(transactions, "update", refreshBalanceFunction)
+    buckets.listenTo(transactions, "update", refreshBalanceFunction)
+
+    // Not this one though...
     $("#saveChanges").click(function(){
         var collections = {Accounts: accounts, Buckets: buckets, Transactions: transactions}
 

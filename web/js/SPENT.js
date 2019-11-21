@@ -177,6 +177,17 @@ function apiRequestSuccessful(response){
 function onDocumentReady() {
     // Initialize global variables
     initGlobals();
+    var createTriggerButton = function(item){
+        var btn = $("<button>").attr("type", "button").attr("class", "btn");
+        btn.append($("<i>").attr("class", item.cssClass))
+        var button = new TriggerButton(btn, item.preClick);
+
+        item.listeners.forEach(function(item, index){
+            item.listener.listenTo(button, "buttonClick", item.callback)
+        });
+
+        return button;
+    };
 
     var methodMap = {
         create: 'create',
@@ -417,6 +428,7 @@ function onDocumentReady() {
     });
     var DynamicSelectView = Backbone.View.extend({
         initialize: function(args){
+            this.setElement($("<select></select>"));
             this.initUnselected = getOrDefault(args, "initUnselected", false);
             this.noSelection = getOrDefault(args, "noSelection", null);// {text: "N/A", value: -1}
             this.nameFormatter = getOrDefault(args, "formatter", null);
@@ -448,13 +460,15 @@ function onDocumentReady() {
 
             var self = this;
 
-            this.model.where().forEach(function(ite, ind){
-                var text = ite.get("Name");
-                if(self.nameFormatter){
-                    text = self.nameFormatter(ite);
-                }
-                self.$el[0].options.add(new Option(text, ite.get("ID"), false, (value == ite.get("ID"))))
-            });
+            if(this.getModel()){
+                this.getModel().where().forEach(function(ite, ind){
+                    var text = ite.get("Name");
+                    if(self.nameFormatter){
+                        text = self.nameFormatter(ite);
+                    }
+                    self.$el[0].options.add(new Option(text, ite.get("ID"), false, (value == ite.get("ID"))))
+                });
+            }
             this.$el.prop("disabled", lastState);
 
             this.$el.change();
@@ -492,6 +506,30 @@ function onDocumentReady() {
             console.log("Warning: Row renderer is uninitialized!");
         },
     }).extend(BaseModelView);
+    var TableToolBar = Backbone.View.extend({
+        views: null,
+        initialize: function(tableView, toolbarName){
+            this.views = [];
+            this.table = tableView;
+            this.setElement($("#" + toolbarName));
+        },
+        render: function(){
+            var self = this;
+            console.log("TableToolBar.render: " + this.table.apiDataType);
+            this.$el.empty(); // TODO: I don't like the erase and reset model, fix it
+            this.views.forEach(function(item){
+                item.render();
+                self.$el.append(item.$el);
+            })
+        },
+        addTriggerButton: function(button){
+            var button = createTriggerButton(button);
+            this.addView(button);
+        },
+        addView: function(view){
+            this.views.push(view);
+        },
+    });
 
     var BaseModal = Backbone.View.extend({
         modalName: null,
@@ -580,13 +618,12 @@ function onDocumentReady() {
                             });
                             break;
                         case "dynamicSelect":
-                            input = $("<select></select>");
                             var dynamicSelect = new DynamicSelectView;
+                            input = dynamicSelect.$el;
 
                             if ((item.options ? getOrDefault(item.options, "showNA", false) : false)){
                                 dynamicSelect.noSelection = {text: "N/A", value: -1};
                             }
-                            dynamicSelect.setElement(input);
 
                             if ((item.options ? getOrDefault(item.options, "formatter", false) : false)){
                                 dynamicSelect.nameFormatter = item.options.formatter;
@@ -802,7 +839,7 @@ function onDocumentReady() {
                 var model = this.getModel();
                 if(model){
                     this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
-                    console.log("TableRowView.render: " + self.apiDataType + ", ID: " + model.get("ID"))
+                    //console.log("TableRowView.render: " + self.apiDataType + ", ID: " + model.get("ID"))
 
                     var rowSelf = this;
 
@@ -843,21 +880,8 @@ function onDocumentReady() {
                             rowSelf.$el.append(td);
                         }
                     });
-
-                    var div = $("<div>").attr("role", "group").attr("class", "btn-group");
-                    this.buttons.forEach(function(item, index){
-                        var btn = $("<button>").attr("type", "button").attr("class", "btn");
-                        btn.append($("<i>").attr("class", item.cssClass))
-                        div.append(btn);
-                        var button = new TriggerButton(btn, item.preClick);
-                        //console.log("Created button for action: " + item.name);
-
-                        item.listeners.forEach(function(item, index){
-                            item.listener.listenTo(button, "buttonClick", item.callback)
-                        });
-                    });
-
-                    this.$el.append($("<td>").append(div))
+                    var div = self._createActionButtons(this.buttons)
+                    this.$el.append($("<td>").append(div));
                 } else {
                     console.log("Failed to render row");
                 }
@@ -916,53 +940,31 @@ function onDocumentReady() {
                         rowSelf.$el.append($("<td>").text(item.title).attr("class", "responsive-hidden"));
                     }
                 });
-
-                var div = $("<div>").attr("role", "group").attr("class", "btn-group");
-                this.buttons.forEach(function(item, index){
-                    var btn = $("<button>").attr("type", "button").attr("class", "btn");
-                    btn.append($("<i>").attr("class", item.cssClass))
-                    div.append(btn);
-                    var button = new TriggerButton(btn, item.preClick);
-                    //console.log("Created button for action: " + item.name);
-
-                    item.listeners.forEach(function(item, index){
-                        item.listener.listenTo(button, "buttonClick", item.callback)
-                    });
-                });
+                var div = self._createActionButtons(this.buttons)
                 this.$el.append($("<td>").append(div));
             }
 
             var renderer = function(item, index){
                 var row = new TableRowView(renderRow);
-                row.buttons = [];
 
-                if (actionModals["new"]){
-                    var addPreClick = function(){
-                            actionModals["new"].modal.setTitle("New " + self.apiDataType)
-                            actionModals["new"].form.setModel(null);
-                    };
-                    row.buttons.push({
-                        name: "new",
-                        cssClass: "fas fa-plus-circle",
-                        preClick: addPreClick,
-                        listeners: [{listener: actionModals["new"].modal, callback: actionModals["new"].modal.showModal}],
-                    });
-                }
-
-                if (actionModals["filters"]){
-                    row.buttons.push({
-                        name: "filter",
-                        cssClass: "fas fa-filter",
-                        listeners: [{listener: actionModals["filters"].modal, callback: actionModals["filters"].modal.showModal}],
-                    });
-                }
+                //Note for the future: if we ever want action buttons in the header
+                // init them here
+                row.buttons = []
+                // look at getRowRenderer for an example
 
                 row.render();
                 return row.$el;
             };
             return renderer;
         },
-
+        _createActionButtons: function(buttons){
+            var div = $("<div>").attr("role", "group").attr("class", "btn-group");
+            buttons.forEach(function(item, index){
+                var button = createTriggerButton(item);
+                div.append(button.$el);
+            });
+            return div;
+        },
         formatters: {},
         columns: [],
     });
@@ -1564,7 +1566,6 @@ function onDocumentReady() {
         },
     });
     var BucketTableAccountSelect = DynamicSelectView.extend({
-        el: $("#bucketEditAccountSelect"),
         initUnselected: false,
         events: {
             "change" : "onChange",
@@ -1586,11 +1587,26 @@ function onDocumentReady() {
     var transactionEditForm = new TransactionTableEditForm;
     var transactionEditFormModal = new TransactionTableFormModal;
     var transactionTable = new TransactionTable({
-        "filter" : {form: transactionFilterModal, modal: transactionFilterModal},
         "edit" : {form: transactionEditForm, modal: transactionEditFormModal},
-        "new" : {form: transactionEditForm, modal: transactionEditFormModal},
         "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
     });
+    var transactionTableToolBar = new TableToolBar(transactionTable, "transactionTableEditToolbar");
+    var transactionAddPreClick = function(){
+        transactionEditFormModal.setTitle("New Transaction")
+        transactionEditForm.setModel(null);
+    };
+    transactionTableToolBar.addTriggerButton({
+        name: "new",
+        cssClass: "fas fa-plus-circle",
+        preClick: transactionAddPreClick,
+        listeners: [{listener: transactionEditFormModal, callback: transactionEditFormModal.showModal}],
+    }); // New
+    transactionTableToolBar.addTriggerButton({
+        name: "filter",
+        cssClass: "fas fa-filter",
+        listeners: [{listener: transactionFilterModal, callback: transactionFilterModal.showModal}],
+    }); // Filters
+    transactionTableToolBar.render();
 
     var saveFunction = function(data, model){
         //TODO: Any empty values should be sent to the server as null or not at all
@@ -1614,9 +1630,21 @@ function onDocumentReady() {
     var bucketEditFormModal = new BucketTableFormModal;
     var bucketTable = new BucketTable({
         "edit": {form: bucketEditForm, modal: bucketEditFormModal},
-        "new" : {form: bucketEditForm, modal: bucketEditFormModal},
         "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
     });
+    var bucketTableToolBar = new TableToolBar(bucketTable, "bucketTableEditToolbar");
+    var bucketAddPreClick = function(){
+        bucketEditFormModal.setTitle("New Bucket")
+        bucketEditForm.setModel(null);
+    };
+    bucketTableToolBar.addTriggerButton({
+        name: "new",
+        cssClass: "fas fa-plus-circle",
+        preClick: bucketAddPreClick,
+        listeners: [{listener: bucketEditFormModal, callback: bucketEditFormModal.showModal}],
+    }); // New
+    bucketTableToolBar.addView(bucketTableAccountSelect);
+    bucketTableToolBar.render();
 
     bucketTable.listenTo(bucketTableAccountSelect, "modelChanged", bucketTable.loadData)
 
@@ -1628,9 +1656,20 @@ function onDocumentReady() {
     var accountEditFormModal = new AccountTableFormModal;
     var accountTable = new AccountTable({
         "edit": {form: accountEditForm, modal: accountEditFormModal},
-        "new" : {form: accountEditForm, modal: accountEditFormModal},
         "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
     });
+    var accountTableToolBar = new TableToolBar(accountTable, "accountTableEditToolbar");
+    var accountAddPreClick = function(){
+        accountEditFormModal.setTitle("New Account")
+        accountEditForm.setModel(null);
+    };
+    accountTableToolBar.addTriggerButton({
+        name: "new",
+        cssClass: "fas fa-plus-circle",
+        preClick: accountAddPreClick,
+        listeners: [{listener: accountEditFormModal, callback: accountEditFormModal.showModal}],
+    }); // New
+    accountTableToolBar.render();
     accountEditFormModal.bindSubmitToForm(accountEditForm);
     accounts.listenTo(accountEditForm, "formSubmit", saveFunction);
     accountEditFormModal.listenTo(accountEditForm, "formSubmit", accountEditFormModal.hideModal)

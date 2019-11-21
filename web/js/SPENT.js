@@ -2,7 +2,6 @@ var enums = {};
 var formatter = null;
 var crossModelUupdateMap = {};
 
-
 function initGlobals(){
 	//// Undefined causes it to use the system local
 	formatter = new Intl.NumberFormat(undefined, {
@@ -188,7 +187,14 @@ function onDocumentReady() {
 
         return button;
     };
-
+    var arrayToSelectOptions = function(array){
+        var value = -1; //TODO: Placeholder
+        var options = [];
+        array.forEach(function(item, index){
+            options.push({text: item, value: index, defaultSelected: false, selected: (value == item)});
+        });
+        return options;
+    };
     var methodMap = {
         create: 'create',
         update: 'update',
@@ -296,6 +302,22 @@ function onDocumentReady() {
 
             return newData;
         },
+        // Credit to https://stackoverflow.com/a/21434708 for the comparator function
+        comparator: function(a, b) {
+          var sampleDataA = a.get(this.sortKey),
+              sampleDataB = b.get(this.sortKey);
+          if (this.reverseSortDirection) {
+            if (sampleDataA > sampleDataB) { return -1; }
+            if (sampleDataB > sampleDataA) { return 1; }
+            return 0;
+          } else {
+            if (sampleDataA < sampleDataB) { return -1; }
+            if (sampleDataB < sampleDataA) { return 1; }
+            return 0;
+          }
+        },
+        sortKey: "",
+        reverseSortDirection: false,
     });
 
     var Bucket = BaseModel.extend({
@@ -408,7 +430,26 @@ function onDocumentReady() {
     BaseModelView.getModelConstructor = function(){
         return this.constructor || null;
     };
+    var ViewContainer = Backbone.View.extend({
+        views: null,
+        initialize: function(element){
+            this.views = [];
+            this.setElement(element);
+        },
+        render: function(){
+            var self = this;
+            console.log("ViewContainer.render");
+            this.$el.empty(); // TODO: I don't like the erase and reset model, fix it
+            this.views.forEach(function(item){
+                item.render();
+                self.$el.append(item.$el);
+            })
+        },
+        addView: function(view){
+            this.views.push(view);
+        },
 
+    });
     var TriggerButton = Backbone.View.extend({
         initialize: function(item, preClick){
             if(item){
@@ -426,13 +467,64 @@ function onDocumentReady() {
             this.trigger("buttonClick")
         },
     });
-    var DynamicSelectView = Backbone.View.extend({
+
+    //TODO: SelectView is broken; It is intended to be instanced rather than extended for "simple" selects
+    var SelectView = Backbone.View.extend({
+        events: {
+            "change" : "onChange",
+        },
         initialize: function(args){
-            this.setElement($("<select></select>"));
+            this.setElement($("<select>"));
             this.initUnselected = getOrDefault(args, "initUnselected", false);
             this.noSelection = getOrDefault(args, "noSelection", null);// {text: "N/A", value: -1}
             this.nameFormatter = getOrDefault(args, "formatter", null);
+            this.options = [{text: "No Options", value: 0, selected: true, defaultSelected: true}];
+        },
+        render: function(){
+            console.log("SelectView.render")
+            var lastState =  this.$el.prop("disabled");
+            this.$el.prop("disabled", true);
+
+            this.$el[0].options.length=0
+
+            var value = -1; // TODO: this is a placeholder
+            if(this.noSelection){
+                this.$el[0].options.add(new Option(this.noSelection.text, this.noSelection.value, true, (this.noSelection.value == value)));
+            }
+
+            var self = this;
+            this._getOptions().forEach(function(item, index){
+                self.$el[0].options.add(new Option(item.text, item.value, item.defaultSelected, item.selected));
+            });
+
+            this.$el.prop("disabled", lastState);
+
+            this.$el.change();
+        },
+        _getOptions: function(){
+            return this.options;
+        },
+        onChange: function(data){console.log("Warning: SelectView.onChange is uninitialized!")},
+    });
+    var DynamicSelectView = SelectView.extend({
+        initialize: function(args){
+            SelectView.prototype.initialize.apply(this, args);
             this.on("modelChanged", this.modelChanged, this)
+        },
+        _getOptions: function(){
+            var value = -1; //TODO: Placeholder
+            var options = [];
+            var self = this;
+            if(this.getModel()){
+                this.getModel().where().forEach(function(ite, ind){
+                    var text = ite.get("Name");
+                    if(self.nameFormatter){
+                        text = self.nameFormatter(ite);
+                    }
+                    options.push({text: text, value: ite.get("ID"), defaultSelected: false, selected: (value == ite.get("ID"))});
+                });
+            }
+            return options;
         },
         modelChanged: function(newModel){
             //TODO: this.listenTo(newModel, "add", this.render)
@@ -444,34 +536,6 @@ function onDocumentReady() {
             //TODO: this.listenTo(newModel, "request", this.render)
             //TODO: this.listenTo(newModel, "sync", this.render)
             this.render();
-        },
-        render: function(){
-            console.log("DynamicSelectView.render")
-            var lastState =  this.$el.prop("disabled");
-            this.$el.prop("disabled", true);
-
-            this.$el[0].options.length=0
-
-            var value = -1; // TODO: this is a placeholder
-
-            if(this.noSelection){
-                this.$el[0].options.add(new Option(this.noSelection.text, this.noSelection.value, true, (this.noSelection.value == value)));
-            }
-
-            var self = this;
-
-            if(this.getModel()){
-                this.getModel().where().forEach(function(ite, ind){
-                    var text = ite.get("Name");
-                    if(self.nameFormatter){
-                        text = self.nameFormatter(ite);
-                    }
-                    self.$el[0].options.add(new Option(text, ite.get("ID"), false, (value == ite.get("ID"))))
-                });
-            }
-            this.$el.prop("disabled", lastState);
-
-            this.$el.change();
         },
     }).extend(BaseModelView);
     var TableRowView = Backbone.View.extend({
@@ -506,28 +570,14 @@ function onDocumentReady() {
             console.log("Warning: Row renderer is uninitialized!");
         },
     }).extend(BaseModelView);
-    var TableToolBar = Backbone.View.extend({
-        views: null,
-        initialize: function(tableView, toolbarName){
-            this.views = [];
-            this.table = tableView;
-            this.setElement($("#" + toolbarName));
-        },
-        render: function(){
-            var self = this;
-            console.log("TableToolBar.render: " + this.table.apiDataType);
-            this.$el.empty(); // TODO: I don't like the erase and reset model, fix it
-            this.views.forEach(function(item){
-                item.render();
-                self.$el.append(item.$el);
-            })
+    var TableToolBar = ViewContainer.extend({
+        initialize: function(table, toolbarName){
+            ViewContainer.prototype.initialize.apply(this, $("#" + toolbarName));
+            this.table = table;
         },
         addTriggerButton: function(button){
             var button = createTriggerButton(button);
             this.addView(button);
-        },
-        addView: function(view){
-            this.views.push(view);
         },
     });
 
@@ -763,6 +813,7 @@ function onDocumentReady() {
             this.listenTo(this.model, "reset", this.loadData);
             //TODO: this.listenTo(this.model, "request", );
             //TODO: this.listenTo(this.model, "sync", );
+            this.listenTo(this.model, "sort", this.loadData)
 
             // Initialize the enum formatters
             this.columns.forEach(function(item, index){
@@ -1293,10 +1344,12 @@ function onDocumentReady() {
                 if(selID != null && selID > -1){
                     return new Promise(function(resolve, reject){
                         var result = [];
-                        var a = self.model.where({SourceBucket: selID})
-                        var b = self.model.where({DestBucket: selID})
-                        var c = _.union(a, b);
-                        c.forEach(function(item, index){
+                        var a = self.model.filter(function(data) {
+                            var testResult = parseInt(data.get("SourceBucket")) == selID || parseInt(data.get("DestBucket")) == selID;
+                            console.log("Sort: " + testResult + " " + data.get("Amount"))
+                            return testResult;
+                        })
+                        a.forEach(function(item, index){
                             result.push(item.toJSON());
                         });
                         resolve(result);
@@ -1567,20 +1620,66 @@ function onDocumentReady() {
     });
     var BucketTableAccountSelect = DynamicSelectView.extend({
         initUnselected: false,
-        events: {
-            "change" : "onChange",
-        },
         onChange: function(data){
             var val = parseInt(this.$el.val());
             uiState.set("bucketModalSelectedAccount", val);
         },
     });
+    var TableSortView = ViewContainer.extend({
+        initialize: function(fieldNames, collection){
+            ViewContainer.prototype.initialize.apply(this, $("<div>"))
+            this.collection = collection;
+            var FilterState = Backbone.Model.extend({
+                defaults: function(){
+                    return {
+                        field: -1,
+                        direction: -1,
+                    }
+                }
+            })
+            this.filterState = new FilterState;
+
+            var self = this;
+            var FieldSelect = SelectView.extend({
+                onChange: function(data){
+                    self.filterState.set(this.stateKey, this.$el.val())
+                },
+            });
+
+            this.fieldSelect = new FieldSelect;
+            this.fieldSelect.stateKey = "field";
+            this.fieldSelect.options = arrayToSelectOptions(fieldNames);
+            this.addView(this.fieldSelect);
+
+            this.directionSelect = new FieldSelect;
+            this.directionSelect.stateKey = "direction";
+            this.directionSelect.options = arrayToSelectOptions(["Ascending", "Descending"]);
+            this.addView(this.directionSelect);
+
+            this.listenTo(this.filterState, "change", this.sortCollection)
+        },
+        sortCollection: function(){
+            var state = this.filterState;
+            var field = state.get("field");
+            var direction = state.get("direction");
+
+            var temp = _.findWhere(this.fieldSelect.options, {value: parseInt(field)});
+            var fieldName = getOrDefault(temp, "text", "Error");
+
+            console.log("Sorting by: " + fieldName + " " + direction)
+            this.collection.sortKey = fieldName;
+            this.collection.reverseSortDirection = (parseInt(direction) > 0)
+            //TODO: Respect the sort direction
+            this.collection.sort();
+            var debugList = this.collection.pluck(fieldName);
+            console.log(JSON.stringify(debugList));
+        },
+    });
+
 
     // Initialize the views in order of dependency
     var actionConfirmationModal = new ConfirmActionModal;
-
     var accountTree = new AccountTreeView;
-
     var accountStatusViewInst = new AccountStatusView;
 
     var transactionFilterModal = new TransactionTableFilterModal();
@@ -1606,8 +1705,8 @@ function onDocumentReady() {
         cssClass: "fas fa-filter",
         listeners: [{listener: transactionFilterModal, callback: transactionFilterModal.showModal}],
     }); // Filters
+    transactionTableToolBar.addView(new TableSortView(_.filter(_.pluck(transactionTable.columns, "name"), function(val){ return val }), transactions));
     transactionTableToolBar.render();
-
     var saveFunction = function(data, model){
         //TODO: Any empty values should be sent to the server as null or not at all
 
@@ -1619,7 +1718,6 @@ function onDocumentReady() {
             model.save(cleanData(data), {wait: true});
         }
     };
-
     transactionEditFormModal.bindSubmitToForm(transactionEditForm);
     transactions.listenTo(transactionEditForm, "formSubmit", saveFunction);
     transactionEditFormModal.listenTo(transactionEditForm, "formSubmit", transactionEditFormModal.hideModal)
@@ -1644,10 +1742,9 @@ function onDocumentReady() {
         listeners: [{listener: bucketEditFormModal, callback: bucketEditFormModal.showModal}],
     }); // New
     bucketTableToolBar.addView(bucketTableAccountSelect);
+    bucketTableToolBar.addView(new TableSortView(_.filter(_.pluck(bucketTable.columns, "name"), function(val){ return val }), buckets));
     bucketTableToolBar.render();
-
     bucketTable.listenTo(bucketTableAccountSelect, "modelChanged", bucketTable.loadData)
-
     bucketEditFormModal.bindSubmitToForm(bucketEditForm);
     buckets.listenTo(bucketEditForm, "formSubmit", saveFunction);
     bucketEditFormModal.listenTo(bucketEditForm, "formSubmit", bucketEditFormModal.hideModal)
@@ -1669,6 +1766,7 @@ function onDocumentReady() {
         preClick: accountAddPreClick,
         listeners: [{listener: accountEditFormModal, callback: accountEditFormModal.showModal}],
     }); // New
+    accountTableToolBar.addView(new TableSortView(_.filter(_.pluck(accountTable.columns, "name"), function(val){ return val }), accounts));
     accountTableToolBar.render();
     accountEditFormModal.bindSubmitToForm(accountEditForm);
     accounts.listenTo(accountEditForm, "formSubmit", saveFunction);

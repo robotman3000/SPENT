@@ -1435,28 +1435,19 @@ function onDocumentReady() {
     });
 
     // Modals
-    var AccountTableModal = BaseModal.extend({
-        title: "Accounts",
-        modalName: "accountTableModal",
-        triggers: [
-            "#accountTableModalToggle"
-        ]
-    });
-    var AccountTableFormModal = BaseFormModal.extend({
-        modalName: "accountTableEditFormModal",
-    });
-
     var BucketTableModal = BaseModal.extend({
-        title: "Buckets",
+        title: "Manage Accounts & Buckets",
         modalName: "bucketTableModal",
         triggers: [
             "#bucketTableModalToggle"
         ]
     });
+    var AccountTableFormModal = BaseFormModal.extend({
+        modalName: "accountTableEditFormModal",
+    });
     var BucketTableFormModal = BaseFormModal.extend({
         modalName: "bucketTableEditFormModal",
     });
-
     var TransactionTableFormModal = BaseFormModal.extend({
         modalName: "transactionTableEditFormModal",
     });
@@ -1633,7 +1624,6 @@ function onDocumentReady() {
     buckets.listenTo(bucketEditForm, "formSubmit", saveFunction);
     bucketEditFormModal.listenTo(bucketEditForm, "formSubmit", bucketEditFormModal.hideModal)
 
-    var accountTableModal = new AccountTableModal;
     var accountEditForm = new AccountTableEditForm;
     var accountEditFormModal = new AccountTableFormModal;
     var accountTable = new AccountTable({

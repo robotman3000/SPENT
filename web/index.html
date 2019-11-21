@@ -64,8 +64,7 @@
 						<li class="nav-item dropdown">
 							<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"><i class="fas fa-bars"></i></a>
 							<div class="dropdown-menu dropdown-menu-right">
-								<button id="accountTableModalToggle" class="dropdown-item">Edit Accounts</button>
-								<button id="bucketTableModalToggle" class="dropdown-item">Edit Buckets</button>
+								<button id="bucketTableModalToggle" class="dropdown-item">Manage Buckets</button>
 								<div class="dropdown-divider"></div>
 								<button id="saveChanges" class="dropdown-item">Save</button>
 							</div>
@@ -168,42 +167,33 @@
 		</div>
 
 		<!-- Account Table Modal -->
-		<div class="modal fade" id="accountTableModal" tabindex="-1" role="dialog" aria-labelledby="accountTableModal-label" aria-hidden="true">
-			<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="accountTableModal-label">Accounts</h5>
-						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-							<span aria-hidden="true">&times;</span>
-						</button>
-						<div id="accountTableEditToolbar"></div>
-					</div>
-					<div class="modal-body">
-
-						<table id="accountTable" class="table-striped table-hover" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
-
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Bucket Table Modal -->
 		<div class="modal fade" id="bucketTableModal" tabindex="-1" role="dialog" aria-labelledby="bucketTableModal-label" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="bucketTableModal-label">Buckets</h5>
+						<h5 class="modal-title" id="bucketTableModal-label">Manage</h5>
 						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-						<span aria-hidden="true">&times;</span>
+							<span aria-hidden="true">&times;</span>
 						</button>
+
 					</div>
 					<div class="modal-body">
-						<div id="bucketTableEditToolbar"> <h6>Account: </h6> <select id="bucketEditAccountSelect"></select></div>
-						<table id="bucketTable" class="table-striped table-hover" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
-
+						<!-- Nav tabs -->
+						<ul class="nav nav-tabs">
+							<li class="nav-item"><a class="nav-link active" href="#accountTableTab" aria-controls="accountTableTab" data-toggle="tab">Accounts</a></li>
+							<li class="nav-item"><a class="nav-link" href="#bucketTableTab" aria-controls="bucketTableTab" data-toggle="tab">Buckets</a></li>
+						</ul>
+						<!-- Tab panes -->
+						<div class="tab-content">
+							<div class="tab-pane active" id="accountTableTab">
+								<div id="accountTableEditToolbar"></div>
+								<table id="accountTable" class="table-striped table-hover" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
+							</div>
+							<div class="tab-pane fade" id="bucketTableTab">
+								<div id="bucketTableEditToolbar"> <h6>Account: </h6> <select id="bucketEditAccountSelect"></select></div>
+								<table id="bucketTable" class="table-striped table-hover" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
+							</div>
+						</div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>

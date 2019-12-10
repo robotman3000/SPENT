@@ -65,6 +65,7 @@
 							<a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"><i class="fas fa-bars"></i></a>
 							<div class="dropdown-menu dropdown-menu-right">
 								<button id="bucketTableModalToggle" class="dropdown-item">Manage Buckets</button>
+								<button id="transactionGroupTableModalToggle" class="dropdown-item">Manage Transaction Groups</button>
 								<div class="dropdown-divider"></div>
 								<button id="saveChanges" class="dropdown-item">Save</button>
 							</div>
@@ -161,6 +162,50 @@
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn" id="btn-get">Get Rules</button>
+						<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Transaction Group Table Modal -->
+		<div class="modal fade" id="transactionGroupTableModal" tabindex="-1" role="dialog" aria-labelledby="transactionGroupTableModal-label" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="transactionGroupTableModal-label">Manage</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+
+					</div>
+					<div class="modal-body">
+						<div id="transactionGroupTableEditToolbar"></div>
+						<table id="transactionGroupTable" class="table-striped table-hover" data-editing-always-show="true" data-paging="false" data-filtering="false" data-sorting="true" data-editing="true" data-state="false"></table>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Transaction Group Edit Form Modal -->
+		<div class="modal fade" id="transactionGroupTableEditFormModal" tabindex="-1" role="dialog" aria-labelledby="transactionTableEditFormModal-label" aria-hidden="true">
+			<div class="modal-dialog modal-dialog-scrollable modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="transactionGroupTableEditFormModal-label">{Modal Heading}</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+						</button>
+					</div>
+					<div class="modal-body">
+
+						<div id="transactionGroupTableEditFormDiv" data-submit="true"></div>
+
+					</div>
+					<div class="modal-footer">
 						<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
 					</div>
 				</div>

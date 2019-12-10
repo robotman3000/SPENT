@@ -52,26 +52,18 @@ class SPENTServer():
 		self.handler = RequestHandler()
 		self.handler.registerRequestHandler("POST", "/database/apiRequest", self.apiRequest)
 
-		def transaction(query):
-			result = self.getTransaction({}, [])
-			responseBody = time_it(json.dumps, result)
-
-			if args.debugServer:
-				print("Serialization Took: %s" % responseBody[1])
-			headers = [('Content-type', "text/json"),
-					   ('Content-Length', str(len(responseBody[0])))]
-			return ServerResponse("200 OK", headers, responseBody[0])
-
-		self.handler.registerRequestHandler("GET", "/database/transaction", transaction)
-
-
 		self.apiTree = {}
 		self.apiTree["account"] = {"get": self.getAccount, "create": self.createAccount, "update": self.updateAccount, "delete": self.deleteAccount}
 		self.apiTree["bucket"] = {"get": self.getBucket, "create": self.createBucket, "update": self.updateBucket, "delete": self.deleteBucket}
 		self.apiTree["transaction"] = {"get": self.getTransaction, "create": self.createTransaction, "update": self.updateTransaction, "delete": self.deleteTransaction}
+		self.apiTree["transaction-group"] = {"get": self.getTransactionGroup, "create": self.createTransactionGroup, "update": self.updateTransactionGroup, "delete": self.deleteTransactionGroup}
 		self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag}
 		self.apiTree["property"] = {"get": self.getProperty, "update": self.updateProperty}
 		self.apiTree["enum"] = {"get": self.getEnum}
+
+	def getDefGroup(self, request, columns):
+		rows = [{"ID": 1, "Memo": "The First Group", "Bucket": 1}]
+		return self.wrapData(rows)
 
 	def handleRequest(self, environ, start_response):
 		print("\n--------------------------------------------------------------------------------\n")
@@ -325,6 +317,7 @@ class SPENTServer():
 		return self.wrapData(self.SQLRowsToArray(transactions, columns))
 	
 	def createTransaction(self, request, columns):
+		#TODO: Group should not be passed by id
 		data = request.get("data", {})
 		results = []
 		for i in data:
@@ -336,7 +329,8 @@ class SPENTServer():
 				transactionDate=i.get("TransDate", getCurrentDateStr()),
 				postDate=i.get("PostDate", None),
 				memo=i.get("Memo", ""),
-				payee=i.get("Payee", "")))
+				payee=i.get("Payee", ""),
+				group=i.get("GroupID", self.accountMan.getTransactionGroup(int(i.get("GroupID", -1))))))
 		return self.wrapData(self.SQLRowsToArray(results))
 	
 	def updateTransaction(self, request, columns):
@@ -353,6 +347,38 @@ class SPENTServer():
 		data = request.get("data", {})
 		idList = [int(i.get("ID", -1)) for i in data]
 		deleteList = self.accountMan.deleteTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
+		return self.wrapData([{"ID": idVal} for idVal in idList])
+
+	def getTransactionGroup(self, request, columns):
+		data = request.get("data", {})
+		where = self.dataToWhere(data)
+		groups = self.accountMan.getTransactionGroupsWhere(where)
+		return self.wrapData(self.SQLRowsToArray(groups, columns))
+
+	def createTransactionGroup(self, request, columns):
+		data = request.get("data", {})
+		results = []
+		for i in data:
+			results.append(self.accountMan.createTransactionGroup(
+				bucket=self.accountMan.getBucket(int(i.get("Bucket", -1))),
+				memo=i.get("Memo", "")))
+		return self.wrapData(self.SQLRowsToArray(results))
+
+	def updateTransactionGroup(self, request, columns):
+		data = request.get("data", {})
+		results = []
+		for i in data:
+			bucket = self.accountMan.getTransactionGroup(int(i.get("ID", -1)))
+			for j in i.items():
+				bucket.updateValue(j[0], j[1])
+			results.append(bucket)
+		return self.wrapData(self.SQLRowsToArray(results, columns))
+
+	def deleteTransactionGroup(self, request, columns):
+		data = request.get("data", {})
+		idList = [int(i.get("ID", -1)) for i in data]
+		deleteList = self.accountMan.deleteTransactionGroupsWhere(
+			SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
 		return self.wrapData([{"ID": idVal} for idVal in idList])
 
 	def getTag(self, request, columns):
@@ -374,7 +400,7 @@ class SPENTServer():
 		return self.unimp	
 	
 	def getEnum(self, request, columns):
-		return self.unimp	
+		return self.unimp
 
 class ServerResponse:
 	def __init__(self, status, headers, body):
@@ -406,6 +432,7 @@ class RequestHandler:
 		#	return True
 		
 		return False
+
 	def fileHandler(self, query, path):
 		if path == "/":
 			path = "index.html"

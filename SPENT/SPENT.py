@@ -227,7 +227,13 @@ class SpentDBManager(DatabaseWrapper):
 			 {"name": "SourceBucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
 			 {"name": "DestBucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
 			 {"name": "Memo", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}, 
-			 {"name": "Payee", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
+			 {"name": "Payee", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
+			 {"name": "GroupID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
+
+		self.registerTableSchema("TransactionGroups",
+			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
+			 {"name": "Memo", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
+			 {"name": "Bucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
 
 		self.registerTableSchema("Tags",
 			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
@@ -288,7 +294,7 @@ class SpentDBManager(DatabaseWrapper):
                                        "Ancestor": ancestor,
                                       })[0][0])
 	
-	def createTransaction(self, amount: float, status: int = 0, sourceBucket: Optional['Bucket'] = None, destBucket: Optional['Bucket'] = None, transactionDate: Optional[str] = None, postDate: Optional[str] = None, memo: str = "",  payee: str = "") -> 'Transaction':
+	def createTransaction(self, amount: float, status: int = 0, sourceBucket: Optional['Bucket'] = None, destBucket: Optional['Bucket'] = None, transactionDate: Optional[str] = None, postDate: Optional[str] = None, memo: str = "",  payee: str = "", group: int = -1) -> 'Transaction':
 		#TODO: Verify that all the data is in the correct format
 		#print("%s - %s - %s - %s - %s - %s - %s - %s" % (amount, status, sourceBucket, destBucket, transactionDate, postDate, memo, payee))
 		return self.getTransaction(self._tableInsertInto_("Transactions", 
@@ -299,12 +305,21 @@ class SpentDBManager(DatabaseWrapper):
 									   "SourceBucket" : int(-1 if sourceBucket is None else sourceBucket.getID()),
 									   "DestBucket" : int(-1 if destBucket is None else destBucket.getID()),
 									   "Memo" : str(memo),
-									   "Payee": str(payee)
+									   "Payee": str(payee),
+									   "GroupID": int(group)
 									  })[0][0])
 	
 	def createAccount(self, name: str) -> Optional['Bucket']: # TODO: This should return account
 		return self.createBucket(name, -1)
-	
+
+	def createTransactionGroup(self, memo: str, bucket: Optional['Bucket']) -> Optional['TransactionGroup']:
+		# TODO: Verify that all the data is in the correct format
+		# print("%s - %s - %s - %s - %s - %s - %s - %s" % (amount, status, sourceBucket, destBucket, transactionDate, postDate, memo, payee))
+		return self.getTransactionGroup(self._tableInsertInto_("TransactionGroups",
+										  {"Bucket" : int(-1 if bucket is None else bucket.getID()),
+										   "Memo": str(memo),
+										   })[0][0])
+
 	def getBucket(self, bucketID: int) -> Optional['Bucket']:
 		if bucketID > -1:
 			bucket = Bucket(self, bucketID)
@@ -334,7 +349,23 @@ class SpentDBManager(DatabaseWrapper):
 			else:
 				print("Error: SpentDBManager.getTransactionsWhere: Encountered a None transaction")
 		return transactions	
-	
+
+	def getTransactionGroup(self, groupID: int) -> Optional['TransactionGroup']:
+		if groupID > -1:
+			return TransactionGroup(self, groupID)
+		return None
+
+	def getTransactionGroupsWhere(self, where: Optional[SQL_WhereStatementBuilder] = None) -> List['TransactionGroup']:
+		result = self.selectTableRowsColumnsWhere("TransactionGroups", columnNames=["ID"], where=where)
+		groups = []
+		for i in result:
+			group = self.getTransactionGroup(asInt(i.getValue("ID")))
+			if group is not None:
+				groups.append(group)
+			else:
+				print("Error: SpentDBManager.getTransactionGroupsWhere: Encountered a None group")
+		return groups
+
 	def getAccount(self, accountID: int) -> Optional['Bucket']: #TODO: This should be marked to return account
 		return self.getBucket(accountID)
 		
@@ -355,7 +386,7 @@ class SpentDBManager(DatabaseWrapper):
 		return self._deleteBucketsWhere_(where, False)
 		
 	def deleteTransaction(self, transaction: 'Transaction') -> None:
-		where = self.rowsToWhere([asInt(transaction.getID)])
+		where = self.rowsToWhere([asInt(transaction.getID())])
 		self.deleteTransactionsWhere(where)
 		del transaction # Destroy the data our reference points to; to prevent further use
 		
@@ -363,7 +394,17 @@ class SpentDBManager(DatabaseWrapper):
 		if where is None:
 			raise ValueError("SpentDBManager.deleteTransactionsWhere: where can't be None")
 		self.deleteTableRowsWhere("Transactions", where)
-		
+
+	def deleteTransactionGroup(self, group: 'TransactionGroup') -> None:
+		where = self.rowsToWhere([asInt(group.getID())])
+		self.deleteTransactionGroupsWhere(where)
+		del group  # Destroy the data our reference points to; to prevent further use
+
+	def deleteTransactionGroupsWhere(self, where: SQL_WhereStatementBuilder):  # TODO return List[int]
+		if where is None:
+			raise ValueError("SpentDBManager.deleteTransactionGroupsWhere: where can't be None")
+		self.deleteTableRowsWhere("TransactionGroups", where)
+
 	def deleteAccount(self, account: 'Account') -> None:
 		where = self.rowsToWhere([asInt(account.getID)])
 		self.deleteAccountsWhere(where)
@@ -498,3 +539,16 @@ class Transaction(SQL_RowMutable):
 	
 	def getType(self) -> int:
 		return asInt(self.getValue("Type"))
+
+class TransactionGroup(SQL_RowMutable):
+	def __init__(self, database: DatabaseWrapper, ID: int):
+		super().__init__(database, "TransactionGroups", ID)
+
+	def getID(self) -> int:
+		return asInt(self.getValue("ID"))
+
+	def getMemo(self) -> str:
+		return str(self.getValue("Memo"))
+
+	def getBucket(self) -> Optional[Bucket]:
+		return cast(SpentDBManager, self.database).getBucket(asInt(self.getValue("Bucket")))

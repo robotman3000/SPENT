@@ -364,6 +364,7 @@ function onDocumentReady() {
                 DestBucket: -1,
                 Memo: "",
                 Payee: "",
+                GroupID: -1,
             };
         },
     });
@@ -372,6 +373,27 @@ function onDocumentReady() {
         url: "transaction",
         initialize: function(){
             this.listenTo(this, "update", this.update);
+        },
+    });
+
+    var TransactionGroup = BaseModel.extend({
+        getTransactions: function(){
+            //TODO: Hardcoded group ID for scaffolding
+            return transactions.where({Group: -1});
+        },
+        defaults: function(){
+            return {
+                ID: null,
+                Bucket: null,
+                Memo: "",
+            };
+        },
+    });
+    var TransactionGroups = BaseCollection.extend({
+        model: TransactionGroup,
+        url: "transaction-group",
+        initialize: function(){
+            //this.listenTo(this, "update", this.update);
         },
     });
 
@@ -412,6 +434,7 @@ function onDocumentReady() {
     var accounts = new Accounts;
     var buckets = new Buckets;
     var transactions = new Transactions;
+    var transactionGroups = new TransactionGroups;
     var accountBuckets = new MergedCollection([accounts, buckets]);
 
     // Base Views
@@ -517,6 +540,7 @@ function onDocumentReady() {
             var self = this;
             if(this.getModel()){
                 this.getModel().where().forEach(function(ite, ind){
+                    //TODO: Not all models this can handle will have a name field; Fix it
                     var text = ite.get("Name");
                     if(self.nameFormatter){
                         text = self.nameFormatter(ite);
@@ -875,9 +899,7 @@ function onDocumentReady() {
                 loadData: function (filter){
                     return new Promise(function(resolve, reject){
                         var result = [];
-                        self.model.where().forEach(function(item, index){
-                            result.push(item.toJSON());
-                        });
+                        result = self.model.toJSON();
                         resolve(result);
                     });
                 },
@@ -892,6 +914,7 @@ function onDocumentReady() {
                     this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
                     //console.log("TableRowView.render: " + self.apiDataType + ", ID: " + model.get("ID"))
 
+                    //TODO: Implement http://jsfiddle.net/6rao79dx/1/ for grouped transactions
                     var rowSelf = this;
 
                     var formatterFunction = function(value, model, formatter){
@@ -1328,9 +1351,10 @@ function onDocumentReady() {
             {name: "Bucket", title: "Bucket", type: "text", breakpoints:"xs sm md", responsive: {hide: false}},
             {name: "Memo", title: "Memo", type: "text", breakpoints:"", responsive: {hide: false}},
             {name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm", responsive: {hide: true}},
+            {name: "GroupID", title: "Group", type: "number", breakpoints:"xs sm", responsive: {hide: true}},
         ],
 
-        getController: function(){
+        /*getController: function(){
             var self = this;
             var def = BaseTableView.prototype.getController.apply(this);
             def.loadData = function (filter){
@@ -1339,7 +1363,7 @@ function onDocumentReady() {
                 /*var rules = null;
                 if(getTableData(tableName).apiDataType == "transaction"){
                     rules = getTransactionFilterRules();
-                }*/
+                }
 
                 if(selID != null && selID > -1){
                     return new Promise(function(resolve, reject){
@@ -1357,7 +1381,20 @@ function onDocumentReady() {
                 }
             }
             return def;
+        },*/
+    });
+    var TransactionGroupTable = BaseTableView.extend({
+        model: transactionGroups,
+        tableName: "transactionGroupTable",
+        apiDataType: "transaction-group",
+        initialize: function(actionModals){
+            BaseTableView.prototype.initialize.apply(this, [actionModals]);
         },
+        columns: [
+            {name: "ID", visible: false},
+            {name: "Bucket", title: "Bucket", type: "text", breakpoints:"xs sm md", responsive: {hide: false}},
+            {name: "Memo", title: "Memo", type: "text", breakpoints:"", responsive: {hide: false}},
+        ],
     });
     var BucketTable = BaseTableView.extend({
         model: buckets,
@@ -1455,6 +1492,10 @@ function onDocumentReady() {
         return text;
     }
 
+    var byIDFormatter = function(model){
+        return "" + model.get("ID");
+    }
+
     var TransactionTableEditForm = BaseTableEditForm.extend({
         formName: "transactionTableEditForm",
         tableName: "transactionTable",
@@ -1469,6 +1510,16 @@ function onDocumentReady() {
             {title: "Destination", name: "DestBucket", required: true, type: "dynamicSelect", options: {showNA: true, model: accountBuckets, formatter: bucketNameFormatter, listenTo: {"Type": onTypeChange}}},
             {name: "Memo", title: "Memo", type: "textbox"},
             {name: "Payee", title: "Payee", type: "text"},
+            {title: "Transaction Group", name: "GroupID", required: true, type: "dynamicSelect", options: {showNA: true, model: transactionGroups, formatter: byIDFormatter/*, listenTo: {"Type": onTypeChange}*/}},
+        ]
+    });
+    var TransactionGroupTableEditForm = BaseTableEditForm.extend({
+        formName: "transactionGroupTableEditForm",
+        tableName: "transactionGroupTable",
+        columns: [
+            {name: "ID", visible: false},
+            {title: "Bucket", name: "Bucket", required: true, type: "dynamicSelect", options: {showNA: false, model: accountBuckets, formatter: bucketNameFormatter/*, listenTo: {"Type": onTypeChange}*/}},
+            {name: "Memo", title: "Memo", type: "textbox"},
         ]
     });
     var BucketTableEditForm = BaseTableEditForm.extend({
@@ -1497,6 +1548,13 @@ function onDocumentReady() {
             "#bucketTableModalToggle"
         ]
     });
+    var TransactionGroupTableModal = BaseModal.extend({
+        title: "Manage Transaction Groups",
+        modalName: "transactionGroupTableModal",
+        triggers: [
+            "#transactionGroupTableModalToggle"
+        ]
+    });
     var AccountTableFormModal = BaseFormModal.extend({
         modalName: "accountTableEditFormModal",
     });
@@ -1505,6 +1563,9 @@ function onDocumentReady() {
     });
     var TransactionTableFormModal = BaseFormModal.extend({
         modalName: "transactionTableEditFormModal",
+    });
+    var TransactionGroupTableFormModal = BaseFormModal.extend({
+        modalName: "transactionGroupTableEditFormModal",
     });
 
     // Other
@@ -1676,7 +1737,6 @@ function onDocumentReady() {
         },
     });
 
-
     // Initialize the views in order of dependency
     var actionConfirmationModal = new ConfirmActionModal;
     var accountTree = new AccountTreeView;
@@ -1721,6 +1781,30 @@ function onDocumentReady() {
     transactionEditFormModal.bindSubmitToForm(transactionEditForm);
     transactions.listenTo(transactionEditForm, "formSubmit", saveFunction);
     transactionEditFormModal.listenTo(transactionEditForm, "formSubmit", transactionEditFormModal.hideModal)
+
+    var transactionGroupTableModal = new TransactionGroupTableModal;
+    var transactionGroupEditForm = new TransactionGroupTableEditForm;
+    var transactionGroupEditFormModal = new TransactionGroupTableFormModal;
+    var transactionGroupTable = new TransactionGroupTable({
+        "edit" : {form: transactionGroupEditForm, modal: transactionGroupEditFormModal},
+        "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
+    });
+    var transactionGroupTableToolBar = new TableToolBar(transactionGroupTable, "transactionGroupTableEditToolbar");
+    var transactionGroupAddPreClick = function(){
+        transactionGroupEditFormModal.setTitle("New Transaction Group")
+        transactionGroupEditForm.setModel(null);
+    };
+    transactionGroupTableToolBar.addTriggerButton({
+        name: "new",
+        cssClass: "fas fa-plus-circle",
+        preClick: transactionGroupAddPreClick,
+        listeners: [{listener: transactionGroupEditFormModal, callback: transactionGroupEditFormModal.showModal}],
+    }); // New
+    transactionGroupTableToolBar.addView(new TableSortView(_.filter(_.pluck(transactionGroupTable.columns, "name"), function(val){ return val }), transactionGroups));
+    transactionGroupTableToolBar.render();
+    transactionGroupEditFormModal.bindSubmitToForm(transactionGroupEditForm);
+    transactionGroups.listenTo(transactionGroupEditForm, "formSubmit", saveFunction);
+    transactionGroupEditFormModal.listenTo(transactionGroupEditForm, "formSubmit", transactionGroupEditFormModal.hideModal)
 
     var bucketTableModal = new BucketTableModal;
     var bucketTableAccountSelect = new BucketTableAccountSelect;
@@ -1776,6 +1860,7 @@ function onDocumentReady() {
     accounts.fetch({wait: true});
     buckets.fetch({wait: true});
     transactions.fetch({wait: true});
+    transactionGroups.fetch({wait: true});
 
     bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
 

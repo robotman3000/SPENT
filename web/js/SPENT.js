@@ -973,7 +973,7 @@ function onDocumentReady() {
                     };
                     row.buttons.push({
                         name: "edit",
-                        cssClass: "fas fa-edit",
+                        cssClass: "fa fa-edit",
                         preClick: editPreClick,
                         listeners: [{listener: actionModals["edit"].modal, callback: actionModals["edit"].modal.showModal}],
                     });
@@ -992,7 +992,7 @@ function onDocumentReady() {
                     };
                     row.buttons.push({
                         name: "delete",
-                        cssClass: "fas fa-trash",
+                        cssClass: "fa fa-trash",
                         preClick: deletePreClick,
                         listeners: [{listener: actionModals["delete"].modal, callback: actionModals["delete"].modal.showModal}],
                     });
@@ -1351,7 +1351,7 @@ function onDocumentReady() {
             {name: "Bucket", title: "Bucket", type: "text", breakpoints:"xs sm md", responsive: {hide: false}},
             {name: "Memo", title: "Memo", type: "text", breakpoints:"", responsive: {hide: false}},
             {name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm", responsive: {hide: true}},
-            {name: "GroupID", title: "Group", type: "number", breakpoints:"xs sm", responsive: {hide: true}},
+            {name: "GroupID", title: "Group", type: "number", breakpoints:"xs sm", responsive: {hide: false}},
         ],
 
         /*getController: function(){
@@ -1756,13 +1756,13 @@ function onDocumentReady() {
     };
     transactionTableToolBar.addTriggerButton({
         name: "new",
-        cssClass: "fas fa-plus-circle",
+        cssClass: "fa fa-plus-circle",
         preClick: transactionAddPreClick,
         listeners: [{listener: transactionEditFormModal, callback: transactionEditFormModal.showModal}],
     }); // New
     transactionTableToolBar.addTriggerButton({
         name: "filter",
-        cssClass: "fas fa-filter",
+        cssClass: "fa fa-filter",
         listeners: [{listener: transactionFilterModal, callback: transactionFilterModal.showModal}],
     }); // Filters
     transactionTableToolBar.addView(new TableSortView(_.filter(_.pluck(transactionTable.columns, "name"), function(val){ return val }), transactions));
@@ -1796,7 +1796,7 @@ function onDocumentReady() {
     };
     transactionGroupTableToolBar.addTriggerButton({
         name: "new",
-        cssClass: "fas fa-plus-circle",
+        cssClass: "fa fa-plus-circle",
         preClick: transactionGroupAddPreClick,
         listeners: [{listener: transactionGroupEditFormModal, callback: transactionGroupEditFormModal.showModal}],
     }); // New
@@ -1821,7 +1821,7 @@ function onDocumentReady() {
     };
     bucketTableToolBar.addTriggerButton({
         name: "new",
-        cssClass: "fas fa-plus-circle",
+        cssClass: "fa fa-plus-circle",
         preClick: bucketAddPreClick,
         listeners: [{listener: bucketEditFormModal, callback: bucketEditFormModal.showModal}],
     }); // New
@@ -1846,7 +1846,7 @@ function onDocumentReady() {
     };
     accountTableToolBar.addTriggerButton({
         name: "new",
-        cssClass: "fas fa-plus-circle",
+        cssClass: "fa fa-plus-circle",
         preClick: accountAddPreClick,
         listeners: [{listener: accountEditFormModal, callback: accountEditFormModal.showModal}],
     }); // New

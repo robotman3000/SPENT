@@ -251,6 +251,70 @@ function onDocumentReady() {
     })
     var uiState = new UIState;
 
+    var TableRowRenderable = Object.create(null);
+    TableRowRenderable.renderTR = function(){
+        // this = The row view
+        var self = this;
+        var model = this.getModel();
+        if(model){
+            this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
+
+            this.$el.addClass("collapse");
+
+            var gID = model.get("GroupID") || -1;
+            if (gID != -1){
+                this.$el.addClass("group" + gID);
+            } else {
+                this.$el.addClass("show");
+            }
+            console.log("TableRowRenderable.renderTR: " + this.parentView.apiDataType + ", ID: " + model.get("ID"))
+
+            var rowSelf = this;
+
+            var formatterFunction = function(value, model, formatter){
+                var result = {text: value};
+                if(formatter){
+                    result = formatter(value, model.toJSON());
+                }
+                var tag = getOrDefault(result, "tag", "span");
+                var text = getOrDefault(result, "text", "Format Error");
+                var classes = getOrDefault(result, "class", "");
+
+                var elem = $("<" + tag + ">").attr("class", classes).text(text);
+                elem.addClass("SPENT-cell-value")
+                return elem;
+            };
+
+            this.parentView.columns.forEach(function(item, index){
+                if(!(item.visible == false)){
+                    var formatter = getOrDefault(self.parentView.formatters, item.name, null);
+                    var value = formatterFunction(model.get(item.name), model, formatter); //TODO: switch to passing the model rather than the json
+
+                    var td = $("<td>");
+                    var responsive = getOrDefault(item, "responsive", null);
+
+                    var newValue = value;
+
+                    var columnName = $("<h6>").attr("class", "responsive-visible SPENT-responsive-cell-title").text(item.title + ": ");
+                    newValue = $("<div>").append(columnName).append(value);
+
+                    if(responsive){
+                        var shouldHide = getOrDefault(responsive, "hide", false);
+                        if(shouldHide){
+                            td.addClass("responsive-hidden");
+                        }
+                    }
+                    td.append(newValue);
+                    rowSelf.$el.append(td);
+                }
+            });
+            var div = this._createActionButtons(this.buttons)
+            this.$el.append($("<td>").append(div));
+        } else {
+            console.log("Failed to render row");
+        }
+    };
+
     // Model Objects
     var BaseModel = Backbone.Model.extend({
         initialize: function(){
@@ -288,7 +352,7 @@ function onDocumentReady() {
 
             return result;
         },
-    });
+    }).extend(TableRowRenderable);
     var BaseCollection = Backbone.Collection.extend({
         parse: function(resp, options) {
             options.isRaw = false;
@@ -388,6 +452,25 @@ function onDocumentReady() {
                 Memo: "",
             };
         },
+        renderTR: function(){
+            var self = this;
+
+            if(this.parentView.tableName == "transactionGroupTable"){
+                BaseModel.prototype.renderTR.apply(this);
+                return;
+            }
+
+
+            var model = this.getModel();
+            if(model){
+                this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
+
+                this.$el.attr("data-toggle", "collapse");
+                this.$el.attr("data-target", ".group" + model.get("ID"))
+
+                this.$el.text(JSON.stringify(model.toJSON()))
+            }
+        },
     });
     var TransactionGroups = BaseCollection.extend({
         model: TransactionGroup,
@@ -453,6 +536,7 @@ function onDocumentReady() {
     BaseModelView.getModelConstructor = function(){
         return this.constructor || null;
     };
+
     var ViewContainer = Backbone.View.extend({
         views: null,
         initialize: function(element){
@@ -563,8 +647,9 @@ function onDocumentReady() {
         },
     }).extend(BaseModelView);
     var TableRowView = Backbone.View.extend({
-        initialize: function(rowRenderer){
+        initialize: function(rowRenderer, parentView){
             this.setElement($("<tr>"));
+            this.parentView = parentView;
 
             if(rowRenderer){
                 this.render = rowRenderer;
@@ -592,6 +677,15 @@ function onDocumentReady() {
         },
         render: function(){
             console.log("Warning: Row renderer is uninitialized!");
+            this.$el.text("Row renderer is uninitialized")
+        },
+        _createActionButtons: function(buttons){
+            var div = $("<div>").attr("role", "group").attr("class", "btn-group");
+            buttons.forEach(function(item, index){
+                var button = createTriggerButton(item);
+                div.append(button.$el);
+            });
+            return div;
         },
     }).extend(BaseModelView);
     var TableToolBar = ViewContainer.extend({
@@ -899,72 +993,27 @@ function onDocumentReady() {
                 loadData: function (filter){
                     return new Promise(function(resolve, reject){
                         var result = [];
-                        result = self.model.toJSON();
+                        //result = self.model.toJSON();
+                        result = self.model.where();
                         resolve(result);
                     });
                 },
             }
         },
         getRowRenderer: function(actionModals){
-            var self = this; // this = The Current Table
-            var renderRow = function(){
-                // this = The row view
-                var model = this.getModel();
-                if(model){
-                    this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
-                    //console.log("TableRowView.render: " + self.apiDataType + ", ID: " + model.get("ID"))
-
-                    //TODO: Implement http://jsfiddle.net/6rao79dx/1/ for grouped transactions
-                    var rowSelf = this;
-
-                    var formatterFunction = function(value, model, formatter){
-                        var result = {text: value};
-                        if(formatter){
-                            result = formatter(value, model.toJSON());
-                        }
-                        var tag = getOrDefault(result, "tag", "span");
-                        var text = getOrDefault(result, "text", "Format Error");
-                        var classes = getOrDefault(result, "class", "");
-
-                        var elem = $("<" + tag + ">").attr("class", classes).text(text);
-                        elem.addClass("SPENT-cell-value")
-                        return elem;
-                    };
-
-                    self.columns.forEach(function(item, index){
-                        if(!(item.visible == false)){
-                            var formatter = getOrDefault(self.formatters, item.name, null);
-                            var value = formatterFunction(model.get(item.name), model, formatter); //TODO: switch to passing the model rather than the json
-
-                            var td = $("<td>");
-                            var responsive = getOrDefault(item, "responsive", null);
-
-                            var newValue = value;
-
-                            var columnName = $("<h6>").attr("class", "responsive-visible SPENT-responsive-cell-title").text(item.title + ": ");
-                            newValue = $("<div>").append(columnName).append(value);
-
-                            if(responsive){
-                                var shouldHide = getOrDefault(responsive, "hide", false);
-                                if(shouldHide){
-                                    td.addClass("responsive-hidden");
-                                }
-                            }
-                            td.append(newValue);
-                            rowSelf.$el.append(td);
-                        }
-                    });
-                    var div = self._createActionButtons(this.buttons)
-                    this.$el.append($("<td>").append(div));
-                } else {
-                    console.log("Failed to render row");
-                }
-            }
-
+            var self = this; // this = The Current Table View
             var renderer = function(item, index){
-                // this = The function caller, (The current table?)
-                var row = new TableRowView(renderRow);
-                row.buttons = [];
+                // this = The function caller, (The jsGrid instance)
+
+                //TODO: Quick fix; eventually the TableRowView should be given the model directly
+                var rowRenderFunction = getOrDefault(item, "renderTR", null);
+                if(!(rowRenderFunction instanceof Function)){
+                    console.log("%cWarning: Supplied row render function was not a function!", 'background: #222; color: #bada55');
+                }
+
+                var row = new TableRowView(rowRenderFunction, self);
+                row.buttons = []; // Init the buttons array before we set to model because
+                // setting the model triggers a render event and the code that is run expects the array to exist
 
                 if (actionModals["edit"]){
                     var editPreClick = function(){
@@ -998,7 +1047,7 @@ function onDocumentReady() {
                     });
                 }
 
-                row.setModel(self.model.get(item.ID));
+                row.setModel(item);
                 return row.$el;
             };
             return renderer;
@@ -1014,8 +1063,10 @@ function onDocumentReady() {
                         rowSelf.$el.append($("<td>").text(item.title).attr("class", "responsive-hidden"));
                     }
                 });
-                var div = self._createActionButtons(this.buttons)
-                this.$el.append($("<td>").append(div));
+
+                //TODO: We need some way of knowing whether our rows have action buttons so we can know if we need to add a blank column for them
+                //var div = self._createActionButtons(this.buttons)
+                //this.$el.append($("<td>").append(div));
             }
 
             var renderer = function(item, index){
@@ -1030,14 +1081,6 @@ function onDocumentReady() {
                 return row.$el;
             };
             return renderer;
-        },
-        _createActionButtons: function(buttons){
-            var div = $("<div>").attr("role", "group").attr("class", "btn-group");
-            buttons.forEach(function(item, index){
-                var button = createTriggerButton(item);
-                div.append(button.$el);
-            });
-            return div;
         },
         formatters: {},
         columns: [],
@@ -1289,6 +1332,9 @@ function onDocumentReady() {
         initialize: function(actionModals){
             BaseTableView.prototype.initialize.apply(this, [actionModals]);
             this.listenTo(uiState, "change:selectedAccount", this.loadData); //TODO: ??
+
+            this.knownGroupIDs = [-1]; // We include -1 here to make it as if that id has already been processed, causing it to be ignored
+            this.lastGroupID = -1;
         },
         formatters: {
             "Type": function(value, rowData){
@@ -1353,34 +1399,61 @@ function onDocumentReady() {
             {name: "Payee", title: "Payee", type: "text", breakpoints:"xs sm", responsive: {hide: true}},
             {name: "GroupID", title: "Group", type: "number", breakpoints:"xs sm", responsive: {hide: false}},
         ],
-
-        /*getController: function(){
+        getController: function(){
             var self = this;
             var def = BaseTableView.prototype.getController.apply(this);
+
             def.loadData = function (filter){
                 var selID = uiState.get("selectedAccount");
-
-                /*var rules = null;
-                if(getTableData(tableName).apiDataType == "transaction"){
-                    rules = getTransactionFilterRules();
-                }
 
                 if(selID != null && selID > -1){
                     return new Promise(function(resolve, reject){
                         var result = [];
-                        var a = self.model.filter(function(data) {
+                        var a = transactions.filter(function(data) {
                             var testResult = parseInt(data.get("SourceBucket")) == selID || parseInt(data.get("DestBucket")) == selID;
-                            console.log("Sort: " + testResult + " " + data.get("Amount"))
+                            //console.log("Sort: " + testResult + " " + data.get("Amount"))
                             return testResult;
                         })
                         a.forEach(function(item, index){
-                            result.push(item.toJSON());
+                            result.push(item/*.toJSON()*/);
                         });
+
+                        var b = transactionGroups.filter(function(data){
+                            var testResult = parseInt(data.get("Bucket")) == selID;
+                            //console.log("Sort: " + testResult + " " + data.get("Amount"))
+                            return testResult;
+                        })
+                        b.forEach(function(item, index){
+                            result.push(item/*.toJSON()*/);
+                        });
+
                         resolve(result);
                     });
                 }
             }
             return def;
+        },
+        /*getRowRenderFunction: function(table){
+            var renderSwitcher = function(){
+                var groupID = model.get("GroupID");
+                if(groupID != this.lastGroupID){
+                    if(!this.knownGroupIDs.includes(groupID)){
+                        this.knownGroupIDs.append(groupID);
+                        return renderHeaderRow;
+                    }
+                }
+
+                // this = The row view
+                var model = this.getModel();
+                if(model){
+                    this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
+                    console.log("TableRowView.render (group header): " + table.apiDataType + ", ID: " + model.get("ID"))
+                    var rowSelf = this;
+                    this.$el.text("Test " + groupID);
+                }
+            };
+
+            return BaseTableView.prototype.getRowRenderFunction(table);
         },*/
     });
     var TransactionGroupTable = BaseTableView.extend({
@@ -1427,7 +1500,7 @@ function onDocumentReady() {
                         var result = [];
                         var a = self.model.where({Ancestor: selID})
                         a.forEach(function(item, index){
-                            result.push(item.toJSON());
+                            result.push(item/*.toJSON()*/);
                         });
                         resolve(result);
                     });
@@ -1749,6 +1822,9 @@ function onDocumentReady() {
         "edit" : {form: transactionEditForm, modal: transactionEditFormModal},
         "delete" : {form: actionConfirmationModal, modal: actionConfirmationModal},
     });
+    transactionTable.listenTo(transactionGroups, "update", transactionTable.loadData);
+    transactionTable.listenTo(transactionGroups, "reset", transactionTable.loadData);
+    transactionTable.listenTo(transactionGroups, "sort", transactionTable.loadData);
     var transactionTableToolBar = new TableToolBar(transactionTable, "transactionTableEditToolbar");
     var transactionAddPreClick = function(){
         transactionEditFormModal.setTitle("New Transaction")

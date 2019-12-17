@@ -276,6 +276,20 @@ class SpentDBManager(DatabaseWrapper):
 		
 		self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
 		self.registerVirtualColumn("Transactions", "Type", getTransactionType)
+
+		def getGroupAmount(source, tableName, columnName):
+			ids = self.util.getAllBucketChildrenID(source.getBucket())
+			ids.append(source.getBucket().getID())  # We can't forget ourself
+			idStr = ", ".join(map(str, ids))
+
+			query = "SELECT IFNULL(SUM(Amount), 0) FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) AND GroupID == %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) AND GroupID == %s)" % (
+				idStr, source.getID(), idStr, source.getID())
+
+			result = self._rawSQL_(query)
+			return round(float(result[0][0]), 2)
+
+		self.registerVirtualColumn("TransactionGroups", "Amount", getGroupAmount)
+
 		self.util = SpentUtil(self)
 
 	def createBucket(self, name: str, parent: int) -> Optional['Bucket']:

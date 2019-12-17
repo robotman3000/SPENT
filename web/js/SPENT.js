@@ -383,6 +383,38 @@ function onDocumentReady() {
         sortKey: "",
         reverseSortDirection: false,
     });
+    var MergedCollection = Backbone.Collection.extend({
+        initialize: function(collections){
+            var self = this;
+
+            var onEvent = function(eventName, arg1, arg2, arg3){
+                self.trigger(eventName, arg1, arg2, arg3)
+            };
+
+            collections.forEach(function(item, index){
+                self.listenTo(item, "all", onEvent);
+            });
+
+            this.collections = collections;
+        },
+        get: function(id){
+            var result = this.collections.forEach(function(item, index){
+                var model = item.get(id);
+                if(model){
+                    return model;
+                }
+            });
+            return result;
+        },
+        where: function(attributes){
+            var models = [];
+            this.collections.forEach(function(item, index){
+                var res = item.where(attributes);
+                models.push(res);
+            });
+            return _.union(...models);
+        },
+    });
 
     var Bucket = BaseModel.extend({
         defaults: function(){
@@ -477,39 +509,6 @@ function onDocumentReady() {
         url: "transaction-group",
         initialize: function(){
             //this.listenTo(this, "update", this.update);
-        },
-    });
-
-    var MergedCollection = Backbone.Collection.extend({
-        initialize: function(collections){
-            var self = this;
-
-            var onEvent = function(eventName, arg1, arg2, arg3){
-                self.trigger(eventName, arg1, arg2, arg3)
-            };
-
-            collections.forEach(function(item, index){
-                self.listenTo(item, "all", onEvent);
-            });
-
-            this.collections = collections;
-        },
-        get: function(id){
-            var result = this.collections.forEach(function(item, index){
-                var model = item.get(id);
-                if(model){
-                    return model;
-                }
-            });
-            return result;
-        },
-        where: function(attributes){
-            var models = [];
-            this.collections.forEach(function(item, index){
-                var res = item.where(attributes);
-                models.push(res);
-            });
-            return _.union(...models);
         },
     });
 
@@ -1405,28 +1404,33 @@ function onDocumentReady() {
 
             def.loadData = function (filter){
                 var selID = uiState.get("selectedAccount");
-
                 if(selID != null && selID > -1){
                     return new Promise(function(resolve, reject){
+
+                        var knownGroupIDs = [-1];
                         var result = [];
                         var a = transactions.filter(function(data) {
-                            var testResult = parseInt(data.get("SourceBucket")) == selID || parseInt(data.get("DestBucket")) == selID;
+                            var testResult = bIDs.includes(parseInt(data.get("SourceBucket"))) || bIDs.includes(parseInt(data.get("DestBucket"))) ;
                             //console.log("Sort: " + testResult + " " + data.get("Amount"))
                             return testResult;
                         })
                         a.forEach(function(item, index){
-                            result.push(item/*.toJSON()*/);
-                        });
+                            var currentGID = parseInt(item.get("GroupID"));
+                            if(currentGID == -1){
+                                result.push(item);
+                            } else if(!knownGroupIDs.includes(currentGID)){
+                                knownGroupIDs.push(currentGID);
 
-                        var b = transactionGroups.filter(function(data){
-                            var testResult = parseInt(data.get("Bucket")) == selID;
-                            //console.log("Sort: " + testResult + " " + data.get("Amount"))
-                            return testResult;
-                        })
-                        b.forEach(function(item, index){
-                            result.push(item/*.toJSON()*/);
+                                var transGroupParent = transactionGroups.get(currentGID);
+                                if(transGroupParent){
+                                    result.push(transGroupParent);
+                                    var groupTrans = transactions.where({GroupID: currentGID})
+                                    groupTrans.forEach(function(item, index){
+                                        result.push(item);
+                                    });
+                                }
+                            }
                         });
-
                         resolve(result);
                     });
                 }

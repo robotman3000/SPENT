@@ -117,8 +117,12 @@ class SpentUtil:
 		def getPostedBucketBalance(source, tableName, columnName):
 			return self.getPostedBalance(source)
 
-		self._spentDB_.registerVirtualColumn("Buckets", "Balance", getAvailBucketBalance)
+		def getBucketBalance(source, tableName, columnName):
+			return self.getBucketBalance
+
+		self._spentDB_.registerVirtualColumn("Buckets", "SumBalance", getAvailBucketBalance)
 		self._spentDB_.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
+		self._spentDB_.registerVirtualColumn("Buckets", "Balance", getBucketBalance)
 
 		# TODO: SHould these vir columns be kept around?
 		def getBucketTransactions(source, tableName, columnName):
@@ -212,21 +216,21 @@ class SpentUtil:
 class SpentDBManager(DatabaseWrapper):
 	def __init__(self, dbFile: str = "SPENT.db"):
 		super().__init__(dbFile)
-		self.registerTableSchema("Buckets", 
+		self.registerTableSchema("Buckets",
 			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
 			 {"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": True},
 			 {"name": "Parent", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
 			 {"name": "Ancestor", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
 
-		self.registerTableSchema("Transactions", 
+		self.registerTableSchema("Transactions",
 			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
 			 {"name": "Status", "type": "INTEGER", "remapKey": "StatusMap:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "TransDate", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}, 
-			 {"name": "PostDate", "type": "INTEGER", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}, 
-			 {"name": "Amount", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}, 
+			 {"name": "TransDate", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
+			 {"name": "PostDate", "type": "INTEGER", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
+			 {"name": "Amount", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
 			 {"name": "SourceBucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
 			 {"name": "DestBucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "Memo", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}, 
+			 {"name": "Memo", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
 			 {"name": "Payee", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
 			 {"name": "GroupID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
 
@@ -278,6 +282,7 @@ class SpentDBManager(DatabaseWrapper):
 		self.registerVirtualColumn("Transactions", "Type", getTransactionType)
 
 		def getGroupAmount(source, tableName, columnName):
+			print("Amount12345")
 			ids = self.util.getAllBucketChildrenID(source.getBucket())
 			ids.append(source.getBucket().getID())  # We can't forget ourself
 			idStr = ", ".join(map(str, ids))

@@ -140,7 +140,7 @@ function apiRequest(requestObj, suc, err){
 }
 
 //TODO: The selAccount parameter is temporary until a proper API change for this type of data is designed
-function createRequest(action, type, data, columns, rules, selAccount){
+function createRequest(action, type, data, columns, rules){
 	//TODO: Verify the input data and sanitize it
 	var request = {
 		action: action,
@@ -156,10 +156,6 @@ function createRequest(action, type, data, columns, rules, selAccount){
             }
         }
     });
-
-	if(selAccount != undefined && selAccount != null){
-	   request.selAccount = selAccount;
-	}
 
 	request.debugTrace = new Error().stack;
 	return request
@@ -177,6 +173,7 @@ function onDocumentReady() {
     // Initialize global variables
     initGlobals();
     var createTriggerButton = function(item){
+
         var btn = $("<button>").attr("type", "button").attr("class", "btn");
         btn.append($("<i>").attr("class", item.cssClass))
         var button = new TriggerButton(btn, item.preClick);
@@ -267,7 +264,7 @@ function onDocumentReady() {
             } else {
                 this.$el.addClass("show");
             }
-            console.log("TableRowRenderable.renderTR: " + this.parentView.apiDataType + ", ID: " + model.get("ID"))
+            //console.log("TableRowRenderable.renderTR: " + this.parentView.apiDataType + ", ID: " + model.get("ID"))
 
             var rowSelf = this;
 
@@ -486,12 +483,11 @@ function onDocumentReady() {
         },
         renderTR: function(){
             var self = this;
-
+            console.log("Test");
             if(this.parentView.tableName == "transactionGroupTable"){
                 BaseModel.prototype.renderTR.apply(this);
                 return;
             }
-
 
             var model = this.getModel();
             if(model){
@@ -500,7 +496,31 @@ function onDocumentReady() {
                 this.$el.attr("data-toggle", "collapse");
                 this.$el.attr("data-target", ".group" + model.get("ID"))
 
-                this.$el.text(JSON.stringify(model.toJSON()))
+                var cols = ["Memo", "Amount", "Bucket"]
+                var self = this;
+                cols.forEach(function(item, index){
+                    var td = $("<td>");
+                    var text = self.model.get(item);
+                    if(index == 0){
+                        td.attr("colspan", 5);
+                    }
+
+                    if(index == 1){
+                        var isDeposit = getTransferDirection(self.model, uiState.get("selectedAccount"));
+                        text = formatter.format(text * (isDeposit ? 1 : -1))
+                        td.addClass((isDeposit ? "" : "text-danger"));
+                        td.attr("colspan", 2);
+                    }
+
+                    if(index == 2){
+                        text = getBucketNameForID(accounts, buckets, self.model.get(item))
+                        td.attr("colspan", 2);
+                    }
+                    td.text(text)
+                    self.$el.append(td)
+                })
+
+                //this.$el.text(JSON.stringify(model.toJSON()))
             }
         },
     });
@@ -1406,6 +1426,12 @@ function onDocumentReady() {
                 var selID = uiState.get("selectedAccount");
                 if(selID != null && selID > -1){
                     return new Promise(function(resolve, reject){
+                        var bIDs = [selID];
+                        var tmp = accounts.get(selID);
+                        if(tmp){
+                            var bIDs = tmp.get("AllChildren") || [];
+                            bIDs.push(tmp.get("ID"));
+                        }
 
                         var knownGroupIDs = [-1];
                         var result = [];
@@ -1437,7 +1463,7 @@ function onDocumentReady() {
             }
             return def;
         },
-        /*getRowRenderFunction: function(table){
+        getRowRenderFunction: function(table){
             var renderSwitcher = function(){
                 var groupID = model.get("GroupID");
                 if(groupID != this.lastGroupID){
@@ -1451,14 +1477,14 @@ function onDocumentReady() {
                 var model = this.getModel();
                 if(model){
                     this.$el.empty(); //TODO: Rather than replacing the row, we should change the existing one
-                    console.log("TableRowView.render (group header): " + table.apiDataType + ", ID: " + model.get("ID"))
+                    //console.log("TableRowView.render (group header): " + table.apiDataType + ", ID: " + model.get("ID"))
                     var rowSelf = this;
                     this.$el.text("Test " + groupID);
                 }
             };
 
             return BaseTableView.prototype.getRowRenderFunction(table);
-        },*/
+        },
     });
     var TransactionGroupTable = BaseTableView.extend({
         model: transactionGroups,
@@ -1804,13 +1830,13 @@ function onDocumentReady() {
             var temp = _.findWhere(this.fieldSelect.options, {value: parseInt(field)});
             var fieldName = getOrDefault(temp, "text", "Error");
 
-            console.log("Sorting by: " + fieldName + " " + direction)
+            //console.log("Sorting by: " + fieldName + " " + direction)
             this.collection.sortKey = fieldName;
             this.collection.reverseSortDirection = (parseInt(direction) > 0)
             //TODO: Respect the sort direction
             this.collection.sort();
             var debugList = this.collection.pluck(fieldName);
-            console.log(JSON.stringify(debugList));
+            //console.log(JSON.stringify(debugList));
         },
     });
 
@@ -1952,9 +1978,11 @@ function onDocumentReady() {
     // TODO: These event listeners are a quick fix
     accounts.listenTo(transactions, "change", refreshBalanceFunction)
     buckets.listenTo(transactions, "change", refreshBalanceFunction)
+    transactionGroups.listenTo(transactions, "change", refreshBalanceFunction)
 
     accounts.listenTo(transactions, "update", refreshBalanceFunction)
     buckets.listenTo(transactions, "update", refreshBalanceFunction)
+    transactionGroups.listenTo(transactions, "update", refreshBalanceFunction)
 
     // Not this one though...
     $("#saveChanges").click(function(){

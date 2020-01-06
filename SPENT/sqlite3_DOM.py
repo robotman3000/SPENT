@@ -281,7 +281,12 @@ class DatabaseWrapper():
 	
 	def getTableSchema(self, tableName: str) -> Union[List[Dict[str, Union[str, bool]]], None]:
 		return self.schema.get(tableName, [])
-	
+
+	def getEnumSet(self, enumName: str) -> Optional[List[str]]:
+		#TODO: The returned object is mutable and is a reference to the internal storage; Not safe...
+		enum = self.enums.get(enumName, None)
+		return enum
+
 class SQL_Row():
 	def __init__(self, database: DatabaseWrapper, columns: Dict[str, Union[str, int, float, None]], tableName: str):
 		#TODO: Verify the input data
@@ -377,7 +382,7 @@ class SQL_Row():
 		for i in colNames:
 			result.append(self.getValue(i))
 		return result
-		
+
 class SQL_RowMutable(SQL_Row):
 	def __init__(self, database: DatabaseWrapper, tableName: str, rowID: int):
 		super().__init__(database, {}, tableName)

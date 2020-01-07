@@ -57,13 +57,13 @@
 - The view needs to scale properly on small screens
 - Value based row tinting (To show status)
 
-#Design Issues / Notes:
+# Design Issues / Notes:
 - Virtual columns should perform value caching
 Note: Implement vir col dependencies (A vir col can dep on [It's Row, Other rows in table, other rows in other table]). when a dep is changed mark col as dirty
 
 - The server doesn't properly close the database / No proper way to shutdown the server
 
-#General TODO:
+# General TODO:
 - Verify dates are handled properly everywhere
 - All icons should display properly
 

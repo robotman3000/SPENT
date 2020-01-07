@@ -1330,13 +1330,16 @@ function onDocumentReady() {
             this.listenTo(this, "modelChanged", function(newModel){
                 this.listenTo(newModel, "change:Balance", this.render);
                 this.listenTo(newModel, "change:PostedBalance", this.render);
+                this.listenTo(newModel, "change:TreeBalance", this.render);
+                this.listenTo(newModel, "change:PostedTreeBalance", this.render);
                 this.render();
             })
         },
         render: function(){
             console.log("Render: AccountStatusView")
         	if (this.getModel() != null) {
-        	    this.$el.text("Available: \$" + this.getModel().get("Balance") + ", Posted: \$" + this.getModel().get("PostedBalance"));
+        	    this.$el.html("[Total] Available: \$" + this.getModel().get("TreeBalance") + ", Posted: \$" + this.getModel().get("PostedTreeBalance") + "</br>" +
+        	                  "[Current] Available: \$" + this.getModel().get("Balance") + ", Posted: \$" + this.getModel().get("PostedBalance"));
         	    return;
             }
             this.$el.text("Error: model is null");

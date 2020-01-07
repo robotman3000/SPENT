@@ -111,18 +111,22 @@ class SpentUtil:
 		self._spentDB_ = spentDB
 
 	def registerUtilityColumns(self):
+		def getAvailBucketTreeBalance(source, tableName, columnName):
+			return self.getAvailableBalance(source, True)
+
+		def getPostedBucketTreeBalance(source, tableName, columnName):
+			return self.getPostedBalance(source, True)
+
 		def getAvailBucketBalance(source, tableName, columnName):
 			return self.getAvailableBalance(source)
 
 		def getPostedBucketBalance(source, tableName, columnName):
 			return self.getPostedBalance(source)
 
-		def getBucketBalance(source, tableName, columnName):
-			return self.getBucketBalance
-
-		self._spentDB_.registerVirtualColumn("Buckets", "SumBalance", getAvailBucketBalance)
+		self._spentDB_.registerVirtualColumn("Buckets", "TreeBalance", getAvailBucketTreeBalance)
+		self._spentDB_.registerVirtualColumn("Buckets", "PostedTreeBalance", getPostedBucketTreeBalance)
+		self._spentDB_.registerVirtualColumn("Buckets", "Balance", getAvailBucketBalance)
 		self._spentDB_.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
-		self._spentDB_.registerVirtualColumn("Buckets", "Balance", getBucketBalance)
 
 		# TODO: SHould these vir columns be kept around?
 		def getBucketTransactions(source, tableName, columnName):
@@ -142,20 +146,22 @@ class SpentUtil:
 		self._spentDB_.registerVirtualColumn("Buckets", "Children", getBucketChildren)
 		self._spentDB_.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
 
-	def getPostedBalance(self, bucket: 'Bucket') -> float:
-		return self._calculateBalance_(bucket, True)
+	def getPostedBalance(self, bucket: 'Bucket', includeChildren: bool = False) -> float:
+		return self._calculateBalance_(bucket, True, includeChildren)
 
-	def getAvailableBalance(self, bucket: 'Bucket') -> float:
-		return self._calculateBalance_(bucket)
+	def getAvailableBalance(self, bucket: 'Bucket', includeChildren: bool = False) -> float:
+		return self._calculateBalance_(bucket, False, includeChildren)
 
-	def _calculateBalance_(self, bucket: 'Bucket', posted: bool = False) -> float:
-		ids = self.getAllBucketChildrenID(bucket)
+	def _calculateBalance_(self, bucket: 'Bucket', posted: bool = False, includeChildren: bool = False) -> float:
+		ids = []
+		if includeChildren:
+			ids = self.getAllBucketChildrenID(bucket)
 		ids.append(bucket.getID())  # We can't forget ourself
 		idStr = ", ".join(map(str, ids))
 
 		statusStr = ""
 		if posted:
-			statusStr = "AND Status IN (3, 4, 5)"
+			statusStr = "AND Status > 2"
 
 		query = "SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) %s AND Status != 0 UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) %s AND Status != 0)" % (
 		idStr, statusStr, idStr, statusStr)

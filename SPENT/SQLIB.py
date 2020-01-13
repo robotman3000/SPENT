@@ -1,8 +1,6 @@
 import sqlite3 as sql
 import traceback, sys
 
-from sphinx.addnodes import desc
-
 def printException(exception):
     desired_trace = traceback.format_exc()
     print(desired_trace)
@@ -23,13 +21,21 @@ class TableRow():
     def getRowID(self):
         return self.rowID
 
-    def getColumnByIndex(self) -> 'Column':
+    def getColumnByIndex(self, index) -> 'Column':
         pass
 
-    def getColumnByName(self):
+    def getColumnByName(self, name):
         pass
 
     def getColumnCount(self) -> int:
+        pass
+
+    # Short for row.getColumnByName(...).setValue(...)
+    def setValue(self, columnKey: 'Column', value):
+        pass
+
+    # Short for row.getColumnByName(...).getValue()
+    def getValue(self, columnKey):
         pass
 
 class Column:
@@ -42,9 +48,6 @@ class Column:
 
     def getName(self):
         return self.name
-
-    def getValue(self, row):
-        pass
 
 class TableColumn(Column):
     def __init__(self, table, index, properties):
@@ -65,6 +68,7 @@ class Table:
         self.name = name
         self.constraints = []
         self.columns = self._parseSchema_(tableSchema)
+        #TODO: Handle virtual columns
 
     def _parseSchema_(self, tableSchema):
         columns = []
@@ -114,9 +118,6 @@ class Table:
         #TODO: We do nothing with the returned cursor; it might need to be used for error checking
         connection.execute(sqlStr)
 
-    def getRowByID(self):
-        pass
-
     def getColumns(self):
         pass
 
@@ -129,12 +130,16 @@ class Database:
         self.path = dbPath
         self.connections = {}
         self.schema = schema
+        self.cache = DatabaseCacheManager(self.schema)
 
         # Runtime State
         self._schemaIsWritten_ = False
 
+    def _getCache_(self):
+        pass
+
     def getConnection(self, connectionName=""):
-        # TODO: Check for duplicate connections
+        # TODO: Check for duplicate connections and delete dead ones
         conn = DatabaseConnection(self, connectionName)
         self.connections[connectionName] = conn
         return conn
@@ -147,11 +152,32 @@ class Database:
 
 class DatabaseSchema:
     def __init__(self, version,  tableDefs):
-        self.tables = tableDefs
+        self.tables = self._parseTables_(tableDefs)
         self.version = version
 
+        #TODO: This variable must be removed; it breaks the ability to reuse a schema object with multiple database instances
+        self._database_ = None
+
+    def _parseTables_(self, tableDefs):
+        tables = {}
+        for t in tableDefs:
+            name = t.get("table", None)
+            columns = t.get("columns", None)
+            virtualColumns = t.get("virtualColumns", None)
+            #TODO: constraints = t.get("constraints", None)
+
+            if name is not None and (columns is not None or virtualColumns is not None):
+                tables[name] = Table(name, columns, virtualColumns)
+        return tables
+
     def getTables(self):
-        return self.tables
+        return self.tables.values()
+
+    def getTable(self, tableName):
+        table = self.tables.get(tableName, None)
+        if table is None:
+            print("No such table %s" % tableName)
+        return table
 
     def getSchemaVersion(self):
         return self.version
@@ -162,8 +188,8 @@ class DatabaseConnection:
         self.database = database
         self.name = connectionName
 
-    def _dbIsConnected_(self, connectionState, errorMessage):
-        if((self.connection is None) == connectionState):
+    def _assertDBConected_(self, connectionState, errorMessage):
+        if((self.connection is None) == (not connectionState)):
             return True
         else:
             print("Error: %s" % errorMessage)
@@ -188,7 +214,7 @@ class DatabaseConnection:
         return self.name
 
     def connect(self):
-        if (self._dbIsConnected_(True, "Database is already connected")):
+        if (self._assertDBConected_(False, "Database is already connected")):
             print("Debug: DatabaseConnection[\"%s\"]: Opening connection to DB; Path: \"%s\"" % (self.getName(), self.database.getDBPath()))
             self.connection = sql.connect(self.database.getDBPath())
             if(self._writeSchema_()):
@@ -197,20 +223,22 @@ class DatabaseConnection:
                 print("Error: Database File schema is incompatible with provided schema")
                 # Now we disconnect to prevent the possibility of db corruption
                 self.disconnect(False) # Do not commit; We want to leave the db untouched
+        else:
+            return
 
     def disconnect(self, commit=True):
-        if (self._dbIsConnected_(False, "Database is not connected")):
+        if (self._assertDBConected_(True, "Database is not connected")):
             if(commit):
                 self.connection.commit()
             self.connection.close()
             self.connection = None
 
     def commit(self):
-        if (self._dbIsConnected_(False, "Database is not connected")):
+        if (self._assertDBConected_(True, "Database is not connected")):
             self.commit()
 
     def execute(self, query):
-        if (self._dbIsConnected_(False, "Database is not connected")):
+        if (self._assertDBConected_(True, "Database is not connected")):
             try:
                 print("Debug: DatabaseConnection[\"%s\"] Performing Query: %s" % (self.getName(), query))
                 cur = self.connection.execute(query)
@@ -224,8 +252,44 @@ class DatabaseConnection:
         print("Failed to execute query: %s" % query)
         return None
 
-class RowDataCache:
-    pass
+    def getRow(self, tableKey, rowID):
+        #self.database._getCache_().get()
+        pass
 
-class TableRowDataCache(RowDataCache):
-    pass
+    def getRows(self, tableKey, rowIDs):
+        pass
+
+    def createRow(self, tableKey, rowData):
+        pass
+
+    def deleteRow(self, tableKey, rowID):
+        pass
+
+    def deleteRows(self, tableKey, rowIDs):
+        pass
+
+    def select(self, tableKey, filter):
+        pass
+
+class RowSelection:
+    def getValues(self):
+        pass
+
+    def setValues(self, columnKey, newValue):
+        pass
+
+    #TODO: This must return a copy of the list of rows
+    def getRows(self):
+        pass
+
+    def deleteRows(self):
+        pass
+
+    # This re-runs the query used to get the selection
+    # and updates the selections list of rows
+    def refresh(self):
+        pass
+
+class DatabaseCacheManager:
+    def __init__(self, schema):
+        self.schema = schema

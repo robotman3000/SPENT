@@ -27,16 +27,20 @@ class test():
 
 class TypeVerifier:
     def verify(self, data):
-        pass
+        #TODO: Implement the verify functions for each type
+        # (And change this to return False)
+        return True
 
     def sanitize(self, data):
-        pass
+        # (And change this to "pass")
+        return data
 
 class StringTypeVerifier(TypeVerifier):
     pass
 
 class IntegerTypeVerifier(TypeVerifier):
-    pass
+    def verify(self, value):
+        return type(value) is int
 
 class DecimalTypeVerifier(TypeVerifier):
     pass
@@ -67,14 +71,24 @@ class Column:
     def __init__(self, type, preventNull, isPrimaryKey, autoIncrement, keepUnique):
         self.type = type
         self.preventNull = preventNull
-        self.isPrimaryKey = isPrimaryKey
+        self.primaryKey = isPrimaryKey
         self.autoIncrement = autoIncrement
         self.keepUnique = keepUnique
 
     def getType(self):
         return self.type
 
-    #TODO: get...() all the other properties
+    def willPreventNull(self):
+        return self.preventNull
+
+    def isPrimaryKey(self):
+        return self.primaryKey
+
+    def willAutoIncrement(self):
+        return self.autoIncrement
+
+    def willEnforceUnique(self):
+        return self.keepUnique
 
 class TableColumn(Column):
     def __init__(self, type, preventNull, isPrimaryKey, autoIncrement, keepUnique, properties={}):
@@ -161,28 +175,49 @@ class EnumTable(Enum):
     def select(table, connection, filter):
         return connection.getDatabase()._getCache_().select(table, connection, filter)
 
+# RowSelection's selections are immutable
 class RowSelection:
-    def __init__(self, filter):
-        self.filter = filter
-        self.rows = []
-        self.refresh()
+    def __init__(self, connection, table, rows, filter = None):
+        self._connection_ = connection
+        self._table_ = table
 
-    def getValues(self):
-        pass
+        # Rows is a dict; {Key: rowID, Value: TableRow}
+        self.rows = rows
+        self.filter = filter
+
+    def getFilter(self):
+        # We can't allow the authoritative record to be modified
+        return self.filter.copy()
+
+    def getRowIDs(self):
+        # *.keys() takes the liberty of copying the data for us
+        return self.rows.keys()
+
+    def getValues(self, columnKey):
+        # TODO: Add a means of getting all the columns without specifying each one
+        # TODO: raise an exception if self.rows is None
+        values = {}
+        for row in self.rows.items():
+            print(row)
+            values[row[0]] = {columnKey: row[1].getValue(columnKey)}
+        return values
 
     def setValues(self, columnKey, newValue):
-        pass
+        # TODO: raise an exception if self.rows is None
+        for row in self.rows.values():
+            row.setValue(columnKey, newValue)
 
     def getRows(self):
+        #TODO: raise an exception if self.rows is None
         return self.rows.copy()
 
     def deleteRows(self):
-        pass
-
-    # This re-runs the query used to get the selection
-    # and updates the selections list of rows
-    def refresh(self):
-        pass
+        # TODO: While this function is running it must have exclusive access to self.rows and self.rowIDs
+        for rowID in self.rows.keys():
+            self._connection_.getDatabase()._getCache_().deleteRow(self._table_, self._connection_, rowID)
+        oldRows = self.rows
+        self.rows = None
+        return oldRows
 
 class Database:
     def __init__(self, dbPath=":memory:"):
@@ -354,11 +389,44 @@ class DatabaseCacheManager:
 
             # TODO: Write logic to handle when (by some crazy sequence of events) more than one row is returned
             row = parsedRows[0]
+        else:
+            if row.isDeleted():
+                return None
         return row
 
     def getRows(self, table, connection, rowIDs):
         print("%s@%s: Getting rows: %s" % (connection.getName(), table.getTableName(table), rowIDs))
-        pass
+
+        cacheRows = {}
+        missingRows = []
+        for id in rowIDs:
+            # The value will be None if there is no cache entry for the row
+            cacheRows[id] = self._getCachedRow_(id, table)
+            print("CRow: %s" % cacheRows[id])
+            if cacheRows[id] is None:
+                missingRows.append(id)
+            else:
+                if cacheRows[id].isDeleted():
+                    # We'll just pretend the row doesn't exist
+                    del cacheRows[id] # Oops, clumsy fingers hit the delete button... Oh well..
+
+        if len(missingRows) > 0:
+            query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS(COLUMN_ANY).FROM(table).WHERE_ID_IN(missingRows)
+            result = connection.execute(str(query))
+            if len(result) < 1:
+                # TODO: raise an excpetion or something
+                print("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), missingRows))
+
+            parsedRows = self._parseRows_(result, table)
+            rows = {}
+            for row in parsedRows:
+                rows[row.getRowID()] = row
+
+            for id in missingRows:
+                cacheRows[id] = rows.get(id, None)
+                if cacheRows[id] is None:
+                    print("Error: None row found!! ID: %s, Table: %s" % (id, table.getTableName(table)))
+        return RowSelection(connection, table, cacheRows)
 
     def createRow(self, table, connection, rowData):
         print("%s@%s: Creating row: %s" % (connection.getName(), table.getTableName(table), rowData))
@@ -366,18 +434,28 @@ class DatabaseCacheManager:
 
     def deleteRow(self, table, connection, rowID):
         print("%s@%s: Deleting row: %s" % (connection.getName(), table.getTableName(table), rowID))
-        pass
+
+        # Delete from the cache
+        row = self._getCachedRow_(rowID, table)
+        if row is not None:
+            row._setDeleted_(True)
 
     def select(self, table, connection, filter):
-        print("%s@%s: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
+        print("%s@%s:MOCK: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
+        pass
+        #return RowSelection(connection, table, filter)
+
+    def flush(self):
+        # TODO: Write all the pending changes to the database
         pass
 
 class RowDataCache:
     def __init__(self, rowData, rowID):
-        self.data = rowData
+        self._data_ = rowData
         self.id = rowID
 
         self.dirty = False
+        self.deleted = False
 
     def isDirty(self):
         return self.dirty
@@ -385,10 +463,19 @@ class RowDataCache:
     def _clearDirty_(self):
         self.dirty = False
 
+    def isDeleted(self):
+        return self.deleted
+
+    def _setDeleted_(self, isDeleted):
+        self.deleted = isDeleted
+
+    def getID(self):
+        return self.id
+
     def getValue(self, columnKey):
         #print("============")
         #print(self.data)
-        value = self.data.get(columnKey, null)
+        value = self._data_.get(columnKey, null)
         #print(type(value))
         if type(value) is not _NullValue_:
             return value
@@ -400,14 +487,14 @@ class RowDataCache:
         if(type(oldValue) is not _NullValue_):
             if columnKey.value.getType().value.verify(value):
                 self.dirty = True
-                self.data[columnKey] = columnKey.value.getType().value.sanitize(value)
+                self._data_[columnKey] = columnKey.value.getType().value.sanitize(value)
                 return oldValue
             else:
                 print("Error: Invalid value %s for column %s" % (value, columnKey))
         else:
             # getValue already prints this error message
             pass
-        #TODO: raise an exception of we get here
+        #TODO: raise an exception if we get here
 
 class _NullValue_:
     pass
@@ -442,7 +529,7 @@ class SQLQueryBuilder:
         whereStr = None
 
         if self.columns is not None and len(self.columns) > 0:
-            columnStr = "".join([col.name for col in self.columns])
+            columnStr = ", ".join([col.name for col in self.columns])
         else:
             columnStr = "*"
 
@@ -453,7 +540,7 @@ class SQLQueryBuilder:
             fromStr = "FROM %s" % self.table.getTableName(self.table)
 
         if self.idList is not None and idColumn is not None:
-            whereStr = "WHERE %s in (%s)" % (idColumn.name, "".join(map(str, self.idList)))
+            whereStr = "WHERE %s in (%s)" % (idColumn.name, ", ".join(map(str, self.idList)))
 
         queryStr = "%s %s %s %s" % (action, columnStr, fromStr, whereStr)
         return queryStr

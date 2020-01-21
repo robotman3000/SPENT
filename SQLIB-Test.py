@@ -109,20 +109,20 @@ class SPENTDB:
         row = EnumTransactionTable.getRow(connection3, someID)
         print("Returned Row: %s" % row)
         #amount = row[TransactionsTable.Amount] #TODO: Implement this shorthand
-        amount = row.getValue(EnumTransactionTable.Amount)
-        print("Row Amount: %s" % amount)
-
-
+        print("Row Amount: %s" % row.getValue(EnumTransactionTable.Amount))
 
         newAmount = 100000000
         #row[TransactionsTable.Amount] = newAmount #TODO: Implement this shorthand
         row.setValue(EnumTransactionTable.Amount, newAmount)
+        print("Row Amount: %s" % row.getValue(EnumTransactionTable.Amount))
+
         EnumTransactionTable.deleteRow(connection3, someID)
 
         newRow = {EnumTransactionTable.Amount: 300.45, EnumTransactionTable.Memo: "A test transaction"}
         returnValue = EnumTransactionTable.createRow(connection3, newRow)
         # returnValue will either be the ID of the new row or the new row itself
 
+        print("----------------------------------")
 
         # Get Selection
         rowSelection = EnumTransactionTable.select(connection3, filter)
@@ -140,5 +140,5 @@ class SPENTDB:
         rows.deleteRows()
 
 spentdb = SPENTDB()
-spentdb.testExecute()
+#spentdb.testExecute()
 spentdb.testAPI()

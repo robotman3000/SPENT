@@ -1,4 +1,8 @@
 from SPENT import SQLIB as sqlib
+from SPENT import LOGGER as log
+
+log.initLogger()
+logman = log.getLogger("Main")
 
 class EnumTagsTable(sqlib.EnumTable):
     ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
@@ -72,7 +76,7 @@ class SPENTDB:
         self.database = sqlib.Database("SPENT-SQLIB.db")
 
     def testExecute(self):
-        print("Execute Test;")
+        logman.info("Execute Test")
         # Represents access to the database; All db io uses this
         connection1 = self.database.getConnection("Master")
         connection2 = self.database.getConnection("Secondary")
@@ -86,7 +90,7 @@ class SPENTDB:
         result = connection2.execute("SELECT * FROM TransactionTags")  # This is dangerous
         result = connection2.execute("SELECT * FROM TransactionGroups")  # This is dangerous
 
-        print(result)
+        logman.info("Query Result: %s" % result)
 
         connection1.disconnect()
         connection2.disconnect()
@@ -95,7 +99,7 @@ class SPENTDB:
         result = connection1.execute("SELECT * FROM Buckets")  # This is dangerous
 
     def testAPI(self):
-        print("API Test;")
+        logman.info("Execute API Test")
         connection3 = self.database.getConnection("API-Test")
 
         connection3.connect()
@@ -107,22 +111,20 @@ class SPENTDB:
 
         # Get By ID
         row = EnumTransactionTable.getRow(connection3, someID)
-        print("Returned Row: %s" % row)
+        logman.info("getRow() returned Row: %s" % row)
         #amount = row[TransactionsTable.Amount] #TODO: Implement this shorthand
-        print("Row Amount: %s" % row.getValue(EnumTransactionTable.Amount))
+        logman.info("Row Amount: %s" % row.getValue(EnumTransactionTable.Amount))
 
         newAmount = 100000000
         #row[TransactionsTable.Amount] = newAmount #TODO: Implement this shorthand
         row.setValue(EnumTransactionTable.Amount, newAmount)
-        print("Row Amount: %s" % row.getValue(EnumTransactionTable.Amount))
+        logman.info("New Row Amount: %s" % row.getValue(EnumTransactionTable.Amount))
 
         EnumTransactionTable.deleteRow(connection3, someID)
 
         newRow = {EnumTransactionTable.Amount: 300.45, EnumTransactionTable.Memo: "A test transaction"}
         returnValue = EnumTransactionTable.createRow(connection3, newRow)
         # returnValue will either be the ID of the new row or the new row itself
-
-        print("----------------------------------")
 
         # Get Selection
         rowSelection = EnumTransactionTable.select(connection3, filter)
@@ -139,6 +141,7 @@ class SPENTDB:
 
         rows.deleteRows()
 
+logman.debug("Test Message")
 spentdb = SPENTDB()
-#spentdb.testExecute()
+spentdb.testExecute()
 spentdb.testAPI()

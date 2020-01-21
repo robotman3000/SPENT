@@ -1,17 +1,23 @@
 import sqlite3 as sql
 import traceback, sys
 from enum import Enum
+from SPENT import LOGGER as log
+
+log.initLogger()
+logman = log.getLogger("Main")
+sqldeb = log.getLogger("SQLIB Debug")
+sqlog = log.getLogger("SQL Debug")
+cadeb = log.getLogger("DB Cache Debug")
 
 COLUMN_ANY = None
 
 def printException(exception):
     desired_trace = traceback.format_exc()
-    print(desired_trace)
+    logman.exception(desired_trace)
 
 #TODO: This should probably populate the dict using the table enum constants rather than strings
 def sqlRowToDict(row, table):
     columnNames = [col for col in table]
-    #print(columnNames)
     dict = {}
     for column in columnNames:
         dict[column] = row[column.name]
@@ -110,7 +116,7 @@ class VirtualColumn(Column):
 
 class EnumTable(Enum):
     def __init__(self, column):
-        print("Initializing Column %s.%s; Type: %s" % (self.getTableName(), self.name, type(self.value)))
+        sqldeb.info("Initializing Column %s.%s; Type: %s" % (self.getTableName(), self.name, type(self.value)))
         self.constraints = []
         #TODO: Handle virtual columns
 
@@ -198,7 +204,6 @@ class RowSelection:
         # TODO: raise an exception if self.rows is None
         values = {}
         for row in self.rows.items():
-            print(row)
             values[row[0]] = {columnKey: row[1].getValue(columnKey)}
         return values
 
@@ -250,7 +255,7 @@ class Database:
 
         #We delete this way because dicts can't change size during iteration
         for name in deadConnections:
-            print("Cleaning old connection: %s" % name)
+            sqldeb.debug("Cleaning old connection: %s" % name)
             del self.connections[name]
 
         return conn
@@ -268,17 +273,17 @@ class DatabaseConnection:
 
     def _assertDBConected_(self, connectionState, errorMessage):
         if self._closed_:
-            print("Error: DatabaseConnection[\"%s\"]: Can't reopen a closed connection!!" % self.getName())
+            logman.error("DatabaseConnection[\"%s\"]: Can't reopen a closed connection!!" % self.getName())
             return not connectionState
 
         if((self.connection is None) == (not connectionState)):
             return True
         else:
-            print("Error: %s" % errorMessage)
+            logman.error(errorMessage)
             return False
 
     def _writeSchema_(self):
-        print("STUB: Writing schema to DB...")
+        sqldeb.debug("STUB: Writing schema to DB...")
         #TODO: Stub
         return True
 
@@ -290,12 +295,12 @@ class DatabaseConnection:
 
     def connect(self):
         if (self._assertDBConected_(False, errorMessage="Database is already connected")):
-            print("Debug: DatabaseConnection[\"%s\"]: Opening connection to DB; Path: \"%s\"" % (self.getName(), self.database.getDBPath()))
+            logman.debug("DatabaseConnection[\"%s\"]: Opening connection to DB; Path: \"%s\"" % (self.getName(), self.database.getDBPath()))
             self.connection = sql.connect(self.database.getDBPath())
             if(self._writeSchema_()):
                 self.connection.row_factory = sql.Row # test
             else:
-                print("Error: Database File schema is incompatible with provided schema")
+                logman.error("Database File schema is incompatible with provided schema")
                 # Now we disconnect to prevent the possibility of db corruption
                 self.disconnect(False) # Do not commit; We want to leave the db untouched
 
@@ -315,16 +320,14 @@ class DatabaseConnection:
     def execute(self, query):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
             try:
-                print("Debug: DatabaseConnection[\"%s\"] Performing Query: %s" % (self.getName(), query))
+                sqlog.debug("DatabaseConnection[\"%s\"] Performing Query: %s" % (self.getName(), query))
                 cur = self.connection.execute(query)
-                #if(cur.description is not None):
-                #    print([description[0] for description in cur.description])
                 return cur.fetchall()
             except Exception as e:
                 printException(e)
                 raise # We rethrow the exception so that the logic that triggered the error can handle the error
 
-        print("Failed to execute query: %s" % query)
+        sqlog.warning("Failed to execute query: %s" % query)
         return None
 
 class DatabaseCacheManager:
@@ -342,7 +345,6 @@ class DatabaseCacheManager:
         # This function is responsible for converting sqlite3 Row objects into SQLIB TableRow objects
         newRows = []
         for row in rows:
-            print("Parsing row")
             idColumn = table.getIDColumn(table)
             id = row[idColumn.name]
 
@@ -360,7 +362,7 @@ class DatabaseCacheManager:
         return tableCache
 
     def _getCachedRow_(self, rowID, table, queryRow=None):
-        print("Getting cached row %s" % rowID)
+        cadeb.debug("Getting cached row %s" % rowID)
         # Returns the existing cached row and creates if non-existent
         tableCache = self._getCachedTable_(table)
         rowCache = tableCache.get(rowID, None)
@@ -372,7 +374,7 @@ class DatabaseCacheManager:
         return rowCache
 
     def getRow(self, table, connection, rowID):
-        print("%s@%s: Getting row: %s" % (connection.getName(), table.getTableName(table), rowID))
+        cadeb.debug("%s@%s: Getting row: %s" % (connection.getName(), table.getTableName(table), rowID))
 
         # First get the row from the cache if it exists
         row = self._getCachedRow_(rowID, table)
@@ -382,7 +384,7 @@ class DatabaseCacheManager:
             result = connection.execute(str(query))
             if len(result) < 1:
                 # TODO: raise an excpetion or something
-                print("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), rowID))
+                cadeb.debug("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), rowID))
                 return None
 
             parsedRows = self._parseRows_(result, table)
@@ -395,14 +397,13 @@ class DatabaseCacheManager:
         return row
 
     def getRows(self, table, connection, rowIDs):
-        print("%s@%s: Getting rows: %s" % (connection.getName(), table.getTableName(table), rowIDs))
+        cadeb.debug("%s@%s: Getting rows: %s" % (connection.getName(), table.getTableName(table), rowIDs))
 
         cacheRows = {}
         missingRows = []
         for id in rowIDs:
             # The value will be None if there is no cache entry for the row
             cacheRows[id] = self._getCachedRow_(id, table)
-            print("CRow: %s" % cacheRows[id])
             if cacheRows[id] is None:
                 missingRows.append(id)
             else:
@@ -415,7 +416,7 @@ class DatabaseCacheManager:
             result = connection.execute(str(query))
             if len(result) < 1:
                 # TODO: raise an excpetion or something
-                print("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), missingRows))
+                cadeb.error("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), missingRows))
 
             parsedRows = self._parseRows_(result, table)
             rows = {}
@@ -425,15 +426,15 @@ class DatabaseCacheManager:
             for id in missingRows:
                 cacheRows[id] = rows.get(id, None)
                 if cacheRows[id] is None:
-                    print("Error: None row found!! ID: %s, Table: %s" % (id, table.getTableName(table)))
+                    cadeb.error("None row found!! ID: %s, Table: %s" % (id, table.getTableName(table)))
         return RowSelection(connection, table, cacheRows)
 
     def createRow(self, table, connection, rowData):
-        print("%s@%s: Creating row: %s" % (connection.getName(), table.getTableName(table), rowData))
+        cadeb.debug("%s@%s: Creating row: %s" % (connection.getName(), table.getTableName(table), rowData))
         pass
 
     def deleteRow(self, table, connection, rowID):
-        print("%s@%s: Deleting row: %s" % (connection.getName(), table.getTableName(table), rowID))
+        cadeb.debug("%s@%s: Deleting row: %s" % (connection.getName(), table.getTableName(table), rowID))
 
         # Delete from the cache
         row = self._getCachedRow_(rowID, table)
@@ -441,7 +442,7 @@ class DatabaseCacheManager:
             row._setDeleted_(True)
 
     def select(self, table, connection, filter):
-        print("%s@%s:MOCK: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
+        cadeb.debug("%s@%s:MOCK: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
         pass
         #return RowSelection(connection, table, filter)
 
@@ -473,13 +474,10 @@ class RowDataCache:
         return self.id
 
     def getValue(self, columnKey):
-        #print("============")
-        #print(self.data)
         value = self._data_.get(columnKey, null)
-        #print(type(value))
         if type(value) is not _NullValue_:
             return value
-        print("Error: invalid key %s" % columnKey)
+        cadeb.error("invalid key %s" % columnKey)
         return null
 
     def setValue(self, columnKey, value):
@@ -490,7 +488,7 @@ class RowDataCache:
                 self._data_[columnKey] = columnKey.value.getType().value.sanitize(value)
                 return oldValue
             else:
-                print("Error: Invalid value %s for column %s" % (value, columnKey))
+                cadeb.error("Invalid value %s for column %s" % (value, columnKey))
         else:
             # getValue already prints this error message
             pass
@@ -535,7 +533,6 @@ class SQLQueryBuilder:
 
         idColumn = None
         if self.table is not None:
-            #print(type(self.table))
             idColumn = self.table.getIDColumn(self.table)
             fromStr = "FROM %s" % self.table.getTableName(self.table)
 

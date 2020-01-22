@@ -1,5 +1,5 @@
 from datetime import date
-from SPENT.sqlite3_DOM import *
+from SPENT.SQLIB import *
 from typing import Set, cast, List, Any, Optional, Dict
 
 #Verb layer features
@@ -32,37 +32,6 @@ def asStr(obj: Any) -> str:
 	if type(obj) is str:
 		return obj
 	return str(obj)
-
-class Tag(SQL_RowMutable):
-	def __init__(self, database: 'SpentDBManager', ID: int):
-		super().__init__(database, "Tags", ID)
-
-	def getID(self) -> int:
-		return asInt(self.getValue("ID"))
-
-	def getName(self) -> str:
-		return asStr(self.getValue("Name"))
-
-	def setName(self, name: str) -> None:
-		self.updateValue("Name", name)
-
-	def getTransactions(self) -> List['Transaction']:
-		transIDs = self.database.selectTableRowsColumnsWhere("TransactionTags", ["TransactionID"], SQL_WhereStatementBuilder("TagID == %d" % self.getID()))
-		if len(transIDs) > 0:
-			transList = self.database.getTransactionsWhere(SQL_WhereStatementBuilder("ID in (%s)" % ", ".join([asStr(row.getValue("TransactionID")) for row in transIDs])))
-			return transList
-		return []
-
-	def applyToTransactions(self, transactions: List['Transaction']) -> None:
-		myID = self.getID() # No need to query the table N > 1 times for the same thing, once will do
-		for t in transactions:
-			self.database._tableInsertInto_("TransactionTags", {"TransactionID": t.getID(), "TagID": myID})
-
-	def removeFromTransactions(self, transactions: List['Transaction']) -> None:
-		idList = [asStr(t.getID()) for t in transactions if t is not None]
-		if len(idList) > 0:
-			where = SQL_WhereStatementBuilder("TagID == %s" % self.getID()).AND("TransactionID in (%s)" % ", ".join(idList))
-			self.database.deleteTableRowsWhere("TransactionTags", where)
 
 class TagManager:
 	def __init__(self, database: 'SpentDBManager'):
@@ -499,81 +468,3 @@ class SpentDBManager(DatabaseWrapper):
 			self.deleteTransactionsWhere(SQL_WhereStatementBuilder("SourceBucket == DestBucket"))
 
 			return bucketList
-
-class Bucket(SQL_RowMutable):
-	def __init__(self, database: DatabaseWrapper, ID: int):
-		super().__init__(database, "Buckets", ID)
-	
-	def getID(self) -> int:
-		return asInt(self.getValue("ID"))
-	
-	def getName(self) -> str:
-		return str(self.getValue("Name"))
-	
-	def getParent(self) -> Optional['Bucket']:
-		parentID = asInt(self.getValue("Parent"))
-		return cast(SpentDBManager, self.database).getBucket(parentID)
-
-	def getAncestor(self) -> Optional['Bucket']:
-		ancestorID = asInt(self.getValue("Ancestor"))
-		return cast(SpentDBManager, self.database).getBucket(ancestorID)
-	
-class Account(Bucket):
-	def getParent(self) -> Optional[Bucket]:
-		return None
-	
-	def getParentAccount(self) -> 'Account':
-		return self
-
-	def getAncestor(self) -> Optional[Bucket]:
-		return None
-	
-class Transaction(SQL_RowMutable):
-	def __init__(self, database: DatabaseWrapper, ID: int):
-		super().__init__(database, "Transactions", ID)
-		
-	def getID(self) -> int:
-		return asInt(self.getValue("ID"))
-	
-	def getStatus(self) -> int:
-		return asInt(self.getValue("Status"))
-	
-	def getTransactionDate(self) -> str:
-		return str(self.getValue("TransDate"))
-		
-	def getPostDate(self) -> str:
-		return str(self.getValue("PostDate"))
-		
-	def getAmount(self) -> str:
-		return str(self.getValue("Amount"))
-	
-	def getMemo(self) -> str:
-		return str(self.getValue("Memo"))
-
-	def getPayee(self) -> str:
-		return str(self.getValue("Payee"))
-	
-	def getSourceBucket(self) -> Optional[Bucket]:
-		return cast(SpentDBManager, self.database).getBucket(asInt(self.getValue("SourceBucket")))
-	
-	def getDestBucket(self) -> Optional[Bucket]:
-		return cast(SpentDBManager, self.database).getBucket(asInt(self.getValue("DestBucket")))
-	
-	def isTransfer(self) -> bool:
-		return bool(self.getValue("IsTransfer"))
-	
-	def getType(self) -> int:
-		return asInt(self.getValue("Type"))
-
-class TransactionGroup(SQL_RowMutable):
-	def __init__(self, database: DatabaseWrapper, ID: int):
-		super().__init__(database, "TransactionGroups", ID)
-
-	def getID(self) -> int:
-		return asInt(self.getValue("ID"))
-
-	def getMemo(self) -> str:
-		return str(self.getValue("Memo"))
-
-	def getBucket(self) -> Optional[Bucket]:
-		return cast(SpentDBManager, self.database).getBucket(asInt(self.getValue("Bucket")))

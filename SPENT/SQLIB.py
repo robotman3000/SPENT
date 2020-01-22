@@ -161,6 +161,9 @@ class EnumTable(Enum):
     def getIDColumn(self):
         return None
 
+    def getRowClass(self):
+        return TableRow
+
     @classmethod
     def getRow(table, connection, rowID):
         return connection.getDatabase()._getCache_().getRow(table, connection, rowID)
@@ -349,7 +352,8 @@ class DatabaseCacheManager:
             id = row[idColumn.name]
 
             rowDataCache = self._getCachedRow_(id, table, row)
-            newRows.append(TableRow(rowDataCache))
+            rowClass = table.getRowClass(table)
+            newRows.append(rowClass(rowDataCache))
 
         return newRows
 

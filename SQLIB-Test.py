@@ -1,74 +1,8 @@
 from SPENT import SQLIB as sqlib
 from SPENT import LOGGER as log
+from SPENT import SPENT_Schema as schema
 
-log.initLogger()
 logman = log.getLogger("Main")
-
-class EnumTagsTable(sqlib.EnumTable):
-    ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
-    Name = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=True)
-
-    def getTableName(self):
-        return "Tags"
-
-    def getIDColumn(self):
-        return EnumTagsTable.ID
-
-def getBalance():
-    return 100
-
-class EnumBucketsTable(sqlib.EnumTable):
-    ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
-    Name = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=True)
-    Parent = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"})
-    Ancestor = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"})
-    Balance = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getBalance)
-
-    def getTableName(self):
-        return "Buckets"
-
-    def getIDColumn(self):
-        return EnumBucketsTable.ID
-
-class EnumTransactionTable(sqlib.EnumTable):
-    ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
-    Status = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "StatusMap:ID:Name"})
-    TransDate = sqlib.TableColumn(sqlib.EnumColumnType.DATE, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    PostDate = sqlib.TableColumn(sqlib.EnumColumnType.DATE, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    Amount = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    SourceBucket = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"})
-    DestBucket = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"})
-    Memo = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    Payee = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    GroupID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-
-    def getTableName(self):
-        return "Transactions"
-
-    def getIDColumn(self):
-        return EnumTransactionTable.ID
-
-class EnumTransactionTagsTable(sqlib.EnumTable):
-    TransactionID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    TagID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    #{"isConstraint": True, "constraintValue": "unq UNIQUE (TransactionID, TagID)"}
-
-    def getTableName(self):
-        return "TransactionTags"
-
-    def getIDColumn(self):
-        return EnumTransactionTagsTable.ID
-
-class EnumTransactionGroupsTable(sqlib.EnumTable):
-    ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
-    Memo = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    Bucket = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"})
-
-    def getTableName(self):
-        return "TransactionGroups"
-
-    def getIDColumn(self):
-        return EnumTransactionGroupsTable.ID
 
 class SPENTDB:
     def __init__(self):
@@ -110,34 +44,35 @@ class SPENTDB:
         someIDs = [4, 6, 56, 23, 29]
 
         # Get By ID
-        row = EnumTransactionTable.getRow(connection3, someID)
+        row = schema.EnumTransactionTable.getRow(connection3, someID)
+        logman.info("Row Type: %s" % type(row))
         logman.info("getRow() returned Row: %s" % row)
         #amount = row[TransactionsTable.Amount] #TODO: Implement this shorthand
-        logman.info("Row Amount: %s" % row.getValue(EnumTransactionTable.Amount))
-
+        logman.info("Row Amount: %s" % row.getValue(schema.EnumTransactionTable.Amount))
+        logman.info("Alt Row Amount: %s" % row.getAmount())
         newAmount = 100000000
         #row[TransactionsTable.Amount] = newAmount #TODO: Implement this shorthand
-        row.setValue(EnumTransactionTable.Amount, newAmount)
-        logman.info("New Row Amount: %s" % row.getValue(EnumTransactionTable.Amount))
+        row.setValue(schema.EnumTransactionTable.Amount, newAmount)
+        logman.info("New Row Amount: %s" % row.getValue(schema.EnumTransactionTable.Amount))
 
-        EnumTransactionTable.deleteRow(connection3, someID)
+        schema.EnumTransactionTable.deleteRow(connection3, someID)
 
-        newRow = {EnumTransactionTable.Amount: 300.45, EnumTransactionTable.Memo: "A test transaction"}
-        returnValue = EnumTransactionTable.createRow(connection3, newRow)
+        newRow = {schema.EnumTransactionTable.Amount: 300.45, schema.EnumTransactionTable.Memo: "A test transaction"}
+        returnValue = schema.EnumTransactionTable.createRow(connection3, newRow)
         # returnValue will either be the ID of the new row or the new row itself
 
         # Get Selection
-        rowSelection = EnumTransactionTable.select(connection3, filter)
+        rowSelection = schema.EnumTransactionTable.select(connection3, filter)
 
         #OR
 
         # Get BY ID's; This returns a RowSelection
-        rows = EnumTransactionTable.getRows(connection3, someIDs)
+        rows = schema.EnumTransactionTable.getRows(connection3, someIDs)
 
         #amounts = rows[TransactionsTable.Amount] #TODO: Implement this shorthand
-        amounts = rows.getValues(EnumTransactionTable.Amount)
+        amounts = rows.getValues(schema.EnumTransactionTable.Amount)
         #rows[TransactionsTable.Amount] = newAmount #TODO: Implement this shorthand
-        rows.setValues(EnumTransactionTable.Amount, newAmount)
+        rows.setValues(schema.EnumTransactionTable.Amount, newAmount)
 
         rows.deleteRows()
 

@@ -1,5 +1,6 @@
 from datetime import date
 from SPENT.SQLIB import *
+from SPENT.SPENT_Schema import *
 from typing import Set, cast, List, Any, Optional, Dict
 
 #Verb layer features
@@ -92,10 +93,10 @@ class SpentUtil:
 		def getPostedBucketBalance(source, tableName, columnName):
 			return self.getPostedBalance(source)
 
-		self._spentDB_.registerVirtualColumn("Buckets", "TreeBalance", getAvailBucketTreeBalance)
-		self._spentDB_.registerVirtualColumn("Buckets", "PostedTreeBalance", getPostedBucketTreeBalance)
-		self._spentDB_.registerVirtualColumn("Buckets", "Balance", getAvailBucketBalance)
-		self._spentDB_.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
+		#self._spentDB_.registerVirtualColumn("Buckets", "TreeBalance", getAvailBucketTreeBalance)
+		#self._spentDB_.registerVirtualColumn("Buckets", "PostedTreeBalance", getPostedBucketTreeBalance)
+		#self._spentDB_.registerVirtualColumn("Buckets", "Balance", getAvailBucketBalance)
+		#self._spentDB_.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
 
 		# TODO: SHould these vir columns be kept around?
 		def getBucketTransactions(source, tableName, columnName):
@@ -110,10 +111,10 @@ class SpentUtil:
 		def getAllBucketChildren(source, tableName, columnName):
 			return self.getAllBucketChildrenID(source)
 
-		self._spentDB_.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
-		self._spentDB_.registerVirtualColumn("Buckets", "AllTransactions", getAllBucketTransactions)
-		self._spentDB_.registerVirtualColumn("Buckets", "Children", getBucketChildren)
-		self._spentDB_.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
+		#self._spentDB_.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
+		#self._spentDB_.registerVirtualColumn("Buckets", "AllTransactions", getAllBucketTransactions)
+		#self._spentDB_.registerVirtualColumn("Buckets", "Children", getBucketChildren)
+		#self._spentDB_.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
 
 	def getPostedBalance(self, bucket: 'Bucket', includeChildren: bool = False) -> float:
 		return self._calculateBalance_(bucket, True, includeChildren)
@@ -188,89 +189,57 @@ class SpentUtil:
 	def getAllBucketTransactionsID(self, bucket: 'Bucket') -> List[int]:
 		return [i.getID() for i in self.getAllBucketTransactions(bucket)]
 
-class SpentDBManager(DatabaseWrapper):
-	def __init__(self, dbFile: str = "SPENT.db"):
-		super().__init__(dbFile)
-		self.registerTableSchema("Buckets",
-			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
-			 {"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": True},
-			 {"name": "Parent", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "Ancestor", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
+class SpentDBManager():
+	def __init__(self):
+		pass
+		#def getTagName(source, tableName, columnName):
+		#	return self.selectTableRowsColumns("Tags", [source.getValue("TagID")], ["Name"])[0]
 
-		self.registerTableSchema("Transactions",
-			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
-			 {"name": "Status", "type": "INTEGER", "remapKey": "StatusMap:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "TransDate", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "PostDate", "type": "INTEGER", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "Amount", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "SourceBucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "DestBucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "Memo", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "Payee", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "GroupID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
+		#self.registerVirtualColumn("TransactionTags", "TagName", getTagName)
 
-		self.registerTableSchema("TransactionGroups",
-			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
-			 {"name": "Memo", "type": "TEXT", "PreventNull": False, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "Bucket", "type": "INTEGER", "remapKey": "Buckets:ID:Name", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False}])
-
-		self.registerTableSchema("Tags",
-			[{"name": "ID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": True, "AutoIncrement": True, "KeepUnique": True},
-			 {"name": "Name", "type": "TEXT", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": True}])
-
-		self.registerTableSchema("TransactionTags",
-			[{"name": "TransactionID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"name": "TagID", "type": "INTEGER", "PreventNull": True, "IsPrimaryKey": False, "AutoIncrement": False, "KeepUnique": False},
-			 {"isConstraint": True, "constraintValue": "unq UNIQUE (TransactionID, TagID)"}])
-
-		def getTagName(source, tableName, columnName):
-			return self.selectTableRowsColumns("Tags", [source.getValue("TagID")], ["Name"])[0]
-
-		self.registerVirtualColumn("TransactionTags", "TagName", getTagName)
-
-		self.registerTableSchema("StatusMap", None, ["Void", "Uninitiated", "Submitted", "Post-Pending", "Complete", "Reconciled"])
+		#self.registerTableSchema("StatusMap", None, ["Void", "Uninitiated", "Submitted", "Post-Pending", "Complete", "Reconciled"])
 		
-		def checkIsTransfer(source, tableName, columnName):
-			return (source.getSourceBucket() is not None) and (source.getDestBucket() is not None)
+		#def checkIsTransfer(source, tableName, columnName):
+		#	return (source.getSourceBucket() is not None) and (source.getDestBucket() is not None)
 		
-		def getTransactionType(source, tableName, columnName):
+		#def getTransactionType(source, tableName, columnName):
 			#00 = Transfer;
 			#01 = Deposit;
 			#10 = Withdrawal:
 			#11 = Invalid
 	
-			sourceBucket = (source.getValue("SourceBucket") != -1);
-			dest = (source.getValue("DestBucket") != -1);
-			if sourceBucket and dest:
+		#	sourceBucket = (source.getValue("SourceBucket") != -1);
+		#	dest = (source.getValue("DestBucket") != -1);
+		#	if sourceBucket and dest:
 				#Transfer
-				return 0
-			elif not sourceBucket and dest:
+		#		return 0
+		#	elif not sourceBucket and dest:
 				#Deposit
-				return 1
-			elif sourceBucket and not dest:
+		#		return 1
+		#	elif sourceBucket and not dest:
 				#Withdrawal
-				return 2
+		#		return 2
 			
-			return 3
+		#	return 3
 		
-		self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
-		self.registerVirtualColumn("Transactions", "Type", getTransactionType)
+		#self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
+		#self.registerVirtualColumn("Transactions", "Type", getTransactionType)
 
-		def getGroupAmount(source, tableName, columnName):
-			print("Amount12345")
-			ids = self.util.getAllBucketChildrenID(source.getBucket())
-			ids.append(source.getBucket().getID())  # We can't forget ourself
-			idStr = ", ".join(map(str, ids))
+		#def getGroupAmount(source, tableName, columnName):
+		#	print("Amount12345")
+		#	ids = self.util.getAllBucketChildrenID(source.getBucket())
+		#	ids.append(source.getBucket().getID())  # We can't forget ourself
+		#	idStr = ", ".join(map(str, ids))
+#
+#			query = "SELECT IFNULL(SUM(Amount), 0) FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) AND GroupID == %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) AND GroupID == %s)" % (
+#				idStr, source.getID(), idStr, source.getID())
+#
+#			result = self._rawSQL_(query)
+#			return round(float(result[0][0]), 2)
 
-			query = "SELECT IFNULL(SUM(Amount), 0) FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) AND GroupID == %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) AND GroupID == %s)" % (
-				idStr, source.getID(), idStr, source.getID())
+#		self.registerVirtualColumn("TransactionGroups", "Amount", getGroupAmount)
 
-			result = self._rawSQL_(query)
-			return round(float(result[0][0]), 2)
-
-		self.registerVirtualColumn("TransactionGroups", "Amount", getGroupAmount)
-
-		self.util = SpentUtil(self)
+#		self.util = SpentUtil(self)
 
 	def createBucket(self, name: str, parent: int) -> Optional['Bucket']:
 		#TODO: Verify the data is valid

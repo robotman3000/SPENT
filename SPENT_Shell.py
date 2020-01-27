@@ -1,6 +1,13 @@
-from SPENT.SPENT import *
-import readline
-import traceback
+from typing import Callable, List, Optional
+
+import readline, traceback
+from SPENT import SQLIB as sqlib
+from SPENT import LOGGER as log
+from SPENT.SPENT_Schema import *
+from SPENT.SPENT import asFloat, asInt, asStr, cast
+from SPENT.SPENT import SpentDBManager, SpentUtil, TagManager
+
+logman = log.getLogger("Main")
 
 class REPL():
 	def __init__(self, exitCallback, commands={}):
@@ -99,15 +106,16 @@ class ListCommand(Command):
 		for a in rows:
 			print(a)
 
+
+database = sqlib.Database("SHELL-DB.db")
+connection = database.getConnection("Shell")
+connection.connect()
+
 accountMan = SpentDBManager()
 spentUtil = SpentUtil(accountMan)
 spentUtil.registerUtilityColumns()
 tagMan = TagManager(accountMan)
 accountMan.printDebug = True
-accountMan.connect()
-
-
-
 
 def printTree(bucket: Bucket, depth: int = 0) -> None:
 	print("%s %d - %s ($%s, $%s)" % (" ".join([" | " for i in range(0, depth)]), bucket.getID(), bucket.getName(), spentUtil.getAvailableBalance(bucket), spentUtil.getPostedBalance(bucket)))

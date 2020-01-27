@@ -1,6 +1,8 @@
 import sqlite3 as sql
 import traceback, sys
 from enum import Enum
+from typing import Optional, List
+
 from SPENT import LOGGER as log
 
 log.initLogger()
@@ -9,27 +11,21 @@ sqldeb = log.getLogger("SQLIB Debug")
 sqlog = log.getLogger("SQL Debug")
 cadeb = log.getLogger("DB Cache Debug")
 
+dbIndex = 0
+
 COLUMN_ANY = None
 
 def printException(exception):
     desired_trace = traceback.format_exc()
     logman.exception(desired_trace)
 
-#TODO: This should probably populate the dict using the table enum constants rather than strings
 def sqlRowToDict(row, table):
     columnNames = [col for col in table]
     dict = {}
     for column in columnNames:
-        dict[column] = row[column.name]
+        if type(column.value) is TableColumn:
+            dict[column] = row[column.name]
     return dict
-
-class test():
-    def __init__(self, cursor, data):
-        print(cursor)
-        print([description[0] for description in cursor.description])
-        print(data)
-        print(sql.Row(cursor, data))
-        print("------")
 
 class TypeVerifier:
     def verify(self, data):
@@ -61,13 +57,17 @@ class EnumColumnType(Enum):
     DATE = DateTypeVerifier()
 
 class TableRow():
-    def __init__(self, rowDataCache):
+    def __init__(self, rowDataCache, parentTable):
         self.cache = rowDataCache
+        self.table = parentTable
 
     def getRowID(self):
         return self.cache.getID()
 
     def getValue(self, columnKey):
+        if self.table.hasVirtualColumn(columnKey):
+            #TODO: Cache virtual column values too
+            return columnKey.value.calculateValue(self, self.table)
         return self.cache.getValue(columnKey)
 
     def setValue(self, columnKey, newValue):
@@ -105,55 +105,54 @@ class TableColumn(Column):
         # We copy to prevent the properties from being changed during runtime
         return self.properties.copy()
 
+#TODO: Implement virtual columns
 class VirtualColumn(Column):
     def __init__(self, type, valueFunction):
         super().__init__(type, False, False, False, False)
         self.valueFunction = valueFunction
 
     #TODO: Add support for caching the value of virtual columns
-    def calculateValue(self):
-        pass
+    def calculateValue(column, row, table):
+        return "Hello World!"
+
+class LinkedColumn(Column):
+    pass
 
 class EnumTable(Enum):
     def __init__(self, column):
         sqldeb.info("Initializing Column %s.%s; Type: %s" % (self.getTableName(), self.name, type(self.value)))
-        self.constraints = []
-        #TODO: Handle virtual columns
 
     #TODO: This doesn't get called anywhere, but it should be used
     def P_writeTable_(self, connection):
         columns = []
         tableConstr = []
-        for column in self.columns:
+        for obj in self.__members__.items():
+            columnName = obj[0]
+            column = obj[1]
+
             options = []
-
-            # TODO: There needs to be a better way of handling DB constraints
-            if column.properties.get("isConstraint", False):
-                tableConstr.append(column.get("constraintValue", None))
-                continue
-
-            if column.properties.get("PreventNull", False):
+            if column.value.willPreventNull():
                 options.append("NOT NULL")
 
-            if column.properties.get("IsPrimaryKey", False):
+            if column.value.isPrimaryKey():
                 options.append("PRIMARY KEY")
 
-            if column.properties.get("AutoIncrement", False):
+            if column.value.willAutoIncrement():
                 options.append("AUTOINCREMENT")
 
-            if column.properties.get("KeepUnique", False):
+            if column.value.willEnforceUnique():
                 options.append("UNIQUE")
 
-            # TODO: We should never access the column properties directly
-            columns.append("\"%s\" %s %s" % (column.getName(), column.properties["type"], " ".join(options)))
+            columns.append("\"%s\" %s %s" % (columnName, column.value.getType().name, " ".join(options)))
 
-        for constr in tableConstr:
+        for constr in self.getConstraints(self):
             columns.append("CONSTRAINT %s" % constr)
 
-        sqlStr = "CREATE TABLE IF NOT EXISTS \"%s\" (%s)" % (self.getName(), ", ".join(columns))
+        sqlStr = "CREATE TABLE IF NOT EXISTS \"%s\" (%s)" % (self.getTableName(self), ", ".join(columns))
 
         #TODO: We do nothing with the returned cursor; it might need to be used for error checking
         connection.execute(sqlStr)
+        #connection.commit()
 
     def getTableName(self):
         return "UNNAMED_TABLE_ERROR"
@@ -163,6 +162,26 @@ class EnumTable(Enum):
 
     def getRowClass(self):
         return TableRow
+
+    def getConstraints(self):
+        #List[str]
+        return []
+
+    @classmethod
+    def P_isVirtualColumn_(table, columnKey):
+        return type(columnKey.value) is VirtualColumn
+
+    @classmethod
+    def hasVirtualColumn(table, columnKey):
+        if EnumTable.P_isVirtualColumn_(columnKey):
+            if(table[columnKey.name] is not None):
+                print("vir col found")
+                return True
+            else:
+                print("Invalied col")
+        else:
+            sqldeb.warning("Attempted to get value of a non virtual column! Column: %s" % columnKey.name)
+        return False
 
     @classmethod
     def getRow(table, connection, rowID):
@@ -234,6 +253,13 @@ class Database:
         self.connections = {}
         self.cache = DatabaseCacheManager()
 
+        global dbIndex
+        self._index_ = dbIndex
+        dbIndex += 1
+
+        self.connection = self.getConnection("DB Internal")
+        self.connection.connect()
+
     def _getCache_(self):
         return self.cache
 
@@ -266,6 +292,13 @@ class Database:
     def getDBPath(self):
         return self.path
 
+    def initTable(self, table):
+        return self._getCache_()._writeTable_(table, self.connection)
+
+    def flush(self, connection):
+        sqldeb.info("Writing cache to DB")
+        self._getCache_()._writeCache_(connection)
+
 class DatabaseConnection:
     def __init__(self, database, connectionName):
         self.connection = None
@@ -287,7 +320,7 @@ class DatabaseConnection:
 
     def _writeSchema_(self):
         sqldeb.debug("STUB: Writing schema to DB...")
-        #TODO: Stub
+        #TODO: This is where the database version will be compared to the schema version to determine they are compatable
         return True
 
     def getDatabase(self):
@@ -298,8 +331,8 @@ class DatabaseConnection:
 
     def connect(self):
         if (self._assertDBConected_(False, errorMessage="Database is already connected")):
-            logman.debug("DatabaseConnection[\"%s\"]: Opening connection to DB; Path: \"%s\"" % (self.getName(), self.database.getDBPath()))
-            self.connection = sql.connect(self.database.getDBPath())
+            logman.debug("DatabaseConnection[\"%s\"]: Opening connection to DB %s; Path: \"%s\"" % (self.getName(), self.getDatabase()._index_, self.database.getDBPath()))
+            self.connection = sql.connect(self.database.getDBPath()) #TODO: This is incompatible with multiple connections to ":memory:"
             if(self._writeSchema_()):
                 self.connection.row_factory = sql.Row # test
             else:
@@ -318,7 +351,7 @@ class DatabaseConnection:
     #TODO: Check whether commit() will cause issues with the DatabaseCacheManager
     def commit(self):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
-            self.commit()
+            self.connection.commit()
 
     def execute(self, query):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
@@ -353,16 +386,16 @@ class DatabaseCacheManager:
 
             rowDataCache = self._getCachedRow_(id, table, row)
             rowClass = table.getRowClass(table)
-            newRows.append(rowClass(rowDataCache))
+            newRows.append(rowClass(rowDataCache, table))
 
         return newRows
 
     def _getCachedTable_(self, table):
         # Lazy init the table row dict
-        tableCache = self.data.get(table.getTableName(table), None)
+        tableCache = self.data.get(table, None)
         if tableCache is None:
             tableCache = {}
-            self.data[table.getTableName(table)] = tableCache
+            self.data[table] = tableCache
         return tableCache
 
     def _getCachedRow_(self, rowID, table, queryRow=None):
@@ -376,6 +409,62 @@ class DatabaseCacheManager:
             tableCache[rowID] = rowCache
 
         return rowCache
+
+    def _writeCache_(self, connection):
+        for tableData in self.data.items():
+            table = tableData[0]
+            rowCache = tableData[1]
+
+            if(self._verifyTable_(table, connection)):
+                deletedRows = [] # This is a list of the row id's
+                changedRows = [] # This is a list of the rows marked as dirty
+                # This might need to be changed in the future; but right now new rows are commited at the time of creation
+                # so there is no need to have a list of rows to commit
+                # The issue with changing this is how to get a row id since that is handled automatically by sqlite3 through AUTOINCREMENT
+                for rowData in rowCache.items():
+                    id = rowData[0]
+                    row = rowData[1]
+                    if row.isDeleted():
+                        deletedRows.append(id)
+                    elif row.isDirty():
+                        print("Found dirty row")
+                        changedRows.append(id)
+
+                # Now we construct a single query to do the delete and then the update
+                # TODO: Create a single query that can update many rows with differing values
+
+                delQuery = None
+                if len(deletedRows) > 0:
+                    delQuery = SQLQueryBuilder(EnumSQLQueryAction.DELETE).FROM(table).WHERE_ID_IN(deletedRows)
+
+                updateQueries = []
+                for id in changedRows:
+                    updateQueries.append(SQLQueryBuilder(EnumSQLQueryAction.UPDATE).TABLE(table).SET(row._changed_()).WHERE_ID_IS(id))
+
+                #TODO: Check the return values of these queries to ensure the cache remains consistent with the real DB
+                # First the data updates
+                #print(changedRows)
+                for rowUpdateQuery in updateQueries:
+                    connection.execute(str(rowUpdateQuery))
+
+                # Then we demo everything slated for destruction
+                if delQuery is not None:
+                    connection.execute(str(delQuery))
+            else:
+                logman.error("Failed to write table %s schema to database!" % (table.getTableName(table)))
+
+        if self._clearCacheOnWrite_:
+            # This functions as a full cache reset
+            # TODO: Consider implementing a partial cache clear
+            self.data.clear()
+
+    def _writeTable_(self, table, connection):
+        table.P_writeTable_(table, connection)
+        return self._verifyTable_(table, connection)
+
+    def _verifyTable_(self, table, connection):
+        # TODO: This is where we activly verify the table integrity and existence
+        return True # TODO: Implement this
 
     def getRow(self, table, connection, rowID):
         cadeb.debug("%s@%s: Getting row: %s" % (connection.getName(), table.getTableName(table), rowID))
@@ -450,10 +539,6 @@ class DatabaseCacheManager:
         pass
         #return RowSelection(connection, table, filter)
 
-    def flush(self):
-        # TODO: Write all the pending changes to the database
-        pass
-
 class RowDataCache:
     def __init__(self, rowData, rowID):
         self._data_ = rowData
@@ -474,13 +559,22 @@ class RowDataCache:
     def _setDeleted_(self, isDeleted):
         self.deleted = isDeleted
 
+    def _changed_(self):
+        # TODO: This should return the columns that changed not just everything
+        cols = {}
+        for item in self._data_.items():
+            cols[item[0].name] = item[1]
+        return cols
+
     def getID(self):
         return self.id
 
     def getValue(self, columnKey):
+        #print(self._data_)
         value = self._data_.get(columnKey, null)
         if type(value) is not _NullValue_:
             return value
+
         cadeb.error("invalid key %s" % columnKey)
         return null
 
@@ -488,6 +582,7 @@ class RowDataCache:
         oldValue = self.getValue(columnKey)
         if(type(oldValue) is not _NullValue_):
             if columnKey.value.getType().value.verify(value):
+                print("Row is dirty")
                 self.dirty = True
                 self._data_[columnKey] = columnKey.value.getType().value.sanitize(value)
                 return oldValue
@@ -504,17 +599,29 @@ null = _NullValue_()
 
 class EnumSQLQueryAction(Enum):
     SELECT = "SELECT"
+    DELETE = "DELETE"
+    UPDATE = "UPDATE"
 
 class SQLQueryBuilder:
     def __init__(self, action):
         self.action = action
         self.table = None # FROM
-        self.idList = None
-        self.columns = None
+        self.idList = None # Used for the where statement
+        self.filter = None # Takes precedence over the idList
+        self.columns = None # Used by select and similar
+        self.updates = None # Used by UPDATE
+
+    def SET(self, columnDict):
+        self.updates = columnDict
+        return self
 
     def COLUMNS(self, columnList):
         self.columns = columnList
         return self
+
+    # This is syntactic sugar
+    def TABLE(self, tableKey):
+        return self.FROM(tableKey)
 
     def FROM(self, tableKey):
         self.table = tableKey
@@ -524,24 +631,143 @@ class SQLQueryBuilder:
         self.idList = idList
         return self
 
-    def __str__(self):
-        action = self.action.value
-        columnStr = None
-        fromStr = None
-        whereStr = None
+    def WHERE_ID_IS(self, id):
+        return self.WHERE_ID_IN([id])
 
-        if self.columns is not None and len(self.columns) > 0:
-            columnStr = ", ".join([col.name for col in self.columns])
-        else:
-            columnStr = "*"
+    def WHERE(self, filter):
+        self.filter = filter
+        return self
+
+    def __str__(self):
+        useFROM = False
+        useSET = False
+        useWHERE = False
+
+        action = self.action.value
+
+        # switch like behavior with if's
+        if self.action is EnumSQLQueryAction.SELECT:
+            useFROM = True
+            useWHERE = True
+
+        if self.action is EnumSQLQueryAction.DELETE:
+            useFROM = True
+            useWHERE = True
+
+        if self.action is EnumSQLQueryAction.UPDATE:
+            useSET = True
+            useWHERE = True
 
         idColumn = None
+        fromStr = None
         if self.table is not None:
             idColumn = self.table.getIDColumn(self.table)
-            fromStr = "FROM %s" % self.table.getTableName(self.table)
 
-        if self.idList is not None and idColumn is not None:
-            whereStr = "WHERE %s in (%s)" % (idColumn.name, ", ".join(map(str, self.idList)))
+            if useFROM:
+                fromStr = "FROM %s" % self.table.getTableName(self.table)
+            else:
+                fromStr = "%s" % self.table.getTableName(self.table)
+        else:
+            sqldeb.error("No table defined!")
+            return None
 
-        queryStr = "%s %s %s %s" % (action, columnStr, fromStr, whereStr)
+        whereStr = None
+        if useWHERE:
+            #TODO: Consider adding a feature to merge the where filter and the id list so both can be used in the same query
+            if self.filter is not None:
+                # Filters have highest priority
+                whereStr = str(self.filter)
+            elif self.idList is not None and idColumn is not None:
+                # Do we have an id list?
+                compareString = ""
+                ids = ", ".join(map(str, self.idList))
+                if len(self.idList) > 1:
+                    compareString = "in (%s)" % ids
+                else:
+                    compareString = "= %s" % ids
+
+                whereStr = "WHERE %s %s" % (idColumn.name, compareString)
+
+        columnStr = None
+        if useSET:
+            if self.updates is not None:
+                updList = []
+                for i in self.updates.items():
+                    if idColumn is not None and i[0] == idColumn.name:
+                        continue
+
+                    if i[0] is not None:
+                        value = ""
+                        if type(value) is str:
+                            value = "\"%s\"" % i[1]
+                        else:
+                            value = i[1]
+                        updList.append("%s = %s" % (i[0], value))
+
+                columnStr = "SET %s" % ", ".join(updList)
+            else:
+                sqldeb.error("No updates defined!")
+                return None
+        else:
+            if self.columns is not None and len(self.columns) > 0:
+                columnStr = ", ".join([col.name for col in self.columns])
+            else:
+                columnStr = "*"
+
+        queryStr = None
+        if self.action is EnumSQLQueryAction.SELECT:
+            queryStr = "%s %s %s %s" % (action, columnStr, fromStr, whereStr)
+
+        if self.action is EnumSQLQueryAction.DELETE:
+            queryStr = "%s %s %s" % (action, fromStr, whereStr)
+
+        if self.action is EnumSQLQueryAction.UPDATE:
+            queryStr = "%s %s %s %s" % (action, fromStr, columnStr, whereStr)
+
+        sqldeb.debug("Generated query string = \"%s\"" % queryStr)
         return queryStr
+
+#TODO: Replace the string based builder with an object based builder
+class SQL_WhereStatementBuilder():
+    def __init__(self, initialStatement: Optional[str] = None):
+        # Note: The list datatype must maintain the order the elements are added
+        self.logic: List[BooleanStatement] = []
+        if initialStatement is not None:
+            self.addStatement("AND", initialStatement)
+
+    def addStatement(self, operation: str, expression: str) -> 'SQL_WhereStatementBuilder':
+        self.logic.append(BooleanStatement(operation, expression))
+        return self
+
+    def insertStatement(self, operation: str, expression: str) -> 'SQL_WhereStatementBuilder':
+        self.logic.insert(0, BooleanStatement(operation, expression))
+        return self
+
+    def AND(self, expression: str) -> 'SQL_WhereStatementBuilder':
+        return self.addStatement("AND", expression)
+
+    def OR(self, expression: str) -> 'SQL_WhereStatementBuilder':
+        return self.addStatement("OR", expression)
+
+    def __str__(self) -> str:
+        strs = []
+        for i in range(len(self.logic)):
+            if i > 0:
+                strs.append(self.logic[i].getOperation() + " ")
+            strs.append(self.logic[i].getExpression())
+
+        return ("" if len(strs) < 1 else "WHERE " + " ".join(strs))
+
+class BooleanStatement():
+    def __init__(self, operation: str, expression: str):
+        self.operation = operation
+        self.expression = expression
+
+    def getOperation(self) -> str:
+        return self.operation
+
+    def getExpression(self) -> str:
+        return self.expression
+
+    def __str__(self) -> str:
+        return "BooleanStatement: %s %s" % (self.operation, self.expression)

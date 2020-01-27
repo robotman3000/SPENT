@@ -49,6 +49,7 @@ class EnumTransactionTable(sqlib.EnumTable):
     Memo = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
     Payee = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
     GroupID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
+    VirtualColumnTest = sqlib.VirtualColumn(sqlib.EnumColumnType.TEXT, getBalance)
 
     def getTableName(self):
         return "Transactions"
@@ -62,13 +63,17 @@ class EnumTransactionTable(sqlib.EnumTable):
 class EnumTransactionTagsTable(sqlib.EnumTable):
     TransactionID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
     TagID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    #{"isConstraint": True, "constraintValue": "unq UNIQUE (TransactionID, TagID)"}
 
     def getTableName(self):
         return "TransactionTags"
 
     def getIDColumn(self):
         return EnumTransactionTagsTable.ID
+
+    def getConstraints(self):
+        return [
+            "unq UNIQUE (%s, %s)" % (EnumTransactionTagsTable.TransactionID.name, EnumTransactionTagsTable.TagID.name)
+        ]
 
 class EnumTransactionGroupsTable(sqlib.EnumTable):
     ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)

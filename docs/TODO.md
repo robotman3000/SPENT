@@ -1,12 +1,16 @@
 # Roadmap:
 - Implement new SQLIB database engine
+    - Basic API
+    - Constraints system
+    - Remote function invocation system to replace virtual columns
+    - Commit transaction system 
 - Backbone: Filtered Views
-- Level 2 Transaction Filtering (Account selection)
+    - Level 2 Transaction Filtering (Account selection)
+    - Level 1 Transaction Filtering (jquery QueryBuilder)
 - Finish Grouped Transactions
-- Level 1 Transaction Filtering (jquery QueryBuilder)
 - Transaction Tagging
-- Filter by tags
-- Sort by tags
+    - Filter by tags
+    - Sort by tags
 - Eventually create UML (or similar) diagrams of code layout and design
 
 # Major Feature Wishlist:
@@ -47,7 +51,7 @@
 
 #### AccountTreeView
 - The account tree view should become "responsive" at the same time as the rest of the ui
-- Tags ahould align to the right
+- Tags should align to the right
 - Badge to show transaction status counts
 
 #### Model Management
@@ -59,19 +63,13 @@
 
 # Design Issues / Notes:
 - Virtual columns should perform value caching
-Note: Implement vir col dependencies (A vir col can dep on [It's Row, Other rows in table, other rows in other table]). when a dep is changed mark col as dirty
+> Note: Implement vir col dependencies (A vir col can dep on [It's Row, Other rows in table, other rows in other table]). when a dep is changed mark col as dirty
 
+- Consider removing virtual columns
 - The server doesn't properly close the database / No proper way to shutdown the server
 
 # General TODO:
 - Verify dates are handled properly everywhere
 - All icons should display properly
-
-
-
-
-
-
-
 
 

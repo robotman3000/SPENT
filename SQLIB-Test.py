@@ -60,6 +60,16 @@ class SPENTDB:
         someID = 27
         someIDs = [4, 6, 56, 23, 29]
 
+        # Create
+        newRow = {
+            schema.EnumTransactionTable.Status: 2,
+            schema.EnumTransactionTable.TransDate: "2020-02-01",
+            schema.EnumTransactionTable.SourceBucket: -1,
+            schema.EnumTransactionTable.DestBucket: 1,
+            schema.EnumTransactionTable.GroupID: -1,
+            schema.EnumTransactionTable.Amount: 300.45, schema.EnumTransactionTable.Memo: "A test transaction"}
+        returnValue = schema.EnumTransactionTable.createRow(connection3, newRow)
+
         # Get By ID
         row = schema.EnumTransactionTable.getRow(connection3, someID)
         logman.info("Row Type: %s" % type(row))
@@ -76,9 +86,6 @@ class SPENTDB:
         logman.info("New Row Amount: %s" % row.getValue(schema.EnumTransactionTable.Amount))
 
         #schema.EnumTransactionTable.deleteRow(connection3, someID)
-
-        newRow = {schema.EnumTransactionTable.Amount: 300.45, schema.EnumTransactionTable.Memo: "A test transaction"}
-        returnValue = schema.EnumTransactionTable.createRow(connection3, newRow)
         # returnValue will either be the ID of the new row or the new row itself
 
         # Get Selection
@@ -101,6 +108,7 @@ class SPENTDB:
         logman.info("API Test = Complete")
 
 logman.debug("Test Message")
+print(dir(schema.EnumTransactionTable))
 spentdb = SPENTDB()
 #spentdb.testExecute()
 spentdb.testAPI()

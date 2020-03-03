@@ -60,8 +60,15 @@ class ColoredLogger(logging.Logger):
 
 def initLogger(level=logging.DEBUG, format='%(threadName)s - %(levelname)s[%(name)s] @ %(module)s.%(funcName)s: %(message)s'):
     logging.setLoggerClass(ColoredLogger)
-    #logging.basicConfig(level=level, format=format)
 
+loggers = {}
 
 def getLogger(name):
-    return logging.getLogger(name)
+    logger = logging.getLogger(name)
+    loggers[name] = logger
+    return logger
+
+def setLevel(level):
+    for logger in loggers.items():
+        print(logger)
+        logger[1].setLevel(level)

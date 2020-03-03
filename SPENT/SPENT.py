@@ -15,117 +15,85 @@ from typing import Set, cast, List, Any, Optional, Dict
 def getCurrentDateStr() -> str:
 	return str(date.today())
 
-def asInt(obj: Any) -> int:
-	if type(obj) is int:
-		return obj
-	elif type(obj) is str:
-		return int(obj)
-	return int(str(obj))
-
-def asFloat(obj: Any) -> float:
-	if type(obj) is float:
-		return obj
-	elif type(obj) is str:
-		return float(obj)
-	return float(str(obj))
-
-def asStr(obj: Any) -> str:
-	if type(obj) is str:
-		return obj
-	return str(obj)
-
 class TagManager:
 	def __init__(self, database: 'SpentDBManager'):
 		self.db = database
 
-	def getTransactionTags(self, transaction: 'Transaction') -> List[Tag]:
-		return self.getTagsWhere(SQL_WhereStatementBuilder("TransactionID == %d" % transaction.getID()))
+	def getTransactionTags(self, connection, transaction: 'Transaction') -> List['Tag']:
+		return self.getTagsWhere(connection, SQL_WhereStatementBuilder("TransactionID == %d" % transaction.getID()))
 
-	def getTag(self, id: int) -> Optional[Tag]:
-		return Tag(self.db, id);
+	def getTag(self, connection, id: int) -> Optional['Tag']:
+		return EnumTagsTable.getRow(connection, id)
 
 	#TODO: Implement a getTag by name
 
-	def getTagsWhere(self, where: Optional[SQL_WhereStatementBuilder] = None) -> List[Tag]:
+	def getTagsWhere(self, connection, where: Optional[SQL_WhereStatementBuilder] = None) -> List['Tag']:
 		if where is None:
 			where = SQL_WhereStatementBuilder()
 
-		result = self.db.selectTableRowsColumnsWhere("Tags", columnNames=["ID"], where=where)
+
+		result = EnumTagsTable.select(connection, where)
+		#result = self.db.selectTableRowsColumnsWhere("Tags", columnNames=["ID"], where=where)
 		tags = []
 		for i in result:
-			tag = self.getTag(asInt(i.getValue("ID")))
+			tag = self.getTag(int(i.getID()))
 			if tag is not None:
 				tags.append(tag)
 			else:
 				print("Error: TagManager.getTagsWhere: Encountered a None tag")
 		return tags
 
-	def createTag(self, name: str) -> Optional[Tag]:
-		return self.getTag(self.db._tableInsertInto_("Tags", {"Name": str(name)})[0][0])
+	def createTag(self, connection, name: str) -> Optional['Tag']:
+		return EnumTagsTable.createRow(connection, {"Name": str(name)})
 
-	def deleteTag(self, tag: Tag) -> None:
-		self.deleteTagsWhere(self.db.rowsToWhere([tag.getID()]))
+	def deleteTag(self, connection, tag: 'Tag') -> None:
+		return EnumTagsTable.deleteRow(connection, tag.getID())
 		del tag
 
-	def deleteTagsWhere(self, where: SQL_WhereStatementBuilder) -> List[int]:
-		tags = self.getTagsWhere(where)
+	def deleteTagsWhere(self, connection, where: SQL_WhereStatementBuilder) -> List[int]:
+		tags = self.getTagsWhere(connection, where)
 		tagIDs = []
 		for tag in tags:
 			tagIDs.append(tag.getID())
-			tag.removeFromTransactions(tag.getTransactions())
-		self.db.deleteTableRowsWhere("Tags", where)
+			self.removeTagFromTransactions(connection, tag.getTransactions(), tag)
+		deleteSel = EnumTagsTable.select(connection, where)
+		deleteSel.deleteRows()
 		return tagIDs
 
+	def getTagTransactions(self, connection) -> List['Transaction']:
+		transSel = EnumTransactionTagsTable.select(connection, SQL_WhereStatementBuilder(
+																 "TagID == %d" % self.getID()))
+		transListSel = EnumTransactionTable.select(connection, SQL_WhereStatementBuilder(
+			"ID in (%s)" % ", ".join([str(row.getValue(EnumTransactionTagsTable.TransactionID)) for row in transSel.getRowIDs()])))
+		return transListSel
+
+	def applyTagToTransactions(self, connection, transactions, tag) -> None:
+		myID = tag.getID()  # No need to query the table N > 1 times for the same thing, once will do
+		for t in transactions:
+			EnumTransactionTagsTable.createRow(connection, {EnumTransactionTagsTable.TransactionID: t.getID(), EnumTransactionTagsTable.TagID: myID})
+
+	def removeTagFromTransactions(self, connection, transactions: List['Transaction'], tag) -> None:
+		idList = [str(t.getID()) for t in transactions if t is not None]
+		if len(idList) > 0:
+			where = SQL_WhereStatementBuilder("TagID == %s" % tag.getID()).AND(
+				"TransactionID in (%s)" % ", ".join(idList))
+			delSel = EnumTransactionTagsTable.select(where)
+			delSel.deleteRows()
+
 class SpentUtil:
-	def __init__(self, spentDB):
-		self._spentDB_ = spentDB
+	@classmethod
+	def getPostedBalance(self, connection, bucket: 'Bucket', includeChildren: bool = False) -> float:
+		return self._calculateBalance_(connection, bucket, True, includeChildren)
 
-	def registerUtilityColumns(self):
-		def getAvailBucketTreeBalance(source, tableName, columnName):
-			return self.getAvailableBalance(source, True)
+	@classmethod
+	def getAvailableBalance(self, connection, bucket: 'Bucket', includeChildren: bool = False) -> float:
+		return self._calculateBalance_(connection, bucket, False, includeChildren)
 
-		def getPostedBucketTreeBalance(source, tableName, columnName):
-			return self.getPostedBalance(source, True)
-
-		def getAvailBucketBalance(source, tableName, columnName):
-			return self.getAvailableBalance(source)
-
-		def getPostedBucketBalance(source, tableName, columnName):
-			return self.getPostedBalance(source)
-
-		#self._spentDB_.registerVirtualColumn("Buckets", "TreeBalance", getAvailBucketTreeBalance)
-		#self._spentDB_.registerVirtualColumn("Buckets", "PostedTreeBalance", getPostedBucketTreeBalance)
-		#self._spentDB_.registerVirtualColumn("Buckets", "Balance", getAvailBucketBalance)
-		#self._spentDB_.registerVirtualColumn("Buckets", "PostedBalance", getPostedBucketBalance)
-
-		# TODO: SHould these vir columns be kept around?
-		def getBucketTransactions(source, tableName, columnName):
-			return self.getBucketTransactionsID(source)
-
-		def getAllBucketTransactions(source, tableName, columnName):
-			return self.getAllBucketTransactionsID(source)
-
-		def getBucketChildren(source, tableName, columnName):
-			return self.getBucketChildrenID(source)
-
-		def getAllBucketChildren(source, tableName, columnName):
-			return self.getAllBucketChildrenID(source)
-
-		#self._spentDB_.registerVirtualColumn("Buckets", "Transactions", getBucketTransactions)
-		#self._spentDB_.registerVirtualColumn("Buckets", "AllTransactions", getAllBucketTransactions)
-		#self._spentDB_.registerVirtualColumn("Buckets", "Children", getBucketChildren)
-		#self._spentDB_.registerVirtualColumn("Buckets", "AllChildren", getAllBucketChildren)
-
-	def getPostedBalance(self, bucket: 'Bucket', includeChildren: bool = False) -> float:
-		return self._calculateBalance_(bucket, True, includeChildren)
-
-	def getAvailableBalance(self, bucket: 'Bucket', includeChildren: bool = False) -> float:
-		return self._calculateBalance_(bucket, False, includeChildren)
-
-	def _calculateBalance_(self, bucket: 'Bucket', posted: bool = False, includeChildren: bool = False) -> float:
+	@classmethod
+	def _calculateBalance_(self, connection, bucket: 'Bucket', posted: bool = False, includeChildren: bool = False) -> float:
 		ids = []
 		if includeChildren:
-			ids = self.getAllBucketChildrenID(bucket)
+			ids = self.getAllBucketChildrenID(connection, bucket)
 		ids.append(bucket.getID())  # We can't forget ourself
 		idStr = ", ".join(map(str, ids))
 
@@ -137,14 +105,14 @@ class SpentUtil:
 		idStr, statusStr, idStr, statusStr)
 		column = "Amount"
 
-		result = self._spentDB_._rawSQL_(query)
-		rows = self._spentDB_.parseRows(result, [column], "Transactions")
-		if len(rows) > 0:
-			return round(float(rows[0].getValue(column, False)), 2)
+		result = connection.execute(query)
+		if len(result) > 0:
+			return round(float(result[0][column]), 2)
 		return 0
 
+	@classmethod
 	def getBucketParentAccount(self, bucket: 'Bucket') -> 'Bucket':
-		# Do not reimplement this to use ancestor. This funciton is needed to generate the ancestor ID
+		# Do not reimplement this to use ancestor. This function is needed to generate the ancestor ID
 		parent = bucket.getParent()
 		if parent is None:
 			return bucket
@@ -153,96 +121,54 @@ class SpentUtil:
 
 		return self.getBucketParentAccount(parent)
 
-	def getBucketChildren(self, bucket: 'Bucket') -> List['Bucket']:
-		return self._spentDB_.getBucketsWhere(SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(bucket.getID()))))
+	@classmethod
+	def getBucketChildren(self, connection, bucket: 'Bucket') -> List['Bucket']:
+		#print(type(bucket))
+		buckets = EnumBucketsTable.select(connection, SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(bucket.getID()))))
+		return buckets
 
-	def getBucketChildrenID(self, bucket: 'Bucket') -> List[int]:
+	@classmethod
+	def getBucketChildrenID(self, connection, bucket: 'Bucket') -> List[int]:
 		# TODO: this and the "all" version are inefficent
-		return [i.getID() for i in self.getBucketChildren(bucket)]
+		return self.getBucketChildren(connection, bucket).getValues(EnumBucketsTable.ID)
 
-	def getAllBucketChildren(self, bucket: 'Bucket') -> List['Bucket']:
-		children = self.getBucketChildren(bucket)
-		newChildren: List[Bucket] = children.copy()
-		for i in children:
-			newChildren += self.getAllBucketChildren(i)
+	@classmethod
+	def getAllBucketChildren(self, connection, bucket: 'Bucket') -> List['Bucket']:
+		childrenSelection = self.getBucketChildren(connection, bucket)
+		children: List[Bucket] = list(childrenSelection.getRows().values())
+		for i in childrenSelection:
+			children += self.getAllBucketChildren(connection, i)
 
 		# print(newChildren)
-		return newChildren
+		return children
 
-	def getAllBucketChildrenID(self, bucket: 'Bucket') -> List[int]:
-		return [i.getID() for i in self.getAllBucketChildren(bucket)]
+	@classmethod
+	def getAllBucketChildrenID(self, connection, bucket: 'Bucket') -> List[int]:
+		return [i.getID() for i in self.getAllBucketChildren(connection, bucket)]
 
-	def getBucketTransactions(self, bucket: 'Bucket') -> List['Transaction']:
-		return self._spentDB_.getTransactionsWhere(
-			SQL_WhereStatementBuilder("%s == %s" % ("SourceBucket", bucket.getID())).OR(
+	@classmethod
+	def getBucketTransactions(self, connection, bucket: 'Bucket') -> List['Transaction']:
+		transactions = EnumTransactionTable.select(connection, SQL_WhereStatementBuilder("%s == %s" % ("SourceBucket", bucket.getID())).OR(
 				"%s == %s" % ("DestBucket", bucket.getID())))
+		return transactions
 
-	def getBucketTransactionsID(self, bucket: 'Bucket') -> List[int]:
-		return [i.getID() for i in self.getBucketTransactions(bucket)]
+	@classmethod
+	def getBucketTransactionsID(self, connection, bucket: 'Bucket') -> List[int]:
+		return [i.getID() for i in self.getBucketTransactions(connection, bucket)]
 
-	def getAllBucketTransactions(self, bucket: 'Bucket') -> List['Transaction']:
-		allIDList = ", ".join(map(str, self.getAllBucketChildrenID(bucket) + [bucket.getID()]))
-		return self._spentDB_.getTransactionsWhere(
+	@classmethod
+	def getAllBucketTransactions(self, connection, bucket: 'Bucket') -> List['Transaction']:
+		allIDList = ", ".join(map(str, self.getAllBucketChildrenID(connection, bucket) + [bucket.getID()]))
+		return EnumTransactionTable.select(connection,
 			SQL_WhereStatementBuilder("%s IN (%s)" % ("SourceBucket", allIDList)).OR(
 				"%s IN (%s)" % ("DestBucket", allIDList)))
 
-	def getAllBucketTransactionsID(self, bucket: 'Bucket') -> List[int]:
-		return [i.getID() for i in self.getAllBucketTransactions(bucket)]
+	@classmethod
+	def getAllBucketTransactionsID(self, connection, bucket: 'Bucket') -> List[int]:
+		return [i.getID() for i in self.getAllBucketTransactions(connection, bucket)]
 
 class SpentDBManager():
-	def __init__(self):
-		pass
-		#def getTagName(source, tableName, columnName):
-		#	return self.selectTableRowsColumns("Tags", [source.getValue("TagID")], ["Name"])[0]
-
-		#self.registerVirtualColumn("TransactionTags", "TagName", getTagName)
-
-		#self.registerTableSchema("StatusMap", None, ["Void", "Uninitiated", "Submitted", "Post-Pending", "Complete", "Reconciled"])
-		
-		#def checkIsTransfer(source, tableName, columnName):
-		#	return (source.getSourceBucket() is not None) and (source.getDestBucket() is not None)
-		
-		#def getTransactionType(source, tableName, columnName):
-			#00 = Transfer;
-			#01 = Deposit;
-			#10 = Withdrawal:
-			#11 = Invalid
-	
-		#	sourceBucket = (source.getValue("SourceBucket") != -1);
-		#	dest = (source.getValue("DestBucket") != -1);
-		#	if sourceBucket and dest:
-				#Transfer
-		#		return 0
-		#	elif not sourceBucket and dest:
-				#Deposit
-		#		return 1
-		#	elif sourceBucket and not dest:
-				#Withdrawal
-		#		return 2
-			
-		#	return 3
-		
-		#self.registerVirtualColumn("Transactions", "IsTransfer", checkIsTransfer)
-		#self.registerVirtualColumn("Transactions", "Type", getTransactionType)
-
-		#def getGroupAmount(source, tableName, columnName):
-		#	print("Amount12345")
-		#	ids = self.util.getAllBucketChildrenID(source.getBucket())
-		#	ids.append(source.getBucket().getID())  # We can't forget ourself
-		#	idStr = ", ".join(map(str, ids))
-#
-#			query = "SELECT IFNULL(SUM(Amount), 0) FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) AND GroupID == %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) AND GroupID == %s)" % (
-#				idStr, source.getID(), idStr, source.getID())
-#
-#			result = self._rawSQL_(query)
-#			return round(float(result[0][0]), 2)
-
-#		self.registerVirtualColumn("TransactionGroups", "Amount", getGroupAmount)
-
-#		self.util = SpentUtil(self)
-
-	def createBucket(self, name: str, parent: int) -> Optional['Bucket']:
-		#TODO: Verify the data is valid
+	def createBucket(self, connection, name: str, parent: int) -> Optional['Bucket']:
 		ancestor = -1
 		if int(parent) != -1:
 			par = self.getBucket(int(parent))
@@ -251,150 +177,117 @@ class SpentDBManager():
 			else:
 				ancestor = self.util.getBucketParentAccount(par).getID()
 
-		return self.getBucket(self._tableInsertInto_("Buckets",
-                                      {"Name" : str(name),
-                                       "Parent" : int(parent),
-                                       "Ancestor": ancestor,
-                                      })[0][0])
+		e = EnumBucketsTable
+		return EnumBucketsTable.createRow(connection, {e.Name : name,
+                                       e.Parent : parent,
+                                       e.Ancestor : ancestor,
+                                      })
 	
-	def createTransaction(self, amount: float, status: int = 0, sourceBucket: Optional['Bucket'] = None, destBucket: Optional['Bucket'] = None, transactionDate: Optional[str] = None, postDate: Optional[str] = None, memo: str = "",  payee: str = "", group: int = -1) -> 'Transaction':
-		#TODO: Verify that all the data is in the correct format
-		#print("%s - %s - %s - %s - %s - %s - %s - %s" % (amount, status, sourceBucket, destBucket, transactionDate, postDate, memo, payee))
-		return self.getTransaction(self._tableInsertInto_("Transactions", 
-									  {"Status" : int(status),
-									   "TransDate" : getCurrentDateStr() if transactionDate is None else str(transactionDate),
-									   "PostDate" : postDate,
-									   "Amount" : float(amount),
-									   "SourceBucket" : int(-1 if sourceBucket is None else sourceBucket.getID()),
-									   "DestBucket" : int(-1 if destBucket is None else destBucket.getID()),
-									   "Memo" : str(memo),
-									   "Payee": str(payee),
-									   "GroupID": int(group)
-									  })[0][0])
+	def createTransaction(self, connection, amount: float, status: int = 0, sourceBucket: Optional['Bucket'] = None, destBucket: Optional['Bucket'] = None, transactionDate: Optional[str] = None, postDate: Optional[str] = None, memo: str = "",  payee: str = "", group: int = -1) -> 'Transaction':
+		e = EnumTransactionTable
+		return EnumTransactionTable.createRow(connection, {e.Status : int(status),
+									   e.TransDate : getCurrentDateStr() if transactionDate is None else str(transactionDate),
+									   e.PostDate : postDate,
+									   e.Amount : float(amount),
+									   e.SourceBucket : int(-1 if sourceBucket is None else sourceBucket.getID()),
+									   e.DestBucket : int(-1 if destBucket is None else destBucket.getID()),
+									   e.Memo : str(memo),
+									   e.Payee : str(payee),
+									   e.GroupID: int(group)
+									  })
 	
-	def createAccount(self, name: str) -> Optional['Bucket']: # TODO: This should return account
-		return self.createBucket(name, -1)
+	def createAccount(self, connection, name: str) -> Optional['Bucket']: # TODO: This should return account
+		return self.createBucket(connection, name, -1)
 
-	def createTransactionGroup(self, memo: str, bucket: Optional['Bucket']) -> Optional['TransactionGroup']:
-		# TODO: Verify that all the data is in the correct format
-		# print("%s - %s - %s - %s - %s - %s - %s - %s" % (amount, status, sourceBucket, destBucket, transactionDate, postDate, memo, payee))
-		return self.getTransactionGroup(self._tableInsertInto_("TransactionGroups",
-										  {"Bucket" : int(-1 if bucket is None else bucket.getID()),
-										   "Memo": str(memo),
-										   })[0][0])
+	def createTransactionGroup(self, connection, memo: str, bucket: Optional['Bucket']) -> Optional['TransactionGroup']:
+		e = EnumTransactionGroupsTable
+		return EnumTransactionGroupsTable.createRow(connection,
+										{e.Bucket : int(-1 if bucket is None else bucket.getID()),
+										 e.Memo: str(memo),
+										   })
 
-	def getBucket(self, bucketID: int) -> Optional['Bucket']:
-		if bucketID > -1:
-			bucket = Bucket(self, bucketID)
-			if bucket.getParent() == -1:
-				return Account(self, bucketID)
-			return bucket
-		return None
+	def getBucket(self, connection, bucketID: int) -> Optional['Bucket']:
+		return EnumBucketsTable.getRow(connection, bucketID)
 
-	def getBucketsWhere(self, where: Optional[SQL_WhereStatementBuilder] = None) -> List['Bucket']:
+	def getBucketsWhere(self, connection, where: Optional[SQL_WhereStatementBuilder] = None) -> List['Bucket']:
 		nWhere = where
 		if nWhere is not None:
 			nWhere.insertStatement("AND", "Parent > -1")
 		else:
 			nWhere = SQL_WhereStatementBuilder("Parent > -1")
-		return self._getBucketsWhere_(nWhere)
+		return self._getBucketsWhere_(connection, nWhere)
 	
-	def getTransaction(self, transactionID: int) -> 'Transaction':
-		return Transaction(self, transactionID)
+	def getTransaction(self, connection, transactionID: int) -> 'Transaction':
+		return EnumTransactionTable.getRow(connection, transactionID)
 		
-	def getTransactionsWhere(self, where: Optional[SQL_WhereStatementBuilder] = None) -> List['Transaction']:
-		result = self.selectTableRowsColumnsWhere("Transactions", columnNames=["ID"], where=where)
-		transactions = []
-		for i in result:
-			trans = self.getTransaction(asInt(i.getValue("ID")))
-			if trans is not None:
-				transactions.append(trans)
-			else:
-				print("Error: SpentDBManager.getTransactionsWhere: Encountered a None transaction")
-		return transactions	
+	def getTransactionsWhere(self, connection, where: Optional[SQL_WhereStatementBuilder] = None) -> RowSelection:
+		return EnumTransactionTable.select(connection, where)
 
-	def getTransactionGroup(self, groupID: int) -> Optional['TransactionGroup']:
-		if groupID > -1:
-			return TransactionGroup(self, groupID)
-		return None
+	def getTransactionGroup(self, connection, groupID: int) -> Optional['TransactionGroup']:
+		# TODO: Use the (to be implemented) constraints system to enforce an id > -1
+		if groupID < 0:
+			return None
+		return EnumTransactionGroupsTable.getRow(connection, groupID)
 
-	def getTransactionGroupsWhere(self, where: Optional[SQL_WhereStatementBuilder] = None) -> List['TransactionGroup']:
-		result = self.selectTableRowsColumnsWhere("TransactionGroups", columnNames=["ID"], where=where)
-		groups = []
-		for i in result:
-			group = self.getTransactionGroup(asInt(i.getValue("ID")))
-			if group is not None:
-				groups.append(group)
-			else:
-				print("Error: SpentDBManager.getTransactionGroupsWhere: Encountered a None group")
-		return groups
+	def getTransactionGroupsWhere(self, connection, where: Optional[SQL_WhereStatementBuilder] = None) -> List['TransactionGroup']:
+		return EnumTransactionGroupsTable.select(connection, where)
 
-	def getAccount(self, accountID: int) -> Optional['Bucket']: #TODO: This should be marked to return account
-		return self.getBucket(accountID)
+	def getAccount(self, connection, accountID: int) -> Optional['Bucket']: #TODO: This should be marked to return account
+		return self.getBucket(connection, accountID)
 		
-	def getAccountsWhere(self, where: Optional[SQL_WhereStatementBuilder] = None) -> List['Bucket']: #TODO: This should be marked to return accounts
+	def getAccountsWhere(self, connection, where: Optional[SQL_WhereStatementBuilder] = None) -> List['Bucket']: #TODO: This should be marked to return accounts
 		nWhere = where
 		if nWhere is not None:
 			nWhere.insertStatement("AND", "Parent == -1")
 		else:
 			nWhere = SQL_WhereStatementBuilder("Parent == -1")
-		return self._getBucketsWhere_(nWhere)
+		return self._getBucketsWhere_(connection, nWhere)
 	
-	def deleteBucket(self, bucket: 'Bucket') -> None:
-		where = self.rowsToWhere([asInt(bucket.getID)])
-		self.deleteBucketsWhere(where)
+	def deleteBucket(self, connection, bucket: 'Bucket') -> None:
+		EnumBucketsTable.deleteRow(connection, bucket.getRowID())
 		del bucket # Destroy the data our reference points to; to prevent further use
 	
-	def deleteBucketsWhere(self, where: SQL_WhereStatementBuilder) -> Set[int]:
-		return self._deleteBucketsWhere_(where, False)
+	def deleteBucketsWhere(self, connection, where: SQL_WhereStatementBuilder) -> Set[int]:
+		return self._deleteBucketsWhere_(connection, where, False)
 		
-	def deleteTransaction(self, transaction: 'Transaction') -> None:
-		where = self.rowsToWhere([asInt(transaction.getID())])
-		self.deleteTransactionsWhere(where)
+	def deleteTransaction(self, connection, transaction: 'Transaction') -> None:
+		EnumTransactionTable.deleteRow(connection, transaction.getRowID())
 		del transaction # Destroy the data our reference points to; to prevent further use
 		
-	def deleteTransactionsWhere(self, where: SQL_WhereStatementBuilder):#TODO return List[int]
+	def deleteTransactionsWhere(self, connection, where: SQL_WhereStatementBuilder):#TODO return List[int]
 		if where is None:
 			raise ValueError("SpentDBManager.deleteTransactionsWhere: where can't be None")
-		self.deleteTableRowsWhere("Transactions", where)
+		selection = EnumTransactionTable.select(connection, where)
+		selection.deleteRows()
 
-	def deleteTransactionGroup(self, group: 'TransactionGroup') -> None:
-		where = self.rowsToWhere([asInt(group.getID())])
-		self.deleteTransactionGroupsWhere(where)
+	def deleteTransactionGroup(self, connection, group: 'TransactionGroup') -> None:
+		EnumTransactionGroupsTable.deleteRow(connection, group.getRowID())
 		del group  # Destroy the data our reference points to; to prevent further use
 
-	def deleteTransactionGroupsWhere(self, where: SQL_WhereStatementBuilder):  # TODO return List[int]
+	def deleteTransactionGroupsWhere(self, connection, where: SQL_WhereStatementBuilder):  # TODO return List[int]
 		if where is None:
 			raise ValueError("SpentDBManager.deleteTransactionGroupsWhere: where can't be None")
-		self.deleteTableRowsWhere("TransactionGroups", where)
+		selection = EnumTransactionGroupsTable.select(connection, where)
+		selection.deleteRows()
 
-	def deleteAccount(self, account: 'Account') -> None:
-		where = self.rowsToWhere([asInt(account.getID)])
-		self.deleteAccountsWhere(where)
+	def deleteAccount(self, connection, account: 'Account') -> None:
+		EnumBucketsTable.deleteRow(connection, account.getRowID())
 		del account  # Destroy the data our reference points to; to prevent further use
 		
-	def deleteAccountsWhere(self, where: SQL_WhereStatementBuilder) -> Set[int]:
-		return self._deleteBucketsWhere_(where, True)
+	def deleteAccountsWhere(self, connection, where: SQL_WhereStatementBuilder) -> Set[int]:
+		return self._deleteBucketsWhere_(connection, where, True)
 	
-	def _getBucketsWhere_(self, where: SQL_WhereStatementBuilder) -> List['Bucket']:
-		result = self.selectTableRowsColumnsWhere("Buckets", ["ID"], where)
-		buckets = []
-		for i in result:
-			bucket = self.getBucket(asInt(i.getValue("ID")))
-			if bucket is not None:
-				buckets.append(bucket)
-			else:
-				print("Error: SpentDBManager._getBucketsWhere_: Encountered a None bucket")
-		return buckets
+	def _getBucketsWhere_(self, connection, where: SQL_WhereStatementBuilder) -> List['Bucket']:
+		return EnumBucketsTable.select(connection, where)
 
-	def _deleteBucketsWhere_(self, where: SQL_WhereStatementBuilder, deleteAccounts: bool) -> Set[int]:
+	def _deleteBucketsWhere_(self, connection, where: SQL_WhereStatementBuilder, deleteAccounts: bool) -> Set[int]:
 		#TODO: This should be rewriten to use less SQL queries
 
 		if where is None:
 			raise ValueError("SpentDBManager._deleteBucketsWhere_: where can't be None")
-		buckets = self._getBucketsWhere_(where)
+		bucketSelection = EnumBucketsTable.select(connection, where)
 		bucketAncestorMap: Dict[int, Set[int]] = {}
-		for bucket in buckets:
+		for bucket in bucketSelection:
 			ancestor = bucket.getAncestor()
 			id = -1
 			if ancestor is not None:
@@ -406,18 +299,23 @@ class SpentDBManager():
 				bucketAncestorMap[id] = bucketIDs
 
 			bucketIDs.add(bucket.getID())
-			children = self.util.getAllBucketChildrenID(bucket)
+			children = self.util.getAllBucketChildrenID(connection, bucket)
 			for i in children:
 				bucketIDs.add(i)
 
-		print(bucketAncestorMap)
+		#print(bucketAncestorMap)
 
 		if deleteAccounts:
 			accounts = bucketAncestorMap.get(-1, set())
 			if len(accounts) > 0:
 				accountStr = ", ".join(map(str, accounts))
-				self.deleteTableRowsWhere("Buckets", SQL_WhereStatementBuilder("ID in (%s) OR Ancestor in (%s)" % (accountStr, accountStr)))
-				self.deleteTransactionsWhere(SQL_WhereStatementBuilder("SourceBucket in (%s)" % accountStr).OR("DestBucket in (%s)" % accountStr))
+
+				deleteBucketsSel = EnumBucketsTable.select(connection, SQL_WhereStatementBuilder("ID in (%s) OR Ancestor in (%s)" % (accountStr, accountStr)))
+				deleteBucketsSel.deleteRows()
+
+				deleteTransSel = EnumTransactionTable.select(connection, SQL_WhereStatementBuilder("SourceBucket in (%s)" % accountStr).OR("DestBucket in (%s)" % accountStr))
+				deleteTransSel.deleteRows()
+
 			return accounts
 		else:
 			bucketList: Set[int] = set()
@@ -425,15 +323,19 @@ class SpentDBManager():
 				if j[0] != -1:
 					for a in j[1]:
 						bucketList.add(a)
-					self.updateTableWhere("Transactions", {"SourceBucket": j[0]}, SQL_WhereStatementBuilder("SourceBucket in (%s)" % ", ".join(map(str, j[1]))))
-					self.updateTableWhere("Transactions", {"DestBucket": j[0]}, SQL_WhereStatementBuilder("DestBucket in (%s)" % ", ".join(map(str, j[1]))))
+
+					#TODO: This could be more effiecent
+					EnumTransactionTable.select(connection, SQL_WhereStatementBuilder("SourceBucket in (%s)" % ", ".join(map(str, j[1])))).setValues(EnumTransactionTable.SourceBucket, j[0])
+					EnumTransactionTable.select(connection, SQL_WhereStatementBuilder("DestBucket in (%s)" % ", ".join(map(str, j[1])))).setValues(EnumTransactionTable.DestBucket, j[0])
 
 
 			bucketStr = ", ".join(map(str, bucketList))
-			self.deleteTableRowsWhere("Buckets", SQL_WhereStatementBuilder("ID in (%s)" % bucketStr))
+			deleteBucketsSelection = EnumBucketsTable.select(connection, SQL_WhereStatementBuilder("ID in (%s)" % bucketStr))
+			deleteBucketsSelection.deleteRows()
 
 			# This is an exception to the "Never delete transactions rule"
 			# Transactions with a matching source and destination don't make any sense
-			self.deleteTransactionsWhere(SQL_WhereStatementBuilder("SourceBucket == DestBucket"))
+			illegalTransSelection = EnumTransactionTable.select(connection, SQL_WhereStatementBuilder("SourceBucket == DestBucket"))
+			illegalTransSelection.deleteRows()
 
 			return bucketList

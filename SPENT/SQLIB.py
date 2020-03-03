@@ -56,6 +56,10 @@ class EnumColumnType(Enum):
     DECIMAL = DecimalTypeVerifier()
     DATE = DateTypeVerifier()
 
+class EnumRowState(Enum):
+    CLEAN = 0
+    DIRTY = 1
+
 class TableRow():
     def __init__(self, rowDataCache, parentTable):
         self.cache = rowDataCache
@@ -72,6 +76,12 @@ class TableRow():
 
     def setValue(self, columnKey, newValue):
         return self.cache.setValue(columnKey, newValue)
+
+    def getColumns(self):
+        return self.table.getColumns(self.table)
+
+    def __str__(self):
+        return str(self.cache._data_.items())
 
 class Column:
     def __init__(self, type, preventNull, isPrimaryKey, autoIncrement, keepUnique):
@@ -96,6 +106,17 @@ class Column:
     def willEnforceUnique(self):
         return self.keepUnique
 
+    def verify(self, value):
+        sqldeb.debug("Column %s verifying %s" % (self.name, value))
+        return True
+
+    def sanitize(self, value):
+        sqldeb.debug("Column %s sanitizing %s" % (self.name, value))
+        return value
+
+    def __str__(self):
+        return self.name
+
 class TableColumn(Column):
     def __init__(self, type, preventNull, isPrimaryKey, autoIncrement, keepUnique, properties={}):
         super().__init__(type, preventNull, isPrimaryKey, autoIncrement, keepUnique)
@@ -113,7 +134,9 @@ class VirtualColumn(Column):
 
     #TODO: Add support for caching the value of virtual columns
     def calculateValue(column, row, table):
-        return "Hello World!"
+        data = column.valueFunction(row, table, column)
+        if column.getType().value.verify(data):
+            return column.getType().value.sanitize(data)
 
 class LinkedColumn(Column):
     pass
@@ -160,12 +183,25 @@ class EnumTable(Enum):
     def getIDColumn(self):
         return None
 
-    def getRowClass(self):
+    def getRowClass(self, rowData):
         return TableRow
 
     def getConstraints(self):
         #List[str]
         return []
+
+    def getColumns(self):
+        return self.__members__.values()
+
+    @classmethod
+    def parseStrings(table, columnNames):
+        result = []
+        for column in table.__members__.values():
+            print(column)
+            if column.name in columnNames:
+                result.append(column)
+
+        return result
 
     @classmethod
     def P_isVirtualColumn_(table, columnKey):
@@ -175,12 +211,10 @@ class EnumTable(Enum):
     def hasVirtualColumn(table, columnKey):
         if EnumTable.P_isVirtualColumn_(columnKey):
             if(table[columnKey.name] is not None):
-                print("vir col found")
+                #print("vir col found")
                 return True
-            else:
-                print("Invalied col")
-        else:
-            sqldeb.warning("Attempted to get value of a non virtual column! Column: %s" % columnKey.name)
+            #else:
+                #print("Invalied col")
         return False
 
     @classmethod
@@ -212,6 +246,9 @@ class RowSelection:
         # Rows is a dict; {Key: rowID, Value: TableRow}
         self.rows = rows
         self.filter = filter
+
+    def __iter__(self):
+        return iter(self.getRows().values())
 
     def getFilter(self):
         # We can't allow the authoritative record to be modified
@@ -377,6 +414,10 @@ class DatabaseCacheManager:
         # This controls whether to delete/unallocate/garbage collect the cached rows after writing to the DB
         self._clearCacheOnWrite_ = False
 
+    def _isDirty_(self):
+        #TODO: STUB for the smart dirty flag system
+        return False
+
     def _parseRows_(self, rows, table):
         # This function is responsible for converting sqlite3 Row objects into SQLIB TableRow objects
         newRows = []
@@ -385,10 +426,14 @@ class DatabaseCacheManager:
             id = row[idColumn.name]
 
             rowDataCache = self._getCachedRow_(id, table, row)
-            rowClass = table.getRowClass(table)
-            newRows.append(rowClass(rowDataCache, table))
+            rowInst = self._initRow_(table, rowDataCache)
+            newRows.append(rowInst)
 
         return newRows
+
+    def _initRow_(self, table, rowData):
+        rowClass = table.getRowClass(table, rowData)
+        return rowClass(rowData, table)
 
     def _getCachedTable_(self, table):
         # Lazy init the table row dict
@@ -399,13 +444,13 @@ class DatabaseCacheManager:
         return tableCache
 
     def _getCachedRow_(self, rowID, table, queryRow=None):
-        cadeb.debug("Getting cached row %s" % rowID)
         # Returns the existing cached row and creates if non-existent
         tableCache = self._getCachedTable_(table)
         rowCache = tableCache.get(rowID, None)
 
         if rowCache is None and queryRow is not None:
-            rowCache = RowDataCache(sqlRowToDict(queryRow, table), rowID)
+            cadeb.debug("Found cached row %s" % rowID)
+            rowCache = RowDataCache(sqlRowToDict(queryRow, table), rowID, self)
             tableCache[rowID] = rowCache
 
         return rowCache
@@ -427,7 +472,7 @@ class DatabaseCacheManager:
                     if row.isDeleted():
                         deletedRows.append(id)
                     elif row.isDirty():
-                        print("Found dirty row")
+                        #print("Found dirty row")
                         changedRows.append(id)
 
                 # Now we construct a single query to do the delete and then the update
@@ -450,6 +495,14 @@ class DatabaseCacheManager:
                 # Then we demo everything slated for destruction
                 if delQuery is not None:
                     connection.execute(str(delQuery))
+
+                if not self._clearCacheOnWrite_:
+                    for dRow in deletedRows:
+                        del rowCache[dRow]
+
+                    for uRow in changedRows:
+                        rowCache[uRow]._clearDirty_()
+
             else:
                 logman.error("Failed to write table %s schema to database!" % (table.getTableName(table)))
 
@@ -457,6 +510,9 @@ class DatabaseCacheManager:
             # This functions as a full cache reset
             # TODO: Consider implementing a partial cache clear
             self.data.clear()
+
+
+        self.dirty = False
 
     def _writeTable_(self, table, connection):
         table.P_writeTable_(table, connection)
@@ -487,7 +543,7 @@ class DatabaseCacheManager:
         else:
             if row.isDeleted():
                 return None
-        return row
+        return self._initRow_(table, row)
 
     def getRows(self, table, connection, rowIDs):
         cadeb.debug("%s@%s: Getting rows: %s" % (connection.getName(), table.getTableName(table), rowIDs))
@@ -496,15 +552,15 @@ class DatabaseCacheManager:
         missingRows = []
         for id in rowIDs:
             # The value will be None if there is no cache entry for the row
-            cacheRows[id] = self._getCachedRow_(id, table)
-            if cacheRows[id] is None:
+            rowData = self._getCachedRow_(id, table)
+            if rowData is None:
                 missingRows.append(id)
             else:
-                if cacheRows[id].isDeleted():
-                    # We'll just pretend the row doesn't exist
-                    del cacheRows[id] # Oops, clumsy fingers hit the delete button... Oh well..
+                if not rowData.isDeleted():
+                    cacheRows[id] = self._initRow_(table, rowData)
 
         if len(missingRows) > 0:
+            cadeb.debug("%s@%s: Querying for missing rows: %s" % (connection.getName(), table.getTableName(table), missingRows))
             query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS(COLUMN_ANY).FROM(table).WHERE_ID_IN(missingRows)
             result = connection.execute(str(query))
             if len(result) < 1:
@@ -520,11 +576,22 @@ class DatabaseCacheManager:
                 cacheRows[id] = rows.get(id, None)
                 if cacheRows[id] is None:
                     cadeb.error("None row found!! ID: %s, Table: %s" % (id, table.getTableName(table)))
+        #print("Rows: %s" % cacheRows)
         return RowSelection(connection, table, cacheRows)
 
     def createRow(self, table, connection, rowData):
         cadeb.debug("%s@%s: Creating row: %s" % (connection.getName(), table.getTableName(table), rowData))
-        pass
+        #TODO: Revisit the idea of a non write-through create
+        keys = rowData.keys()
+        values = rowData.values()
+        query = SQLQueryBuilder(EnumSQLQueryAction.INSERT).INTO(table).COLUMNS(keys).VALUES(values)
+        rows = connection.execute(str(query))
+        print(rows)
+        # TODO: Using getRow means that every time we create a row three queries are run rather than the prefered one
+        rowID = connection.execute("SELECT last_insert_rowid()")
+        #lastID = connection.connection.lastrowid
+        print("Lastid: %s" % rowID[0][0])
+        return self.getRow(table, connection, rowID[0][0])
 
     def deleteRow(self, table, connection, rowID):
         cadeb.debug("%s@%s: Deleting row: %s" % (connection.getName(), table.getTableName(table), rowID))
@@ -535,12 +602,38 @@ class DatabaseCacheManager:
             row._setDeleted_(True)
 
     def select(self, table, connection, filter):
-        cadeb.debug("%s@%s:MOCK: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
-        pass
-        #return RowSelection(connection, table, filter)
+        #TODO: Replace the string based SQL_WhereStatementBuilder with an object/enum based version
+        cadeb.debug("%s@%s: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
+
+        #TODO: Implement a system to "smart" determine if the cache is dirty rather than brute committing
+
+        # Write the cache to the DB to ensure that when we resolve the query the result will be correct
+        self._writeCache_(connection)
+
+        if not self._isDirty_():
+            # First we resolve the query against the DB
+            # and get the list of row id's to consider
+            idCol = table.getIDColumn(table)
+            if idCol is not None:
+                query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS([ idCol ]).FROM(table).WHERE(filter)
+                rows = connection.execute(str(query))
+
+                idList = []
+                for row in rows:
+                    idColumn = table.getIDColumn(table)
+                    id = row[idColumn.name]
+                    idList.append(id)
+
+                return self.getRows(table, connection, idList)
+
+            sqldeb.error("%s@%s: ID column was none!" % (connection.getName(), table.getTableName(table)))
+        else:
+            sqldeb.error("%s@%s: Can't perform SELECT; Database cache has uncommitted changes" % (connection.getName(), table.getTableName(table)))
+        return None
+         #return RowSelection(connection, table, filter)
 
 class RowDataCache:
-    def __init__(self, rowData, rowID):
+    def __init__(self, rowData, rowID, cacheManager):
         self._data_ = rowData
         self.id = rowID
 
@@ -581,10 +674,11 @@ class RowDataCache:
     def setValue(self, columnKey, value):
         oldValue = self.getValue(columnKey)
         if(type(oldValue) is not _NullValue_):
-            if columnKey.value.getType().value.verify(value):
-                print("Row is dirty")
+            if columnKey.value.getType().value.verify(value) and columnKey.value.verify(value):
+                #print("Row is dirty")
                 self.dirty = True
-                self._data_[columnKey] = columnKey.value.getType().value.sanitize(value)
+                typeSanitized = columnKey.value.getType().value.sanitize(value)
+                self._data_[columnKey] = columnKey.value.sanitize(typeSanitized)
                 return oldValue
             else:
                 cadeb.error("Invalid value %s for column %s" % (value, columnKey))
@@ -601,6 +695,7 @@ class EnumSQLQueryAction(Enum):
     SELECT = "SELECT"
     DELETE = "DELETE"
     UPDATE = "UPDATE"
+    INSERT = "INSERT INTO"
 
 class SQLQueryBuilder:
     def __init__(self, action):
@@ -610,6 +705,11 @@ class SQLQueryBuilder:
         self.filter = None # Takes precedence over the idList
         self.columns = None # Used by select and similar
         self.updates = None # Used by UPDATE
+        self.values = None # Used by INSERT
+
+    def VALUES(self, values):
+        self.values = values
+        return self
 
     def SET(self, columnDict):
         self.updates = columnDict
@@ -621,6 +721,10 @@ class SQLQueryBuilder:
 
     # This is syntactic sugar
     def TABLE(self, tableKey):
+        return self.FROM(tableKey)
+
+    # This is syntactic sugar
+    def INTO(self, tableKey):
         return self.FROM(tableKey)
 
     def FROM(self, tableKey):
@@ -642,6 +746,7 @@ class SQLQueryBuilder:
         useFROM = False
         useSET = False
         useWHERE = False
+        useVALUES = False
 
         action = self.action.value
 
@@ -657,6 +762,9 @@ class SQLQueryBuilder:
         if self.action is EnumSQLQueryAction.UPDATE:
             useSET = True
             useWHERE = True
+
+        if self.action is EnumSQLQueryAction.INSERT:
+            useVALUES = True
 
         idColumn = None
         fromStr = None
@@ -714,6 +822,13 @@ class SQLQueryBuilder:
             else:
                 columnStr = "*"
 
+        valueStr = None
+        if useVALUES:
+            valueStr = ", ".join(["\"%s\"" % str(val) for val in self.values])
+
+        if whereStr is None:
+            whereStr = ""
+
         queryStr = None
         if self.action is EnumSQLQueryAction.SELECT:
             queryStr = "%s %s %s %s" % (action, columnStr, fromStr, whereStr)
@@ -724,6 +839,10 @@ class SQLQueryBuilder:
         if self.action is EnumSQLQueryAction.UPDATE:
             queryStr = "%s %s %s %s" % (action, fromStr, columnStr, whereStr)
 
+        if self.action is EnumSQLQueryAction.INSERT:
+            queryStr = "%s %s (%s) VALUES (%s)" % (action, fromStr, columnStr, valueStr)
+
+        # INSERT INTO [Table] ({Columns}) VALUES ({Values})
         sqldeb.debug("Generated query string = \"%s\"" % queryStr)
         return queryStr
 

@@ -5,6 +5,17 @@ from SPENT.SPENT_Schema import *
 from SPENT.SPENT import SpentUtil, SQL_WhereStatementBuilder
 logman = log.getLogger("Main")
 
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument("--file", dest="dbpath",
+                    default="SPENT.db")
+#parser.add_argument("--dump-db",
+#                    action="store_true", dest="dbDumb", default=False,
+#                    help="Dump's the database to the terminal")
+
+args = parser.parse_args()
+
 class REPL():
 	def __init__(self, exitCallback, commands={}):
 		self.running = False
@@ -81,26 +92,34 @@ class Command():
 		return self.usage if self.usage != None else ""
 
 def shellPrint(string):
-	print("Shell: %s" % string)
+	print("Shell: %s" % str(string))
 
-database = sqlib.Database("SPENT-SQLIB.db")
+database = sqlib.Database(args.dbpath)
 
 # TODO: Stop using global connection once the transaction commit system is implemented
 connection = database.getConnection("Shell")
 connection.connect()
 
 def rawSQL(command: List[str], commandObject) -> None:
-	connection.execute(command[0])
+	result = connection.execute(command[0])
+	if result is not None:
+		for row in result:
+			shellPrint(tuple(row))
+	else:
+		shellPrint("Empty Result")
 
 def exitCallback():
 	logman.info("Exiting...")
-	saveDB(None)
+	saveDB(None, None)
 	connection.disconnect(True)
 
-def saveDB(command: Optional[List[str]]) -> None:
+def saveDB(command: Optional[List[str]], commandObject) -> None:
 	logman.info("Saving Database...")
 	database.flush(connection)
 	logman.info("Changes Saved.")
+
+def dumpDB(args, commandObject):
+	pass
 
 def setLogLevel(command: List[str], commandObject) -> None:
 	try:
@@ -152,20 +171,34 @@ def listBucketTransactions(bucket) -> None:
 
 #------------------------------------------------------------------------------
 
-def createFunction(table, connection, args):
-	pass
+def createFunction(table, connection, args, command):
+	data = {}
+	for index in range(len(command.args)):
+		column = command.args[index][0]
+		data[column] = args[index]
 
-def updateFunction(table, connection, args):
+	print(data)
+	connection.beginTransaction()
+	table.createRow(connection, data)
+	connection.endTransaction()
+
+def updateFunction(table, connection, args, obj):
 	kvp = args[1].split(":")
 	rowID = args[0];
-	data = table.getRow(table, connection, rowID)
-	data.setValue(kvp[0], kvp[1])
+	data = table.getRow(connection, rowID)
 
-def deleteFunction(table, connection, args):
+	connection.beginTransaction()
+	data.setValue(table[kvp[0].strip()], kvp[1])
+	connection.endTransaction()
+
+def deleteFunction(table, connection, args, obj):
 	rowID = args[0]
-	table.deleteRow(table, connection, rowID)
 
-def listFunction(table, connection, args):
+	connection.beginTransaction()
+	table.deleteRow(connection, rowID)
+	connection.endTransaction()
+
+def listFunction(table, connection, args, obj):
 	shellPrint("Listing %s" % table.getTableName(table))
 	rowSelection = table.select(connection, None)
 
@@ -173,7 +206,7 @@ def listFunction(table, connection, args):
 	for row in rowSelection:
 		printRow(row, columns)
 
-def showFunction(table, connection, args):
+def showFunction(table, connection, args, obj):
 	id = args[0]
 	row = table.getRow(connection, id)
 	printRow(row, row.getColumns())
@@ -185,7 +218,7 @@ def printRow(row, columns):
 
 	shellPrint(data)
 
-dataTypes = {"Transaction": EnumTransactionTable, "Bucket": EnumBucketsTable, "Account": EnumBucketsTable, "Tag": EnumTagsTable}
+dataTypes = {"Transaction": EnumTransactionTable, "Bucket": EnumBucketsTable, "Tag": EnumTagsTable}
 actions = {"Create": createFunction, "Update": updateFunction, "Delete": deleteFunction, "List": listFunction,  "Show": showFunction}
 
 def tableActionHandler(command: List[str], commandObject):
@@ -193,7 +226,11 @@ def tableActionHandler(command: List[str], commandObject):
 	function = commandObject.function
 
 	#TODO: Create new connections for each command
-	function(table, connection, command)
+	function(table, connection, command, commandObject)
+
+
+def remap(input):
+	return "%s [%s]" % (input[0].name, input[1].name)
 
 for type in dataTypes.items():
 	table = type[1]
@@ -213,7 +250,7 @@ for type in dataTypes.items():
 		if actionName == "Create":
 			for column in table.getColumns(table):
 				if column.value.willPreventNull() and not column.value.willAutoIncrement():
-					args.append("%s [%s]" % (column.name, column.value.getType().name))
+					args.append( (column, column.value.getType()) )
 
 		if actionName == "Update":
 			args = ["ID", "Key:Value"]
@@ -224,14 +261,20 @@ for type in dataTypes.items():
 		# if actionName == "List":
 		# No args
 
-		argsStr = "; ".join(args)
+		if actionName == "Create":
+			argsStr = "; ".join(map(remap, args))
+		else:
+			argsStr = "; ".join(args)
 
 		commands[commandName] = Command(tableActionHandler, argsStr)
 		commands[commandName].table = table
 		commands[commandName].function = actionFunction
+		commands[commandName].args = args
 
 commands['ls'] = Command(showAccountTree)
 commands['info'] = Command(showBucket, "ID")
+commands['dump'] = Command(dumpDB)
+
 
 setLogLevel(["INFO"], None)
 repl = REPL(exitCallback, commands)

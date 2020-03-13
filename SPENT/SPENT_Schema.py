@@ -93,6 +93,7 @@ class EnumBucketsTable(sqlib.EnumTable):
         return EnumBucketsTable.ID
 
     def getRowClass(self, rowData):
+        #print(rowData)
         if rowData.getValue(EnumBucketsTable.Ancestor) < 0:
             return Account
         return Bucket

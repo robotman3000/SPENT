@@ -23,7 +23,7 @@ def sqlRowToDict(row, table):
     columnNames = [col for col in table]
     dict = {}
     for column in columnNames:
-        if type(column.value) is TableColumn:
+        if type(column.value) is TableColumn or type(column.value) is LinkedColumn:
             dict[column] = row[column.name]
     return dict
 
@@ -80,7 +80,7 @@ class TableRow():
         return self.table.getColumns(self.table)
 
     def __str__(self):
-        return str(self.cache._data_.items())
+        return str(self.cache)
 
 class Column:
     def __init__(self, type, preventNull, isPrimaryKey, autoIncrement, keepUnique):
@@ -113,6 +113,9 @@ class Column:
         sqldeb.debug("Column %s sanitizing %s" % (self, value))
         return value
 
+    def getTable(self):
+        return self.table
+
 class TableColumn(Column):
     def __init__(self, type, preventNull, isPrimaryKey, autoIncrement, keepUnique, properties={}):
         super().__init__(type, preventNull, isPrimaryKey, autoIncrement, keepUnique)
@@ -133,12 +136,36 @@ class VirtualColumn(Column):
         if column.getType().value.verify(data):
             return column.getType().value.sanitize(data)
 
+class LinkedColumn(TableColumn):
+    def __init__(self, type, preventNull, isPrimaryKey, autoIncrement, keepUnique, properties={}, foreignKey=None, localKey=None):
+        super().__init__(type, preventNull, isPrimaryKey, autoIncrement, keepUnique, properties)
+        if (foreignKey is None and localKey is None) or (foreignKey is not None and localKey is not None):
+            raise Exception("Linked columns must have one defined key")
+
+        if foreignKey is not None:
+            self.key = foreignKey
+        else:
+            self.key = localKey
+
+    def getReferenceKey(self):
+        return self.key
+
+    def getReferenceTable(self):
+        if type(self.key) is Column:
+            return self.key.getTable()
+        return self.getTable()
+
+    def isLocal(self):
+        return type(self.key) is str
+
 class EnumTable(Enum):
     def __init__(self, column):
         sqldeb.info("Initializing Column %s.%s; Type: %s" % (self.getTableName(), self.name, type(self.value)))
+        column.table = self
 
     def P_writeTable_(self, connection):
         columns = []
+        foreignKeys = []
         tableConstr = []
         for obj in self.__members__.items():
             columnName = obj[0]
@@ -159,19 +186,36 @@ class EnumTable(Enum):
 
             columns.append("\"%s\" %s %s" % (columnName, column.value.getType().name, " ".join(options)))
 
+            if type(column.value) is LinkedColumn:
+                table = column.value.getReferenceTable()
+                foreignColumnName = column.value.getReferenceKey()
+                if not column.value.isLocal():
+                    foreignColumnName = foreignColumnName.name
+
+                #TODO: Verify that the column exists in the referenced table
+                #column = table[foreignColumnName]  # This will trigger an exception if the column doesn't exist
+
+                foreignKeys.append("FOREIGN KEY(%s) REFERENCES %s(%s)" % (columnName,
+                                                                      table.getTableName(),
+                                                                      foreignColumnName))
+
         for constr in self.getConstraints(self):
             columns.append("CONSTRAINT %s" % constr)
 
-        sqlStr = "CREATE TABLE IF NOT EXISTS \"%s\" (%s)" % (self.getTableName(self), ", ".join(columns))
+        sqlStr = "CREATE TABLE IF NOT EXISTS \"%s\" (%s)" % (self.getTableName(self), ", ".join(columns + foreignKeys))
 
         #TODO: We do nothing with the returned cursor; it might need to be used for error checking
 
+        #TODO: Verify that this code will properly handle rolling back in the event of an error
         try:
             connection.execute(sqlStr)
         except Exception as e:
             sqlog.exception(e)
 
         #connection.commit()
+
+    def onInit(self, connection):
+        sqldeb.debug("Init called on EnumTable!!")
 
     def getTableName(self):
         return "UNNAMED_TABLE_ERROR"
@@ -375,11 +419,8 @@ class Database:
 
     def initTable(self, table, connection):
         result = self._getCache_()._writeTable_(table, connection)
+        table.onInit(table, connection)
         return result
-
-    #def flush(self, connection):
-    #    sqldeb.info("Writing cache to DB")
-    #    self._getCache_()._writeCache_(connection)
 
 class DatabaseConnection:
     def __init__(self, database, connectionName):
@@ -391,17 +432,17 @@ class DatabaseConnection:
 
     def _assertDBConected_(self, connectionState, errorMessage):
         if self._closed_:
-            logman.error("DatabaseConnection[\"%s\"]: Can't reopen a closed connection!!" % self.getName())
+            sqlog.error("DatabaseConnection[\"%s\"]: Can't reopen a closed connection!!" % self.getName())
             return not connectionState
 
         if((self.connection is None) == (not connectionState)):
             return True
         else:
-            logman.error(errorMessage)
+            sqlog.error(errorMessage)
             return False
 
     def _writeSchema_(self):
-        sqldeb.debug("STUB: Writing schema to DB...")
+        sqlog.debug("STUB: Writing schema to DB...")
         #TODO: This is where the database version will be compared to the schema version to determine they are compatable
         return True
 
@@ -417,16 +458,21 @@ class DatabaseConnection:
     def getName(self):
         return self.name
 
-    def connect(self):
+    def connect(self, enableForeignConstraint=True):
         #TODO: Change this from an error message to an exceptioon
         if (self._assertDBConected_(False, errorMessage="Database is already connected")):
-            logman.debug("DatabaseConnection[\"%s\"]: Opening connection to DB %s; Path: \"%s\"" % (self.getName(), self.getDatabase()._index_, self.database.getDBPath()))
+            sqlog.debug("DatabaseConnection[\"%s\"]: Opening connection to DB %s; Path: \"%s\"; Foreign Key Enforcement: %s" % (self.getName(), self.getDatabase()._index_, self.database.getDBPath(), enableForeignConstraint))
             self.connection = sql.connect(self.database.getDBPath()) #TODO: This is incompatible with multiple connections to ":memory:"
             self.connection.isolation_level = None # Disable the builtin transaction system for the sqlite3 module
             if(self._writeSchema_()):
                 self.connection.row_factory = sql.Row # test
+                # TODO: Verify that this code will properly handle rolling back in the event of an error
+                if(enableForeignConstraint):
+                    self.execute("PRAGMA foreign_keys = ON;")
+                else:
+                    self.execute("PRAGMA foreign_keys = OFF;")
             else:
-                logman.error("Database File schema is incompatible with provided schema")
+                sqlog.error("Database File schema is incompatible with provided schema")
                 # Now we disconnect to prevent the possibility of db corruption
                 self.disconnect(False) # Do not commit; We want to leave the db untouched
 
@@ -440,7 +486,7 @@ class DatabaseConnection:
 
     def beginTransaction(self, transCommitExceptionCallback=None):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
-            sqldeb.debug("Begining transaction")
+            sqlog.debug("Begining transaction")
             if self.database._setTransactionLock_(self):
                 #self.database._setErrorCallback_(transCommitExceptionCallback)
                 pass
@@ -449,16 +495,17 @@ class DatabaseConnection:
 
     def endTransaction(self):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
-            sqldeb.debug("Ending transaction")
+            sqlog.debug("Ending transaction")
             self.database._releaseTransactionLock_(self)
 
     def abortTransaction(self):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
-            sqldeb.debug("Aborting transaction")
+            sqlog.debug("Aborting transaction")
             self.database._abortTransaction_(self)
 
     def execute(self, query):
         # Note: We intentionally don't check the database lock here
+        # Note: This function is not responsible for rolling back changes if there is an error
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
             try:
                 sqlog.debug("DatabaseConnection[\"%s\"] Performing Query: %s" % (self.getName(), query))
@@ -483,9 +530,6 @@ class DatabaseCacheManager:
 
         # {Key: cacheEntryID, Value: (rowID, table)}
         self.cacheMap = {}
-
-        # {Key: tableKey, Value: {Key: rowID, Value: RowDataCache}}
-        #self.data = {} #TODO: This should be moved to Database to allow the cache manager to be stateless
 
         # {Key: cacheEntryID, Value: {Key: columnKey, Value: newValue}}
         self.changes = {}
@@ -529,13 +573,15 @@ class DatabaseCacheManager:
         # Return the cache id of the newly cached data
         return self.entryIndexCounter
 
+    # Alias: getCacheForID
     def _initRowDataCache_(self, cacheID):
         if cacheID in self.cache:
             return RowDataCache(cacheID, self)
         else:
-            sqldeb.warning("No cache entry with id %s" % cacheID)
+            cadeb.warning("No cache entry with id %s" % cacheID)
         return None
 
+    # Alias: cacheToTableRow
     def _initRow_(self, table, rowData):
         rowClass = table.getRowClass(table, rowData)
         return rowClass(rowData, table)
@@ -561,15 +607,25 @@ class DatabaseCacheManager:
         return newRows
 
     def _lookupRow_(self, rowID, table):
+        cadeb.debug("Looking up row %s in table %s" % (rowID, table))
         # This function intentionally ignores whether the row has been deleted
         #TODO: Consider creating a reverse mapping table
+        print(self.cacheMap)
         for item in self.cacheMap.items():
             checkRowID = item[1][0]
             checkTable = item[1][1]
 
             # == to compare value and "is" to match instances
-            if rowID == checkRowID and checkTable is table:
+            cadeb.debug("Lookup check %s == %s -> %s; %s is %s -> %s" % (rowID, checkRowID, (rowID == checkRowID), checkTable, table, (checkTable is table)))
+
+            # Get a stack trace if rowID is a string
+            assert type(rowID) is int
+
+            if int(rowID) == checkRowID and checkTable is table:
+                cadeb.debug("Match found for row %s in table %s" % (rowID, table))
                 return item[0] # Return the cacheID
+
+        cadeb.debug("No match found for row %s in table %s" % (rowID, table))
         return None
 
     def _getCacheForID_(self, cacheID):
@@ -577,6 +633,7 @@ class DatabaseCacheManager:
 
     def _writeCache_(self, connection, clearCache = True):
         if connection.canExecuteUnsafe():
+            print("Writing Cache")
             # {Key: Table, Value: (deletedRows, changedRows)}
             pendingChanges = {}
 
@@ -590,11 +647,11 @@ class DatabaseCacheManager:
                     if self._verifyTable_(table, connection):
                         pendingChanges[table] = ([], [])
                     else:
-                        logman.error("Failed to write table %s schema to database!" % (table.getTableName(table)))
+                        cadeb.error("Failed to write table %s schema to database!" % (table.getTableName(table)))
                         pendingChanges[table] = None
 
                 tmp = pendingChanges[table]
-
+                #print(tmp)
                 if tmp is not None:
                     deletedRows = tmp[0]  # This is a list of the row id's
                     changedRows = tmp[1]  # This is a list of the rows marked as dirty
@@ -603,9 +660,10 @@ class DatabaseCacheManager:
                     # The issue with changing this is how to get a row id since that is handled automatically by sqlite3 through AUTOINCREMENT:
 
                     if self._RowisDeleted_(rowCacheID):
+                        print("Found Delete row")
                         deletedRows.append(rowID)
                     elif self._RowisDirty_(rowCacheID):
-                        #print("Found dirty row")
+                        print("Found dirty row")
                         changedRows.append( (rowID, rowCacheID) )
 
             # Generate the queries and execute them
@@ -631,20 +689,16 @@ class DatabaseCacheManager:
                 #print(changedRows)
 
                 for rowUpdateQuery in updateQueries:
+                    print(str(rowUpdateQuery))
                     connection.execute(str(rowUpdateQuery))
 
                 # Then we demo everything slated for destruction
                 if delQuery is not None:
+                    print(str(delQuery))
                     connection.execute(str(delQuery))
 
             # Verify and fix the foreign key relationships
             #TODO: Implement this
-
-            #if clearCache: #TODO: Fix this to properly clear all parts of the cache
-                # This functions as a full cache reset
-                # TODO: Consider implementing a partial cache clear
-            #    print("Clearing Cache")
-            #    self.cache.clear()
         else:
             print("DB Disallowed unsafe executes")
 
@@ -658,20 +712,56 @@ class DatabaseCacheManager:
 
     def _beginTransaction_(self, connection):
         cadeb.debug("Entering transaction mode")
+        # TODO: Verify that this code will properly handle rolling back in the event of an error
         connection.execute("BEGIN TRANSACTION")
         self._inTransaction_ = True
 
     def _endTransaction_(self, connection, rollback = False):
+        # TODO: Verify that this code properly handles sql errors
         cadeb.debug("Exiting transaction mode: Rollback = %s" % rollback)
         if rollback:
             connection.execute("ROLLBACK")
+            self._rollbackCacheChanges_()
         else:
             connection.execute("COMMIT")
+            self._commitCacheChanges_()
 
-        self.clearChanges()
         self._inTransaction_ = False
 
-    def clearChanges(self):
+    def _commitCacheChanges_(self):
+        # When this is run we can assume that the foreign key relationships in the database are correct
+        # so we proceed to apply the changes in the cache to the state
+
+        # Deleted
+        for delID in self.deleted:
+            cadeb.debug("Removing %s from the cache and mapping" % delID)
+            # Our job is to ensure that no trace if the provided id exists anywhere
+            # so we don't check to see whether the id has a valid mapping because we don't care
+            self.cache.pop(delID)
+            self.cacheMap.pop(delID)
+
+        # Created
+        # TODO: Implement this
+
+        # Changes
+        for changeData in self.changes.items():
+            cacheID = changeData[0]
+            changeValues = changeData[1]
+            rowData = self.cache.get(cacheID, None)
+            if rowData is not None:
+                # If the row wasn't deleted
+                cadeb.debug("Applying %s to row %s" % (changeValues, rowData))
+                for change in changeValues.items():
+                    key = change[0]
+                    value = change[1]
+                    rowData[key] = value
+
+        # Having applied the changes to the cache we reset for the next transaction
+        self.changes.clear()
+        self.deleted.clear()
+        self.created.clear()
+
+    def _rollbackCacheChanges_(self):
         self.changes.clear()
         self.deleted.clear()
         self.created.clear()
@@ -684,6 +774,7 @@ class DatabaseCacheManager:
         if rowCacheID is None:
             # The row doesn't exist in the cache so we turn to the DB
             query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS(COLUMN_ANY).FROM(table).WHERE_ID_IN([rowID])
+            # TODO: Verify that this code will properly handle rolling back in the event of an error
             result = connection.execute(str(query))
             if len(result) < 1:
                 # TODO: raise an excpetion or something
@@ -717,6 +808,7 @@ class DatabaseCacheManager:
         if len(missingRows) > 0:
             cadeb.debug("%s@%s: Querying for missing rows: %s" % (connection.getName(), table.getTableName(table), missingRows))
             query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS(COLUMN_ANY).FROM(table).WHERE_ID_IN(missingRows)
+            # TODO: Verify that this code will properly handle rolling back in the event of an error
             result = connection.execute(str(query))
             if len(result) < 1:
                 # TODO: raise an excpetion or something
@@ -755,28 +847,33 @@ class DatabaseCacheManager:
 
     def deleteRow(self, table, connection, rowID):
         if self._inTransaction_:
-            cadeb.debug("%s@%s: Deleting row: %s" % (table.getTableName(table), rowID))
+            cadeb.debug("%s@%s: Deleting row: %s" % (connection.getName(), table.getTableName(table), rowID))
             # Delete from the cache
             rowCacheID = self._lookupRow_(rowID, table)
-            if rowCacheID is not None:
-                #print("Found Row")
-                self._RowsetDeleted_(rowCacheID, True)
-            return True
+            if rowCacheID is None:
+                print(self.getRow(table, connection, rowID))
+                rowCacheID = self._lookupRow_(rowID, table)
 
-        cadeb.debug("%s@%s: Failed to delete row: %s" % (table.getTableName(table), rowID))
+            print(rowCacheID)
+            if rowCacheID is not None:
+                print("Found Row")
+                self._RowsetDeleted_(rowCacheID, True)
+                return True
+
+        cadeb.debug("%s@%s: Failed to delete row: %s" % (connection.getName(), table.getTableName(table), rowID))
         return False
 
     def select(self, table, connection, filter):
         #TODO: Replace the string based SQL_WhereStatementBuilder with an object/enum based version
         cadeb.debug("%s@%s: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
 
-        if self._isDirty_() and connection.canExecuteUnsafe():
-            # Write the cache to the DB to ensure that when we resolve the query the result will be correct
-            try:
-                self._writeCache_(connection, False)
-            except Exception as e:
-                cadeb.exception(e)
-                raise e
+        #if self._isDirty_() and connection.canExecuteUnsafe():
+        #    # Write the cache to the DB to ensure that when we resolve the query the result will be correct
+        #    try:
+        #        self._writeCache_(connection, False)
+        #    except Exception as e:
+        #        cadeb.exception(e)
+        #        raise e
 
         # If we successfully wrote the cache to the DB
         if not self._isDirty_() and self._inTransaction_:
@@ -785,6 +882,7 @@ class DatabaseCacheManager:
             idCol = table.getIDColumn(table)
             if idCol is not None:
                 query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS([ idCol ]).FROM(table).WHERE(filter)
+                # TODO: Verify that this code will properly handle rolling back in the event of an error
                 rows = connection.execute(str(query))
 
                 idList = []
@@ -795,9 +893,9 @@ class DatabaseCacheManager:
 
                 return self.getRows(table, connection, idList)
 
-            sqldeb.error("%s@%s: ID column was none!" % (connection.getName(), table.getTableName(table)))
+            cadeb.error("%s@%s: ID column was none!" % (connection.getName(), table.getTableName(table)))
         else:
-            sqldeb.error("%s@%s: Can't perform SELECT; Database cache has uncommitted changes" % (connection.getName(), table.getTableName(table)))
+            cadeb.error("%s@%s: Can't perform SELECT; Database cache has uncommitted changes" % (connection.getName(), table.getTableName(table)))
         return None
 
     def _RowisDeleted_(self, objectID):
@@ -823,16 +921,20 @@ class DatabaseCacheManager:
         changes = self._RowgetChanged_(objectID)
         if changes is not None:
             value = changes.get(columnKey, null)
+            #print(value)
             if type(value) is not _NullValue_:
                 return value
 
         cacheEntry = self.cache.get(objectID, None)
+        #print(cacheEntry)
         if cacheEntry is not None:
             value = cacheEntry.get(columnKey, null)
+            #print(value)
             if type(value) is not _NullValue_:
                 return value
 
-        cadeb.error("Invalid Key %s" % columnKey)
+        #print(self.cache)
+        cadeb.error("Invalid Key %s for cache id %s; type(%s)" % (columnKey, objectID, type(columnKey)))
         return null
 
     def _RowsetValue_(self, objectID, columnKey, value):
@@ -997,7 +1099,7 @@ class SQLQueryBuilder:
 
                     if i[0] is not None:
                         value = ""
-                        if type(value) is str:
+                        if type(i[1]) is str:
                             value = "\"%s\"" % i[1]
                         else:
                             value = i[1]
@@ -1015,7 +1117,7 @@ class SQLQueryBuilder:
 
         valueStr = None
         if useVALUES:
-            valueStr = ", ".join(["\"%s\"" % str(val) for val in self.values])
+            valueStr = ", ".join(["\"%s\"" % val if type(val) is str else "%s" % ('null' if val is None else str(val)) for val in self.values])
 
         if whereStr is None:
             whereStr = ""

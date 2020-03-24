@@ -2,7 +2,7 @@ from typing import Callable, List, Optional
 
 import readline, traceback
 from SPENT.SPENT_Schema import *
-from SPENT.SPENT import SpentUtil, SQL_WhereStatementBuilder
+from SPENT.SPENT import SpentUtil, SQL_WhereStatementBuilder, VirtualColumn
 logman = log.getLogger("Main")
 
 from argparse import ArgumentParser
@@ -45,11 +45,17 @@ class REPL():
 				command = self.getCommand(rawStrParts[0])
 				if command is not None:
 					try:
+
+						connection.beginTransaction()
 						command.execute(rawStrParts[1:])
+
 					except Exception as e:
 						#print("Error: Runtime Exception: %s" % e)
 						#traceback.print_exception(type(e), e, e.__traceback__)
 						logman.exception(e)
+						connection.abortTransaction()
+					else:
+						connection.endTransaction()
 
 				# traceback.print_stack()
 				else:
@@ -83,6 +89,8 @@ class Command():
 
 	def execute(self, args: List[str]) -> None:
 		if (len(args) >= self.argCount):
+			result = connection.execute("PRAGMA foreign_keys")
+			print("Pragma: %s" % result[0][0])
 			self.callback(args, self)
 		else:
 			logman.error("Invalid Argument Count: Expected %d, Got %d" % (self.argCount, len(args)))
@@ -110,13 +118,7 @@ def rawSQL(command: List[str], commandObject) -> None:
 
 def exitCallback():
 	logman.info("Exiting...")
-	saveDB(None, None)
 	connection.disconnect(True)
-
-def saveDB(command: Optional[List[str]], commandObject) -> None:
-	logman.info("Saving Database...")
-	database.flush(connection)
-	logman.info("Changes Saved.")
 
 def dumpDB(args, commandObject):
 	pass
@@ -131,7 +133,6 @@ def setLogLevel(command: List[str], commandObject) -> None:
 
 commands = {
 	'raw' : Command(rawSQL),
-	'save' : Command(saveDB),
 	'setLevel' : Command(setLogLevel, "Level Name"),
 }
 
@@ -139,6 +140,7 @@ commands = {
 
 def showAccountTree(command: List[str], commandObject) -> None:
 	shellPrint("ID, Name, Available, Posted")
+
 	for a in EnumBucketsTable.select(connection, SQL_WhereStatementBuilder("%s == -1" % EnumBucketsTable.Ancestor.name)):
 		printTree(a)
 
@@ -178,30 +180,20 @@ def createFunction(table, connection, args, command):
 		data[column] = args[index]
 
 	print(data)
-	connection.beginTransaction()
 	table.createRow(connection, data)
-	connection.endTransaction()
 
 def updateFunction(table, connection, args, obj):
 	kvp = args[1].split(":")
 	rowID = args[0];
 	data = table.getRow(connection, rowID)
-
-	connection.beginTransaction()
 	data.setValue(table[kvp[0].strip()], kvp[1])
-	connection.endTransaction()
 
 def deleteFunction(table, connection, args, obj):
 	rowID = args[0]
-
-	connection.beginTransaction()
 	table.deleteRow(connection, rowID)
-	connection.endTransaction()
-
 def listFunction(table, connection, args, obj):
 	shellPrint("Listing %s" % table.getTableName(table))
 	rowSelection = table.select(connection, None)
-
 	columns = table.getColumns(table)
 	for row in rowSelection:
 		printRow(row, columns)
@@ -232,12 +224,18 @@ def tableActionHandler(command: List[str], commandObject):
 def remap(input):
 	return "%s [%s]" % (input[0].name, input[1].name)
 
-for type in dataTypes.items():
-	table = type[1]
-	typeName = type[0]
+connect = database.getConnection("InitTables")
+connect.connect(False)
+connect.beginTransaction()
+database.initTable(EnumTransactionGroupsTable, connect)
+database.initTable(EnumTransactionTagsTable, connect)
+
+for dtype in dataTypes.items():
+	table = dtype[1]
+	typeName = dtype[0]
 
 	# Init the table in the DB
-	database.initTable(table)
+	database.initTable(table, connect)
 
 	for action in actions.items():
 		actionName = action[0]
@@ -249,7 +247,7 @@ for type in dataTypes.items():
 		args = []
 		if actionName == "Create":
 			for column in table.getColumns(table):
-				if column.value.willPreventNull() and not column.value.willAutoIncrement():
+				if not column.value.willAutoIncrement() and not type(column.value) is VirtualColumn:
 					args.append( (column, column.value.getType()) )
 
 		if actionName == "Update":
@@ -271,11 +269,13 @@ for type in dataTypes.items():
 		commands[commandName].function = actionFunction
 		commands[commandName].args = args
 
+connect.endTransaction()
+
 commands['ls'] = Command(showAccountTree)
 commands['info'] = Command(showBucket, "ID")
 commands['dump'] = Command(dumpDB)
 
 
-setLogLevel(["INFO"], None)
+#setLogLevel(["INFO"], None)
 repl = REPL(exitCallback, commands)
 repl.main()

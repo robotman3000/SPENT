@@ -124,9 +124,7 @@ class SpentUtil:
 	@classmethod
 	def getBucketChildren(self, connection, bucket: 'Bucket') -> List['Bucket']:
 		#print(type(bucket))
-		connection.beginTransaction()
 		buckets = EnumBucketsTable.select(connection, SQL_WhereStatementBuilder("%s == %d" % ("Parent", int(bucket.getID()))))
-		connection.endTransaction()
 		return buckets
 
 	@classmethod
@@ -150,10 +148,8 @@ class SpentUtil:
 
 	@classmethod
 	def getBucketTransactions(self, connection, bucket: 'Bucket') -> List['Transaction']:
-		connection.beginTransaction()
 		transactions = EnumTransactionTable.select(connection, SQL_WhereStatementBuilder("%s == %s" % ("SourceBucket", bucket.getID())).OR(
 				"%s == %s" % ("DestBucket", bucket.getID())))
-		connection.endTransaction()
 		return transactions
 
 	@classmethod
@@ -163,11 +159,9 @@ class SpentUtil:
 	@classmethod
 	def getAllBucketTransactions(self, connection, bucket: 'Bucket') -> List['Transaction']:
 		allIDList = ", ".join(map(str, self.getAllBucketChildrenID(connection, bucket) + [bucket.getID()]))
-		connection.beginTransaction()
 		result = EnumTransactionTable.select(connection,
 			SQL_WhereStatementBuilder("%s IN (%s)" % ("SourceBucket", allIDList)).OR(
 				"%s IN (%s)" % ("DestBucket", allIDList)))
-		connection.endTransaction()
 		return result
 
 	@classmethod

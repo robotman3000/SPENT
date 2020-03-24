@@ -70,5 +70,5 @@ def getLogger(name):
 
 def setLevel(level):
     for logger in loggers.items():
-        print(logger)
         logger[1].setLevel(level)
+        print(logger)

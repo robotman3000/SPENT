@@ -57,19 +57,6 @@ class EnumTagsTable(sqlib.EnumTable):
 #def getPostedBucketBalance(source, tableName, columnName):
 #    return spent.util.getPostedBalance(source)
 
-# TODO: Should these vir columns be kept around?
-#def getBucketTransactions(source, tableName, columnName):
-#    return spent.util.getBucketTransactionsID(source)
-
-#def getAllBucketTransactions(source, tableName, columnName):
-#    return spent.util.getAllBucketTransactionsID(source)
-
-#def getBucketChildren(source, tableName, columnName):
-#    return spent.util.getBucketChildrenID(source)
-
-#def getAllBucketChildren(source, tableName, columnName):
-#    return spent.util.getAllBucketChildrenID(source)
-
 class EnumBucketsTable(sqlib.EnumTable):
     ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
     Name = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=True)
@@ -79,12 +66,6 @@ class EnumBucketsTable(sqlib.EnumTable):
     #PostedBalance = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getPostedBucketBalance)
     #TreeBalance = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getAvailBucketTreeBalance)
     #PostedTreeBalance = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getPostedBucketTreeBalance)
-
-    # TODO: Deprecated
-    #Transactions = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getBucketTransactions)
-    #AllTransactions = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getAllBucketTransactions)
-    #Children = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getBucketChildren)
-    #AllChildren = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getAllBucketChildren)
 
     def onInit(self, connection):
         if connection.canExecuteUnsafe():

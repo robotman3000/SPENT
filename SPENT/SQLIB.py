@@ -28,23 +28,40 @@ def sqlRowToDict(row, table):
     return dict
 
 class TypeVerifier:
+    # This verifies that "data" can be represented in the implementation type
     def verify(self, data):
-        #TODO: Implement the verify functions for each type
-        # (And change this to return False)
+        return False
+
+    # This converts the data to the impl type
+    def sanitize(self, data):
+        sqldeb.warning("TypeVerifier.sanitize() was called!!!")
+        return None
+
+class StringTypeVerifier(TypeVerifier):
+    def verify(self, data):
+        # Everything can be a string
         return True
 
     def sanitize(self, data):
-        # (And change this to "pass")
-        return data
+        if type(data) is str:
+            return data
 
-class StringTypeVerifier(TypeVerifier):
-    pass
+        return str(data)
 
 class IntegerTypeVerifier(TypeVerifier):
     def verify(self, value):
+        # TODO: is int or can be converted to int
         return type(value) is int
 
+    def sanitize(self, data):
+        # Ensure the data is an int
+        if type(data) is int:
+            return data
+
+        return int(data)
+
 class DecimalTypeVerifier(TypeVerifier):
+    #TODO: Implement this and fix integer to only allow whole numbers
     pass
 
 class DateTypeVerifier(TypeVerifier):
@@ -53,7 +70,7 @@ class DateTypeVerifier(TypeVerifier):
 class EnumColumnType(Enum):
     TEXT = StringTypeVerifier()
     INTEGER = IntegerTypeVerifier()
-    DECIMAL = DecimalTypeVerifier()
+    #DECIMAL = DecimalTypeVerifier()
     DATE = DateTypeVerifier()
 
 class TableRow():
@@ -76,8 +93,26 @@ class TableRow():
     def setValue(self, columnKey, newValue):
         return self.cache.setValue(columnKey, newValue)
 
+    def setValues(self, data):
+        # Note: This function does not return the old values
+        for i in data.items():
+            self.setValue(i[0], i[1])
+
     def getColumns(self):
         return self.table.getColumns(self.table)
+
+    def asDict(self, columns=None):
+        data = {}
+        colList = []
+        if columns is not None and len(columns) > 0:
+            colList = columns
+        else:
+            colList = self.getColumns()
+
+        for col in colList:
+            data[col.name] = self.getValue(col)
+
+        return data
 
     def __str__(self):
         return str(self.cache)
@@ -235,6 +270,8 @@ class EnumTable(Enum):
 
     @classmethod
     def parseStrings(table, columnNames):
+        # This function converts a list of strings into a list of the columns that match the strings by name
+        # It quietly drops any strings that don't have a matching column
         result = []
         for column in table.__members__.values():
             #print(column)
@@ -326,6 +363,11 @@ class RowSelection:
                 row.setValue(columnKey, newValue)
         else:
             raise Exception("Database is locked")
+
+    def getRow(self, rowID):
+        # Get a single row from the selection set by id
+        # No need to mak a duplicate of the returned row; The row objects are thread safe
+        return self.rows.get(rowID, None)
 
     def getRows(self):
         #TODO: raise an exception if self.rows is None
@@ -445,6 +487,9 @@ class DatabaseConnection:
         sqlog.debug("STUB: Writing schema to DB...")
         #TODO: This is where the database version will be compared to the schema version to determine they are compatable
         return True
+
+    def isConnected(self):
+        return self._assertDBConected_(True, "")
 
     def canExecuteSafe(self):
         return self.canExecuteUnsafe() or not self.database._isLocked_()
@@ -607,25 +652,27 @@ class DatabaseCacheManager:
         return newRows
 
     def _lookupRow_(self, rowID, table):
-        cadeb.debug("Looking up row %s in table %s" % (rowID, table))
+        #cadeb.debug("Looking up row %s in table %s" % (rowID, table))
         # This function intentionally ignores whether the row has been deleted
         #TODO: Consider creating a reverse mapping table
-        print(self.cacheMap)
+        #print(self.cacheMap)
         for item in self.cacheMap.items():
             checkRowID = item[1][0]
             checkTable = item[1][1]
 
             # == to compare value and "is" to match instances
-            cadeb.debug("Lookup check %s == %s -> %s; %s is %s -> %s" % (rowID, checkRowID, (rowID == checkRowID), checkTable, table, (checkTable is table)))
+
+            # This message spams the logging
+            #cadeb.debug("Lookup check %s == %s -> %s; %s is %s -> %s" % (rowID, checkRowID, (rowID == checkRowID), checkTable, table, (checkTable is table)))
 
             # Get a stack trace if rowID is a string
             assert type(rowID) is int
 
             if int(rowID) == checkRowID and checkTable is table:
-                cadeb.debug("Match found for row %s in table %s" % (rowID, table))
+                #cadeb.debug("Match found for row %s in table %s" % (rowID, table))
                 return item[0] # Return the cacheID
 
-        cadeb.debug("No match found for row %s in table %s" % (rowID, table))
+        #cadeb.debug("No match found for row %s in table %s" % (rowID, table))
         return None
 
     def _getCacheForID_(self, cacheID):
@@ -633,7 +680,7 @@ class DatabaseCacheManager:
 
     def _writeCache_(self, connection, clearCache = True):
         if connection.canExecuteUnsafe():
-            print("Writing Cache")
+            #print("Writing Cache")
             # {Key: Table, Value: (deletedRows, changedRows)}
             pendingChanges = {}
 
@@ -660,10 +707,10 @@ class DatabaseCacheManager:
                     # The issue with changing this is how to get a row id since that is handled automatically by sqlite3 through AUTOINCREMENT:
 
                     if self._RowisDeleted_(rowCacheID):
-                        print("Found Delete row")
+                        #print("Found Delete row")
                         deletedRows.append(rowID)
                     elif self._RowisDirty_(rowCacheID):
-                        print("Found dirty row")
+                        #print("Found dirty row")
                         changedRows.append( (rowID, rowCacheID) )
 
             # Generate the queries and execute them
@@ -830,6 +877,7 @@ class DatabaseCacheManager:
         if self._inTransaction_:
             cadeb.debug("%s@%s: Creating row: %s" % (connection.getName(), table.getTableName(table), rowData))
             #TODO: Revisit the idea of a non write-through create
+            # TODO: Verify that all the required columns are passed is and raise an exception if any are missing
             keys = rowData.keys()
             values = rowData.values()
             query = SQLQueryBuilder(EnumSQLQueryAction.INSERT).INTO(table).COLUMNS(keys).VALUES(values)
@@ -851,12 +899,12 @@ class DatabaseCacheManager:
             # Delete from the cache
             rowCacheID = self._lookupRow_(rowID, table)
             if rowCacheID is None:
-                print(self.getRow(table, connection, rowID))
+                #print(self.getRow(table, connection, rowID))
                 rowCacheID = self._lookupRow_(rowID, table)
 
-            print(rowCacheID)
+            #print(rowCacheID)
             if rowCacheID is not None:
-                print("Found Row")
+                #print("Found Row")
                 self._RowsetDeleted_(rowCacheID, True)
                 return True
 

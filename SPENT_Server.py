@@ -1,6 +1,6 @@
 ﻿import mimetypes, json, time, os
 from wsgiref.simple_server import make_server
-from SPENT.SPENT import *
+from SPENT.Old.SPENT import *
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
@@ -8,9 +8,9 @@ parser.add_argument("--file", dest="dbpath",
                     default="SPENT.db")
 parser.add_argument("--root", dest="serverRoot",
                     default="./web")
-parser.add_argument("--debug",
-                    action="store_true", dest="debugCore", default=False,
-                    help="Enable debug logging")
+#parser.add_argument("--debug",
+#                    action="store_true", dest="debugCore", default=False,
+#                    help="Enable debug logging")
 parser.add_argument("--debug-API",
                     action="store_true", dest="debugAPI", default=False,
                     help="Enable API request logging")
@@ -43,11 +43,9 @@ class SPENTServer():
 		self.connection = self.database.getConnection("Server")
 		self.connection.connect() #TODO: Implement a connection pool
 
-		self.accountMan = SpentDBManager()
 		self.spentUtil = SpentUtil
 
 		self.showAPIData = args.debugAPI
-		self.accountMan.printDebug = args.debugCore
 		
 		self.port = port
 
@@ -55,11 +53,11 @@ class SPENTServer():
 		self.handler.registerRequestHandler("POST", "/database/apiRequest", self.apiRequest)
 
 		self.apiTree = {}
-		self.apiTree["account"] = {"get": self.getAccount, "create": self.createAccount, "update": self.updateAccount, "delete": self.deleteAccount}
-		self.apiTree["bucket"] = {"get": self.getBucket, "create": self.createBucket, "update": self.updateBucket, "delete": self.deleteBucket}
-		self.apiTree["transaction"] = {"get": self.getTransaction, "create": self.createTransaction, "update": self.updateTransaction, "delete": self.deleteTransaction}
-		self.apiTree["transaction-group"] = {"get": self.getTransactionGroup, "create": self.createTransactionGroup, "update": self.updateTransactionGroup, "delete": self.deleteTransactionGroup}
-		self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag}
+		self.apiTree["account"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
+		self.apiTree["bucket"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
+		self.apiTree["transaction"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
+		self.apiTree["transaction-group"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
+		self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag} #Tags are handled differently
 		#self.apiTree["property"] = {"get": self.getProperty, "update": self.updateProperty}
 		#self.apiTree["enum"] = {"get": self.getEnum}
 
@@ -101,24 +99,24 @@ class SPENTServer():
 					response = resp[0]
 					runTime = resp[1]
 					#response = delegate(queryStr)
-					
 			else:
+				#TODO: Add a list of "registered" files that the server is allowed to serve
 				resp = time_it(self.handler.fileHandler, queryStr, path)
 				response = resp[0]
 				runTime = resp[1]
 				skipResponse = True
-			
-			start_response(response.getStatus(), response.getHeaders())
+
 		except Exception as e:
 			response_body = "An unhandled exception occured!!\n"
 			response_body += str(e) + "\n"
 			response_body += traceback.format_exc()
-			print(response_body)
+			#print(response_body)
 			status = '500 OK'
 			headers = [('Content-type', 'text/text'),
 				   ('Content-Length', str(len(response_body)))]
 			response = ServerResponse(status, headers, response_body)
-			start_response(response.getStatus(), response.getHeaders())
+
+		start_response(response.getStatus(), response.getHeaders())
 		
 		if self.showAPIData:
 			if not skipResponse:
@@ -135,31 +133,62 @@ class SPENTServer():
 	def apiRequest(self, query, contentLen, content):
 		request = json.loads(content)
 		handlerFunc = self.invalidHandler
-		
-		typeDict = self.apiTree.get(request["type"], {})
-		table = self.typeMapper.get(request["type"], None)
+		responsePackets = []
+		responseCode = "200 OK"
+		responseBody = None
 
-		if typeDict is not None:
-			print("API Request: %s %s" % (request["action"], request["type"]))
-			handlerFunc = typeDict.get(request["action"], self.invalidHandler)
+		# This function is responsible for every request against the database
+		# so we start by getting a connection (for the db) and ensuring that it
+		# is ready for use
+		connection = self.getDBConnection()
+		if not connection.isConnected():
+			connection.connect()
 
-		requestedColumnsStr = self.getRequestedColumns(request, table)
-		requestedColumns = table.parseStrings(requestedColumnsStr)
-		result = time_it(handlerFunc, request, requestedColumns, table)
+		# We can assume that if connect() ran without an exception then we are ready to talk to the db
+		connection.beginTransaction()
+		try:
+			for packet in request:
+				typeDict = self.apiTree.get(packet["type"], {})
+				table = self.typeMapper.get(packet["type"], None)
 
-		if args.debugServer:
-			print("API Request Handler Ran For: %s" % result[1])
-		#result = handlerFunc(request, requestedColumns)
-		if result[0] is None:
-			result[0] = self.unimp
+				if typeDict is not None:
+					print("API Request: %s %s" % (packet["action"], packet["type"]))
 
-		responseBody = time_it(json.dumps, result[0])
+					# TODO: invalidHandler doesn't conform to the json packet format
+					handlerFunc = typeDict.get(packet["action"], self.invalidHandler)
 
-		if args.debugServer:
-			print("Serialization Took: %s" % responseBody[1])
+				requestedColumnsStr = self.getRequestedColumns(packet, table)
+				requestedColumns = table.parseStrings(requestedColumnsStr)
+
+				#print("me!!!!!!!!")
+				result = time_it(handlerFunc, packet, requestedColumns, table, connection)
+				#print("first!!!!!!!!")
+				if args.debugServer:
+					print("API Request Handler Ran For: %s" % result[1])
+				# result = handlerFunc(request, requestedColumns)
+
+				#TODO: This doesn't conform to the json packet format
+				if result[0] is None:
+					result[0] = self.unimp
+
+				#print(result[0])
+				#tmp = time_it(json.dumps, result[0])
+				responsePackets.append({"action": packet["action"], "type": packet["type"], "data": result[0]})
+
+				#if args.debugServer:
+				#	print("Serialization Took: %s" % tmp[1])
+
+		except Exception as e:
+			connection.abortTransaction()
+			responseCode = "500 OK"
+			responseBody = json.dumps({"successful": False, "message": "An exception occured while accessing the database: %s" % e})
+		else:
+			connection.endTransaction()
+			responseBody = json.dumps({"successful": True, "records": responsePackets}, indent=2)
+
 		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody[0])))]
-		return ServerResponse("200 OK", headers, responseBody[0])
+				   ('Content-Length', str(len(responseBody)))]
+		return ServerResponse(responseCode, headers, responseBody)
 	
 	def getRequestedColumns(self, request, table):
 		data = request.get("columns", [])
@@ -192,201 +221,96 @@ class SPENTServer():
 	def formToDict(self, form):
 		return self.qsToDict(form.decode("utf-8"))
 		
-	def SQLRowsToArray(self, rows, columns=[]):
+	def SQLRowsToArray(self, rows, columns=None):
 		time = time_it(self.SQLRowsToArray_, rows, columns)
 		if args.debugServer:
 			print("Rows to Array ran for: " + time[1])
 			
 		return time[0]
 	
-	def SQLRowsToArray_(self, rows, columns=[]):
+	def SQLRowsToArray_(self, rows, columns=None):
 		records = []
 		
 		if args.debugServer:
 			print("Rows: %s, Columns: %s" % (rows, columns))
 		for i in rows:
 			if i is not None:
-				record = {}
-				colList = columns
-				if len(columns) < 1:
-					colList = i.getColumns()
-
-				for col in colList:
-					record[col.name] = i.getValue(col)
-				records.append(record)	
+				records.append(i.asDict(columns))
 			else:
 				print("Error: SQLRowsToArray: Processed a None row!")
-		#print("Records: %s" % records)
 		return records
+
+	def dataToIDList(self, data, idColumn):
+		return [int(row.get(idColumn, -1)) for row in data if row.get(idColumn, -1) is not None]
 
 	def dataToWhere(self, data, idColumn):
 		if data is not None and len(data) > 0:
-			rowList = [int(row.get(idColumn, -1)) for row in data if row.get(idColumn, -1) is not None]
+			rowList = self.dataToIDList(data, idColumn)
 			return SQL_WhereStatementBuilder("%s in (%s)" % (idColumn.name, ", ".join(map(str, rowList))))
 		return SQL_WhereStatementBuilder()
-	
+
+	def parseSQLObjectToDict(self, table, obj):
+		# Translate the string names into their object mapping
+		columns = table.parseStrings(table, obj.keys())
+
+		# Note: There is no need to clean the values or check them for validity because
+		# SQLIB does that for us using the schema definition
+
+		# Note: There is no need to verify that all the required columns are present because
+		# SQLIB does that for us and will raise an exception of there is a problem
+
+		objData = {col.name: obj.get(col.name, col.default) for col in columns}
+		return objData
+
 	def wrapData(self, data):
 		return {"successful": True, "data": data}
-	
-	def saveDatabase(self, query):
-		self.accountMan.save();
-		responseBody = "Database Saved"
-		headers = [('Content-type', "text/plain"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse("200 OK", headers, responseBody)
 		
 	def closeDatabase(self, query):
 		self.accountMan.disconnect()
 		self.running = False
-		
-	def getAccount(self, request, columns, table):
-		data = request.get("data", None)
-		rows = self.accountMan.getAccountsWhere(self.getDBConnection(), self.dataToWhere(data, table.getIDColumn(table)))
-		result = self.SQLRowsToArray(rows, columns)
-		return self.wrapData(result)
 
-	def createAccount(self, request, columns, table):
-		return self.createBucket(request, columns, table)
-	
-	def updateAccount(self, request, columns, table):
-		return self.updateBucket(request, columns, table)
-	
-	def deleteAccount(self, request, columns, table):
-		data = request.get("data", {})
-		idList = [int(i.get(table.getIDColumn(table), -1)) for i in data]
-		deleteList = self.accountMan.deleteAccountsWhere(self.getDBConnection(), SQL_WhereStatementBuilder("%s in (%s)" % (table.getIDColumn(table).name, ", ".join(map(str, idList)))))
-		return self.wrapData([{"ID": idVal} for idVal in deleteList])
-
-	def getBucket(self, request, columns, table):
-		data = request.get("data", [])
-		accountID = request.get("selAccount", -1)
-		account = None
-		try:
-			account = self.accountMan.getBucket(self.getDBConnection(), accountID)
-		except:
-			print("Failed to get account with id %s" % accountID)
-
-		where = self.dataToWhere(data, table.getIDColumn(table))
-		if account is not None:
-			where.AND("Ancestor == %s" % account.getID())
-
-		rows = self.accountMan.getBucketsWhere(self.getDBConnection(), where)
-		result = self.SQLRowsToArray(rows, columns)
-		return self.wrapData(result)
-
-	def createBucket(self, request, columns, table):
-		data = request.get("data", {})
-		buckets = []
-		for i in data:
-			buckets.append(self.accountMan.createBucket(self.getDBConnection(),
-				name=i.get("Name", 0),
-				parent=i.get("Parent", -1)
-			))
-		return self.wrapData(self.SQLRowsToArray(buckets))
-	
-	def updateBucket(self, request, columns, table):
-		data = request.get("data", {})
-		results = []
-		for i in data:
-			bucket = self.accountMan.getBucket(self.getDBConnection(), int(i.get("ID", -1)))
-			for j in i.items():
-				bucket.updateValue(j[0], j[1])
-			results.append(bucket)
-			
-		return self.wrapData(self.SQLRowsToArray(results))
-	
-	def deleteBucket(self, request, columns, table):
-		data = request.get("data", {})
-		idList = [int(i.get("ID", -1)) for i in data]
-		deleteList = self.accountMan.deleteBucketsWhere(self.getDBConnection(), SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
-		return self.wrapData([{"ID": idVal} for idVal in deleteList])
-		
-	def getTransaction(self, request, columns, table):
-		data = request.get("data", {})
-		accountID = request.get("selAccount", -1)
-		account = None
-		try:
-			account = self.accountMan.getBucket(self.getDBConnection(), accountID)
-		except:
-			print("Failed to get account with id %s" % accountID)
-
-		where = None
-		if account is not None:
-			transList = []
-			if account.getParent() is None:
-				transList = self.spentUtil.getAllBucketTransactionsID(self.getDBConnection(), account)
-			else:
-				transList = self.spentUtil.getBucketTransactionsID(self.getDBConnection(), account)
-
-			where = SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, transList)))
-
-		transactions = self.accountMan.getTransactionsWhere(self.getDBConnection(), where)
-		return self.wrapData(self.SQLRowsToArray(transactions, columns))
-	
-	def createTransaction(self, request, columns, table):
-		#TODO: Group should not be passed by id
-		data = request.get("data", {})
-		results = []
-		for i in data:
-			results.append(self.accountMan.createTransaction(
-				amount=i.get("Amount", 0),
-				status=i.get("Status", 0),
-				sourceBucket=self.accountMan.getBucket(int(i.get("SourceBucket", -1))),
-				destBucket=self.accountMan.getBucket(int(i.get("DestBucket", -1))),
-				transactionDate=i.get("TransDate", getCurrentDateStr()),
-				postDate=i.get("PostDate", None),
-				memo=i.get("Memo", ""),
-				payee=i.get("Payee", ""),
-				group=i.get("GroupID", self.accountMan.getTransactionGroup(int(i.get("GroupID", -1))))))
-		return self.wrapData(self.SQLRowsToArray(results))
-	
-	def updateTransaction(self, request, columns, table):
-		data = request.get("data", {})
-		results = []
-		for i in data:
-			bucket = self.accountMan.getTransaction(self.getDBConnection(), int(i.get("ID", -1)))
-			for j in i.items():
-				bucket.updateValue(j[0], j[1])
-			results.append(bucket)
-		return self.wrapData(self.SQLRowsToArray(results, columns))
-	
-	def deleteTransaction(self, request, columns, table):
-		data = request.get("data", {})
-		idList = [int(i.get("ID", -1)) for i in data]
-		deleteList = self.accountMan.deleteTransactionsWhere(self.getDBConnection(), SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
-		return self.wrapData([{"ID": idVal} for idVal in idList])
-
-	def getTransactionGroup(self, request, columns, table):
+	def getFunction(self, request, columns, table, connection):
+		#TODO: Ths function needs to use the filter field as a "where"
+		# TODO: Verify that the account table will only return accounts and the bucket table will not include accounts
 		data = request.get("data", {})
 		where = self.dataToWhere(data, table.getIDColumn(table))
-		groups = self.accountMan.getTransactionGroupsWhere(self.getDBConnection(), where)
-		return self.wrapData(self.SQLRowsToArray(groups, columns))
+		selectedRows = table.select(connection, where)
+		return self.SQLRowsToArray(selectedRows.getRows().values(), columns)
 
-	def createTransactionGroup(self, request, columns, table):
+	def createFunction(self, request, columns, table, connection):
 		data = request.get("data", {})
-		results = []
-		for i in data:
-			results.append(self.accountMan.createTransactionGroup(
-				bucket=self.accountMan.getBucket(int(i.get("Bucket", -1))),
-				memo=i.get("Memo", "")))
-		return self.wrapData(self.SQLRowsToArray(results))
+		for obj in data:
+			objData = self.parseSQLObjectToDict(table, obj)
+			table.createRow(table, connection, objData)
 
-	def updateTransactionGroup(self, request, columns, table):
-		data = request.get("data", {})
-		results = []
-		for i in data:
-			bucket = self.accountMan.getTransactionGroup(int(i.get("ID", -1)))
-			for j in i.items():
-				bucket.updateValue(j[0], j[1])
-			results.append(bucket)
-		return self.wrapData(self.SQLRowsToArray(results, columns))
+		# This function sends no data back to the client because the list of created rows is sent elsewhere
+		return None
 
-	def deleteTransactionGroup(self, request, columns, table):
+	def updateFunction(self, request, columns, table, connection):
 		data = request.get("data", {})
-		idList = [int(i.get("ID", -1)) for i in data]
-		deleteList = self.accountMan.deleteTransactionGroupsWhere(
-			SQL_WhereStatementBuilder("ID in (%s)" % ", ".join(map(str, idList))))
-		return self.wrapData([{"ID": idVal} for idVal in idList])
+		idCol = table.getIDColumn(table)
+		IDs = self.dataToIDList(data, idCol.name)
+		selection = table.getRows(table, connection, IDs)
+		for obj in data:
+			rowID = obj.get(idCol.name, None)
+			if rowID is not None:
+				# If the client provided an id for this object
+				row = selection.getRow(rowID)
+				if row is not None:
+					# and the id is valid
+					# then perform the update
+					objData = self.parseSQLObjectToDict(table, obj)
+					row.updateValues(objData)
+		return None
+
+	def deleteFunction(self, request, columns, table, connection):
+		data = request.get("data", {})
+		where = self.dataToWhere(data, table.getIDColumn(table))
+		selectedRows = table.select(table, connection, where)
+		selectedRows.deleteRows()
+
+		# This function sends no data back to the client because the list of deleted rows is sent elsewhere
+		return None
 
 	def getTag(self, request, columns):
 		return self.unimp
@@ -427,7 +351,9 @@ class ServerResponse:
 		return self.body
 	
 	def __str__(self):
-		return "%s %s\n%s" % (self.getStatus(), self.getHeaders(), json.dumps(json.loads(self.getBody()), indent=2))
+		return "%s %s\n%s" % (self.getStatus(),
+							  self.getHeaders(),
+							  json.dumps(json.loads(self.getBody()), indent=2))
 	
 class RequestHandler:
 	def __init__(self):

@@ -147,14 +147,16 @@ function createRequest(action, type, data, columns, rules){
 		type: type
 	}
 
-    var properties = [{name: "data", value: data}, {name: "columns", value: columns}, {name: "rules", value: rules}]
+    var properties = [{name: "data", value: data, def: {}}, {name: "columns", value: columns, def: []}, {name: "rules", value: rules, def: {}}]
     properties.forEach(function(item, index){
         if(item.value != undefined && item.value != null){
            request[item.name] = item.value;
             if(item.value.length < 1){
                 request[item.name] = null;
             }
-        }
+        } /*else {
+            request[item.name] = item.def;
+        }*/
     });
 
 	request.debugTrace = new Error().stack;
@@ -233,7 +235,7 @@ function onDocumentReady() {
         }
 
         console.log("AJAX: " + apiAction + " - " + recordType)
-        var req = apiRequest(createRequest(apiAction, recordType, data, requestColumns, rules), options.success, options.error)
+        var req = apiRequest([createRequest(apiAction, recordType, data, requestColumns, rules)], options.success, options.error)
         model.trigger('request', model, req, options);
         return req;
     };

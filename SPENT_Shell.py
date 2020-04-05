@@ -1,8 +1,8 @@
-from typing import Callable, List, Optional
+from typing import Callable, List
 
-import readline, traceback
+import readline
 from SPENT.SPENT_Schema import *
-from SPENT.SPENT import SpentUtil, SQL_WhereStatementBuilder, VirtualColumn
+from SPENT.Old.SPENT import SpentUtil, SQL_WhereStatementBuilder, VirtualColumn
 logman = log.getLogger("Main")
 
 from argparse import ArgumentParser
@@ -135,6 +135,16 @@ commands = {
 	'raw' : Command(rawSQL),
 	'setLevel' : Command(setLogLevel, "Level Name"),
 }
+#------------------------------------------------------------------------------
+
+def getProperty():
+	pass
+
+def setProperty():
+	pass
+
+def listProperties():
+	pass
 
 #------------------------------------------------------------------------------
 
@@ -191,6 +201,7 @@ def updateFunction(table, connection, args, obj):
 def deleteFunction(table, connection, args, obj):
 	rowID = args[0]
 	table.deleteRow(connection, rowID)
+
 def listFunction(table, connection, args, obj):
 	shellPrint("Listing %s" % table.getTableName(table))
 	rowSelection = table.select(connection, None)
@@ -219,7 +230,6 @@ def tableActionHandler(command: List[str], commandObject):
 
 	#TODO: Create new connections for each command
 	function(table, connection, command, commandObject)
-
 
 def remap(input):
 	return "%s [%s]" % (input[0].name, input[1].name)
@@ -270,6 +280,10 @@ for dtype in dataTypes.items():
 		commands[commandName].args = args
 
 connect.endTransaction()
+
+#commands['GetProperty']
+#commands['SetProperty']
+#commands['ListProperties']
 
 commands['ls'] = Command(showAccountTree)
 commands['info'] = Command(showBucket, "ID")

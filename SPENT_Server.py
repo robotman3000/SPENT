@@ -37,8 +37,6 @@ def time_it(f, *args):
 
 class SPENTServer():
 	def __init__(self, port=8080):
-		self.unimp = {"successful": False, "message": "Unimplemented!"}
-
 		self.database = sqlib.Database(args.dbpath)
 		self.connection = self.database.getConnection("Server")
 		self.connection.connect() #TODO: Implement a connection pool
@@ -57,7 +55,7 @@ class SPENTServer():
 		self.apiTree["bucket"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["transaction"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["transaction-group"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
-		self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag} #Tags are handled differently
+		#self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag} #Tags are handled differently
 		#self.apiTree["property"] = {"get": self.getProperty, "update": self.updateProperty}
 		#self.apiTree["enum"] = {"get": self.getEnum}
 
@@ -132,10 +130,8 @@ class SPENTServer():
 		
 	def apiRequest(self, query, contentLen, content):
 		request = json.loads(content)
-		handlerFunc = self.invalidHandler
 		responsePackets = []
 		responseCode = "200 OK"
-		responseBody = None
 
 		# This function is responsible for every request against the database
 		# so we start by getting a connection (for the db) and ensuring that it
@@ -151,38 +147,30 @@ class SPENTServer():
 				typeDict = self.apiTree.get(packet["type"], {})
 				table = self.typeMapper.get(packet["type"], None)
 
-				if typeDict is not None:
-					print("API Request: %s %s" % (packet["action"], packet["type"]))
+				print("API Request: %s %s" % (packet["action"], packet["type"]))
 
-					# TODO: invalidHandler doesn't conform to the json packet format
-					handlerFunc = typeDict.get(packet["action"], self.invalidHandler)
+				handlerFunc = typeDict.get(packet["action"], None)
 
-				requestedColumnsStr = self.getRequestedColumns(packet, table)
-				requestedColumns = table.parseStrings(requestedColumnsStr)
+				if handlerFunc is not None:
+					requestedColumnsStr = self.getRequestedColumns(packet, table)
+					requestedColumns = table.parseStrings(requestedColumnsStr)
 
-				#print("me!!!!!!!!")
-				result = time_it(handlerFunc, packet, requestedColumns, table, connection)
-				#print("first!!!!!!!!")
-				if args.debugServer:
-					print("API Request Handler Ran For: %s" % result[1])
-				# result = handlerFunc(request, requestedColumns)
+					result = time_it(handlerFunc, packet, requestedColumns, table, connection)
+					if args.debugServer:
+						print("API Request Handler Ran For: %s" % result[1])
 
-				#TODO: This doesn't conform to the json packet format
-				if result[0] is None:
-					result[0] = self.unimp
-
-				#print(result[0])
-				#tmp = time_it(json.dumps, result[0])
-				responsePackets.append({"action": packet["action"], "type": packet["type"], "data": result[0]})
-
-				#if args.debugServer:
-				#	print("Serialization Took: %s" % tmp[1])
+					if result[0] is not None:
+						responsePackets.append({"action": packet["action"], "type": packet["type"], "data": result[0]})
+				else:
+					raise Exception("Invalid action or type: (Action: %s, Type: %s)" % (request["action"], request["type"]))
 
 		except Exception as e:
 			connection.abortTransaction()
 			responseCode = "500 OK"
 			responseBody = json.dumps({"successful": False, "message": "An exception occured while accessing the database: %s" % e})
+			sqlog.exception(e)
 		else:
+			#TODO: Send back the things that changed
 			connection.endTransaction()
 			responseBody = json.dumps({"successful": True, "records": responsePackets}, indent=2)
 
@@ -197,9 +185,6 @@ class SPENTServer():
 			result.add(table.getIDColumn(table))
 
 		return result
-	
-	def invalidHandler(self, request, requestedColumns, table):
-		return {"successful": False, "message": "Invalid action or type: (Action: %s, Type: %s)" % (request["action"], request["type"])}
 	
 	def start_server(self):
 		"""Start the server."""
@@ -251,7 +236,7 @@ class SPENTServer():
 
 	def parseSQLObjectToDict(self, table, obj):
 		# Translate the string names into their object mapping
-		columns = table.parseStrings(table, obj.keys())
+		columns = table.parseStrings(obj.keys())
 
 		# Note: There is no need to clean the values or check them for validity because
 		# SQLIB does that for us using the schema definition
@@ -259,7 +244,7 @@ class SPENTServer():
 		# Note: There is no need to verify that all the required columns are present because
 		# SQLIB does that for us and will raise an exception of there is a problem
 
-		objData = {col.name: obj.get(col.name, col.default) for col in columns}
+		objData = {col: obj.get(col.name) for col in columns}
 		return objData
 
 	def wrapData(self, data):
@@ -281,7 +266,7 @@ class SPENTServer():
 		data = request.get("data", {})
 		for obj in data:
 			objData = self.parseSQLObjectToDict(table, obj)
-			table.createRow(table, connection, objData)
+			table.createRow(connection, objData)
 
 		# This function sends no data back to the client because the list of created rows is sent elsewhere
 		return None
@@ -290,7 +275,7 @@ class SPENTServer():
 		data = request.get("data", {})
 		idCol = table.getIDColumn(table)
 		IDs = self.dataToIDList(data, idCol.name)
-		selection = table.getRows(table, connection, IDs)
+		selection = table.getRows(connection, IDs)
 		for obj in data:
 			rowID = obj.get(idCol.name, None)
 			if rowID is not None:
@@ -300,38 +285,38 @@ class SPENTServer():
 					# and the id is valid
 					# then perform the update
 					objData = self.parseSQLObjectToDict(table, obj)
-					row.updateValues(objData)
+					row.setValues(objData)
 		return None
 
 	def deleteFunction(self, request, columns, table, connection):
 		data = request.get("data", {})
 		where = self.dataToWhere(data, table.getIDColumn(table))
-		selectedRows = table.select(table, connection, where)
+		selectedRows = table.select(connection, where)
 		selectedRows.deleteRows()
 
 		# This function sends no data back to the client because the list of deleted rows is sent elsewhere
 		return None
 
 	def getTag(self, request, columns):
-		return self.unimp
+		pass
 
 	def createTag(self, request, columns):
-		return self.unimp
+		pass
 
 	def updateTag(self, request, columns):
-		return self.unimp
+		pass
 
 	def deleteTag(self, request, columns):
-		return self.unimp
+		pass
 
 	def getProperty(self, request, columns):
-		return self.unimp	
+		pass
 	
 	def updateProperty(self, request, columns):
-		return self.unimp	
+		pass
 	
 	def getEnum(self, request, columns):
-		return self.unimp
+		pass
 
 class ServerResponse:
 	def __init__(self, status, headers, body):

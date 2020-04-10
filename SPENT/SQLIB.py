@@ -276,6 +276,7 @@ class EnumTable(Enum):
         for column in table.__members__.values():
             #print(column)
             if column.name in columnNames:
+                #print(type(column.value))
                 result.append(column)
 
         return result
@@ -987,12 +988,21 @@ class DatabaseCacheManager:
 
     def _RowsetValue_(self, objectID, columnKey, value):
         # This function intentionally ignores whether the row has been deleted
+        print(type(columnKey))
+        #assert isinstance(columnKey, Column)
         if self._inTransaction_ and objectID in self.cache:
+            print("Updateing value for key: %s" % columnKey)
+            print(objectID)
             row = self.changes.get(objectID, {})
-            oldValue = row.get(columnKey, self.cache.get(objectID, {}).get(columnKey, null))
+            print(row)
+            print(type(columnKey))
+            print(self.cache.get(objectID))
+            oldValue = row.get(columnKey, self.cache.get(objectID).get(columnKey, null))
+            print(oldValue)
             if(type(oldValue) is not _NullValue_):
+                print("A")
                 if columnKey.value.getType().value.verify(value) and columnKey.value.verify(value):
-                    #print("Row is dirty")
+                    print("Row is dirty")
                     typeSanitized = columnKey.value.getType().value.sanitize(value)
                     row[columnKey] = columnKey.value.sanitize(typeSanitized)
                     self.changes[objectID] = row

@@ -1,6 +1,129 @@
 var enums = {};
 var formatter = null;
-var crossModelUupdateMap = {};
+var APIRequestManager = function(){
+    this.collections = {};
+    this.requestPackets = [];
+
+    this.registerCollection = function(name, collection){
+        //TODO: This should do safety checking
+        this.collections[name] = collection;
+    };
+
+    this.selectRecords = function(dataTypeName, fuzzyData, rules){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_("get", dataTypeName, fuzzyData, null, rules)
+        this._queueRequestPacket_(packet)
+    };
+
+    this.updateRecords = function(dataTypeName, updatedData){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_("update", dataTypeName, updatedData, null, null)
+        this._queueRequestPacket_(packet)
+    };
+
+    this.deleteRecords = function(dataTypeName, fuzzyData /*, rules*/){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_("delete", dataTypeName, fuzzyData, null, null)
+        this._queueRequestPacket_(packet)
+    };
+
+    this.createRecords = function(dataTypeName, createdData){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_("create", dataTypeName, createdData, null, null)
+        this._queueRequestPacket_(packet)
+    };
+
+    this.sendRequest = function(){
+        var self = this;
+        this._apiRequest_(this.requestPackets, function(data){
+            self.parseAPIResponse(data);
+        }, this.handleAPIError)
+        this.requestPackets = []
+    };
+
+    this._getCollectionForName_ = function(name){
+        return getOrDefault(this.collections, name, null)
+    };
+
+    this.parseAPIResponse = function(response){
+        var self = this;
+        var records = response.records;
+        records.forEach(function(item, index){
+            var action = item.action;
+            var type = self._getCollectionForName_(item.type);
+            var data = item.data;
+
+            var options = {
+                add: action == "create" || action == "get",
+                update: action == "update",
+                remove: action == "delete",
+            };
+
+            var changed = type.set(data, options);
+            //console.log("Changed Models: " + action + ", " + item.type + ", " + JSON.stringify(changed));
+        })
+    };
+
+    this.handleAPIError = function(data){alert("error!")};
+
+    this._apiRequest_ = function(requestObj, suc, err){
+        return $.ajax({
+            url: '/database/apiRequest',
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify(requestObj),
+            success: function(data) {
+                if(data.successful == true){
+                    if(suc){
+                        suc(data)
+                    }
+                } else {
+                    alert("API Error: " + response.message);
+                    if(err){
+                        err(data)
+                    }
+                }
+            },
+            error: function(data) {
+                alert("Server Error!! " + JSON.stringify(data));
+                if(err){
+                    err(data)
+                }
+            }
+        });
+    };
+
+    this._createRequest_ = function(action, type, data, columns, rules){
+        //TODO: Verify the input data and sanitize it
+        var request = {
+            action: action,
+            type: type
+        }
+
+        var properties = [{name: "data", value: data, def: {}}, {name: "columns", value: columns, def: []}, {name: "rules", value: rules, def: {}}]
+        properties.forEach(function(item, index){
+            if(item.value != undefined && item.value != null){
+               request[item.name] = item.value;
+                if(item.value.length < 1){
+                    request[item.name] = null;
+                }
+            } /*else {
+                request[item.name] = item.def;
+            }*/
+        });
+
+        //request.debugTrace = new Error().stack;
+        return request
+    };
+
+    this._queueRequestPacket_ = function(requestObj){
+        this.requestPackets.push(requestObj);
+    };
+
+};
+
+var requestManager = null;
 
 function initGlobals(){
 	//// Undefined causes it to use the system local
@@ -41,6 +164,7 @@ function initGlobals(){
 	        {foreignKey: "Name", foreignMatch: "transaction", foreignMatchKey: "DestBucket"},
 	    }
 	}*/
+	requestManager = new APIRequestManager();
 }
 
 function dateToStr(d){
@@ -117,60 +241,6 @@ function getBucketNameForID(accounts, buckets, id){
     return "Invalid ID: " + id;
 }
 
-function apiRequest(requestObj, suc, err){
-	return $.ajax({
-		url: '/database/apiRequest',
-		type: "POST",
-		contentType: "application/json; charset=utf-8",
-		dataType: "json",
-		data: JSON.stringify(requestObj),
-		success: function(data) {
-		    apiRequestSuccessful(data);
-		    if(suc){
-		        suc(data)
-		    }
-		},
-		error: function(data) {
-			alert("Request Error!! " + JSON.stringify(data));
-			if(err){
-		        err(data)
-		    }
-		}
-	});
-}
-
-//TODO: The selAccount parameter is temporary until a proper API change for this type of data is designed
-function createRequest(action, type, data, columns, rules){
-	//TODO: Verify the input data and sanitize it
-	var request = {
-		action: action,
-		type: type
-	}
-
-    var properties = [{name: "data", value: data, def: {}}, {name: "columns", value: columns, def: []}, {name: "rules", value: rules, def: {}}]
-    properties.forEach(function(item, index){
-        if(item.value != undefined && item.value != null){
-           request[item.name] = item.value;
-            if(item.value.length < 1){
-                request[item.name] = null;
-            }
-        } /*else {
-            request[item.name] = item.def;
-        }*/
-    });
-
-	request.debugTrace = new Error().stack;
-	return request
-}
-
-function apiRequestSuccessful(response){
-	if(response.successful == true){
-		return true;
-	}
-	alert("API Error: " + response.message);
-	return false;
-}
-
 function onDocumentReady() {
     // Initialize global variables
     initGlobals();
@@ -235,7 +305,9 @@ function onDocumentReady() {
         }
 
         console.log("AJAX: " + apiAction + " - " + recordType)
-        var req = apiRequest([createRequest(apiAction, recordType, data, requestColumns, rules)], options.success, options.error)
+
+        // TODO: Underscored functions are private and shouldn't be called directly
+        var req = requestManager._apiRequest_([requestManager._createRequest_(apiAction, recordType, data, requestColumns, rules)], options.success, options.error)
         model.trigger('request', model, req, options);
         return req;
     };
@@ -435,10 +507,6 @@ function onDocumentReady() {
     var Buckets = BaseCollection.extend({
         model: Bucket,
         url: "bucket",
-        refresh: function(){
-            this.fetch({wait: true})
-            console.log("Fetch")
-        },
     });
 
     var Account = Bucket.extend({});
@@ -1967,27 +2035,33 @@ function onDocumentReady() {
     accounts.listenTo(accountEditForm, "formSubmit", saveFunction);
     accountEditFormModal.listenTo(accountEditForm, "formSubmit", accountEditFormModal.hideModal)
 
-    // Fetch the data from the server
-    accounts.fetch({wait: true});
-    buckets.fetch({wait: true});
-    transactions.fetch({wait: true});
-    transactionGroups.fetch({wait: true});
+    requestManager.registerCollection("account", accounts);
+    requestManager.registerCollection("bucket", buckets);
+    requestManager.registerCollection("transaction", transactions);
+    requestManager.registerCollection("transaction-group", transactionGroups);
+
+    requestManager.selectRecords("account");
+    requestManager.selectRecords("bucket");
+    requestManager.selectRecords("transaction");
+    requestManager.selectRecords("transaction-group");
 
     bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
 
-    var refreshBalanceFunction = function(){
+    requestManager.sendRequest()
+
+    /*var refreshBalanceFunction = function(){
         console.log("Refreshing Balance...");
         this.fetch({wait: true})
-    }
+    }*/
 
     // TODO: These event listeners are a quick fix
-    accounts.listenTo(transactions, "change", refreshBalanceFunction)
-    buckets.listenTo(transactions, "change", refreshBalanceFunction)
-    transactionGroups.listenTo(transactions, "change", refreshBalanceFunction)
+    //accounts.listenTo(transactions, "change", refreshBalanceFunction)
+    //buckets.listenTo(transactions, "change", refreshBalanceFunction)
+    //transactionGroups.listenTo(transactions, "change", refreshBalanceFunction)
 
-    accounts.listenTo(transactions, "update", refreshBalanceFunction)
-    buckets.listenTo(transactions, "update", refreshBalanceFunction)
-    transactionGroups.listenTo(transactions, "update", refreshBalanceFunction)
+    //accounts.listenTo(transactions, "update", refreshBalanceFunction)
+    //buckets.listenTo(transactions, "update", refreshBalanceFunction)
+    //transactionGroups.listenTo(transactions, "update", refreshBalanceFunction)
 
     // Not this one though...
     $("#saveChanges").click(function(){

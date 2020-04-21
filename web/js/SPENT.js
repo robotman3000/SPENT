@@ -67,6 +67,7 @@ var APIRequestManager = function(){
     this.handleAPIError = function(data){alert("error!")};
 
     this._apiRequest_ = function(requestObj, suc, err){
+        var self = this;
         return $.ajax({
             url: '/database/apiRequest',
             type: "POST",
@@ -75,9 +76,10 @@ var APIRequestManager = function(){
             data: JSON.stringify(requestObj),
             success: function(data) {
                 if(data.successful == true){
-                    if(suc){
+                    /*if(suc){
                         suc(data)
-                    }
+                    }*/
+                    self.parseAPIResponse(data)
                 } else {
                     alert("API Error: " + response.message);
                     if(err){
@@ -288,12 +290,14 @@ function onDocumentReady() {
         var rules = options.rules || null;
 
         var changed = false;
+        var unchanged = true;
         switch (method){
             case "update":
             case "patch":
                 changed = true;
+                unchanged = false;
             case "create":
-                data = [model.asJSON({changed: changed})];
+                data = [model.asJSON({changed: changed, unchanged: unchanged})];
                 break;
             case "delete":
                 data = [{ID: model.get("ID")}];
@@ -398,17 +402,24 @@ function onDocumentReady() {
         asJSON: function(options){
             var keys = Object.keys(this.defaults());
             var object = {};
-            var attrib = cleanData(this.changedAttributes());
+            var attrib = this.changedAttributes();
             var self = this;
             keys.forEach(function(key, index){
                 var value = undefined;
                 if(getOrDefault(options, "changed", false) && attrib[key]){
                     value = attrib[key];
                 } else {
-                    value = self.get(key);
+                    if(getOrDefault(options, "unchanged", true)){
+                        value = self.get(key);
+                    }
                 }
-                object[key] = value;
+                if (value != undefined){
+                    object[key] = value;
+                }
             });
+
+            object["ID"] = self.get("ID");
+
             return object;
         },
         parse: function(response, options){
@@ -422,6 +433,10 @@ function onDocumentReady() {
             }
 
             return result;
+        },
+        isNew: function(){
+            //alert(this.get("id") == null);
+            return this.get("id") == null;
         },
     }).extend(TableRowRenderable);
     var BaseCollection = Backbone.Collection.extend({
@@ -1954,7 +1969,10 @@ function onDocumentReady() {
             // We are creating a new table entry
             this.create(cleanData(data), {wait: true});
         } else {
-            model.save(cleanData(data), {wait: true});
+            model.set(cleanData(data));
+            model.save();
+            //model.save(cleanData(data), {wait: true});
+
         }
     };
     transactionEditFormModal.bindSubmitToForm(transactionEditForm);

@@ -50,8 +50,8 @@ class StringTypeVerifier(TypeVerifier):
 
 class IntegerTypeVerifier(TypeVerifier):
     def verify(self, value):
-        # TODO: is int or can be converted to int
-        return type(value) is int
+        return True
+        #return type(value) is int or (type(value) is str and value.isnumeric())
 
     def sanitize(self, data):
         # Ensure the data is an int
@@ -61,16 +61,30 @@ class IntegerTypeVerifier(TypeVerifier):
         return int(data)
 
 class DecimalTypeVerifier(TypeVerifier):
-    #TODO: Implement this and fix integer to only allow whole numbers
-    pass
+    def verify(self, value):
+        # TODO: Does is numeric work on floating point numbers?
+        #return type(value) is float or (type(value) is str and value.isnumeric())
+        return True
+
+    def sanitize(self, data):
+        # Ensure the data is an int
+        if type(data) is float:
+            return data
+
+        return float(data)
 
 class DateTypeVerifier(TypeVerifier):
-    pass
+    # TODO: Actually implement this
+    def verify(self, data):
+        return True
+
+    def sanitize(self, data):
+        return data
 
 class EnumColumnType(Enum):
     TEXT = StringTypeVerifier()
     INTEGER = IntegerTypeVerifier()
-    #DECIMAL = DecimalTypeVerifier()
+    DECIMAL = DecimalTypeVerifier()
     DATE = DateTypeVerifier()
 
 class TableRow():
@@ -186,8 +200,12 @@ class LinkedColumn(TableColumn):
         return self.key
 
     def getReferenceTable(self):
-        if type(self.key) is Column:
-            return self.key.getTable()
+        print("Key: %s, %s" % (self.key, type(self.key)))
+        if isinstance(self.key, EnumTable):
+            print("Table: %s" % self.key)
+            return self.key
+
+        print("Table2: %s" % self.getTable())
         return self.getTable()
 
     def isLocal(self):
@@ -205,34 +223,34 @@ class EnumTable(Enum):
         for obj in self.__members__.items():
             columnName = obj[0]
             column = obj[1]
+            if isinstance(column.value, TableColumn):
+                options = []
+                if column.value.willPreventNull():
+                    options.append("NOT NULL")
 
-            options = []
-            if column.value.willPreventNull():
-                options.append("NOT NULL")
+                if column.value.isPrimaryKey():
+                    options.append("PRIMARY KEY")
 
-            if column.value.isPrimaryKey():
-                options.append("PRIMARY KEY")
+                if column.value.willAutoIncrement():
+                    options.append("AUTOINCREMENT")
 
-            if column.value.willAutoIncrement():
-                options.append("AUTOINCREMENT")
+                if column.value.willEnforceUnique():
+                    options.append("UNIQUE")
 
-            if column.value.willEnforceUnique():
-                options.append("UNIQUE")
+                columns.append("\"%s\" %s %s" % (columnName, column.value.getType().name, " ".join(options)))
 
-            columns.append("\"%s\" %s %s" % (columnName, column.value.getType().name, " ".join(options)))
+                if type(column.value) is LinkedColumn:
+                    table = column.value.getReferenceTable()
+                    foreignColumnName = column.value.getReferenceKey()
+                    if not column.value.isLocal():
+                        foreignColumnName = foreignColumnName.name
 
-            if type(column.value) is LinkedColumn:
-                table = column.value.getReferenceTable()
-                foreignColumnName = column.value.getReferenceKey()
-                if not column.value.isLocal():
-                    foreignColumnName = foreignColumnName.name
+                    #TODO: Verify that the column exists in the referenced table
+                    #column = table[foreignColumnName]  # This will trigger an exception if the column doesn't exist
 
-                #TODO: Verify that the column exists in the referenced table
-                #column = table[foreignColumnName]  # This will trigger an exception if the column doesn't exist
-
-                foreignKeys.append("FOREIGN KEY(%s) REFERENCES %s(%s)" % (columnName,
-                                                                      table.getTableName(),
-                                                                      foreignColumnName))
+                    foreignKeys.append("FOREIGN KEY(%s) REFERENCES %s(%s)" % (columnName,
+                                                                          table.getTableName(),
+                                                                          foreignColumnName))
 
         for constr in self.getConstraints(self):
             columns.append("CONSTRAINT %s" % constr)
@@ -377,7 +395,7 @@ class RowSelection:
     def deleteRows(self):
         # TODO: While this function is running it must have exclusive access to self.rows and self.rowIDs
         for rowID in self.rows.keys():
-            self._table_.deleteRow(self._table_, self._connection_, rowID)
+            self._table_.deleteRow(self._connection_, rowID)
         oldRows = self.rows
         self.rows = None
         return oldRows
@@ -407,15 +425,20 @@ class Database:
 
     def _releaseTransactionLock_(self, lock):
         if self._hasLock_(lock):
+            changes = None
             try:
                 self._getCache_()._writeCache_(lock)
             except Exception as e:
-                self._getCache_()._endTransaction_(lock, True)
+                changes = self._getCache_()._endTransaction_(lock, True)
                 sqldeb.exception(e)
             else:
-                self._getCache_()._endTransaction_(lock, False)
+                changes = self._getCache_()._endTransaction_(lock, False)
+                print("Changes: " + str(changes))
             sqldeb.debug("Releasing lock: %s" % lock)
             self._lock_ = None
+            print("4 Type: " + str(type(changes)))
+            return changes
+        return {}
 
     def _hasLock_(self, lock):
         locked = lock is not None and self._lock_ is lock
@@ -429,7 +452,8 @@ class Database:
     def _abortTransaction_(self, lock):
         if self._hasLock_(lock):
             sqldeb.debug("Aborting transaction: %s" % lock)
-            self._getCache_()._endTransaction_(lock, True)
+            return self._getCache_()._endTransaction_(lock, True)
+        return {}
 
     def getConnection(self, connectionName=""):
         # First we get the existing connection /w lazy init
@@ -542,12 +566,12 @@ class DatabaseConnection:
     def endTransaction(self):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
             sqlog.debug("Ending transaction")
-            self.database._releaseTransactionLock_(self)
+            return self.database._releaseTransactionLock_(self)
 
     def abortTransaction(self):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
             sqlog.debug("Aborting transaction")
-            self.database._abortTransaction_(self)
+            return self.database._abortTransaction_(self)
 
     def execute(self, query):
         # Note: We intentionally don't check the database lock here
@@ -583,9 +607,8 @@ class DatabaseCacheManager:
         # [cacheEntryID]
         self.deleted = set()
 
-        # {Key: cacheEntryID, Value: cacheData}
-        #TODO: Implement the logic around this
-        self.created = {}
+        # [cacheEntryID]
+        self.created = set()
 
         # This controls whether to delete/unallocate/garbage collect the cached rows after writing to the DB
         self._clearCacheOnWrite_ = False # Having this be true ensures that the cache will always reflect the database
@@ -676,6 +699,9 @@ class DatabaseCacheManager:
         #cadeb.debug("No match found for row %s in table %s" % (rowID, table))
         return None
 
+    def _reverseLookupRow_(self, cacheID):
+        return self.cacheMap.get(cacheID, None)
+
     def _getCacheForID_(self, cacheID):
         return self.cache.get(cacheID, None)
 
@@ -690,7 +716,7 @@ class DatabaseCacheManager:
                 table = cacheMapItem[1][1]
                 rowCacheID = cacheMapItem[0]
                 rowID = cacheMapItem[1][0]
-
+                assert (isinstance(rowCacheID, int) and isinstance(rowID, int))
                 if pendingChanges.get(table, None) is None:
                     if self._verifyTable_(table, connection):
                         pendingChanges[table] = ([], [])
@@ -737,12 +763,12 @@ class DatabaseCacheManager:
                 #print(changedRows)
 
                 for rowUpdateQuery in updateQueries:
-                    print(str(rowUpdateQuery))
+                    #print(str(rowUpdateQuery))
                     connection.execute(str(rowUpdateQuery))
 
                 # Then we demo everything slated for destruction
                 if delQuery is not None:
-                    print(str(delQuery))
+                    #print(str(delQuery))
                     connection.execute(str(delQuery))
 
             # Verify and fix the foreign key relationships
@@ -769,14 +795,17 @@ class DatabaseCacheManager:
         cadeb.debug("Exiting transaction mode: Rollback = %s" % rollback)
         if rollback:
             connection.execute("ROLLBACK")
-            self._rollbackCacheChanges_()
+            changes = self._rollbackCacheChanges_()
         else:
             connection.execute("COMMIT")
-            self._commitCacheChanges_()
+            changes = self._commitCacheChanges_()
 
         self._inTransaction_ = False
+        print("3 Type: " + str(type(changes)))
+        return changes
 
     def _commitCacheChanges_(self):
+        remappedData = self._remapCacheObjects_(self.created.copy(), self.deleted.copy(), self.changes.copy(), False)
         # When this is run we can assume that the foreign key relationships in the database are correct
         # so we proceed to apply the changes in the cache to the state
 
@@ -789,7 +818,9 @@ class DatabaseCacheManager:
             self.cacheMap.pop(delID)
 
         # Created
-        # TODO: Implement this
+        for creID in self.created:
+            cadeb.debug("Applying %s to the cache and mapping" % creID)
+            # We don't do anything here because the data is already in the cache
 
         # Changes
         for changeData in self.changes.items():
@@ -805,14 +836,77 @@ class DatabaseCacheManager:
                     rowData[key] = value
 
         # Having applied the changes to the cache we reset for the next transaction
+        self._clearCacheState_()
+        print("2B Type: " + str(type(remappedData)))
+        return remappedData
+
+    def _rollbackCacheChanges_(self):
+        changeData = self._remapCacheObjects_(self.created.copy(), self.deleted.copy(), self.changes.copy(), True)
+        self._clearCacheState_()
+        print("2A Type: " + str(type(changeData)))
+        return changeData
+
+    def _clearCacheState_(self):
         self.changes.clear()
         self.deleted.clear()
         self.created.clear()
 
-    def _rollbackCacheChanges_(self):
-        self.changes.clear()
-        self.deleted.clear()
-        self.created.clear()
+    def _remapCacheObjects_(self, created, deleted, changes, reverseChanges=False):
+        newCreated = {}
+        if reverseChanges:
+            createdIDs = deleted
+            deletedIDs = created
+        else:
+            createdIDs = created
+            deletedIDs = deleted
+
+        for i in createdIDs:
+            key = self._reverseLookupRow_(i)
+            data = self._getCacheForID_(i)
+
+            if data is not None and key is not None:
+                # key[1] is the table
+                tableData = newCreated.get(key[1], {})
+                tableData[key[0]] = data
+
+                # Lazy init the data
+                newCreated[key[1]] = tableData
+            else:
+                cadeb.warning("Failed to find cache data for id %s" % i)
+
+        newDeleted = {}
+        for i in deletedIDs:
+            key = self._reverseLookupRow_(i)
+            if key is not None:
+                # key[1] is the table
+                tableData = newDeleted.get(key[1], [])
+                tableData.append(key[0])
+
+                # Lazy init the data
+                newDeleted[key[1]] = tableData
+
+        newChanged = {}
+        for i in changes.items():
+            key = self._reverseLookupRow_(i[0])
+            if reverseChanges:
+                data = self._getCacheForID_(i)
+            else:
+                data = changes[i[0]]
+
+            if data is not None and key is not None:
+                # key[1] is the table
+                tableData = newChanged.get(key[1], {})
+                tableData[key[0]] = data
+
+                # Lazy init the data
+                newChanged[key[1]] = tableData
+            else:
+                cadeb.warning("Failed to find cache data for id %s" % i)
+
+        # We return this way to prevent python from creating a tuple from the dict
+        changedData = {"created": newCreated, "deleted": newDeleted, "changed": newChanged}
+        print("1Type: " + str(type(changedData)))
+        return changedData
 
     def getRow(self, table, connection, rowID):
         cadeb.debug("%s@%s: Getting row: %s" % (connection.getName(), table.getTableName(table), rowID))
@@ -879,8 +973,22 @@ class DatabaseCacheManager:
             cadeb.debug("%s@%s: Creating row: %s" % (connection.getName(), table.getTableName(table), rowData))
             #TODO: Revisit the idea of a non write-through create
             # TODO: Verify that all the required columns are passed is and raise an exception if any are missing
-            keys = rowData.keys()
-            values = rowData.values()
+            keys = []
+            values = []
+
+            # Verify that all the data is clean
+            for item in rowData.items():
+                if item[0].value.getType().value.verify(item[1]) and item[0].value.verify(item[1]) or item[1] is None and item[0].value.willPreventNull() is False:
+                    if item[1] is not None:
+                        typeSanitized = item[0].value.getType().value.sanitize(item[1])
+                        valueSanitized = item[0].value.sanitize(typeSanitized)
+                    else:
+                        valueSanitized = None
+                    keys.append(item[0])
+                    values.append(valueSanitized)
+                else:
+                    raise Exception("Invalid data for column %s; %s" % (item[0].name, item[1]))
+
             query = SQLQueryBuilder(EnumSQLQueryAction.INSERT).INTO(table).COLUMNS(keys).VALUES(values)
             rows = connection.execute(str(query))
             #print(rows)
@@ -888,7 +996,10 @@ class DatabaseCacheManager:
             rowID = connection.execute("SELECT last_insert_rowid()")
             #lastID = connection.connection.lastrowid
             #print("Lastid: %s" % rowID[0][0])
-            return self.getRow(table, connection, rowID[0][0])
+
+            newRow = self.getRow(table, connection, rowID[0][0])
+            self.created.add(newRow.cache._entryID_)
+            return newRow
         else:
             cadeb.error("%s@%s: Failed to create row: %s" % (connection.getName(), table.getTableName(table), rowData))
 
@@ -948,24 +1059,31 @@ class DatabaseCacheManager:
         return None
 
     def _RowisDeleted_(self, objectID):
+        assert (isinstance(objectID, int))
         return objectID in self.deleted
 
     def _RowsetDeleted_(self, objectID, value):
+        assert (isinstance(objectID, int))
         if value:
             self.deleted.add(objectID)
         else:
             self.deleted.remove(objectID)
 
     def _RowgetChanged_(self, objectID):
+        assert (isinstance(objectID, int))
         return self.changes.get(objectID, None)
 
     def _RowisDirty_(self, objectID):
+        assert (isinstance(objectID, int))
         return objectID in self.changes
 
     def _RowisNew_(self, objectID):
+        assert (isinstance(objectID, int))
         return objectID in self.created
 
     def _RowgetValue_(self, objectID, columnKey):
+        assert (isinstance(columnKey, EnumTable) and isinstance(columnKey.value, Column))
+        assert (isinstance(objectID, int))
         # This function intentionally ignores whether the row has been deleted
         changes = self._RowgetChanged_(objectID)
         if changes is not None:
@@ -987,24 +1105,20 @@ class DatabaseCacheManager:
         return null
 
     def _RowsetValue_(self, objectID, columnKey, value):
+        assert (isinstance(columnKey, EnumTable) and isinstance(columnKey.value, Column))
         # This function intentionally ignores whether the row has been deleted
-        print(type(columnKey))
-        #assert isinstance(columnKey, Column)
         if self._inTransaction_ and objectID in self.cache:
-            print("Updateing value for key: %s" % columnKey)
-            print(objectID)
             row = self.changes.get(objectID, {})
-            print(row)
-            print(type(columnKey))
-            print(self.cache.get(objectID))
             oldValue = row.get(columnKey, self.cache.get(objectID).get(columnKey, null))
-            print(oldValue)
             if(type(oldValue) is not _NullValue_):
-                print("A")
-                if columnKey.value.getType().value.verify(value) and columnKey.value.verify(value):
-                    print("Row is dirty")
-                    typeSanitized = columnKey.value.getType().value.sanitize(value)
-                    row[columnKey] = columnKey.value.sanitize(typeSanitized)
+                if columnKey.value.getType().value.verify(value) and columnKey.value.verify(value) or value is None and columnKey.value.willPreventNull() is False:
+                    #print("Row is dirty")
+                    if value is not None:
+                        typeSanitized = columnKey.value.getType().value.sanitize(value)
+                        valueSanitized = columnKey.value.sanitize(typeSanitized)
+                    else:
+                        valueSanitized = None
+                    row[columnKey] = valueSanitized
                     self.changes[objectID] = row
                     return oldValue
                 else:
@@ -1024,7 +1138,7 @@ class RowDataCache:
         return self._cacheManager_._RowisDeleted_(self._entryID_)
 
     def _setDeleted_(self, isDeleted):
-        self._cacheManager_._RowsetDeleted_(self._entryID_)
+        self._cacheManager_._RowsetDeleted_(self._entryID_, isDeleted)
 
     def _changed_(self):
         return self._cacheManager_._RowgetChanged_(self._entryID_)
@@ -1033,9 +1147,11 @@ class RowDataCache:
         return self._cacheManager_._RowisNew_(self._entryID_)
 
     def getValue(self, columnKey):
+        assert (isinstance(columnKey, EnumTable) and isinstance(columnKey.value, Column))
         return self._cacheManager_._RowgetValue_(self._entryID_, columnKey)
 
     def setValue(self, columnKey, value):
+        assert (isinstance(columnKey, EnumTable) and isinstance(columnKey.value, Column))
         return self._cacheManager_._RowsetValue_(self._entryID_, columnKey, value)
 
 class _NullValue_:
@@ -1161,7 +1277,8 @@ class SQLQueryBuilder:
                             value = "\"%s\"" % i[1]
                         else:
                             value = i[1]
-                        updList.append("%s = %s" % (i[0], value))
+
+                        updList.append("%s = %s" % (i[0].name, value))
 
                 columnStr = "SET %s" % ", ".join(updList)
             else:
@@ -1169,6 +1286,9 @@ class SQLQueryBuilder:
                 return None
         else:
             if self.columns is not None and len(self.columns) > 0:
+                for column in self.columns:
+                    print("Column %s" % column)
+                    assert isinstance(column, EnumTable)
                 columnStr = ", ".join([col.name for col in self.columns])
             else:
                 columnStr = "*"

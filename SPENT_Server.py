@@ -60,6 +60,12 @@ class SPENTServer():
 		#self.apiTree["enum"] = {"get": self.getEnum}
 
 		self.typeMapper = {"account" : EnumBucketsTable, "bucket" : EnumBucketsTable, "transaction": EnumTransactionTable, "transaction-group": EnumTransactionGroupsTable, "tag": EnumTransactionTagsTable}
+		self.reverseTypeMapper = {EnumBucketsTable: "account", EnumBucketsTable: "bucket", EnumTransactionTable: "transaction", EnumTransactionGroupsTable: "transaction-group", EnumTransactionTagsTable: "tag"}
+
+		self.connection.beginTransaction()
+		for table in self.reverseTypeMapper.keys():
+			self.database.initTable(table, self.connection)
+		self.connection.endTransaction()
 
 	def getDBConnection(self):
 		return self.connection
@@ -108,17 +114,18 @@ class SPENTServer():
 			response_body = "An unhandled exception occured!!\n"
 			response_body += str(e) + "\n"
 			response_body += traceback.format_exc()
-			#print(response_body)
-			status = '500 OK'
-			headers = [('Content-type', 'text/text'),
-				   ('Content-Length', str(len(response_body)))]
-			response = ServerResponse(status, headers, response_body)
+			response = ('500 OK', 'text/text', response_body)
 
-		start_response(response.getStatus(), response.getHeaders())
+
+		sresponse = ServerResponse(response[0], response[1], None, response[2])
+
+		sresponse.encodeBody()
+		sresponse.encodeHeaders()
+		start_response(sresponse.getStatus(), sresponse.getEncodedHeaders())
 		
 		if self.showAPIData:
 			if not skipResponse:
-				print("Server Response: %s" % response)
+				print("Server Response: %s" % sresponse)
 			else:
 				print("Server Response: -File-")
 				
@@ -126,7 +133,7 @@ class SPENTServer():
 		
 		# This should always print
 		print("Request Delegate ran for: %s" % runTime)
-		return [response.getBody()]
+		return [sresponse.getEncodedBody()]
 		
 	def apiRequest(self, query, contentLen, content):
 		request = json.loads(content)
@@ -165,19 +172,52 @@ class SPENTServer():
 					raise Exception("Invalid action or type: (Action: %s, Type: %s)" % (request["action"], request["type"]))
 
 		except Exception as e:
-			connection.abortTransaction()
+			changedState = connection.abortTransaction()
+			changePackets = self.parseChangeState(changedState)
 			responseCode = "500 OK"
-			responseBody = json.dumps({"successful": False, "message": "An exception occured while accessing the database: %s" % e})
+			responseBody = {"successful": False, "message": "An exception occured while accessing the database: %s" % e, "records": changePackets}
 			sqlog.exception(e)
 		else:
 			#TODO: Send back the things that changed
-			connection.endTransaction()
-			responseBody = json.dumps({"successful": True, "records": responsePackets}, indent=2)
+			changedState = connection.endTransaction()
+			changePackets = self.parseChangeState(changedState)
+			responseBody = {"successful": True, "records": responsePackets + changePackets}
 
-		headers = [('Content-type', "text/json"),
-				   ('Content-Length', str(len(responseBody)))]
-		return ServerResponse(responseCode, headers, responseBody)
-	
+		return (responseCode, "text/json", responseBody)
+
+	def parseChangeState(self, changeState):
+		print(changeState)
+		packets = []
+		map = {"create": "created", "update": "changed", "delete": "deleted"}
+		for action in map.items():
+			for item in changeState.get(action[1], {}).items():
+				print(item)
+				table = item[0]
+				data = item[1]
+
+				if action[0] == "delete":
+					idColumn = table.getIDColumn(table)
+					data = [{idColumn.name : id} for id in data]
+
+				if action[0] == "create":
+					createdRowsSel = table.getRows(self.getDBConnection(), data)
+					createdRows = createdRowsSel.getRows().values()
+					data = [row.asDict() for row in createdRows]
+
+				if action[0] == "update":
+					newData = []
+					for row in data.values():
+						newRow = {}
+						for i in row.items():
+							newRow[i[0].name] = i[1]
+						newData.append(newRow)
+					data = newData
+
+				packets.append({"action": action[0], "type": self.reverseTypeMapper[table], "data": data})
+
+		print("Packets: " + str(packets))
+		return packets
+
 	def getRequestedColumns(self, request, table):
 		data = request.get("columns", [])
 		result = set(data)
@@ -226,7 +266,7 @@ class SPENTServer():
 		return records
 
 	def dataToIDList(self, data, idColumn):
-		return [int(row.get(idColumn, -1)) for row in data if row.get(idColumn, -1) is not None]
+		return [int(row.get(idColumn.name, -1)) for row in data if row.get(idColumn.name, -1) is not None]
 
 	def dataToWhere(self, data, idColumn):
 		if data is not None and len(data) > 0:
@@ -274,7 +314,7 @@ class SPENTServer():
 	def updateFunction(self, request, columns, table, connection):
 		data = request.get("data", {})
 		idCol = table.getIDColumn(table)
-		IDs = self.dataToIDList(data, idCol.name)
+		IDs = self.dataToIDList(data, idCol)
 		selection = table.getRows(connection, IDs)
 		for obj in data:
 			rowID = obj.get(idCol.name, None)
@@ -319,10 +359,14 @@ class SPENTServer():
 		pass
 
 class ServerResponse:
-	def __init__(self, status, headers, body):
+	def __init__(self, status, mimeType, headers, body):
 		self.status = status
 		self.headers = headers
+		self.mtype = mimeType
 		self.body = body
+
+		self.encodedBody = None
+		self.encodedHeaders = None
 		
 	def getStatus(self):
 		return self.status
@@ -331,14 +375,34 @@ class ServerResponse:
 		return self.headers
 	
 	def getBody(self):
-		if isinstance(self.body, str):
-			return str.encode(self.body)
 		return self.body
-	
+
+	def getBodyAsString(self):
+		if self.mtype == "text/json":
+			return json.dumps(self.getBody(), indent=2)
+
+		return str(self.getBody())
+
+	def encodeHeaders(self):
+		self.encodedHeaders = [('Content-type', self.mtype),
+				   ('Content-Length', str(len(self.encodedBody)))] + self.headers if self.headers is not None else []
+
+	def encodeBody(self):
+		if isinstance(self.getBody(), bytes):
+			self.encodedBody = self.getBody()
+		elif self.mtype == "text/json":
+			self.encodedBody = str.encode(json.dumps(self.getBody(), indent=2))
+		else:
+			self.encodedBody = str.encode(self.getBody())
+
+	def getEncodedBody(self):
+		return self.encodedBody
+
+	def getEncodedHeaders(self):
+		return self.encodedHeaders
+
 	def __str__(self):
-		return "%s %s\n%s" % (self.getStatus(),
-							  self.getHeaders(),
-							  json.dumps(json.loads(self.getBody()), indent=2))
+		return "%s %s\n%s" % (self.getStatus(), self.encodedHeaders, self.getBodyAsString())
 	
 class RequestHandler:
 	def __init__(self):
@@ -358,6 +422,8 @@ class RequestHandler:
 		if path.startswith("/"):
 			path = path[1:] # Remove the leading /
 
+		mimeType = "text/plain"
+
 		print("Using file handler for: %s" % path)
 		fullPath = os.path.join(args.serverRoot, path)
 		if args.debugServer:
@@ -370,8 +436,7 @@ class RequestHandler:
 			modeStr = "r%s" % ('t' if self.isText(typeGuess) else 'b')
 			response_body = open(fullPath, mode=modeStr).read()
 			status = '200 OK'
-			headers = [('Content-type', typeGuess[0] if typeGuess[0] is not None else "application/octet-stream"),
-				   ('Content-Length', str(len(response_body)))]
+			mimeType = typeGuess[0] if typeGuess[0] is not None else "application/octet-stream"
 
 		except FileNotFoundError as e:
 			response_body = "File not found"
@@ -379,10 +444,8 @@ class RequestHandler:
 				response_body +=  "\n" + args.serverRoot + path + "\n"
 				response_body += "\n".join(os.listdir(args.serverRoot))
 			status = '404 OK'
-			headers = [('Content-type', 'text/plain'),
-				   ('Content-Length', str(len(response_body)))]
 		
-		return ServerResponse(status, headers, response_body)
+		return (status, mimeType, response_body)
 		
 	def registerRequestHandler(self, method, path, delegate):
 		print("Registering endpoint: %s - %s" % (method, path))

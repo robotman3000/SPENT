@@ -73,8 +73,8 @@ class EnumBucketsTable(sqlib.EnumTable):
             print(connection.execute("PRAGMA foreign_keys")[0][0])
             try:
                 self.createRow(connection, {EnumBucketsTable.ID: -1, EnumBucketsTable.Name: "Root", EnumBucketsTable.Parent: None, EnumBucketsTable.Ancestor: None})
-            except:
-                pass
+            except Exception as e:
+                logman.exception(e)
             #connection.execute("PRAGMA foreign_keys = ON;")
         else:
             logman.warning("Failed to completely init Buckets table")
@@ -106,6 +106,18 @@ class EnumTransactionGroupsTable(sqlib.EnumTable):
     def getRowClass(self, rowData):
         return TransactionGroup
 
+    def onInit(self, connection):
+        if connection.canExecuteUnsafe():
+            #connection.execute("PRAGMA foreign_keys = OFF")
+            print(connection.execute("PRAGMA foreign_keys")[0][0])
+            try:
+                self.createRow(connection, {EnumTransactionGroupsTable.ID: -1, EnumTransactionGroupsTable.Memo: "Default Group", EnumTransactionGroupsTable.Bucket: -1})
+            except Exception as e:
+                logman.exception(e)
+            #connection.execute("PRAGMA foreign_keys = ON;")
+        else:
+            logman.warning("Failed to completely init Buckets table")
+
 def checkIsTransfer(source, tableName, columnName):
     return (source.getSourceBucketID() is not -1) and (source.getDestBucketID() is not -1)
 
@@ -133,7 +145,7 @@ class EnumTransactionTable(sqlib.EnumTable):
     Status = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "StatusMap:ID:Name"})
     TransDate = sqlib.TableColumn(sqlib.EnumColumnType.DATE, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
     PostDate = sqlib.TableColumn(sqlib.EnumColumnType.DATE, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    Amount = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
+    Amount = sqlib.TableColumn(sqlib.EnumColumnType.DECIMAL, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
     SourceBucket = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"}, foreignKey=EnumBucketsTable.ID)
     DestBucket = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"}, foreignKey=EnumBucketsTable.ID)
     Memo = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)

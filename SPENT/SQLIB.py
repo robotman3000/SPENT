@@ -1,8 +1,7 @@
 import sqlite3 as sql
-import traceback, sys
 from enum import Enum
 from typing import Optional, List
-
+import datetime
 from SPENT import LOGGER as log
 
 log.initLogger()
@@ -15,10 +14,6 @@ dbIndex = 0
 
 COLUMN_ANY = None
 
-#def printException(exception):
-#    desired_trace = traceback.format_exc()
-#    logman.exception(desired_trace)
-
 def sqlRowToDict(row, table):
     columnNames = [col for col in table]
     dict = {}
@@ -26,6 +21,14 @@ def sqlRowToDict(row, table):
         if type(column.value) is TableColumn or type(column.value) is LinkedColumn:
             dict[column] = row[column.name]
     return dict
+
+# Credit to https://note.nkmk.me/en/python-check-int-float/ for this function
+def is_integer_num(n):
+    if isinstance(n, int):
+        return True
+    if isinstance(n, float):
+        return n.is_integer()
+    return False
 
 class TypeVerifier:
     # This verifies that "data" can be represented in the implementation type
@@ -50,8 +53,16 @@ class StringTypeVerifier(TypeVerifier):
 
 class IntegerTypeVerifier(TypeVerifier):
     def verify(self, value):
-        return True
-        #return type(value) is int or (type(value) is str and value.isnumeric())
+        if is_integer_num(value):
+            return True
+
+        if type(value) is str:
+            test = value
+            if value[1:] == "-": # Only first char
+                # Remove the negative sign
+                test = value[:1] # All but first char
+            return test.isdigit()
+        return False
 
     def sanitize(self, data):
         # Ensure the data is an int
@@ -62,29 +73,45 @@ class IntegerTypeVerifier(TypeVerifier):
 
 class DecimalTypeVerifier(TypeVerifier):
     def verify(self, value):
-        # TODO: Does is numeric work on floating point numbers?
-        #return type(value) is float or (type(value) is str and value.isnumeric())
-        return True
+        if type(value) is float or is_integer_num(value):
+            return True
+
+        if type(value) is str:
+            test = value
+            if value[1:] == "-":  # Only first char
+                # Remove the negative sign
+                test = value[:1]  # All but first char
+            return test.isdecimal()
+        return False
 
     def sanitize(self, data):
-        # Ensure the data is an int
+        # Ensure the data is a float
         if type(data) is float:
             return data
 
         return float(data)
 
 class DateTypeVerifier(TypeVerifier):
-    # TODO: Actually implement this
+    # TODO: Handle integer based dates
     def verify(self, data):
-        return True
+        if type(data) is str:
+            try:
+                datetime.datetime.strptime(data, '%Y-%m-%d')
+                return True
+            except ValueError as e:
+                sqldeb.exception(e)
+                #("Incorrect data format, should be YYYY-MM-DD")
+        return False
 
     def sanitize(self, data):
-        return data
+        return datetime.datetime.strptime(data, '%Y-%m-%d')
 
 class EnumColumnType(Enum):
     TEXT = StringTypeVerifier()
     INTEGER = IntegerTypeVerifier()
     DECIMAL = DecimalTypeVerifier()
+
+    #TODO: Support other date formats
     DATE = DateTypeVerifier()
 
 class TableRow():
@@ -200,18 +227,22 @@ class LinkedColumn(TableColumn):
         return self.key
 
     def getReferenceTable(self):
-        print("Key: %s, %s" % (self.key, type(self.key)))
+        #print("Key: %s, %s" % (self.key, type(self.key)))
         if isinstance(self.key, EnumTable):
-            print("Table: %s" % self.key)
+            #print("Table: %s" % self.key)
             return self.key
 
-        print("Table2: %s" % self.getTable())
+        #print("Table2: %s" % self.getTable())
         return self.getTable()
 
     def isLocal(self):
         return type(self.key) is str
 
-class EnumTable(Enum):
+class EnumBase(Enum):
+    def values(self):
+        return self.__members__.items()
+
+class EnumTable(EnumBase):
     def __init__(self, column):
         sqldeb.info("Initializing Column %s.%s; Type: %s" % (self.getTableName(), self.name, type(self.value)))
         column.table = self
@@ -433,10 +464,10 @@ class Database:
                 sqldeb.exception(e)
             else:
                 changes = self._getCache_()._endTransaction_(lock, False)
-                print("Changes: " + str(changes))
+                #print("Changes: " + str(changes))
             sqldeb.debug("Releasing lock: %s" % lock)
             self._lock_ = None
-            print("4 Type: " + str(type(changes)))
+            #print("4 Type: " + str(type(changes)))
             return changes
         return {}
 
@@ -596,7 +627,7 @@ class DatabaseCacheManager:
 
         # {Key: cacheEntryID, Value: cacheData}
         self.cache = {}
-        self.entryIndexCounter = 0 #TODO: Continue here
+        self.entryIndexCounter = 0
 
         # {Key: cacheEntryID, Value: (rowID, table)}
         self.cacheMap = {}
@@ -801,7 +832,7 @@ class DatabaseCacheManager:
             changes = self._commitCacheChanges_()
 
         self._inTransaction_ = False
-        print("3 Type: " + str(type(changes)))
+        #print("3 Type: " + str(type(changes)))
         return changes
 
     def _commitCacheChanges_(self):
@@ -837,13 +868,13 @@ class DatabaseCacheManager:
 
         # Having applied the changes to the cache we reset for the next transaction
         self._clearCacheState_()
-        print("2B Type: " + str(type(remappedData)))
+        #print("2B Type: " + str(type(remappedData)))
         return remappedData
 
     def _rollbackCacheChanges_(self):
         changeData = self._remapCacheObjects_(self.created.copy(), self.deleted.copy(), self.changes.copy(), True)
         self._clearCacheState_()
-        print("2A Type: " + str(type(changeData)))
+        #print("2A Type: " + str(type(changeData)))
         return changeData
 
     def _clearCacheState_(self):
@@ -905,7 +936,7 @@ class DatabaseCacheManager:
 
         # We return this way to prevent python from creating a tuple from the dict
         changedData = {"created": newCreated, "deleted": newDeleted, "changed": newChanged}
-        print("1Type: " + str(type(changedData)))
+        #print("1Type: " + str(type(changedData)))
         return changedData
 
     def getRow(self, table, connection, rowID):
@@ -1287,7 +1318,7 @@ class SQLQueryBuilder:
         else:
             if self.columns is not None and len(self.columns) > 0:
                 for column in self.columns:
-                    print("Column %s" % column)
+                    #print("Column %s" % column)
                     assert isinstance(column, EnumTable)
                 columnStr = ", ".join([col.name for col in self.columns])
             else:

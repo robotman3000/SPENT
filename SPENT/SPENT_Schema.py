@@ -45,27 +45,11 @@ class EnumTagsTable(sqlib.EnumTable):
     def getRowClass(self, rowData):
         return Tag
 
-#def getAvailBucketTreeBalance(source, tableName, columnName):
-#    return spent.util.getAvailableBalance(source, True)
-
-#def getPostedBucketTreeBalance(source, tableName, columnName):
-#    return spent.util.getPostedBalance(source, True)
-
-#def getAvailBucketBalance(source, tableName, columnName):
-#    return spent.util.getAvailableBalance(source)
-
-#def getPostedBucketBalance(source, tableName, columnName):
-#    return spent.util.getPostedBalance(source)
-
 class EnumBucketsTable(sqlib.EnumTable):
     ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
     Name = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=True)
     Parent = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"}, localKey='ID')
     Ancestor = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"}, localKey='ID')
-    #Balance = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getAvailBucketBalance)
-    #PostedBalance = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getPostedBucketBalance)
-    #TreeBalance = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getAvailBucketTreeBalance)
-    #PostedTreeBalance = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getPostedBucketTreeBalance)
 
     def onInit(self, connection):
         if connection.canExecuteUnsafe():
@@ -252,26 +236,15 @@ class TransactionGroup(sqlib.TableRow):
     def getBucketID(self) -> Optional[Bucket]:
         return self.getValue(EnumTransactionGroupsTable.Bucket)
 
-#++++++++++++++++++++++++++++
+class TransactionStatusEnum(sqlib.EnumBase):
+    Void = 0
+    Uninitiated = 1
+    Submitted = 2
+    PostPending = 3
+    Complete = 4
+    Reconciled = 5
 
-# def getTagName(source, tableName, columnName):
-#	return self.selectTableRowsColumns("Tags", [source.getValue("TagID")], ["Name"])[0]
-
-# self.registerVirtualColumn("TransactionTags", "TagName", getTagName)
-
-# self.registerTableSchema("StatusMap", None, ["Void", "Uninitiated", "Submitted", "Post-Pending", "Complete", "Reconciled"])
-
-# def getGroupAmount(source, tableName, columnName):
-#	print("Amount12345")
-#	ids = self.util.getAllBucketChildrenID(source.getBucket())
-#	ids.append(source.getBucket().getID())  # We can't forget ourself
-#	idStr = ", ".join(map(str, ids))
-#
-#			query = "SELECT IFNULL(SUM(Amount), 0) FROM (SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) AND GroupID == %s UNION ALL SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) AND GroupID == %s)" % (
-#				idStr, source.getID(), idStr, source.getID())
-#
-#			result = self._rawSQL_(query)
-#			return round(float(result[0][0]), 2)
-
-#		self.registerVirtualColumn("TransactionGroups", "Amount", getGroupAmount)
-
+class TransactionTypeEnum(sqlib.EnumBase):
+    Transfer = 0
+    Deposit = 1
+    Withdrawal = 2

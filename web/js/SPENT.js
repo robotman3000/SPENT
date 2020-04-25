@@ -150,22 +150,6 @@ function initGlobals(){
         ],
 	}
 
-	/*crossModelUupdateMap = {
-	    transaction: {
-	        // If "foreignKey" isn't defined then we update all the models of "foreignType"
-	        {action: "change", property: "Amount", foreignType: "bucket", foreignMatchKey: "Balance"},
-	        {action: "change", property: "Amount", foreignType: "bucket", foreignMatchKey: "PostedBalance"},
-	        {action: "change", property: "Amount", foreignType: "account", foreignMatchKey: "Balance"},
-	        {action: "change", property: "Amount", foreignType: "account", foreignMatchKey: "PostedBalance"},
-
-	        {action: "create", foreignMatch: "bucket"},
-	        {action: "delete", foreignMatch: "bucket"},
-	    },
-	    bucket: {
-	        {action: "change", property: "Name", foreignKey: "ID", foreignMatch: "transaction", foreignMatchKey: "SourceBucket"},
-	        {foreignKey: "Name", foreignMatch: "transaction", foreignMatchKey: "DestBucket"},
-	    }
-	}*/
 	requestManager = new APIRequestManager();
 }
 
@@ -218,27 +202,10 @@ function cleanData(data){
     return obj;
 };
 
-function findModelsWhere(collections, filter){ // "OR" based results
-    var result = null;
-    if(collections && collections.length > 0){
-        collections.forEach(function(item, index){
-            if(result == null){
-                var models = item.where(filter);
-                if(models && models.length > 0){
-                    result = models;
-                }
-            }
-        });
-    }
-    return result;
-}
-
-//function findCollectionsWhere(collections, filter){} // "AND" based results
-
-function getBucketNameForID(accounts, buckets, id){
-    var models = findModelsWhere([accounts, buckets], {ID: id});
-    if(models != null && models.length > 0){
-        return models[0].get("Name");
+function getBucketNameForID(accountBuckets, id){
+    var model = accountBuckets.get(id);
+    if(model){
+        return model.get("Name");
     }
     return "Invalid ID: " + id;
 }
@@ -246,8 +213,23 @@ function getBucketNameForID(accounts, buckets, id){
 function onDocumentReady() {
     // Initialize global variables
     initGlobals();
-    var createTriggerButton = function(item){
 
+    // Credit to https://stackoverflow.com/a/21434708 for the comparator function
+    var compFunc = function(a, b) {
+      var sampleDataA = a.get(this.sortKey),
+          sampleDataB = b.get(this.sortKey);
+      if (this.reverseSortDirection) {
+        if (sampleDataA > sampleDataB) { return -1; }
+        if (sampleDataB > sampleDataA) { return 1; }
+        return 0;
+      } else {
+        if (sampleDataA < sampleDataB) { return -1; }
+        if (sampleDataB < sampleDataA) { return 1; }
+        return 0;
+      }
+    };
+
+    var createTriggerButton = function(item){
         var btn = $("<button>").attr("type", "button").attr("class", "btn");
         btn.append($("<i>").attr("class", item.cssClass))
         var button = new TriggerButton(btn, item.preClick);
@@ -266,6 +248,7 @@ function onDocumentReady() {
         });
         return options;
     };
+
     var methodMap = {
         create: 'create',
         update: 'update',
@@ -273,7 +256,6 @@ function onDocumentReady() {
         delete: 'delete',
         read: 'get'
     };
-
     Backbone.sync = function(method, model, options){
         // Pass along `textStatus` and `errorThrown` from jQuery.
         var error = getOrDefault(options, "error", null);
@@ -452,54 +434,9 @@ function onDocumentReady() {
 
             return newData;
         },
-        // Credit to https://stackoverflow.com/a/21434708 for the comparator function
-        comparator: function(a, b) {
-          var sampleDataA = a.get(this.sortKey),
-              sampleDataB = b.get(this.sortKey);
-          if (this.reverseSortDirection) {
-            if (sampleDataA > sampleDataB) { return -1; }
-            if (sampleDataB > sampleDataA) { return 1; }
-            return 0;
-          } else {
-            if (sampleDataA < sampleDataB) { return -1; }
-            if (sampleDataB < sampleDataA) { return 1; }
-            return 0;
-          }
-        },
+        comparator: compFunc,
         sortKey: "",
         reverseSortDirection: false,
-    });
-    var MergedCollection = Backbone.Collection.extend({
-        initialize: function(collections){
-            var self = this;
-
-            var onEvent = function(eventName, arg1, arg2, arg3){
-                self.trigger(eventName, arg1, arg2, arg3)
-            };
-
-            collections.forEach(function(item, index){
-                self.listenTo(item, "all", onEvent);
-            });
-
-            this.collections = collections;
-        },
-        get: function(id){
-            var result = this.collections.forEach(function(item, index){
-                var model = item.get(id);
-                if(model){
-                    return model;
-                }
-            });
-            return result;
-        },
-        where: function(attributes){
-            var models = [];
-            this.collections.forEach(function(item, index){
-                var res = item.where(attributes);
-                models.push(res);
-            });
-            return _.union(...models);
-        },
     });
 
     var Bucket = BaseModel.extend({
@@ -519,16 +456,15 @@ function onDocumentReady() {
             return null;
         },
     });
-    var Buckets = BaseCollection.extend({
+    var Account = Bucket.extend({});
+
+    var RawBuckets = BaseCollection.extend({
         model: Bucket,
         url: "bucket",
     });
 
-    var Account = Bucket.extend({});
-    var Accounts = BaseCollection.extend({
-        model: Account,
-        url: "account",
-    });
+    var Buckets = Backbone.FilteredCollection.extend({model: Bucket});
+    var Accounts = Backbone.FilteredCollection.extend({model: Account});
 
     var Transaction = BaseModel.extend({
         defaults: function(){
@@ -598,7 +534,7 @@ function onDocumentReady() {
                     }
 
                     if(index == 2){
-                        text = getBucketNameForID(accounts, buckets, self.model.get(item))
+                        text = getBucketNameForID(accountBuckets, self.model.get(item))
                         td.attr("colspan", 2);
                     }
                     td.text(text)
@@ -618,11 +554,16 @@ function onDocumentReady() {
     });
 
     // Create instances of the model collections
-    var accounts = new Accounts;
-    var buckets = new Buckets;
+    var accountBuckets = new RawBuckets();
+
+    var accounts = new Accounts(null, {collection: accountBuckets});
+    accounts.setFilter(function(item) { return item.get('ancestor') == -1;});
+
+    var buckets = new Buckets(null, {collection: accountBuckets});
+    buckets.setFilter(function(item) { return item.get('ancestor') != -1;});
+
     var transactions = new Transactions;
     var transactionGroups = new TransactionGroups;
-    var accountBuckets = new MergedCollection([accounts, buckets]);
 
     // Base Views
     var BaseModelView = Object.create(null);
@@ -1283,19 +1224,19 @@ function onDocumentReady() {
 
             this.$el.on("select_node.jstree", this.nodeSelected)
 
-            this.listenTo(accounts, "add", this.nodeAdded)
-            this.listenTo(accounts, "remove", this.nodeRemoved)
+            this.listenTo(accountBuckets, "add", this.nodeAdded)
+            this.listenTo(accountBuckets, "remove", this.nodeRemoved)
             //TODO: this.listenTo(accounts, "update", )
             //TODO: this.listenTo(accounts, "reset", )
-            this.listenTo(accounts, "change:Name", this.nodeChanged)
-            this.listenTo(accounts, "change:Balance", this.nodeChanged)
+            this.listenTo(accountBuckets, "change:Name", this.nodeChanged)
+            this.listenTo(accountBuckets, "change:Balance", this.nodeChanged)
 
-            this.listenTo(buckets, "add", this.nodeAdded)
-            this.listenTo(buckets, "remove", this.nodeRemoved)
+            ////this.listenTo(buckets, "add", this.nodeAdded)
+            ////this.listenTo(buckets, "remove", this.nodeRemoved)
             //TODO: this.listenTo(buckets, "update", )
             //TODO: this.listenTo(buckets, "reset", )
-            this.listenTo(buckets, "change:Name", this.nodeChanged)
-            this.listenTo(buckets, "change:Balance", this.nodeChanged)
+            ////this.listenTo(buckets, "change:Name", this.nodeChanged)
+            ////this.listenTo(buckets, "change:Balance", this.nodeChanged)
 
             //TODO: this.listenTo(accounts, "sync", this.treeReset);
             //TODO: this.listenTo(buckets, "sync", this.treeReset);
@@ -1406,9 +1347,9 @@ function onDocumentReady() {
         el: $("#accountStatusText"),
         initialize: function(){
             this.listenTo(uiState, "change:selectedAccount", function(model, selectedAccountID, options){
-                var models = findModelsWhere([accounts, buckets], {ID: selectedAccountID});
-                if(models && models.length > 0){
-                    this.setModel(models[0]);
+                var model = accountBuckets.get(selectedAccountID);
+                if(model){
+                    this.setModel(model);
                 }
             });
 
@@ -1474,7 +1415,7 @@ function onDocumentReady() {
                 }
 
                 return {
-                    text: getBucketNameForID(accounts, buckets, id),
+                    text: getBucketNameForID(accountBuckets, id),
                 };
             },
             "TransDate": function(value, rowData){
@@ -1599,7 +1540,7 @@ function onDocumentReady() {
         formatters: {
             "Parent": function(value, rowData){
                 return {
-                    text: getBucketNameForID(accounts, buckets, value),
+                    text: getBucketNameForID(accountBuckets, value),
                 };
             },
         },
@@ -1918,11 +1859,16 @@ function onDocumentReady() {
             var temp = _.findWhere(this.fieldSelect.options, {value: parseInt(field)});
             var fieldName = getOrDefault(temp, "text", "Error");
 
-            //console.log("Sorting by: " + fieldName + " " + direction)
+            console.log("Sorting by: " + fieldName + " " + direction)
             this.collection.sortKey = fieldName;
             this.collection.reverseSortDirection = (parseInt(direction) > 0)
             //TODO: Respect the sort direction
-            this.collection.sort();
+            if (this.collection.comparator){
+                this.collection.sort();
+            } else {
+                console.log("Collection didn't have a comparator")
+            }
+
             var debugList = this.collection.pluck(fieldName);
             //console.log(JSON.stringify(debugList));
         },
@@ -2053,12 +1999,12 @@ function onDocumentReady() {
     accounts.listenTo(accountEditForm, "formSubmit", saveFunction);
     accountEditFormModal.listenTo(accountEditForm, "formSubmit", accountEditFormModal.hideModal)
 
-    requestManager.registerCollection("account", accounts);
-    requestManager.registerCollection("bucket", buckets);
+    //requestManager.registerCollection("account", accounts);
+    requestManager.registerCollection("bucket", accountBuckets);
     requestManager.registerCollection("transaction", transactions);
     requestManager.registerCollection("transaction-group", transactionGroups);
 
-    requestManager.selectRecords("account");
+    //requestManager.selectRecords("account");
     requestManager.selectRecords("bucket");
     requestManager.selectRecords("transaction");
     requestManager.selectRecords("transaction-group");

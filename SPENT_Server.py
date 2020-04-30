@@ -222,14 +222,15 @@ class DatabaseEndpoint(EndpointBackend):
 		self.spentUtil = SpentUtil
 
 		self.apiTree = {}
-		# self.apiTree["account"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
-		self.apiTree["bucket"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
+		self.apiTree["account"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
+		self.apiTree["bucket"] = {"get": self.getFunction, "create": self.createBucketFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["transaction"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["transaction-group"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		# self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag} #Tags are handled differently
 
 		self.typeMapper = {"account": EnumBucketsTable, "bucket": EnumBucketsTable, "transaction": EnumTransactionTable, "transaction-group": EnumTransactionGroupsTable, "tag": EnumTransactionTagsTable}
 		self.reverseTypeMapper = {EnumBucketsTable: "account", EnumBucketsTable: "bucket", EnumTransactionTable: "transaction", EnumTransactionGroupsTable: "transaction-group", EnumTransactionTagsTable: "tag"}
+
 
 		self.connection.beginTransaction()
 		for table in self.reverseTypeMapper.keys():
@@ -352,6 +353,30 @@ class DatabaseEndpoint(EndpointBackend):
 		where = self.dataToWhere(data, table.getIDColumn(table))
 		selectedRows = table.select(connection, where)
 		return self.SQLRowsToArray(selectedRows.getRows().values(), columns)
+
+	def createBucketFunction(self, request, columns, table, connection):
+		data = request.get("data", {})
+		for obj in data:
+			objData = self.parseSQLObjectToDict(table, obj)
+			ancestor = self._genAncestor_(table, connection, None, objData.get(EnumBucketsTable.Parent))
+			objData[EnumBucketsTable.Ancestor] = ancestor
+
+			table.createRow(connection, objData)
+
+		# This function sends no data back to the client because the list of created rows is sent elsewhere
+		return None
+
+	def _genAncestor_(self, table, connection, rowID, parentID):
+		print("Gen Ancestor: %s, %s" % (rowID, parentID))
+		if parentID is None or parentID == -1:
+			print("Ancestor: %s" % rowID)
+			return rowID
+
+		# Else climb the tree
+		row = table.getRow(connection, int(parentID))
+		rowID = row.getID()
+		parentID = row.getValue(EnumBucketsTable.Parent)
+		return self._genAncestor_(table, connection, rowID, parentID)
 
 	def createFunction(self, request, columns, table, connection):
 		data = request.get("data", {})

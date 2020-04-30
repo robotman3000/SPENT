@@ -45,18 +45,22 @@ class EnumTagsTable(sqlib.EnumTable):
     def getRowClass(self, rowData):
         return Tag
 
+def generateAncestorValue(row, colum, value):
+    pass
+
 class EnumBucketsTable(sqlib.EnumTable):
     ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
     Name = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=True)
     Parent = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"}, localKey='ID')
-    Ancestor = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"}, localKey='ID')
+    Ancestor = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name", "autoGenerate": generateAncestorValue}, localKey='ID')
 
     def onInit(self, connection):
         if connection.canExecuteUnsafe():
             #connection.execute("PRAGMA foreign_keys = OFF")
             print(connection.execute("PRAGMA foreign_keys")[0][0])
             try:
-                self.createRow(connection, {EnumBucketsTable.ID: -1, EnumBucketsTable.Name: "Root", EnumBucketsTable.Parent: None, EnumBucketsTable.Ancestor: None})
+                if self.getRow(connection, -1) is None:
+                    self.createRow(connection, {EnumBucketsTable.ID: -1, EnumBucketsTable.Name: "Root", EnumBucketsTable.Parent: None, EnumBucketsTable.Ancestor: None})
             except Exception as e:
                 logman.exception(e)
             #connection.execute("PRAGMA foreign_keys = ON;")
@@ -95,7 +99,8 @@ class EnumTransactionGroupsTable(sqlib.EnumTable):
             #connection.execute("PRAGMA foreign_keys = OFF")
             print(connection.execute("PRAGMA foreign_keys")[0][0])
             try:
-                self.createRow(connection, {EnumTransactionGroupsTable.ID: -1, EnumTransactionGroupsTable.Memo: "Default Group", EnumTransactionGroupsTable.Bucket: -1})
+                if self.getRow(connection, -1) is None:
+                    self.createRow(connection, {EnumTransactionGroupsTable.ID: -1, EnumTransactionGroupsTable.Memo: "Default Group", EnumTransactionGroupsTable.Bucket: -1})
             except Exception as e:
                 logman.exception(e)
             #connection.execute("PRAGMA foreign_keys = ON;")

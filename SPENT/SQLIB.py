@@ -58,9 +58,12 @@ class IntegerTypeVerifier(TypeVerifier):
 
         if type(value) is str:
             test = value
+            print(test + " fewq")
+            print(value[1:] + "gfagreahe")
             if value[1:] == "-": # Only first char
                 # Remove the negative sign
                 test = value[:1] # All but first char
+                print("%s grewgreatest" % test.isdigit())
             return test.isdigit()
         return False
 
@@ -104,7 +107,9 @@ class DateTypeVerifier(TypeVerifier):
         return False
 
     def sanitize(self, data):
-        return datetime.datetime.strptime(data, '%Y-%m-%d')
+        # TODO: Implement this
+        return str(data)
+        #return datetime.datetime.strptime(data, '%Y-%m-%d')
 
 class EnumColumnType(Enum):
     TEXT = StringTypeVerifier()
@@ -131,7 +136,12 @@ class TableRow():
             return columnKey.value.calculateValue(self, self.table)
         return self.cache.getValue(columnKey)
 
-    def setValue(self, columnKey, newValue):
+    def setValue(self, columnKey, value):
+        #autoGenerate = columnKey.getProperty("autoGenerate")
+        newValue = value
+        #if autoGenerate is not None:
+        #    newValue = autoGenerate(self, columnKey, value)
+
         return self.cache.setValue(columnKey, newValue)
 
     def setValues(self, data):
@@ -181,12 +191,31 @@ class Column:
     def willEnforceUnique(self):
         return self.keepUnique
 
-    def verify(self, value):
-        sqldeb.debug("Column %s verifying %s" % (self, value))
-        return True
-
     def sanitize(self, value):
-        sqldeb.debug("Column %s sanitizing %s" % (self, value))
+        sqldeb.debug("Column %s.%s sanitizing %s(\" %s \")" % (self.getTable().getTableName(), self.myName, type(value), value))
+
+        # Prevent illegal None values
+
+        # Key: value and willPreventNull
+        if not (value is None and self.willPreventNull()) or self.willAutoIncrement(): # None and True
+            if value is None: # None and False
+                return None
+
+            # not None and True
+            # not None and False
+
+            # Check the data type
+            value2 = self.getType().value.sanitize(value)
+
+            # Then the data "data" (I.E Malformed strings, Out of range numbers, anything that could be malicious, etc.)
+            #TODO: Do the check
+
+            # Then once we are all clear we clean the data
+            return self._sanitizeDelegate_(value2)
+        raise Exception("Invalid data for column %s; %s" % (self, value))
+
+    def _sanitizeDelegate_(self, value):
+        # This function is supposed to be overwritten by extending classes
         return value
 
     def getTable(self):
@@ -200,6 +229,9 @@ class TableColumn(Column):
     def getProperties(self):
         # We copy to prevent the properties from being changed during runtime
         return self.properties.copy()
+
+    def getProperty(self, name, default=None):
+        return self.properties.get(name, default)
 
 class VirtualColumn(Column):
     def __init__(self, type, valueFunction):
@@ -246,6 +278,7 @@ class EnumTable(EnumBase):
     def __init__(self, column):
         sqldeb.info("Initializing Column %s.%s; Type: %s" % (self.getTableName(), self.name, type(self.value)))
         column.table = self
+        column.myName = self.name
 
     def P_writeTable_(self, connection):
         columns = []
@@ -316,6 +349,12 @@ class EnumTable(EnumBase):
 
     def getColumns(self):
         return self.__members__.values()
+
+    def getColumnName(self, columnValue):
+        for i in self.getColumns():
+            if i.value is columnValue:
+                return i.name
+        return "No Name Found"
 
     @classmethod
     def parseStrings(table, columnNames):
@@ -456,20 +495,8 @@ class Database:
 
     def _releaseTransactionLock_(self, lock):
         if self._hasLock_(lock):
-            changes = None
-            try:
-                self._getCache_()._writeCache_(lock)
-            except Exception as e:
-                changes = self._getCache_()._endTransaction_(lock, True)
-                sqldeb.exception(e)
-            else:
-                changes = self._getCache_()._endTransaction_(lock, False)
-                #print("Changes: " + str(changes))
             sqldeb.debug("Releasing lock: %s" % lock)
             self._lock_ = None
-            #print("4 Type: " + str(type(changes)))
-            return changes
-        return {}
 
     def _hasLock_(self, lock):
         locked = lock is not None and self._lock_ is lock
@@ -479,6 +506,12 @@ class Database:
     def _isLocked_(self):
         sqldeb.debug("Is locked? %s" % self._lock_)
         return self._lock_ is not None
+
+    def _endTransaction_(self, lock):
+        if self._hasLock_(lock):
+            sqldeb.debug("Ending transaction: %s" % lock)
+            return self._getCache_()._endTransaction_(lock, False)
+        return {}
 
     def _abortTransaction_(self, lock):
         if self._hasLock_(lock):
@@ -597,12 +630,16 @@ class DatabaseConnection:
     def endTransaction(self):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
             sqlog.debug("Ending transaction")
-            return self.database._releaseTransactionLock_(self)
+            result = self.database._endTransaction_(self)
+            self.database._releaseTransactionLock_(self)
+            return result
 
     def abortTransaction(self):
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
             sqlog.debug("Aborting transaction")
-            return self.database._abortTransaction_(self)
+            result = self.database._abortTransaction_(self)
+            self.database._releaseTransactionLock_(self)
+            return result
 
     def execute(self, query):
         # Note: We intentionally don't check the database lock here
@@ -823,6 +860,12 @@ class DatabaseCacheManager:
 
     def _endTransaction_(self, connection, rollback = False):
         # TODO: Verify that this code properly handles sql errors
+        try:
+            self._writeCache_(connection)
+        except Exception as e:
+            rollback = True
+            sqldeb.exception(e)
+
         cadeb.debug("Exiting transaction mode: Rollback = %s" % rollback)
         if rollback:
             connection.execute("ROLLBACK")
@@ -1009,16 +1052,10 @@ class DatabaseCacheManager:
 
             # Verify that all the data is clean
             for item in rowData.items():
-                if item[0].value.getType().value.verify(item[1]) and item[0].value.verify(item[1]) or item[1] is None and item[0].value.willPreventNull() is False:
-                    if item[1] is not None:
-                        typeSanitized = item[0].value.getType().value.sanitize(item[1])
-                        valueSanitized = item[0].value.sanitize(typeSanitized)
-                    else:
-                        valueSanitized = None
-                    keys.append(item[0])
-                    values.append(valueSanitized)
-                else:
-                    raise Exception("Invalid data for column %s; %s" % (item[0].name, item[1]))
+                # Note that sanitize will throw an exception if anything goes wrong
+                valueSanitized = item[0].value.sanitize(item[1])
+                keys.append(item[0])
+                values.append(valueSanitized)
 
             query = SQLQueryBuilder(EnumSQLQueryAction.INSERT).INTO(table).COLUMNS(keys).VALUES(values)
             rows = connection.execute(str(query))
@@ -1142,18 +1179,10 @@ class DatabaseCacheManager:
             row = self.changes.get(objectID, {})
             oldValue = row.get(columnKey, self.cache.get(objectID).get(columnKey, null))
             if(type(oldValue) is not _NullValue_):
-                if columnKey.value.getType().value.verify(value) and columnKey.value.verify(value) or value is None and columnKey.value.willPreventNull() is False:
-                    #print("Row is dirty")
-                    if value is not None:
-                        typeSanitized = columnKey.value.getType().value.sanitize(value)
-                        valueSanitized = columnKey.value.sanitize(typeSanitized)
-                    else:
-                        valueSanitized = None
-                    row[columnKey] = valueSanitized
-                    self.changes[objectID] = row
-                    return oldValue
-                else:
-                    cadeb.error("Invalid value %s for column %s" % (value, columnKey))
+                valueSanitized = columnKey.value.sanitize(value)
+                row[columnKey] = valueSanitized
+                self.changes[objectID] = row
+                return oldValue
         else:
             cadeb.error("Unable to set value for cache object %s" % objectID)
 

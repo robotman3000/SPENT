@@ -189,7 +189,7 @@ function getOrDefault(object, property, def){
 	return def;
 }
 
-function cleanData(data){
+function cleanData(data, stripNulls, stripEmptyStr){
     // This converts objects of format [{name: ***, value: ***}, ..., ...]
     // to {The name: The value, The next name: The next value}
     var obj = {};
@@ -197,7 +197,9 @@ function cleanData(data){
     // This loop style is used because "data" doesn't have .forEach or .length
     // for some reason
     for(var index = 0; data[index] != undefined; index++){
-        obj[data[index].name] = data[index].value;
+        if (!(data[index].value == null && stripNulls) && !(data[index].value === "" && stripEmptyStr)){
+            obj[data[index].name] = data[index].value;
+        }
     }
     return obj;
 };
@@ -463,8 +465,8 @@ function onDocumentReady() {
         url: "bucket",
     });
 
-    var Buckets = Backbone.FilteredCollection.extend({model: Bucket});
-    var Accounts = Backbone.FilteredCollection.extend({model: Account});
+    var Buckets = Backbone.FilteredCollection.extend({model: Bucket, url: "bucket"});
+    var Accounts = Backbone.FilteredCollection.extend({model: Account, url: "bucket"});
 
     var Transaction = BaseModel.extend({
         defaults: function(){
@@ -557,10 +559,12 @@ function onDocumentReady() {
     var accountBuckets = new RawBuckets();
 
     var accounts = new Accounts(null, {collection: accountBuckets});
-    accounts.setFilter(function(item) { return item.get('ancestor') == -1;});
+    accounts.setFilter(function(item) {
+    return item.get('Ancestor') == -1;
+    });
 
     var buckets = new Buckets(null, {collection: accountBuckets});
-    buckets.setFilter(function(item) { return item.get('ancestor') != -1;});
+    buckets.setFilter(function(item) { return item.get('Ancestor') != -1;});
 
     var transactions = new Transactions;
     var transactionGroups = new TransactionGroups;
@@ -1571,7 +1575,7 @@ function onDocumentReady() {
     var AccountTable = BaseTableView.extend({
         model: accounts,
         tableName: "accountTable",
-        apiDataType: "account",
+        apiDataType: "bucket",
         columns: [
             {name: "ID", visible: false},
             {name: "Name", title: "Name", type: "text", responsive: {hide: false}}
@@ -1913,14 +1917,15 @@ function onDocumentReady() {
         // Perform updates to the model
         if(model == null){
             // We are creating a new table entry
-            this.create(cleanData(data), {wait: true});
+            this.create(cleanData(data, true, true), {wait: true});
         } else {
-            model.set(cleanData(data));
+            model.set(cleanData(data, true, true));
             model.save();
             //model.save(cleanData(data), {wait: true});
 
         }
     };
+
     transactionEditFormModal.bindSubmitToForm(transactionEditForm);
     transactions.listenTo(transactionEditForm, "formSubmit", saveFunction);
     transactionEditFormModal.listenTo(transactionEditForm, "formSubmit", transactionEditFormModal.hideModal)

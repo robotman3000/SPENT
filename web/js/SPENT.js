@@ -57,6 +57,7 @@ var APIRequestManager = function(){
                 add: action == "create" || action == "get",
                 update: action == "update",
                 remove: action == "delete",
+                parse: true,
             };
 
             var changed = type.set(data, options);
@@ -427,7 +428,10 @@ function onDocumentReady() {
         parse: function(resp, options) {
             options.isRaw = false;
             var newData = [];
-            resp.data.forEach(function(item, index){
+
+            loopSet = resp.data || resp;
+
+            loopSet.forEach(function(item, index){
                 if(getOrDefault(item, "ID", null) != null){
                     item["id"] = item["ID"];
                 }
@@ -1084,7 +1088,10 @@ function onDocumentReady() {
                         actionModals["delete"].form.setMessage(JSON.stringify(row.getModel().toJSON()));
                         actionModals["delete"].form.setConfirmCallback(function(allClear){
                             if(allClear){
-                                actionModals["delete"].form.getModel().destroy({wait: true});
+                                //actionModals["delete"].form.getModel().destroy({wait: true});
+                                var mod = actionModals["delete"].form.getModel();
+                                requestManager.deleteRecords(Object.getPrototypeOf(mod.collection).url, [{ID: mod.get("ID")}]);
+                                requestManager.sendRequest()
                             }
                         });
                     };
@@ -1917,13 +1924,18 @@ function onDocumentReady() {
         // Perform updates to the model
         if(model == null){
             // We are creating a new table entry
-            this.create(cleanData(data, true, true), {wait: true});
+            requestManager.createRecords(Object.getPrototypeOf(this.collection).url, [cleanData(data, true, true)]);
+            //this.create(cleanData(data, true, true), {wait: true});
         } else {
-            model.set(cleanData(data, true, true));
-            model.save();
+            var clean = cleanData(data, true, true);
+            clean["ID"] = model.get("ID");
+            requestManager.updateRecords(Object.getPrototypeOf(this.collection).url, [clean]);
+            //model.set(cleanData(data, true, true));
+            //model.save();
             //model.save(cleanData(data), {wait: true});
 
         }
+        requestManager.sendRequest();
     };
 
     transactionEditFormModal.bindSubmitToForm(transactionEditForm);
@@ -2005,14 +2017,14 @@ function onDocumentReady() {
     accountEditFormModal.listenTo(accountEditForm, "formSubmit", accountEditFormModal.hideModal)
 
     //requestManager.registerCollection("account", accounts);
-    requestManager.registerCollection("bucket", accountBuckets);
-    requestManager.registerCollection("transaction", transactions);
-    requestManager.registerCollection("transaction-group", transactionGroups);
+    requestManager.registerCollection(RawBuckets.prototype.url, accountBuckets);
+    requestManager.registerCollection(Transactions.prototype.url, transactions);
+    requestManager.registerCollection(TransactionGroups.prototype.url, transactionGroups);
 
     //requestManager.selectRecords("account");
-    requestManager.selectRecords("bucket");
-    requestManager.selectRecords("transaction");
-    requestManager.selectRecords("transaction-group");
+    requestManager.selectRecords(RawBuckets.prototype.url);
+    requestManager.selectRecords(Transactions.prototype.url);
+    requestManager.selectRecords(TransactionGroups.prototype.url);
 
     bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
 

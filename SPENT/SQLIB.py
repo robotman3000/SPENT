@@ -758,9 +758,9 @@ class DatabaseCacheManager:
             #cadeb.debug("Lookup check %s == %s -> %s; %s is %s -> %s" % (rowID, checkRowID, (rowID == checkRowID), checkTable, table, (checkTable is table)))
 
             # Get a stack trace if rowID is a string
-            assert type(rowID) is int
+            assert type(rowID) is int or rowID is None
 
-            if int(rowID) == checkRowID and checkTable is table:
+            if rowID is not None and int(rowID) == checkRowID and checkTable is table:
                 #cadeb.debug("Match found for row %s in table %s" % (rowID, table))
                 return item[0] # Return the cacheID
 
@@ -986,25 +986,27 @@ class DatabaseCacheManager:
         cadeb.debug("%s@%s: Getting row: %s" % (connection.getName(), table.getTableName(table), rowID))
 
         # First get the row from the cache if it exists
-        rowCacheID = self._lookupRow_(rowID, table)
-        if rowCacheID is None:
-            # The row doesn't exist in the cache so we turn to the DB
-            query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS(COLUMN_ANY).FROM(table).WHERE_ID_IN([rowID])
-            # TODO: Verify that this code will properly handle rolling back in the event of an error
-            result = connection.execute(str(query))
-            if len(result) < 1:
-                # TODO: raise an excpetion or something
-                cadeb.debug("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), rowID))
-                return None
+        if rowID is not None:
+            rowCacheID = self._lookupRow_(rowID, table)
+            if rowCacheID is None:
+                # The row doesn't exist in the cache so we turn to the DB
+                query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS(COLUMN_ANY).FROM(table).WHERE_ID_IN([rowID])
+                # TODO: Verify that this code will properly handle rolling back in the event of an error
+                result = connection.execute(str(query))
+                if len(result) < 1:
+                    # TODO: raise an excpetion or something
+                    cadeb.debug("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), rowID))
+                    return None
 
-            parsedRows = self._parseRows_(result, table)
+                parsedRows = self._parseRows_(result, table)
 
-            # TODO: Write logic to handle when (by some crazy sequence of events) more than one row is returned
-            return parsedRows[0]
-        else:
-            if self._RowisDeleted_(rowCacheID):
-                return None
-        return self._initRow_(table, self._initRowDataCache_(rowCacheID))
+                # TODO: Write logic to handle when (by some crazy sequence of events) more than one row is returned
+                return parsedRows[0]
+            else:
+                if self._RowisDeleted_(rowCacheID):
+                    return None
+            return self._initRow_(table, self._initRowDataCache_(rowCacheID))
+        return None
 
     def getRows(self, table, connection, rowIDs):
         cadeb.debug("%s@%s: Getting rows: %s" % (connection.getName(), table.getTableName(table), rowIDs))

@@ -56,9 +56,46 @@ class SPENTServer():
 		dbEndpoint = DatabaseEndpoint(args.dbpath, args.debugAPI)
 		self.handler.registerRequestHandler("POST", "/database/apiRequest", dbEndpoint)
 
-		#propertyEndpoint = PropertyEndpoint()
-		#propertyEndpoint.registerProperty("name", propertyProvider)
-		#self.handler.registerRequestHandler("POST", "/property/query", propertyEndpoint)
+
+		def getAvailBucketTreeBalance(args, connection):
+			bucketID = args.get("bucket", None)
+			bucket = EnumBucketsTable.getRow(connection, bucketID)
+			print(bucket)
+			if bucket is not None:
+				return SpentUtil.getAvailableBalance(connection, bucket, True)
+			return None
+
+		def getPostedBucketTreeBalance(args, connection):
+			bucketID = args.get("bucket", None)
+			bucket = EnumBucketsTable.getRow(connection, bucketID)
+			if bucket is not None:
+				return SpentUtil.getPostedBalance(connection, bucket, True)
+			return None
+
+		def getAvailBucketBalance(args, connection):
+			bucketID = args.get("bucket", None)
+			bucket = EnumBucketsTable.getRow(connection, bucketID)
+			if bucket is not None:
+				return SpentUtil.getAvailableBalance(connection, bucket)
+			return None
+
+		def getPostedBucketBalance(args, connection):
+			bucketID = args.get("bucket", None)
+			bucket = EnumBucketsTable.getRow(connection, bucketID)
+			if bucket is not None:
+				return SpentUtil.getPostedBalance(connection, bucket)
+			return None
+
+		def propTest(args, connection):
+			return "Test is good and successful"
+
+		propertyEndpoint = PropertyEndpoint(args.debugAPI, dbEndpoint.database)
+		propertyEndpoint.registerProperty(Property("SPENT.bucket.availableTreeBalance", getAvailBucketTreeBalance, True))
+		propertyEndpoint.registerProperty(Property("SPENT.bucket.postedTreeBalance", getPostedBucketTreeBalance, True))
+		propertyEndpoint.registerProperty(Property("SPENT.bucket.availableBalance", getAvailBucketBalance, True))
+		propertyEndpoint.registerProperty(Property("SPENT.bucket.postedBalance", getPostedBucketBalance, True))
+		propertyEndpoint.registerProperty(Property("SPENT.property.test", propTest, False))
+		self.handler.registerRequestHandler("POST", "/property/query", propertyEndpoint)
 
 		#enumEndpoint = EnumEndpoint()
 		#enumEndpoint.registerEnum("TransactionStatus", TransactionStatusEnum)
@@ -527,29 +564,66 @@ class FileEndpoint(EndpointBackend):
 		pass
 
 class PropertyEndpoint(EndpointBackend):
-	def __init__(self):
-		def getAvailBucketTreeBalance(source, tableName, columnName):
-			return self.util.getAvailableBalance(source, True)
-
-		def getPostedBucketTreeBalance(source, tableName, columnName):
-		    return self.util.getPostedBalance(source, True)
-
-		def getAvailBucketBalance(source, tableName, columnName):
-		    return self.util.getAvailableBalance(source)
-
-		def getPostedBucketBalance(source, tableName, columnName):
-		    return self.util.getPostedBalance(source)
-
+	def __init__(self, debugAPI, database):
+		self.debugAPI = debugAPI
+		self.database = database
 		self.propertyManager = PropertyManager()
-		self.propertyManager.registerProperty(Property("SPENT.bucket.availableTreeBalance", getAvailBucketTreeBalance))
-		self.propertyManager.registerProperty(Property("SPENT.bucket.postedTreeBalance", getPostedBucketTreeBalance))
-		self.propertyManager.registerProperty(Property("SPENT.bucket.availableBalance", getAvailBucketBalance))
-		self.propertyManager.registerProperty(Property("SPENT.bucket.postedBalance", getPostedBucketBalance))
 
-	def getProperty(self, request, columns):
+	def registerProperty(self, property):
+		self.propertyManager.registerProperty(property)
+
+	def handleGetRequest(self, query, path):
 		pass
 
-	def updateProperty(self, request, columns):
+	def handlePostRequest(self, query, size, content, path):
+		request = json.loads(content)
+		responsePackets = []
+
+		if self.debugAPI:
+			# This print is allowed to stay
+			print(json.dumps(request, indent=2))
+
+		connection = self.database.getConnection("Property Calc")
+		connection.connect()
+		for packet in request:
+			action = packet.get("action", None)
+			data = packet.get("data", [])
+
+			if action is not None:
+				props = []
+				for item in data:
+					if action == "get":
+						property = self.getProperty(item, connection)
+					elif action == "set":
+						property = self.setProperty(item, connection)
+					else:
+						pass
+
+					if property is not None:
+						props.append(property)
+
+				responsePackets.append({"action": action, "data": props})
+		connection.disconnect()
+
+		responseBody = {"successful": True, "type": "property", "records": responsePackets}
+		resp = ServerResponse("200 OK", "text/json", None, responseBody)
+		if self.debugAPI:
+			# This print is allowed to stay
+			print(resp)
+		return resp
+
+	def getProperty(self, property, connection):
+		name = property.get("name", None)
+		if name is not None:
+			#TODO: Allow some sort of arg passing
+			prop = self.propertyManager.getProperty(name)
+			if prop is not None:
+				# TODO: "Smart" refresh rather than always refresh
+				value = prop.refreshValue(property, connection)
+				return {"name": prop.getPropertyName(), "value": value}
+		return None
+
+	def setProperty(self, property, connection):
 		pass
 
 class PropertyManager:
@@ -568,9 +642,11 @@ class PropertyManager:
 		return pro
 
 class Property:
-	def __init__(self, name, calculatorFunction):
+	def __init__(self, name, calculatorFunction, needsConnection):
 		self.name = name
 		self._value_ = None
+		self.calcFunc = calculatorFunction
+		self.wantsDB = needsConnection
 
 	def getPropertyName(self):
 		return self.name
@@ -578,13 +654,30 @@ class Property:
 	def getValue(self):
 		return self._value_
 
-	def refreshValue(self):
-		self._value_ = self.calculate()
+	def refreshValue(self, argsDict, connection):
+		self._value_ = self.calculate(argsDict, connection)
 		return self.getValue()
 
-	def calculate(self):
-		logman.debug("Property.calculate() called!!")
-		return None
+	def calculate(self, argsDict, connection):
+		#logman.debug("Property.calculate() called!!")
+		value = None
+		try:
+			if self.wantsDB:
+				connection.beginTransaction()
+			else:
+				# This is for safety
+				connection = None
+			value = self.calcFunc(argsDict, connection)
+
+			if self.wantsDB:
+				connection.endTransaction()
+
+		except Exception as e:
+			srvlog.exception(e)
+			if self.wantsDB:
+				connection.abortTransaction()
+
+		return value
 
 class EnumEndpoint(EndpointBackend):
 	def getEnum(self, request, columns):

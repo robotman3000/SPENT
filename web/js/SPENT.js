@@ -57,7 +57,7 @@ var APIRequestManager = function(){
                 add: action == "create" || action == "get",
                 update: action == "update",
                 remove: action == "delete",
-                parse: true,
+                //parse: true,
             };
 
             var changed = type.set(data, options);
@@ -125,8 +125,134 @@ var APIRequestManager = function(){
     };
 
 };
-
 var requestManager = null;
+
+//TODO: Make a common base object for api and properties
+var PropertyRequestManager = function(){
+    this.collections = {};
+    this.requestPackets = [];
+
+    this.registerCollection = function(name, collection){
+        //TODO: This should do safety checking
+        this.collections[name] = collection;
+    };
+
+    this.selectRecords = function(dataTypeName, fuzzyData, rules){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_("get", dataTypeName, fuzzyData, null, null)
+        this._queueRequestPacket_(packet)
+    };
+
+    this.updateRecords = function(dataTypeName, updatedData){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_("set", dataTypeName, updatedData, null, null)
+        this._queueRequestPacket_(packet)
+    };
+
+    /*this.deleteRecords = function(dataTypeName, fuzzyData /*, rules*){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_("delete", dataTypeName, fuzzyData, null, null)
+        this._queueRequestPacket_(packet)
+    };
+
+    this.createRecords = function(dataTypeName, createdData){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_("create", dataTypeName, createdData, null, null)
+        this._queueRequestPacket_(packet)
+    };*/
+
+    this.sendRequest = function(){
+        var self = this;
+        this._apiRequest_(this.requestPackets, function(data){
+            self.parseAPIResponse(data);
+        }, this.handleAPIError)
+        this.requestPackets = []
+    };
+
+    this._getCollectionForName_ = function(name){
+        return getOrDefault(this.collections, name, null)
+    };
+
+    this.parseAPIResponse = function(response){
+        var self = this;
+        var records = response.records;
+        records.forEach(function(item, index){
+            var action = item.action;
+            var type = self._getCollectionForName_(/*item.type*/ "property");
+            var data = item.data;
+
+            var options = {
+                add: action == "get",
+                update: action == "set",
+                //parse: true,
+            };
+
+            var changed = type.set(data, options);
+            //console.log("Changed Models: " + action + ", " + item.type + ", " + JSON.stringify(changed));
+        })
+    };
+
+    this.handleAPIError = function(data){alert("error!")};
+
+    this._apiRequest_ = function(requestObj, suc, err){
+        var self = this;
+        return $.ajax({
+            url: '/property/query',
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify(requestObj),
+            success: function(data) {
+                if(data.successful == true){
+                    /*if(suc){
+                        suc(data)
+                    }*/
+                    self.parseAPIResponse(data)
+                } else {
+                    alert("Property Error: " + response.message);
+                    if(err){
+                        err(data)
+                    }
+                }
+            },
+            error: function(data) {
+                alert("Server Error with property!! " + JSON.stringify(data));
+                if(err){
+                    err(data)
+                }
+            }
+        });
+    };
+
+    this._createRequest_ = function(action, type, data, columns, rules){
+        //TODO: Verify the input data and sanitize it
+        var request = {
+            action: action,
+            type: type
+        }
+
+        var properties = [{name: "data", value: data, def: {}}]
+        properties.forEach(function(item, index){
+            if(item.value != undefined && item.value != null){
+               request[item.name] = item.value;
+                if(item.value.length < 1){
+                    request[item.name] = null;
+                }
+            } /*else {
+                request[item.name] = item.def;
+            }*/
+        });
+
+        //request.debugTrace = new Error().stack;
+        return request
+    };
+
+    this._queueRequestPacket_ = function(requestObj){
+        this.requestPackets.push(requestObj);
+    };
+
+};
+var propertyManager = null;
 
 function initGlobals(){
 	//// Undefined causes it to use the system local
@@ -152,6 +278,7 @@ function initGlobals(){
 	}
 
 	requestManager = new APIRequestManager();
+	propertyManager = new PropertyRequestManager();
 }
 
 function dateToStr(d){
@@ -407,7 +534,7 @@ function onDocumentReady() {
 
             return object;
         },
-        parse: function(response, options){
+        /*parse: function(response, options){
             var result = response
             if(getOrDefault(options, "isRaw", true)){
                result = response.data[0];
@@ -418,34 +545,36 @@ function onDocumentReady() {
             }
 
             return result;
-        },
+        },*/
         isNew: function(){
             //alert(this.get("id") == null);
             return this.get("id") == null;
         },
     }).extend(TableRowRenderable);
     var BaseCollection = Backbone.Collection.extend({
-        parse: function(resp, options) {
+        /*parse: function(resp, options) {
+            var idCol = this.idColumn || "ID";
             options.isRaw = false;
             var newData = [];
 
             loopSet = resp.data || resp;
 
             loopSet.forEach(function(item, index){
-                if(getOrDefault(item, "ID", null) != null){
-                    item["id"] = item["ID"];
+                if(getOrDefault(item, idCol, null) != null){
+                    item["id"] = item[idCol];
                 }
                 newData.push(item);
             });
 
             return newData;
-        },
+        },*/
         comparator: compFunc,
         sortKey: "",
         reverseSortDirection: false,
     });
 
     var Bucket = BaseModel.extend({
+        idAttribute: "ID",
         defaults: function(){
             return {
                 ID: null,
@@ -473,6 +602,7 @@ function onDocumentReady() {
     var Accounts = Backbone.FilteredCollection.extend({model: Account, url: "bucket"});
 
     var Transaction = BaseModel.extend({
+        idAttribute: "ID",
         defaults: function(){
             return {
                 ID: null,
@@ -497,6 +627,7 @@ function onDocumentReady() {
     });
 
     var TransactionGroup = BaseModel.extend({
+        idAttribute: "ID",
         getTransactions: function(){
             //TODO: Hardcoded group ID for scaffolding
             return transactions.where({Group: -1});
@@ -559,6 +690,21 @@ function onDocumentReady() {
         },
     });
 
+    var Property = BaseModel.extend({
+        idAttribute: "name",
+        defaults: function(){
+            return {
+                name: null,
+                value: null,
+            };
+        },
+    });
+    var PropertySet = BaseCollection.extend({
+        model: Property,
+        url: "property",
+        idColumn: "name",
+    });
+
     // Create instances of the model collections
     var accountBuckets = new RawBuckets();
 
@@ -572,6 +718,8 @@ function onDocumentReady() {
 
     var transactions = new Transactions;
     var transactionGroups = new TransactionGroups;
+
+    var properties = new PropertySet;
 
     // Base Views
     var BaseModelView = Object.create(null);
@@ -2020,16 +2168,28 @@ function onDocumentReady() {
     requestManager.registerCollection(RawBuckets.prototype.url, accountBuckets);
     requestManager.registerCollection(Transactions.prototype.url, transactions);
     requestManager.registerCollection(TransactionGroups.prototype.url, transactionGroups);
+    propertyManager.registerCollection(PropertySet.prototype.url, properties)
 
     //requestManager.selectRecords("account");
     requestManager.selectRecords(RawBuckets.prototype.url);
     requestManager.selectRecords(Transactions.prototype.url);
     requestManager.selectRecords(TransactionGroups.prototype.url);
 
+    propertyManager.selectRecords(PropertySet.prototype.url, [{"name": "SPENT.bucket.availableTreeBalance", "bucket": 1}, {"name": "SPENT.bucket.postedTreeBalance"}, {"name": "SPENT.bucket.availableBalance"}, {"name": "SPENT.bucket.postedBalance"}]);
+    propertyManager.selectRecords(PropertySet.prototype.url, [{"name": "SPENT.property.test"}]);
+
+    var testfun = function(model, collection, options){
+        alert(model.get("name") + " = " + model.get("value"));
+    }
+    properties.on("add", testfun);
+
     bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
 
     requestManager.sendRequest()
+    propertyManager.sendRequest()
 
+    propertyManager.selectRecords(PropertySet.prototype.url, [{"name": "SPENT.bucket.availableTreeBalance", "bucket": 2}]);
+    propertyManager.sendRequest()
     /*var refreshBalanceFunction = function(){
         console.log("Refreshing Balance...");
         this.fetch({wait: true})

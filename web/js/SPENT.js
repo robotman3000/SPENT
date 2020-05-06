@@ -1,4 +1,3 @@
-var enums = {};
 var formatter = null;
 var APIRequestManager = function(){
     this.collections = {};
@@ -127,7 +126,7 @@ var APIRequestManager = function(){
 };
 var requestManager = null;
 
-//TODO: Make a common base object for api and properties
+//TODO: Make a common base object for api and properties and enum
 var PropertyRequestManager = function(){
     this.collections = {};
     this.requestPackets = [];
@@ -254,32 +253,96 @@ var PropertyRequestManager = function(){
 };
 var propertyManager = null;
 
-function initGlobals(){
-	//// Undefined causes it to use the system local
-	formatter = new Intl.NumberFormat(undefined, {
-	  style: 'currency',
-	  currency: 'USD',
-	});
+var EnumRequestManager = function(){
+    this.collections = {};
+    this.requestPackets = [];
 
-	enums = { //TODO: This should be populated using an api request
-		transactionStatus:  [
-		    "Void",
-            "Uninitiated",
-            "Submitted",
-            "Post-Pending",
-            "Complete",
-            "Reconciled",
-        ],
-        transactionType: [
-            "Transfer", //0
-            "Deposit", // 1
-            "Withdrawal" //2
-        ],
-	}
+    this.requestEnum = function(dataTypeName){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_(dataTypeName)
+        this._queueRequestPacket_(packet)
+    };
 
-	requestManager = new APIRequestManager();
-	propertyManager = new PropertyRequestManager();
-}
+    this.sendRequest = function(){
+        var self = this;
+        var req = this._apiRequest_(this.requestPackets, function(data){
+            self.parseAPIResponse(data);
+        }, this.handleAPIError)
+        this.requestPackets = []
+        return req;
+    };
+
+    this.parseAPIResponse = function(response){
+        var self = this;
+        var records = response.records;
+        records.forEach(function(item, index){
+            var data = item.data;
+            var enumName = item.enum;
+
+            self.collections[enumName] = data
+        })
+    };
+
+    this.handleAPIError = function(data){alert("error!")};
+
+    this._apiRequest_ = function(requestObj, suc, err){
+        var self = this;
+        return $.ajax({
+            url: '/enum/query',
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify(requestObj),
+            success: function(data) {
+                if(data.successful == true){
+                    /*if(suc){
+                        suc(data)
+                    }*/
+                    self.parseAPIResponse(data)
+                } else {
+                    alert("Enum Error: " + response.message);
+                    if(err){
+                        err(data)
+                    }
+                }
+            },
+            error: function(data) {
+                alert("Server Error with enum!! " + JSON.stringify(data));
+                if(err){
+                    err(data)
+                }
+            }
+        });
+    };
+
+    this._createRequest_ = function(enumName){
+        //TODO: Verify the input data and sanitize it
+        var request = {
+            action: "get",
+            type: "enum",
+            enum: enumName,
+        }
+        return request
+    };
+
+    this._queueRequestPacket_ = function(requestObj){
+        this.requestPackets.push(requestObj);
+    };
+
+    this.getEnumValues = function(name){
+        return getOrDefault(this.collections, name, null)
+    };
+
+    this.getEnumValuesAsArray = function(enumKey){
+        var values = this.getEnumValues(enumKey);
+        var optionsArray = ["Invalid Enum: " + enumKey];
+        if (values){
+            optionsArray = Object.values(values);
+        }
+        return optionsArray;
+    };
+};
+var enumManager = null;
 
 function dateToStr(d){
     var month = '' + (d.getMonth() + 1),
@@ -342,8 +405,24 @@ function getBucketNameForID(accountBuckets, id){
 
 function onDocumentReady() {
     // Initialize global variables
-    initGlobals();
+	//// Undefined causes it to use the system local
+	formatter = new Intl.NumberFormat(undefined, {
+	  style: 'currency',
+	  currency: 'USD',
+	});
 
+	requestManager = new APIRequestManager();
+	propertyManager = new PropertyRequestManager();
+
+	enumManager = new EnumRequestManager();
+	enumManager.requestEnum("TransactionStatus");
+	enumManager.requestEnum("TransactionType");
+
+	// We have to wait until the enums come back before we can continue initialization
+	enumManager.sendRequest().done(SPENT);
+}
+
+function SPENT(){
     // Credit to https://stackoverflow.com/a/21434708 for the comparator function
     var compFunc = function(a, b) {
       var sampleDataA = a.get(this.sortKey),
@@ -775,6 +854,17 @@ function onDocumentReady() {
             this.trigger("buttonClick")
         },
     });
+    var PropertyViewTextBox = Backbone.View.extend({
+        initialize: function(){
+            this.setElement($("<p>"));
+            this.listenTo(this, "modelChanged", function(newModel){
+                this.listenTo(newModel, "change:value", this.render);
+            });
+        },
+        render: function(){
+            this.$el.text(this.getModel().get("name") + " : " + this.getModel().get("value"));
+        },
+    }).extend(BaseModelView);
 
     //TODO: SelectView is broken; It is intended to be instanced rather than extended for "simple" selects
     var SelectView = Backbone.View.extend({
@@ -980,9 +1070,9 @@ function onDocumentReady() {
                         case "select":
                             input = $("<select></select>");
                             var enumKey = (item.options ? getOrDefault(item.options, "enumKey", "") : "");
-                            var optionsArray = getOrDefault(enums, enumKey, ["Invalid Enum: " + enumKey])
+                            var optionsArray = enumManager.getEnumValuesAsArray(enumKey);
                             optionsArray.forEach(function(item, index){
-                                var option = $('<option value="' + index + '">' + item + '</option>');
+                                var option = $('<option value="' + index + '">' + item.name + '</option>');
                                 input.append(option);
                             });
                             break;
@@ -1139,11 +1229,11 @@ function onDocumentReady() {
                 if(getOrDefault(item, "type", "text") == "enum"){
                     var enumKey = (item.options ? getOrDefault(item.options, "enumKey", null) : null);
                     if(enumKey != null){
-                        var optionsArray = getOrDefault(enums, enumKey, ["Invalid enum: " + enumKey]);
+                        var optionsArray = enumManager.getEnumValuesAsArray(enumKey)
                         item.type = "text";
                         self.formatters[item.name] = function(value, rowData){
                             return {
-                                text: optionsArray[value],
+                                text: optionsArray[value].name,
                             };
                         };
                     }
@@ -1502,34 +1592,66 @@ function onDocumentReady() {
             return $("<span>").text(model.Name)[0].outerHTML + $("<span>").attr("class", badgeClasses).text(model.Balance)[0].outerHTML;
         },
     });
-    var AccountStatusView = Backbone.View.extend({
-        el: $("#accountStatusText"),
+    var AccountStatusView = ViewContainer.extend({
         initialize: function(){
+            ViewContainer.prototype.initialize.apply(this, $("#accountStatusText"));
+            this.waitingWatches = [];
+            var self = this;
+            var waitForProperty = function(model, collection, options){
+                var ind = self.waitingWatches.indexOf(model.get("name"));
+                if(ind > -1){
+                    //alert("Wait for prop: " + model.get("name") + " has ended");
+                    self.watchProperty(model);
+                    self.waitingWatches.splice(ind, 1);
+                    self.render();
+                } else {
+                    alert("New Property " + model.get("name") + " didn't match");
+                }
+            };
+            properties.on("add", waitForProperty);
             this.listenTo(uiState, "change:selectedAccount", function(model, selectedAccountID, options){
                 var model = accountBuckets.get(selectedAccountID);
                 if(model){
-                    this.setModel(model);
+                    propertyManager.selectRecords(PropertySet.prototype.url,
+                    [{"name": "SPENT.bucket.availableTreeBalance", "bucket": selectedAccountID},
+                    {"name": "SPENT.bucket.postedTreeBalance", "bucket": selectedAccountID},
+                    {"name": "SPENT.bucket.availableBalance", "bucket": selectedAccountID},
+                    {"name": "SPENT.bucket.postedBalance", "bucket": selectedAccountID}]);
+                    propertyManager.sendRequest();
                 }
             });
-
+/*
             this.listenTo(this, "modelChanged", function(newModel){
                 this.listenTo(newModel, "change:Balance", this.render);
                 this.listenTo(newModel, "change:PostedBalance", this.render);
                 this.listenTo(newModel, "change:TreeBalance", this.render);
                 this.listenTo(newModel, "change:PostedTreeBalance", this.render);
                 this.render();
-            })
+            })*/
         },
-        render: function(){
+        /*render: function(){
             console.log("Render: AccountStatusView")
-        	if (this.getModel() != null) {
+            alert()
+        	/*if (this.getModel() != null) {
         	    this.$el.html("[Total] Available: \$" + this.getModel().get("TreeBalance") + ", Posted: \$" + this.getModel().get("PostedTreeBalance") + "</br>" +
         	                  "[Current] Available: \$" + this.getModel().get("Balance") + ", Posted: \$" + this.getModel().get("PostedBalance"));
         	    return;
             }
-            this.$el.text("Error: model is null");
+            this.$el.text("Error: model is null");*
+        },*/
+        watchProperty: function(propertyName){
+            var prop = properties.get(propertyName)
+            if(prop){
+                var watcher = new PropertyViewTextBox();
+                watcher.setModel(prop);
+                this.addView(watcher)
+            } else {
+                //TODO: Remove this when debugging is done
+                //alert("Failed to find property: " + propertyName);
+                this.waitingWatches.push(propertyName);
+            }
         },
-    }).extend(BaseModelView);
+    });//.extend(BaseModelView);
 
     // Table Views
     var TransactionTable = BaseTableView.extend({
@@ -1552,7 +1674,7 @@ function onDocumentReady() {
                     fromToStr = (value == 2 ? " from " : " to ")
                 }
                 return {
-                    text: enums["transactionType"][value] + fromToStr,
+                    text: enumManager.getEnumValues("TransactionType")[value] + fromToStr,
                 };
             },
             "Amount": function(value, rowData){
@@ -1596,7 +1718,7 @@ function onDocumentReady() {
         },
         columns: [
             {name: "ID", visible: false},
-            {name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", options: {enumKey: "transactionStatus"}, responsive: {hide: false}},
+            {name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", options: {enumKey: "TransactionStatus"}, responsive: {hide: false}},
             {name: "TransDate", title: "Date", type: "date", breakpoints:"xs", options: {formatString:"YYYY-MM-DD"}, responsive: {hide: false}},
             {name: "PostDate", title: "Posted", type: "date", breakpoints:"xs sm md", options: {formatString:"YYYY-MM-DD"}, responsive: {hide: true}},
             {name: "Amount", title: "Amount", type: "number", breakpoints:"", responsive: {hide: false}},
@@ -1792,11 +1914,11 @@ function onDocumentReady() {
         tableName: "transactionTable",
         columns: [
             {name: "ID", visible: false},
-            {name: "Status", title: "Status", type: "select", required: true, options: {enumKey: "transactionStatus"}},
+            {name: "Status", title: "Status", type: "select", required: true, options: {enumKey: "TransactionStatus"}},
             {name: "TransDate", title: "Date", type: "date", required: true},
             {name: "PostDate", title: "Posted", type: "date", options: {listenTo: {"Status": onStatusChange}}},
             {name: "Amount", title: "Amount", type: "number", options: {step: 0.01}},
-            {name: "Type", title: "Type", type: "select", required: true, options: {enumKey: "transactionType"}},
+            {name: "Type", title: "Type", type: "select", required: true, options: {enumKey: "TransactionType"}},
             {title: "Source", name: "SourceBucket", required: true, type: "dynamicSelect", options: {showNA: true, model: accountBuckets, formatter: bucketNameFormatter, listenTo: {"Type": onTypeChange}}},
             {title: "Destination", name: "DestBucket", required: true, type: "dynamicSelect", options: {showNA: true, model: accountBuckets, formatter: bucketNameFormatter, listenTo: {"Type": onTypeChange}}},
             {name: "Memo", title: "Memo", type: "textbox"},
@@ -2175,34 +2297,21 @@ function onDocumentReady() {
     requestManager.selectRecords(Transactions.prototype.url);
     requestManager.selectRecords(TransactionGroups.prototype.url);
 
-    propertyManager.selectRecords(PropertySet.prototype.url, [{"name": "SPENT.bucket.availableTreeBalance", "bucket": 1}, {"name": "SPENT.bucket.postedTreeBalance"}, {"name": "SPENT.bucket.availableBalance"}, {"name": "SPENT.bucket.postedBalance"}]);
-    propertyManager.selectRecords(PropertySet.prototype.url, [{"name": "SPENT.property.test"}]);
-
-    var testfun = function(model, collection, options){
-        alert(model.get("name") + " = " + model.get("value"));
-    }
-    properties.on("add", testfun);
+    //propertyManager.selectRecords(PropertySet.prototype.url, [{"name": "SPENT.bucket.availableTreeBalance"}, {"name": "SPENT.bucket.postedTreeBalance"}, {"name": "SPENT.bucket.availableBalance"}, {"name": "SPENT.bucket.postedBalance"}]);
+    //propertyManager.selectRecords(PropertySet.prototype.url, [{"name": "SPENT.property.test"}]);
 
     bucketTableAccountSelect.setModel(accounts); // Init the bucket table account select
 
     requestManager.sendRequest()
-    propertyManager.sendRequest()
+    //propertyManager.sendRequest()
 
-    propertyManager.selectRecords(PropertySet.prototype.url, [{"name": "SPENT.bucket.availableTreeBalance", "bucket": 2}]);
-    propertyManager.sendRequest()
-    /*var refreshBalanceFunction = function(){
-        console.log("Refreshing Balance...");
-        this.fetch({wait: true})
-    }*/
+    // The property models don't exist to be watched until now
+    accountStatusViewInst.watchProperty("SPENT.bucket.availableTreeBalance");
+    accountStatusViewInst.watchProperty("SPENT.bucket.postedTreeBalance");
+    accountStatusViewInst.watchProperty("SPENT.bucket.availableBalance");
+    accountStatusViewInst.watchProperty("SPENT.bucket.postedBalance");
 
-    // TODO: These event listeners are a quick fix
-    //accounts.listenTo(transactions, "change", refreshBalanceFunction)
-    //buckets.listenTo(transactions, "change", refreshBalanceFunction)
-    //transactionGroups.listenTo(transactions, "change", refreshBalanceFunction)
 
-    //accounts.listenTo(transactions, "update", refreshBalanceFunction)
-    //buckets.listenTo(transactions, "update", refreshBalanceFunction)
-    //transactionGroups.listenTo(transactions, "update", refreshBalanceFunction)
 
     // Not this one though...
     $("#saveChanges").click(function(){

@@ -97,10 +97,10 @@ class SPENTServer():
 		propertyEndpoint.registerProperty(Property("SPENT.property.test", propTest, False))
 		self.handler.registerRequestHandler("POST", "/property/query", propertyEndpoint)
 
-		#enumEndpoint = EnumEndpoint()
-		#enumEndpoint.registerEnum("TransactionStatus", TransactionStatusEnum)
-		#enumEndpoint.registerEnum("TransactionType", TransactionTypeEnum)
-		#self.handler.registerRequestHandler("POST", "/enum/query", enumEndpoint)
+		enumEndpoint = EnumEndpoint(args.debugAPI)
+		enumEndpoint.registerEnum("TransactionStatus", TransactionStatusEnum)
+		enumEndpoint.registerEnum("TransactionType", TransactionTypeEnum)
+		self.handler.registerRequestHandler("POST", "/enum/query", enumEndpoint)
 
 	def handleRequest(self, environ, start_response):
 		srvlog.debug("--------------------------------------------------------------------------------")
@@ -511,7 +511,7 @@ class FileEndpoint(EndpointBackend):
 		self.files = {}
 
 	def registerFile(self, path, file, mime):
-		srvlog.debug("File Backend: Registering file %s%s - %s" % (path, file, mime))
+		srvlog.debug("File Backend: Registering file %s/%s - %s" % (path, file, mime))
 		self.files["%s/%s" % (path, file)] = (path, file, mime)
 
 	def isText(self, typeGuess):
@@ -602,10 +602,10 @@ class PropertyEndpoint(EndpointBackend):
 					if property is not None:
 						props.append(property)
 
-				responsePackets.append({"action": action, "data": props})
+				responsePackets.append({"action": action, "type": "property", "data": props})
 		connection.disconnect()
 
-		responseBody = {"successful": True, "type": "property", "records": responsePackets}
+		responseBody = {"successful": True, "records": responsePackets}
 		resp = ServerResponse("200 OK", "text/json", None, responseBody)
 		if self.debugAPI:
 			# This print is allowed to stay
@@ -680,13 +680,43 @@ class Property:
 		return value
 
 class EnumEndpoint(EndpointBackend):
-	def getEnum(self, request, columns):
-		typeName = request.get("enum", None)
-		if typeName is not None:
-			enumObj = self.enumRegistry.get(typeName, None)
+	def __init__(self, debug):
+		self.enumRegistry = {}
+		self.debugAPI = debug
+
+	def registerEnum(self, enumName, enumObject):
+		srvlog.debug("Enum Backend: Registering Enum %s - %s" % (enumName, enumObject))
+		self.enumRegistry[enumName] = enumObject
+
+	def handlePostRequest(self, query, size, content, path):
+		request = json.loads(content)
+		responsePackets = []
+
+		if self.debugAPI:
+			# This print is allowed to stay
+			print(json.dumps(request, indent=2))
+
+		for packet in request:
+			enumName = packet.get("enum", None)
+			if enumName is not None:
+				enumValues = self.getEnum(enumName)
+				if enumValues is not None:
+					responsePackets.append({"action": "get", "type": "enum", "enum": enumName, "data": enumValues})
+
+		responseBody = {"successful": True, "records": responsePackets}
+		resp = ServerResponse("200 OK", "text/json", None, responseBody)
+		if self.debugAPI:
+			# This print is allowed to stay
+			print(resp)
+		return resp
+
+	def getEnum(self, enumName):
+		if enumName is not None:
+			enumObj = self.enumRegistry.get(enumName, None)
 			if enumObj is not None:
-				enumConstList = enumObj.values()
-				data = [{con.name : con.value} for con in enumConstList]
+				enumConstList = enumObj.values(enumObj)
+				print(enumConstList)
+				data = [{"name": con[0], "value": con[1].value} for con in enumConstList]
 				return data
 		return None
 

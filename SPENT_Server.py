@@ -23,6 +23,9 @@ parser.add_argument("--debug-Server",
 parser.add_argument("--server-mode",
 					action="store_true", dest="serverMode", default=False,
 					help="Run the server")
+parser.add_argument("--serve-any",
+					action="store_true", dest="serveAnyfile", default=False,
+					help="Tell the file provider to serve any file requested")
 
 args = parser.parse_args()
 
@@ -45,7 +48,7 @@ class SPENTServer():
 		self.port = port
 
 		# The file handler is the default and gets used when no other match is found
-		fileEndpoint = FileEndpoint(args.serverRoot)
+		fileEndpoint = FileEndpoint(args.serverRoot, args.serveAnyfile)
 		fileEndpoint.registerFile("", "index.html", "text/html")
 		fileEndpoint.registerFile("/css", "SPENT.css", "text/css")
 		fileEndpoint.registerFile("/js", "SPENT.js", "text/javascript")
@@ -506,9 +509,11 @@ class DatabaseEndpoint(EndpointBackend):
 		self.running = False
 
 class FileEndpoint(EndpointBackend):
-	def __init__(self, serverRoot):
+	def __init__(self, serverRoot, serveAny):
+		srvlog.debug("Server Root is %s" % serverRoot)
 		self.root = serverRoot
 		self.files = {}
+		self.serveAny = serveAny
 
 	def registerFile(self, path, file, mime):
 		srvlog.debug("File Backend: Registering file %s/%s - %s" % (path, file, mime))
@@ -531,22 +536,27 @@ class FileEndpoint(EndpointBackend):
 			path = "/index.html"
 
 		srvlog.info("Using file handler for: %s" % path)
-		fileTuple = self.files.get(path, None)
 
+		path2 = path
 		path = self.trimLeadingSlash(path)
+		fullPath = os.path.join(self.root, path)
+		srvlog.debug("Full file request path: %s" % fullPath)
+
+		if self.serveAny:
+			typeGuess = mimetypes.guess_type(fullPath)
+			fileTuple = ("", "", typeGuess)
+		else:
+			fileTuple = self.files.get(path2, None)
+
+
 
 		response_body = "File not found"
 		status = '404 OK'
 		mimeType = "text/plain"
 		if fileTuple is not None:
 			mimeType = fileTuple[2]
-
-
-			fullPath = os.path.join(self.root, path)
-			srvlog.debug("Full file request path: %s" % fullPath)
 			try:
 				typeGuess = mimeType
-				# typeGuess = mimetypes.guess_type(fullPath)
 				modeStr = "r%s" % ('t' if self.isText(typeGuess) else 'b')
 				response_body = open(fullPath, mode=modeStr).read()
 				status = '200 OK'

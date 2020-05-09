@@ -24,8 +24,8 @@
 <body>
 	<div id="container"></div>
     <script>
-        var theString = new ObservableObject("Hello World");
-        var textView = new ObserverTextView(theString);
+        var theString = new Observable("Hello World");
+        var textView = new TextView({[ObservableNames.TEXT]: theString});
 
         var theButton = new ButtonView(function(){
         	theString.setValue("World Hello");
@@ -37,16 +37,38 @@
         });
         theOtherButton.setText("Hello");
 
-
 		var theLastButton = new ButtonView(function(){
         	theString.setValue("Hello World");
-        }, "Reset");
+        }, {[ObservableNames.TEXT]: new Observable("Reset")});
+
+		var theLinkTest = new LinkView();
+		theLinkTest.setText("Ask the duck.");
+		theLinkTest.setHref("https://duckduckgo.com");
+
+		var theProgress = new ProgressView();
+		theProgress.setProgress(0.5);
+		var theProgressText = new TextView({[ObservableNames.TEXT]: theProgress.getObservable(ObservableNames.VALUE)});
+		var theProgressButton = new ButtonView(function(){
+        	theProgress.setProgress(Math.random());
+        });
+        theProgressButton.setText("Change Progress");
 
         var theContainer = new ViewContainer($("#container"));
-        theContainer.addView(textView);
-        theContainer.addView(theButton);
-        theContainer.addView(theOtherButton);
-        theContainer.addView(theLastButton);
+
+        var con1 = new ViewContainer();
+        con1.addView(textView);
+        con1.addView(theButton);
+        con1.addView(theOtherButton);
+        con1.addView(theLastButton);
+
+        var con2 = new ViewContainer();
+        con2.addView(theProgress);
+		con2.addView(theProgressButton);
+		con2.addView(theProgressText);
+
+		theContainer.addView(theLinkTest);
+		theContainer.addView(con1);
+		theContainer.addView(con2);
 
         theContainer.render();
     </script>

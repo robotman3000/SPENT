@@ -39,19 +39,24 @@
 
 		var theLastButton = new ButtonView(function(){
         	theString.setValue("Hello World");
-        }, {[ObservableNames.TEXT]: new Observable("Reset")});
+        }, {[ObservableNames.TEXT]: "Reset"});
 
 		var theLinkTest = new LinkView();
 		theLinkTest.setText("Ask the duck.");
 		theLinkTest.setHref("https://duckduckgo.com");
 
-		var theProgress = new ProgressView();
+		var theProgress = new ProgressView(100);
 		theProgress.setProgress(0.5);
-		var theProgressText = new TextView({[ObservableNames.TEXT]: theProgress.getObservable(ObservableNames.VALUE)});
+		var theProgressText = new TextView({[ObservableNames.TEXT]: theProgress.getObservable(ObservableNames.OBJECT)});
 		var theProgressButton = new ButtonView(function(){
-        	theProgress.setProgress(Math.random());
+        	theProgress.setProgress(Math.floor(Math.random()*100));
         });
         theProgressButton.setText("Change Progress");
+		var theInputTest = new InputView(InputViewTypes.RANGE, "testNumber");
+		theInputTest.setValue(theProgress.getObservable(ObservableNames.OBJECT));
+
+		var theInputTest2 = new InputView(InputViewTypes.NUMBER, "testNumber");
+		theInputTest2.setValue(theProgress.getObservable(ObservableNames.OBJECT));
 
         var theContainer = new ViewContainer($("#container"));
 
@@ -65,6 +70,8 @@
         con2.addView(theProgress);
 		con2.addView(theProgressButton);
 		con2.addView(theProgressText);
+		con2.addView(theInputTest);
+		con2.addView(theInputTest2);
 
 		theContainer.addView(theLinkTest);
 		theContainer.addView(con1);

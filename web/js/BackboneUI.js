@@ -1,17 +1,53 @@
-// All backbone objects are observers so we only need to create a generic observable
+// Declare the "enums" we need
 var EventList = {
     OBSERVE_CHANGE: "observedChange", // Args: observable, oldValue, newValue
     BUTTON_CLICKED: "buttonClick", //TODO: What arguments should be passed?
 };
-
 var ObservableNames = {
     OBJECT: "object",
-    //--------
-    HREF: "a_href",
-    VALUE: "attr-value",
+    //---- HTML Attributes ----
+    HREF: "attr-href",
+    INPUT_CHECKED: "input_attr-checked",
+    INPUT_DISABLED: "input_attr-disabled",
+    INPUT_MAX: "input_attr-max",
+    INPUT_MAXLENGTH: "input_attr-maxlength",
+    INPUT_MIN: "input_attr-min",
+    INPUT_PATTERN: "input_attr-pattern",
+    INPUT_READONLY: "input_attr-readonly",
+    INPUT_REQUIRED: "input_attr-required",
+    INPUT_SIZE: "input_attr-size",
+    INPUT_STEP: "input_attr-step",
+    INPUT_INIT_VALUE: "input_attr-value",
+
+    //---- HTML ----
     TEXT: "html-innerText",
 };
+var InputViewTypes = {
+    BUTTON: "button",
+    CHECKBOX: "checkbox",
+    COLOR: "color",
+    DT_DATE: "date",
+    DT_LOCAL: "datetime-local",
+    EMAIL: "email",
+    FILE: "file",
+    //: "hidden",
+    IMAGE: "image",
+    DT_MONTH: "month",
+    NUMBER: "number",
+    PASSWORD: "password",
+    RADIO: "radio",
+    RANGE: "range",
+    RESET: "reset",
+    SEARCH: "search",
+    SUBMIT: "submit",
+    TELEPHONE: "tel",
+    TEXT: "text",
+    DT_TIME: "time",
+    URL: "url",
+    DT_WEEK: "week",
+};
 
+// All backbone objects are observers so we only need to create a generic observable
 var Observable = function(value){
     this.object = value; // Don't use setValue so as to avoid triggering a change event on init
 
@@ -28,7 +64,8 @@ var Observable = function(value){
 };
 
 var ObservableView = Backbone.View.extend({
-    _observableAttrib_: [ObservableNames.OBJECT],
+    //_observableAttrib_: [ObservableNames.OBJECT],
+    objectProperty: ObservableNames.OBJECT,
     initialize: function(properties){
         this.observables = {};
 
@@ -36,8 +73,10 @@ var ObservableView = Backbone.View.extend({
             properties = {};
         }
 
+        this.setValue(null, this.objectProperty);
+
         var self = this;
-        this._observableAttrib_.forEach(function(item, index){
+        Object.keys(properties).forEach(function(item, index){
             if (properties[item]){
                 // We default to creating observable objects
                 self.setValue(properties[item], item);
@@ -57,7 +96,11 @@ var ObservableView = Backbone.View.extend({
         return prop.getValue();
     },
     setValue: function(newValue, valueName){
-        if(newValue instanceof Observable){
+        if(!valueName){
+            valueName = ObservableNames.OBJECT;
+        }
+
+        if(newValue instanceof Observable/* || !this._observableAttrib_.includes(valueName)*/){
             this.setRawValue(newValue, valueName);
         } else {
             var observable = this.getObservable(valueName);
@@ -91,6 +134,10 @@ var ObservableView = Backbone.View.extend({
         }
 
         this.observables[valueName] = newValue;
+        if (this.objectProperty == valueName){
+            this.observables[ObservableNames.OBJECT] = newValue;
+        }
+
     },
     getObservable: function(propertyName){
         // This function is for getting the observable of a property and will return null for non observables
@@ -140,10 +187,8 @@ var ViewContainer = Backbone.View.extend({
 
 var TextView = ObservableView.extend({
     tagName: "p",
-    _observableAttrib_: [...ObservableView.prototype._observableAttrib_, ObservableNames.TEXT],
-    initialize: function(attributes){
-        ObservableView.prototype.initialize.apply(this, [attributes]);
-    },
+    objectProperty: ObservableNames.TEXT,
+    //_observableAttrib_: [...ObservableView.prototype._observableAttrib_, ObservableNames.TEXT],
     render: function(){
         this.$el.text(this.getText());
     },
@@ -159,10 +204,7 @@ var TextView = ObservableView.extend({
 });
 var LinkView = TextView.extend({
     tagName: "a",
-    _observableAttrib_: [...TextView.prototype._observableAttrib_, ObservableNames.HREF],
-    initialize: function(attributes){
-        TextView.prototype.initialize.apply(this, [attributes]);
-    },
+    //_observableAttrib_: [...TextView.prototype._observableAttrib_, ObservableNames.HREF],
     render: function(){
         this.$el.attr("href", this.getHref());
         TextView.prototype.render.apply(this);
@@ -194,9 +236,10 @@ var ButtonView = TextView.extend({
 });
 var ProgressView = ObservableView.extend({
     tagName: "progress",
-    _observableAttrib_: [...ObservableView.prototype._observableAttrib_, ObservableNames.VALUE],
-    initialize: function(attributes){
+    //_observableAttrib_: [...ObservableView.prototype._observableAttrib_, ObservableNames.INPUT_INIT_VALUE],
+    initialize: function(max, attributes){
         ObservableView.prototype.initialize.apply(this, [attributes]);
+        this.$el.attr("max", max);
     },
     render: function(){
         this.$el.attr("value", this.getProgress());
@@ -204,13 +247,38 @@ var ProgressView = ObservableView.extend({
     //----------------------------------------
     setProgress: function(newValue){
         // TODO: newText must be a string
-        this.setValue(newValue, ObservableNames.VALUE);
+        this.setValue(newValue, ObservableNames.OBJECT);
     },
     getProgress: function(){
         // TODO: this must return the value and not the reference
-        return this.getValue(ObservableNames.VALUE);
+        return this.getValue(ObservableNames.OBJECT);
     },
 });
+var InputView = TextView.extend({
+    tagName: "input",
+    events: {
+        "change": "_domOnChange_",
+        "input": "_domOnChange_",
+    },
+    _domOnChange_: function(evt){
+        var value = evt.target.value;
+        this.setValue(value);
+    },
+    initialize: function(type, name, attributes){
+        TextView.prototype.initialize.apply(this, [attributes]);
+        this.type = type;
+        this.name = name;
+
+        this.$el.attr("type", this.type);
+        this.$el.attr("name", this.name);
+    },
+    render: function(){
+        console.log(this.getValue());
+        this.$el.val(this.getValue());
+    }
+    //TODO: Getters and setters for all the INPUT_* observable names
+});
+
 
 // Text Display
 //  abbr, address, b, blockquote, br, cite, dd, dl, dt, del, dfn, em

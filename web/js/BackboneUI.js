@@ -23,23 +23,23 @@ var ObservableNames = {
     TEXT: "html-innerText",
 };
 var InputViewTypes = {
-    BUTTON: "button",
+    BUTTON: "button", //This is handled by ButtonView
     CHECKBOX: "checkbox",
     COLOR: "color",
     DT_DATE: "date",
     DT_LOCAL: "datetime-local",
     EMAIL: "email",
-    FILE: "file",
+    //FILE: "file",
     //: "hidden",
     IMAGE: "image",
     DT_MONTH: "month",
     NUMBER: "number",
     PASSWORD: "password",
-    RADIO: "radio",
+    RADIO: "radio", //TODO: This should be its own view type similar to select
     RANGE: "range",
-    RESET: "reset",
+    RESET: "reset", //This will be handled by FormView
     SEARCH: "search",
-    SUBMIT: "submit",
+    SUBMIT: "submit", //This will be handled by FormView
     TELEPHONE: "tel",
     TEXT: "text",
     DT_TIME: "time",
@@ -273,12 +273,21 @@ var InputView = TextView.extend({
         this.$el.attr("name", this.name);
     },
     render: function(){
-        console.log(this.getValue());
+        console.log("Rendering " + this.type + " = " + this.getValue());
         this.$el.val(this.getValue());
     }
     //TODO: Getters and setters for all the INPUT_* observable names
 });
 
+// This extends observable view so that properties like visibility, color, etc. can be observed easily
+// This view also functions as a good example of the most minimal implementation of a view widget
+var HorizontalRuleView = ObservableView.extend({
+    tagName: "hr",
+});
+
+var LineBreakView = ObservableView.extend({
+    tagName: "br",
+});
 
 // Text Display
 //  abbr, address, b, blockquote, br, cite, dd, dl, dt, del, dfn, em
@@ -289,7 +298,7 @@ var InputView = TextView.extend({
 // picture, video, audio, meter, source, svg, track
 
 // Layout
-// article, aside, details, figure, footer, head, header, hr, main
+// article, aside, details, figure, footer, head, header, main
 // nav, section, span, template
 
 // Unknown

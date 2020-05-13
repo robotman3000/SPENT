@@ -20,64 +20,12 @@
 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.4.0/backbone.js"></script>
     <script type="text/javascript" src="/js/BackboneUI.js"></script>
+	<script type="text/javascript" src="/js/UITest.js"></script>
 </head>
 <body>
 	<div id="container"></div>
-    <script>
-        var theString = new Observable("Hello World");
-        var textView = new TextView({[ObservableNames.TEXT]: theString});
-
-        var theButton = new ButtonView(function(){
-        	theString.setValue("World Hello");
-        });
-        theButton.setText("olleH");
-
-        var theOtherButton = new ButtonView(function(){
-        	theString.setValue("Hello World!!!");
-        });
-        theOtherButton.setText("Hello");
-
-		var theLastButton = new ButtonView(function(){
-        	theString.setValue("Hello World");
-        }, {[ObservableNames.TEXT]: "Reset"});
-
-		var theLinkTest = new LinkView();
-		theLinkTest.setText("Ask the duck.");
-		theLinkTest.setHref("https://duckduckgo.com");
-
-		var theProgress = new ProgressView(100);
-		theProgress.setProgress(0.5);
-		var theProgressText = new TextView({[ObservableNames.TEXT]: theProgress.getObservable(ObservableNames.OBJECT)});
-		var theProgressButton = new ButtonView(function(){
-        	theProgress.setProgress(Math.floor(Math.random()*100));
-        });
-        theProgressButton.setText("Change Progress");
-		var theInputTest = new InputView(InputViewTypes.RANGE, "testNumber");
-		theInputTest.setValue(theProgress.getObservable(ObservableNames.OBJECT));
-
-		var theInputTest2 = new InputView(InputViewTypes.NUMBER, "testNumber");
-		theInputTest2.setValue(theProgress.getObservable(ObservableNames.OBJECT));
-
-        var theContainer = new ViewContainer($("#container"));
-
-        var con1 = new ViewContainer();
-        con1.addView(textView);
-        con1.addView(theButton);
-        con1.addView(theOtherButton);
-        con1.addView(theLastButton);
-
-        var con2 = new ViewContainer();
-        con2.addView(theProgress);
-		con2.addView(theProgressButton);
-		con2.addView(theProgressText);
-		con2.addView(theInputTest);
-		con2.addView(theInputTest2);
-
-		theContainer.addView(theLinkTest);
-		theContainer.addView(con1);
-		theContainer.addView(con2);
-
-        theContainer.render();
+	<script>
+		main();
     </script>
 </body>
 </html>

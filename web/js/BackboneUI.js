@@ -1,7 +1,8 @@
 // Declare the "enums" we need
 var EventList = {
-    OBSERVE_CHANGE: "observedChange", // Args: observable, oldValue, newValue
+    OBSERVE_CHANGE: "observedChange", // Args: observable, observableName, oldValue, newValue
     BUTTON_CLICKED: "buttonClick", //TODO: What arguments should be passed?
+    OBSERVED_VALUE_CHANGE: "observePropertyChanged", // Args: observableName, oldValue, newValue
 };
 var ObservableNames = {
     OBJECT: "object",
@@ -18,34 +19,80 @@ var ObservableNames = {
     INPUT_SIZE: "input_attr-size",
     INPUT_STEP: "input_attr-step",
     INPUT_INIT_VALUE: "input_attr-value",
-
+    INPUT_LABEL_TEXT: "input_label",
     //---- HTML ----
     TEXT: "html-innerText",
 };
-var InputViewTypes = {
-    BUTTON: "button", //This is handled by ButtonView
-    CHECKBOX: "checkbox",
-    COLOR: "color",
+
+var TextInputViewTypes = {
     DT_DATE: "date",
     DT_LOCAL: "datetime-local",
     EMAIL: "email",
-    //FILE: "file",
-    //: "hidden",
-    IMAGE: "image",
     DT_MONTH: "month",
-    NUMBER: "number",
     PASSWORD: "password",
-    RADIO: "radio", //TODO: This should be its own view type similar to select
-    RANGE: "range",
-    RESET: "reset", //This will be handled by FormView
     SEARCH: "search",
-    SUBMIT: "submit", //This will be handled by FormView
     TELEPHONE: "tel",
     TEXT: "text",
     DT_TIME: "time",
     URL: "url",
     DT_WEEK: "week",
+    COLOR: "color", // This is placed with the "text" types because it uses a string internally
+    TEXTAREA: "##textarea"
 };
+var ButtonInputViewTypes = {
+    BUTTON: "button",
+    RESET: "reset",
+    SUBMIT: "submit",
+};
+var SelectionInputViewTypes = {
+    RADIO: "radio",
+    SELECT: "##select" // The ## is a magic value to allow easy detection of non "input" tag inputs
+};
+var NumberInputViewTypes = {
+    NUMBER: "number",
+    RANGE: "range",
+};
+var InputViewTypes = {
+    //FILE: "file", // This is commented out because it has a class dedicated to it so no enum value is needed
+    //: "hidden",
+    //IMAGE: "image", // This is commented out because it's function doesn't make much sense in a ui toolkit (And there are better ways to implement it's function)
+    //CHECKBOX: "checkbox", // This is commented out because it has a class dedicated to it so no enum value is needed
+    COLOR: TextInputViewTypes.COLOR,
+    DT_DATE: TextInputViewTypes.DT_DATE,
+    DT_LOCAL: TextInputViewTypes.DT_LOCAL,
+    EMAIL: TextInputViewTypes.EMAIL,
+    DT_MONTH: TextInputViewTypes.DT_MONTH,
+    PASSWORD: TextInputViewTypes.PASSWORD,
+    SEARCH: TextInputViewTypes.SEARCH,
+    TELEPHONE: TextInputViewTypes.TELEPHONE,
+    TEXT: TextInputViewTypes.TEXT,
+    DT_TIME: TextInputViewTypes.DT_TIME,
+    URL: TextInputViewTypes.URL,
+    DT_WEEK: TextInputViewTypes.DT_WEEK,
+    TEXTAREA: TextInputViewTypes.TEXTAREA,
+    BUTTON: ButtonInputViewTypes.BUTTON,
+    CHECKBOX: ButtonInputViewTypes.CHECKBOX,
+    RESET: ButtonInputViewTypes.RESET,
+    SUBMIT: ButtonInputViewTypes.SUBMIT,
+    RADIO: SelectionInputViewTypes.RADIO,
+    SELECT: SelectionInputViewTypes.SELECT,
+    NUMBER: NumberInputViewTypes.NUMBER,
+    RANGE: NumberInputViewTypes.RANGE,
+};
+
+ // "Interfaces"
+var IButton = {
+    handleClick: function(){
+        //TODO: What arguments should be passed?
+        if(this.clickHandler){
+            this.clickHandler();
+        } else {
+            console.log("Warning: no click handler is registered");
+        }
+        this.trigger(EventList.BUTTON_CLICKED);
+    },
+};
+var IDataProvider = {};
 
 // All backbone objects are observers so we only need to create a generic observable
 var Observable = function(value){
@@ -54,7 +101,7 @@ var Observable = function(value){
     this.setValue = function(newValue){
         var oldValue = this.getValue();
         this.object = newValue;
-        this.trigger(EventList.OBSERVE_CHANGE, oldValue, newValue);
+        this.trigger(EventList.OBSERVE_CHANGE, this, undefined, oldValue, newValue);
     };
 
     this.getValue = function(){
@@ -66,6 +113,17 @@ var Observable = function(value){
 var ObservableView = Backbone.View.extend({
     //_observableAttrib_: [ObservableNames.OBJECT],
     objectProperty: ObservableNames.OBJECT,
+    domAttrBindings: {[ObservableNames.INPUT_MAX]: "max", [ObservableNames.INPUT_CHECKED]: "checked"},
+    events: function(){
+        var vals = Object.values(this.domAttrBindings);
+        console.log("Registering " + vals.length + " events for " + this.domAttrBindings);
+        evts = {};
+
+        vals.forEach(function(item, index){
+            evts[item] = "onMappedAttrEvent"; // Register all events to use this function
+        });
+        return evts;
+    },
     initialize: function(properties){
         this.observables = {};
 
@@ -82,6 +140,32 @@ var ObservableView = Backbone.View.extend({
                 self.setValue(properties[item], item);
             }
         });
+    },
+    onMappedAttrEvent: function(evt){
+        console.log("Mapped event: " + evt);
+    },
+    updateMappedAttr: function(key){
+        // This function is one way; it updates the dom with the value of the observable property
+        var binding = this.domAttrBindings[key];
+        var str = this.cid + " mappedAttr: " + key + " - " + this.objectProperty + " - " + binding + " - " + this.getValue(key);
+        if (binding){
+            //TODO: Smart figure out whether we are updating a property or an arrtibute
+            if (binding == "checked"){
+                this.$el.prop(binding, this.getValue(key));
+                console.log("bind prop - " + str);
+            } else {
+                this.$el.attr(binding, this.getValue(key));
+                console.log("bind attr - " + str);
+            }
+        } else if(key == ObservableNames.TEXT){
+            this.$el.text(this.getValue(key));
+            console.log("text - " + str);
+        } else if (key == this.objectProperty || key == ObservableNames.OBJECT){
+            this.$el.val(this.getValue(key));
+            console.log("val - " + str);
+        } else {
+            console.log("no match - " + str);
+        }
     },
     getValue: function(valueName){
         if(!valueName){
@@ -113,7 +197,7 @@ var ObservableView = Backbone.View.extend({
                 this.setRawValue(observ, valueName);
 
                 // Now we trigger the event that would normally fire if the observable had already existed
-                observ.trigger(EventList.OBSERVE_CHANGE, undefined, newValue);
+                //observ.trigger(EventList.OBSERVE_CHANGE, observ, valueName, undefined, newValue);
             }
         }
     },
@@ -125,19 +209,30 @@ var ObservableView = Backbone.View.extend({
         var oldObserve = this.getObservable(valueName);
         if (oldObserve != null){
             this.stopListening(oldObserve);
+            oldObserve = null;
         }
 
+        if(newValue instanceof Observable && oldObserve == null){
+            console.log("Long if");
+        }
         if(newValue instanceof Observable){
-            this.listenTo(newValue, EventList.OBSERVE_CHANGE, function(){
-                this.onObservedChange(newValue, valueName);
+            console.log("short if");
+            this.listenTo(newValue, EventList.OBSERVE_CHANGE, function(observable, observeName, oldValue, newVal){
+                this.onObservedChange(valueName, oldValue, newVal); // Call the class event handler for when an observable is changed to a new one
             });
         }
 
+        var oldValue = this.observables[valueName];
         this.observables[valueName] = newValue;
         if (this.objectProperty == valueName){
             this.observables[ObservableNames.OBJECT] = newValue;
         }
 
+        // This must happen after the above block
+        if (newValue instanceof Observable){
+            // Now we trigger the event that would normally fire if the observable had already existed
+            newValue.trigger(EventList.OBSERVE_CHANGE, newValue, valueName, oldValue, newValue);
+        }
     },
     getObservable: function(propertyName){
         // This function is for getting the observable of a property and will return null for non observables
@@ -155,8 +250,10 @@ var ObservableView = Backbone.View.extend({
         }
         // Else do nothing bc the property is already an observable
     },*/
-    onObservedChange: function(observable, observedProperty){
-        this.render();  // Default is to render
+    onObservedChange: function(observedProperty, oldValue, newValue){
+        this.updateMappedAttr(observedProperty); // Update the bound element attributes and properties
+        this.trigger(EventList.OBSERVED_VALUE_CHANGE, observedProperty, oldValue, newValue); // Then notify any other listeners that one of our values has changed
+        this.render();  // Finally render the view after all possibility for data change is done
     },
 });
 
@@ -190,7 +287,7 @@ var TextView = ObservableView.extend({
     objectProperty: ObservableNames.TEXT,
     //_observableAttrib_: [...ObservableView.prototype._observableAttrib_, ObservableNames.TEXT],
     render: function(){
-        this.$el.text(this.getText());
+        //this.$el.text(this.getText());
     },
     //----------------------------------------
     setText: function(newText){
@@ -205,8 +302,9 @@ var TextView = ObservableView.extend({
 var LinkView = TextView.extend({
     tagName: "a",
     //_observableAttrib_: [...TextView.prototype._observableAttrib_, ObservableNames.HREF],
+    domAttrBindings: {[ObservableNames.HREF]: "href"},
     render: function(){
-        this.$el.attr("href", this.getHref());
+        //this.$el.attr("href", this.getHref());
         TextView.prototype.render.apply(this);
     },
     //----------------------------------------
@@ -221,29 +319,18 @@ var LinkView = TextView.extend({
 });
 var ButtonView = TextView.extend({
     tagName: "button",
+    events: {
+        "click" : "handleClick",
+    },
     initialize: function(onClick, attributes){
         TextView.prototype.initialize.apply(this, [attributes]);
         this.clickHandler = onClick;
     },
-    events: {
-        "click" : "onClick",
-    },
-    onClick: function(){
-        //TODO: What arguments should be passed?
-        this.clickHandler();
-        this.trigger(EventList.BUTTON_CLICKED);
-    },
 });
-var ProgressView = ObservableView.extend({
+_.extend(ButtonView.prototype, IButton); // <- This is not true inheritance but works like it
+
+var ProgressView = ObservableView.extend({ //TODO: This should also support the "meter" tag
     tagName: "progress",
-    //_observableAttrib_: [...ObservableView.prototype._observableAttrib_, ObservableNames.INPUT_INIT_VALUE],
-    initialize: function(max, attributes){
-        ObservableView.prototype.initialize.apply(this, [attributes]);
-        this.$el.attr("max", max);
-    },
-    render: function(){
-        this.$el.attr("value", this.getProgress());
-    },
     //----------------------------------------
     setProgress: function(newValue){
         // TODO: newText must be a string
@@ -253,31 +340,118 @@ var ProgressView = ObservableView.extend({
         // TODO: this must return the value and not the reference
         return this.getValue(ObservableNames.OBJECT);
     },
+    getMaxValue: function(){
+        return this.getValue(ObservableNames.INPUT_MAX);
+    },
+    setMaxValue: function(newValue){
+        return this.setValue(newValue, ObservableNames.INPUT_MAX);
+    },
 });
-var InputView = TextView.extend({
+
+var BaseInputView = TextView.extend({
     tagName: "input",
+    objectProperty: ObservableNames.INPUT_INIT_VALUE,
+    inputType: "",
     events: {
         "change": "_domOnChange_",
-        "input": "_domOnChange_",
+        "input": "_domOnModify_", // <- This is disabled by default to avoid spaming events
+        "click": "handleClick",
     },
     _domOnChange_: function(evt){
-        var value = evt.target.value;
-        this.setValue(value);
+        this.setValue(evt.target.value);
+        //console.log(this.type + " - " + this.name + " was changed to " + evt.target.value);
+    },
+    _domOnModify_: function(evt){
+        // We call onChange by default
+        // NOTE: This will cause events to double fire for some views, like checkboxes
+        // to fix this just override onModify with an empty function in the affected views
+        this._domOnChange_(evt);
     },
     initialize: function(type, name, attributes){
         TextView.prototype.initialize.apply(this, [attributes]);
         this.type = type;
         this.name = name;
 
+        // This attr's are intended to be imutable after they are set
         this.$el.attr("type", this.type);
         this.$el.attr("name", this.name);
+
+        _.extend(this, IButton);
     },
-    render: function(){
-        console.log("Rendering " + this.type + " = " + this.getValue());
-        this.$el.val(this.getValue());
-    }
+    getName: function(){
+        return this.name;
+    },
+    getLabelText: function(){
+        return this.getValue(ObservableNames.INPUT_LABEL_TEXT);
+    },
+    setLabelText: function(newValue){
+        return this.setValue(newValue, ObservableNames.INPUT_LABEL_TEXT);
+    },
     //TODO: Getters and setters for all the INPUT_* observable names
 });
+var TextInputView = BaseInputView.extend({ //TODO: Implement datalist support
+    initialize: function(type, name, attributes){
+        //TODO: Add checks to ensure that only valid "text" imput types can be passed
+        BaseInputView.prototype.initialize.apply(this, [type, name, attributes]);
+    },
+});
+var ButtonInputView = BaseInputView.extend({
+    objectProperty: ObservableNames.TEXT,
+    initialize: function(type, name, onClick, attributes){
+        //TODO: Add checks to ensure that only valid "button" imput types can be passed
+        BaseInputView.prototype.initialize.apply(this, [type, name, attributes]);
+        this.clickHandler = onClick;
+    },
+});
+_.extend(ButtonInputView.prototype, IButton); // <- This is not true inheritance but works like it
+
+var CheckBoxInputView = BaseInputView.extend({
+    objectProperty: ObservableNames.INPUT_CHECKED,
+    initialize: function(name, attributes){
+        //TODO: Add checks to ensure that only valid "text" imput types can be passed
+        BaseInputView.prototype.initialize.apply(this, ["checkbox", name, attributes]);
+    },
+    _domOnChange_: function(evt){
+        //TODO: I think calling setTicked here causes the code to loop back around and set the tick box with the same value it has
+        // this occurs in updateMappedAttr
+        this.setTicked(evt.target.checked);
+        console.log(this.type + " - " + this.name + " was changed to " + evt.target.checked);
+    },
+    _domOnModify_: function(evt){},
+    isTicked: function(){
+        return this.getValue();
+    },
+    setTicked: function(isTicked){
+        return this.setValue(isTicked);
+    },
+});
+//var SelectionInputView;
+var NumberInputView = BaseInputView.extend({
+    objectProperty: ObservableNames.INPUT_INIT_VALUE,
+    initialize: function(type, name, attributes){
+        //TODO: Add checks to ensure that only valid "text" imput types can be passed
+        BaseInputView.prototype.initialize.apply(this, [type, name, attributes]);
+    },
+    getMinValue: function(){
+        return this.getValue(ObservableNames.INPUT_MIN);
+    },
+    getMaxValue: function(){
+        return this.getValue(ObservableNames.INPUT_MAX);
+    },
+    getStepValue: function(){
+        return this.getValue(ObservableNames.INPUT_STEP);
+    },
+    setMinValue: function(newValue){
+        return this.setValue(newValue, ObservableNames.INPUT_MIN);
+    },
+    setMaxValue: function(newValue){
+        return this.setValue(newValue, ObservableNames.INPUT_MAX);
+    },
+    setStepValue: function(newValue){
+        return this.setValue(newValue, ObservableNames.INPUT_STEP);
+    },
+});
+//var FileInputView;
 
 // This extends observable view so that properties like visibility, color, etc. can be observed easily
 // This view also functions as a good example of the most minimal implementation of a view widget
@@ -290,8 +464,8 @@ var LineBreakView = ObservableView.extend({
 });
 
 // Text Display
-//  abbr, address, b, blockquote, br, cite, dd, dl, dt, del, dfn, em
-//  figcaption, h1-6, i, img, ins, mark, meter*, output, pre, q
+//  abbr, address, b, blockquote, cite, dd, dl, dt, del, dfn, em
+//  figcaption, h1-6, i, img, ins, mark, output, pre, q
 //  rp, rt, ruby, s, small, strong, sub, summary, sup, time, u, wbr
 
 // Content Display
@@ -334,9 +508,4 @@ ViewContainer - div
 `LinkView - a
 `ProgressView - progress
 `Button - button
-
-
-
-
-
 */

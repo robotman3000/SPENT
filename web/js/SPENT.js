@@ -856,13 +856,14 @@ function SPENT(){
     });
     var PropertyViewTextBox = Backbone.View.extend({
         initialize: function(){
-            this.setElement($("<p>"));
+            this.setElement($("<div>"));
             this.listenTo(this, "modelChanged", function(newModel){
                 this.listenTo(newModel, "change:value", this.render);
             });
         },
         render: function(){
-            this.$el.text(this.getModel().get("name") + " : " + this.getModel().get("value"));
+            //this.$el.attr("style", "display: inline-block")
+            this.$el.text("|" + this.getModel().get("name").split(".")[2] + " : " + formatter.format(this.getModel().get("value")));
         },
     }).extend(BaseModelView);
 
@@ -1646,8 +1647,6 @@ function SPENT(){
                 watcher.setModel(prop);
                 this.addView(watcher)
             } else {
-                //TODO: Remove this when debugging is done
-                //alert("Failed to find property: " + propertyName);
                 this.waitingWatches.push(propertyName);
             }
         },
@@ -1674,7 +1673,7 @@ function SPENT(){
                     fromToStr = (value == 2 ? " from " : " to ")
                 }
                 return {
-                    text: enumManager.getEnumValues("TransactionType")[value] + fromToStr,
+                    text: enumManager.getEnumValues("TransactionType")[value].name + fromToStr,
                 };
             },
             "Amount": function(value, rowData){
@@ -2305,7 +2304,6 @@ function SPENT(){
     requestManager.sendRequest()
     //propertyManager.sendRequest()
 
-    // The property models don't exist to be watched until now
     accountStatusViewInst.watchProperty("SPENT.bucket.availableTreeBalance");
     accountStatusViewInst.watchProperty("SPENT.bucket.postedTreeBalance");
     accountStatusViewInst.watchProperty("SPENT.bucket.availableBalance");

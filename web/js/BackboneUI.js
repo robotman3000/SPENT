@@ -8,6 +8,7 @@ var ObservableNames = {
     OBJECT: "object",
     //---- HTML Attributes ----
     HREF: "attr-href",
+    HIDDEN: "prop-hidden",
     INPUT_CHECKED: "input_attr-checked",
     INPUT_DISABLED: "input_attr-disabled",
     INPUT_MAX: "input_attr-max",
@@ -94,6 +95,22 @@ var IButton = {
 };
 var IDataProvider = {};
 
+var BaseModelView = Object.create(null);
+BaseModelView.model = null;
+BaseModelView.setModel = function(newModel){
+    if(this.model){
+        this.model.stopListening()
+    }
+    this.model = newModel;
+    this.trigger("modelChanged", newModel);
+};
+BaseModelView.getModel = function(){
+    return this.model || null;
+};
+/*BaseModelView.getModelConstructor = function(){
+    return this.constructor || null;
+};*/ // <- Let's see if we can get away with removing this function
+
 // All backbone objects are observers so we only need to create a generic observable
 var Observable = function(value){
     this.object = value; // Don't use setValue so as to avoid triggering a change event on init
@@ -110,10 +127,12 @@ var Observable = function(value){
     _.extend(this, Backbone.Events);
 };
 
+
+// This is the base class for all BackboneUI compatible views
 var ObservableView = Backbone.View.extend({
     //_observableAttrib_: [ObservableNames.OBJECT],
     objectProperty: ObservableNames.OBJECT,
-    domAttrBindings: {[ObservableNames.INPUT_MAX]: "max", [ObservableNames.INPUT_CHECKED]: "checked"},
+    domAttrBindings: {[ObservableNames.INPUT_MAX]: "max", [ObservableNames.INPUT_CHECKED]: "checked", [ObservableNames.HIDDEN]: "hidden"},
     events: function(){
         var vals = Object.values(this.domAttrBindings);
         console.log("Registering " + vals.length + " events for " + this.domAttrBindings);
@@ -147,21 +166,22 @@ var ObservableView = Backbone.View.extend({
     updateMappedAttr: function(key){
         // This function is one way; it updates the dom with the value of the observable property
         var binding = this.domAttrBindings[key];
-        var str = this.cid + " mappedAttr: " + key + " - " + this.objectProperty + " - " + binding + " - " + this.getValue(key);
+        var value = this.getValue(key)
+        var str = this.cid + " mappedAttr: " + key + " - " + this.objectProperty + " - " + binding + " - " + value;
         if (binding){
             //TODO: Smart figure out whether we are updating a property or an arrtibute
             if (binding == "checked"){
-                this.$el.prop(binding, this.getValue(key));
+                this.$el.prop(binding, value);
                 console.log("bind prop - " + str);
             } else {
-                this.$el.attr(binding, this.getValue(key));
+                this.$el.attr(binding, value);
                 console.log("bind attr - " + str);
             }
         } else if(key == ObservableNames.TEXT){
-            this.$el.text(this.getValue(key));
+            this.$el.text(value);
             console.log("text - " + str);
-        } else if (key == this.objectProperty || key == ObservableNames.OBJECT){
-            this.$el.val(this.getValue(key));
+        } else if ((key == this.objectProperty || key == ObservableNames.OBJECT)){
+            this.$el.val(value);
             console.log("val - " + str);
         } else {
             console.log("no match - " + str);
@@ -255,25 +275,38 @@ var ObservableView = Backbone.View.extend({
         this.trigger(EventList.OBSERVED_VALUE_CHANGE, observedProperty, oldValue, newValue); // Then notify any other listeners that one of our values has changed
         this.render();  // Finally render the view after all possibility for data change is done
     },
+    // --------------------
+    hide: function(){
+        this.setVisible(false);
+    },
+    show: function(){
+        this.setVisible(true);
+    },
+    setVisible: function(isVisible){
+        this.setValue(!isVisible, ObservableNames.HIDDEN);
+    },
 });
 
-var ViewContainer = Backbone.View.extend({
+var ViewContainer = ObservableView.extend({
     views: null,
     tagName: "div",
-    initialize: function(element){
+    initialize: function(element, attributes){
+        TextView.prototype.initialize.apply(this, [attributes]);
         this.views = [];
         if(element){
             this.setElement(element);
         }
     },
     render: function(){
-        var self = this;
-        console.log("ViewContainer.render");
-        this.$el.empty(); // TODO: I don't like the erase and reset model, fix it
-        this.views.forEach(function(item){
-            item.render();
-            self.$el.append(item.$el);
-        })
+        if (this.views){
+            var self = this;
+            console.log("ViewContainer.render");
+            this.$el.empty(); // TODO: I don't like the erase and reset model, fix it
+            this.views.forEach(function(item){
+                item.render();
+                self.$el.append(item.$el);
+            })
+        }
     },
     addView: function(view){
         this.views.push(view);
@@ -324,6 +357,8 @@ var ButtonView = TextView.extend({
     },
     initialize: function(onClick, attributes){
         TextView.prototype.initialize.apply(this, [attributes]);
+        this.$el.attr("class", "pure-button");
+        //TODO: Implement functionality to support all button classes at https://purecss.io/buttons/
         this.clickHandler = onClick;
     },
 });
@@ -426,6 +461,90 @@ var CheckBoxInputView = BaseInputView.extend({
     },
 });
 //var SelectionInputView;
+
+//TODO: SelectView is broken; It is intended to be instanced rather than extended for "simple" selects
+var SelectionInputView = BaseInputView.extend({
+    tagName: "select",
+    initialize: function(collection, optionNameKey, includeNA, attributes){
+        BaseInputView.prototype.initialize.apply(this, [attributes]);
+        //this.initUnselected = getOrDefault(args, "initUnselected", false);
+        //this.noSelection = includeNA;// {text: "N/A", value: -1}
+        this.collection = collection;
+        if (typeof optionNameKey === "function"){
+            this.nameFormatter = optionNameKey;
+            this.nameKey = "name"; // TOOD: This is a hard coded value that shouldn't be
+        } else {
+            // For now we just assume the variable is a string
+            this.nameFormatter = function(model){
+                return model.get(optionNameKey);
+            }
+            this.nameKey = optionNameKey;
+        }
+        //this.options = [{text: "No Options", value: 0, selected: true, defaultSelected: true}];
+
+        //TODO: this.listenTo(newModel, "add", this.render)
+        //TODO: this.listenTo(newModel, "remove", this.render)
+        this.listenTo(collection, "update", this.refreshOptions)
+        this.listenTo(collection, "reset", this.refreshOptions)
+        this.listenTo(collection, "sort", this.refreshOptions)
+        this.listenTo(collection, "change:" + this.nameKey, this.refreshOptions) //TODO: Inefficient
+        //TODO: this.listenTo(newModel, "request", this.render)
+        //TODO: this.listenTo(newModel, "sync", this.render)
+        this.refreshOptions();
+    },
+    refreshOptions: function(){
+        console.log("SelectView.refreshOptions")
+        var lastState =  this.$el.prop("disabled");
+        this.$el.prop("disabled", true);
+
+        this.$el[0].options.length=0
+
+        var value = -1; // TODO: this is a placeholder
+        if(this.noSelection){
+            this.$el[0].options.add(new Option(this.noSelection.text, this.noSelection.value, true, (this.noSelection.value == value)));
+        }
+
+        var self = this;
+        this._getOptions().forEach(function(item, index){
+            self.$el[0].options.add(new Option(item.text, item.value, item.defaultSelected, item.selected));
+        });
+
+        this.$el.prop("disabled", lastState);
+
+        //this.$el.change();
+    },
+    _getOptions: function(){
+        var value = -1; //TODO: Placeholder
+        var options = [];
+        if (this.collection){
+            var self = this;
+            this.collection.where().forEach(function(ite, ind){
+                var text = self.nameFormatter(ite);
+                options.push({text: text, value: ite.cid, defaultSelected: false, selected: (value == ite.id)});
+            });
+        }
+        return options;
+    },
+    _domOnChange_: function(data){
+        //TODO: Support multiple selection
+        var options = data.target.selectedOptions;
+
+        if (options.length > 0){
+            var val = options[0].value;
+
+            // TODO: Is it better to set value to the model or the model's id?
+            // For now we use the model id (It's easiest to change later)
+            if(this.collection){
+                var model = this.collection.get(val);
+                if(model && this.getValue() != val){
+                    // We check that the new value is not the old value to avoid double firing the change event
+                    this.setValue(model.cid);
+                }
+            }
+        }
+    },
+});
+
 var NumberInputView = BaseInputView.extend({
     objectProperty: ObservableNames.INPUT_INIT_VALUE,
     initialize: function(type, name, attributes){

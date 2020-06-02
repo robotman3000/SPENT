@@ -1,9 +1,19 @@
 function main(){
-    tests = [getLinkTestView, getButtonTestView, getInputTest1View, getInputTest2View, getInputTest3View, getInputTest4View];
+    tests = [getLinkTestView, getButtonTestView, getInputTest1View, getInputTest2View, getInputTest3View, getInputTest4View, getVisibilityToggleTestView, getSelectViewTest];
     var theContainer = new ViewContainer($("#container"));
 
-    tests.forEach(function(item){
-        theContainer.addView(item());
+    tests.forEach(function(item, index){
+        try {
+            theContainer.addView(item());
+        } catch (error) {
+            var strin = "Failed to initialize view test; Index: " + index;
+            console.error(error);
+            console.error(strin);
+            theContainer.addView(new TextView({[ObservableNames.TEXT]: strin}));
+            // expected output: ReferenceError: nonExistentFunction is not defined
+            // Note - error messages will vary depending on browser
+        }
+
         theContainer.addView(new HorizontalRuleView());
     });
 
@@ -153,4 +163,78 @@ function getInputTest4View(){
     });
 
     return container;
+}
+
+function getVisibilityToggleTestView(){
+    var textView = new TextView({[ObservableNames.TEXT]: "Hello World"});
+
+    // Assert that the view is visible by default
+    textView.setVisible(true);
+
+    // Note how we link the text property of our TextView to the value of the "hidden" obervable in the other TextView
+    // Technical Note: This actually makes the "text" observable be a reference to the "hidden" observable
+    var visibleStateView = new TextView({[ObservableNames.TEXT]: textView.getObservable(ObservableNames.HIDDEN)});
+
+    var theButton = new ButtonView(function(){
+        textView.show();
+    });
+    theButton.setText("Visible");
+
+    var theOtherButton = new ButtonView(function(){
+        textView.hide();
+    });
+    theOtherButton.setText("Hidden");
+
+    var con1 = new ViewContainer();
+    con1.addView(theButton);
+    con1.addView(theOtherButton);
+    con1.addView(textView);
+    con1.addView(visibleStateView);
+
+    return con1;
+}
+
+function getSelectViewTest(){
+    var textView = new TextView({[ObservableNames.TEXT]: "Initial Select Text"});
+
+    var Surfboard = Backbone.Model.extend({
+        defaults: {
+            manufacturer: '',
+            model: '',
+            stock: 0
+        }
+    });
+
+    var SurfboardsCollection = Backbone.Collection.extend({
+        model: Surfboard
+    });
+
+    var board1 = new Surfboard({
+        manufacturer: 'Channel Islands',
+        model: 'Whip',
+        stock: 12
+    });
+    var board2 = new Surfboard({
+        manufacturer: 'Surf Co',
+        model: 'Surf 3000',
+        stock: 1
+    });
+    var board3 = new Surfboard({
+        manufacturer: 'Artistic Licence',
+        model: 'Fling',
+        stock: 26
+    });
+    var surfboards = new SurfboardsCollection;
+    surfboards.add(board1);
+    surfboards.add(board2);
+    surfboards.add(board3);
+
+    var viewContainer = new ViewContainer();
+
+    var selectView = new SelectionInputView(surfboards, "model", false);
+    textView.setText(selectView.getObservable(ObservableNames.OBJECT));
+    //selectView.render();
+    viewContainer.addView(selectView);
+    viewContainer.addView(textView);
+    return viewContainer;
 }

@@ -1,3 +1,58 @@
+// Utility functions
+function setDOMValue(view, key){
+    // This function is one way; it updates the dom with the value of the observable property
+    var binding = view.domAttrBindings[key];
+    var value = view.getValue(key)
+    var str = view.cid + " mappedAttr: " + key + " - " + view.objectProperty + " - " + binding + " - " + value;
+    if (binding){
+        //TODO: Smart figure out whether we are updating a property or an arrtibute
+        if (binding == "checked"){
+            view.$el.prop(binding, value);
+            //console.log("bind prop - " + str);
+        } else {
+            view.$el.attr(binding, value);
+            //console.log("bind attr - " + str);
+        }
+    } else if(key == ObservableNames.TEXT){
+        view.$el.text(value);
+        //console.log("text - " + str);
+    } else if ((key == view.objectProperty || key == ObservableNames.OBJECT)){
+        view.$el.val(value);
+        //console.log("val - " + str);
+    } else {
+        console.log("no match - " + str);
+        return false;
+    }
+    return true;
+}
+
+function getDOMValue(view, key){
+    // This function is one way; it updates the dom with the value of the observable property
+    var binding = view.domAttrBindings[key];
+    var value = undefined;
+    var str = view.cid + " get:mappedAttr: " + key + " - " + view.objectProperty + " - " + binding + " - " + value;
+    if (binding){
+        //TODO: Smart figure out whether we are updating a property or an arrtibute
+        if (binding == "checked"){
+            value = view.$el.prop(binding);
+            //console.log("bind prop - " + str);
+        } else {
+            value = view.$el.attr(binding);
+            //console.log("bind attr - " + str);
+        }
+    } else if(key == ObservableNames.TEXT){
+        value = view.$el.text();
+        //console.log("text - " + str);
+    } else if ((key == view.objectProperty || key == ObservableNames.OBJECT)){
+        value = view.$el.val();
+        //console.log("val - " + str);
+    } else {
+        console.log("get:no match - " + str);
+    }
+    return value;
+}
+
+
 // Declare the "enums" we need
 var EventList = {
     OBSERVE_CHANGE: "observedChange", // Args: observable, observableName, oldValue, newValue
@@ -107,18 +162,17 @@ BaseModelView.setModel = function(newModel){
 BaseModelView.getModel = function(){
     return this.model || null;
 };
-/*BaseModelView.getModelConstructor = function(){
-    return this.constructor || null;
-};*/ // <- Let's see if we can get away with removing this function
 
 // All backbone objects are observers so we only need to create a generic observable
 var Observable = function(value){
     this.object = value; // Don't use setValue so as to avoid triggering a change event on init
 
-    this.setValue = function(newValue){
+    this.setValue = function(newValue, silent){
         var oldValue = this.getValue();
         this.object = newValue;
-        this.trigger(EventList.OBSERVE_CHANGE, this, undefined, oldValue, newValue);
+        if (silent != true){
+            this.trigger(EventList.OBSERVE_CHANGE, this, undefined, oldValue, newValue);
+        }
     };
 
     this.getValue = function(){
@@ -127,12 +181,11 @@ var Observable = function(value){
     _.extend(this, Backbone.Events);
 };
 
-
 // This is the base class for all BackboneUI compatible views
 var ObservableView = Backbone.View.extend({
     //_observableAttrib_: [ObservableNames.OBJECT],
     objectProperty: ObservableNames.OBJECT,
-    domAttrBindings: {[ObservableNames.INPUT_MAX]: "max", [ObservableNames.INPUT_CHECKED]: "checked", [ObservableNames.HIDDEN]: "hidden"},
+    domAttrBindings: {[ObservableNames.HIDDEN]: "hidden"},
     events: function(){
         var vals = Object.values(this.domAttrBindings);
         console.log("Registering " + vals.length + " events for " + this.domAttrBindings);
@@ -146,12 +199,16 @@ var ObservableView = Backbone.View.extend({
     initialize: function(properties){
         this.observables = {};
 
+        if(!this.domAttrBindings[this.objectProperty] && this.objectProperty != ObservableNames.OBJECT && this.objectProperty != ObservableNames.TEXT){
+            console.log("Warning: View " + this.cid + ":" + this.tagName + " has not provided a mapping for it's objectProperty " + this.objectProperty + "; Things are likely going to not work");
+            this.setValue(getDOMValue(this, this.objectProperty), this.objectProperty);
+        }
+
         if(!properties){
             properties = {};
         }
 
-        this.setValue(null, this.objectProperty);
-
+        // Here we initialise the observables for the passed in values
         var self = this;
         Object.keys(properties).forEach(function(item, index){
             if (properties[item]){
@@ -159,33 +216,36 @@ var ObservableView = Backbone.View.extend({
                 self.setValue(properties[item], item);
             }
         });
+
+        // Then we synchronize any bound dom attributes with their observable's value
+        Object.keys(this.domAttrBindings).forEach(function(item){
+            // We check to make sure that we haven't already set the value (This is to avoid causing excess/duplicate events to fire)
+            if (!properties[item]){
+                var value = getDOMValue(self, item);
+                var observ = self.getObservable(item);
+
+                // The duplicated reference here is used later to detect if the initial value _was_ null
+                var obse = observ;
+                if(observ == null){
+                    // Then we create a new one
+                    obse = new Observable(value);
+                }
+                // We set the value of the observable
+                // The "true" mutes the event that would be fired since we are insuring a correct initial state and don't want the event
+                obse.setValue(value, item, true);
+
+                if(observ == null){
+                    // We don't mute the event here so that anything that depends on this observable will know that it's reference has changed
+                    self.setRawValue(obse, item);
+                }
+            }
+        });
     },
     onMappedAttrEvent: function(evt){
         console.log("Mapped event: " + evt);
     },
     updateMappedAttr: function(key){
-        // This function is one way; it updates the dom with the value of the observable property
-        var binding = this.domAttrBindings[key];
-        var value = this.getValue(key)
-        var str = this.cid + " mappedAttr: " + key + " - " + this.objectProperty + " - " + binding + " - " + value;
-        if (binding){
-            //TODO: Smart figure out whether we are updating a property or an arrtibute
-            if (binding == "checked"){
-                this.$el.prop(binding, value);
-                console.log("bind prop - " + str);
-            } else {
-                this.$el.attr(binding, value);
-                console.log("bind attr - " + str);
-            }
-        } else if(key == ObservableNames.TEXT){
-            this.$el.text(value);
-            console.log("text - " + str);
-        } else if ((key == this.objectProperty || key == ObservableNames.OBJECT)){
-            this.$el.val(value);
-            console.log("val - " + str);
-        } else {
-            console.log("no match - " + str);
-        }
+        return setDOMValue(this, key);
     },
     getValue: function(valueName){
         if(!valueName){
@@ -221,22 +281,19 @@ var ObservableView = Backbone.View.extend({
             }
         }
     },
-    setRawValue: function(newValue, valueName){
+    setRawValue: function(newValue, valueName, silent){
         if(!valueName){
             valueName = ObservableNames.OBJECT;
         }
 
         var oldObserve = this.getObservable(valueName);
-        if (oldObserve != null){
+        if (oldObserve != null && oldObserve != newValue && newValue instanceof Observable){
             this.stopListening(oldObserve);
             oldObserve = null;
         }
 
         if(newValue instanceof Observable && oldObserve == null){
-            console.log("Long if");
-        }
-        if(newValue instanceof Observable){
-            console.log("short if");
+            //console.log("short if");
             this.listenTo(newValue, EventList.OBSERVE_CHANGE, function(observable, observeName, oldValue, newVal){
                 this.onObservedChange(valueName, oldValue, newVal); // Call the class event handler for when an observable is changed to a new one
             });
@@ -249,7 +306,7 @@ var ObservableView = Backbone.View.extend({
         }
 
         // This must happen after the above block
-        if (newValue instanceof Observable){
+        if (newValue instanceof Observable && silent != true){
             // Now we trigger the event that would normally fire if the observable had already existed
             newValue.trigger(EventList.OBSERVE_CHANGE, newValue, valueName, oldValue, newValue);
         }
@@ -363,7 +420,6 @@ var ButtonView = TextView.extend({
     },
 });
 _.extend(ButtonView.prototype, IButton); // <- This is not true inheritance but works like it
-
 var ProgressView = ObservableView.extend({ //TODO: This should also support the "meter" tag
     tagName: "progress",
     //----------------------------------------
@@ -385,6 +441,7 @@ var ProgressView = ObservableView.extend({ //TODO: This should also support the 
 
 var BaseInputView = TextView.extend({
     tagName: "input",
+    objectProperty: ObservableNames.INPUT_INIT_VALUE,
     objectProperty: ObservableNames.INPUT_INIT_VALUE,
     inputType: "",
     events: {
@@ -439,9 +496,9 @@ var ButtonInputView = BaseInputView.extend({
     },
 });
 _.extend(ButtonInputView.prototype, IButton); // <- This is not true inheritance but works like it
-
 var CheckBoxInputView = BaseInputView.extend({
     objectProperty: ObservableNames.INPUT_CHECKED,
+    domAttrBindings: _.extend(BaseInputView.prototype.domAttrBindings, {[ObservableNames.INPUT_CHECKED]: "checked"}),
     initialize: function(name, attributes){
         //TODO: Add checks to ensure that only valid "text" imput types can be passed
         BaseInputView.prototype.initialize.apply(this, ["checkbox", name, attributes]);
@@ -460,9 +517,6 @@ var CheckBoxInputView = BaseInputView.extend({
         return this.setValue(isTicked);
     },
 });
-//var SelectionInputView;
-
-//TODO: SelectView is broken; It is intended to be instanced rather than extended for "simple" selects
 var SelectionInputView = BaseInputView.extend({
     tagName: "select",
     initialize: function(collection, optionNameKey, includeNA, attributes){
@@ -511,7 +565,7 @@ var SelectionInputView = BaseInputView.extend({
 
         this.$el.prop("disabled", lastState);
 
-        //this.$el.change();
+        this.$el.change();
     },
     _getOptions: function(){
         var value = -1; //TODO: Placeholder
@@ -544,9 +598,9 @@ var SelectionInputView = BaseInputView.extend({
         }
     },
 });
-
 var NumberInputView = BaseInputView.extend({
     objectProperty: ObservableNames.INPUT_INIT_VALUE,
+    domAttrBindings: _.extend(BaseInputView.prototype.domAttrBindings, {[ObservableNames.INPUT_MAX]: "max"}),
     initialize: function(type, name, attributes){
         //TODO: Add checks to ensure that only valid "text" imput types can be passed
         BaseInputView.prototype.initialize.apply(this, [type, name, attributes]);
@@ -577,7 +631,6 @@ var NumberInputView = BaseInputView.extend({
 var HorizontalRuleView = ObservableView.extend({
     tagName: "hr",
 });
-
 var LineBreakView = ObservableView.extend({
     tagName: "br",
 });

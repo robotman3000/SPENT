@@ -157,9 +157,12 @@ function getInputTest4View(){
     tickBoxNames.forEach(function(item, index){
         var tickBox = new CheckBoxInputView("tick" + item);
         tickBox.setLabelText(item);
-        tickBox.setTicked(Math.random() >= 0.5);
+        var boo = Math.random() >= 0.5;
+        //console.log("bool: " + boo);
+        tickBox.setTicked(boo);
         container.addView(tickBox);
         tickBox.on(EventList.OBSERVED_VALUE_CHANGE, onValueChange);
+        console.log("Initial tick value: " + tickBox.$el.prop("checked") + "; Observable value: " + tickBox.getValue());
     });
 
     return container;
@@ -232,6 +235,7 @@ function getSelectViewTest(){
     var viewContainer = new ViewContainer();
 
     var selectView = new SelectionInputView(surfboards, "model", false);
+    console.log("Initial select value: " + selectView.$el.val() + "; Observable value: " + selectView.getValue());
     textView.setText(selectView.getObservable(ObservableNames.OBJECT));
     //selectView.render();
     viewContainer.addView(selectView);

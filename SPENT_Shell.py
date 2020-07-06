@@ -1,4 +1,5 @@
 from typing import Callable, List
+from curses import wrapper
 
 import readline
 from SPENT.SPENT_Schema import *
@@ -183,6 +184,111 @@ def listBucketTransactions(bucket) -> None:
 
 #------------------------------------------------------------------------------
 
+def exportMMEX(command, commandObject):
+	import csv
+	# This function exports the database as a csv file in a format compatible with Money Manager EX
+
+	# We need to create a seperate csv file for each account
+	#for account:
+
+		# Bucket
+		# ID = None
+		# Name = Category Name or Sub Category Name
+		# Parent = None
+
+		# Transaction
+		# ID = None
+		# Status = Unint, Submit, Post-Pending - Insert note and status none, Complete - Status none, Reconciled - Match, Void - Match
+		# Date and Post-Date = Prefer Post-Date
+		# Amount = Deposit and Withdrawal
+		# Source and Dest Bucket = Category or Subcategory
+		# Memo = Note
+		# Payee = Payee (Except for transfers - > + From/To Name with > Greater towards FROM)
+	buckets = EnumBucketsTable.select(connection, SQL_WhereStatementBuilder())
+
+	# First map all bucket id's to categories (Merge the category's of all the accounts into one list)
+	categoriesMap = {}
+	for bucket in EnumBucketsTable.select(connection, SQL_WhereStatementBuilder("Ancestor != -1")).getRows().values():
+		print("Mapping %s to %s" % (bucket.getID(), bucket.getName()))
+		categoriesMap[bucket.getID()] = bucket.getName()
+
+
+	for account in EnumBucketsTable.select(connection, SQL_WhereStatementBuilder("Ancestor = -1")).getRows().values():
+		with open('mmex-%s.csv' % account.getName(), 'w', newline='') as file:
+			writer = csv.writer(file)
+			writer.writerow(["Date", "Payee", "Category", "SubCategory", "Number", "Notes", "Deposit", "Withdrawal"])
+
+			index = 0
+			print("Processing Account %s" % account.getName())
+
+			chil = SpentUtil.getAllBucketChildrenID(connection, account)
+			chil.append(account.getID())
+			bucketChildren = ", ".join(map(str, chil))
+			for transaction in EnumTransactionTable.select(connection, SQL_WhereStatementBuilder("SourceBucket in (%s)" % bucketChildren).OR("DestBucket in (%s)" % bucketChildren)):
+				#print("Checking %s %s" % (transaction.getType(), transaction.getID()))
+				# Ignore all "transfer" transactions between buckets with the same ancestor
+				sourceAncestor = buckets.getRow(transaction.getSourceBucketID()).getAncestorID()
+				if sourceAncestor is -1 or sourceAncestor is None:
+					sourceAncestor = transaction.getSourceBucketID()
+
+				destAncestor = buckets.getRow(transaction.getDestBucketID()).getAncestorID()
+				if destAncestor is -1 or destAncestor is None:
+					destAncestor = transaction.getDestBucketID()
+
+				print("%s,%s and %s,%s and %s" % (sourceAncestor, transaction.getSourceBucketID(), destAncestor, transaction.getDestBucketID(), transaction.getType()))
+				if sourceAncestor == destAncestor:
+					print("Ignoring transfer %s" % transaction.getID())
+				else:
+					transDirection = None
+					if transaction.getType() == 0:
+						transDirection = (destAncestor == account.getID())
+					elif transaction.getType() == 1:
+						transDirection = True
+					else:
+						transDirection = False
+
+					# We assume that exactly one of the two will be -1 and the other != -1
+					primaryBucketID = transaction.getDestBucketID() if transDirection else transaction.getSourceBucketID()
+
+					if transaction.getType() == 0:
+						# We have a transfer
+						print("Parsing transfer %s" % transaction.getID())
+						category = "Transfer"
+					else:
+						print("Parsing %s %s" % (transaction.getType(), transaction.getID()))
+
+						# If there is no mapping that means that the pri ID is that of an account, for which there is no category
+						candidateName = categoriesMap.get(primaryBucketID)
+						category = candidateName if candidateName is not None else ""
+
+					date = transaction.getPostDate() if transaction.getPostDate() is not None and transaction.getPostDate() != "" else transaction.getTransactionDate()
+					deposit = transaction.getAmount() if transDirection else ""
+					withdrawal = transaction.getAmount() if not transDirection else ""
+					primaryBucketName = buckets.getRow(primaryBucketID).getName()
+					payee = transaction.getPayee() if transaction.getType() != 0 else "< %s" % primaryBucketName if transDirection else "> %s" % primaryBucketName
+
+					if transaction.getStatus() != TransactionStatusEnum.Complete.value and transaction.getStatus() != TransactionStatusEnum.Reconciled.value:
+						statusStr = "[%s] " % transaction.getStatus()
+					else:
+						statusStr = ""
+
+					notes = "%s%s" % (statusStr, transaction.getMemo())
+					writer.writerow([date, payee, category, "", "", notes, deposit, withdrawal])
+					#print("CSV: %s, %s, %s, %s,	%s, %s, %s, %s, %s" % (index, date, payee, category, "", "", notes, deposit, withdrawal))
+				print("---------------------")
+				# "#[Index], Date[Trans Date || Post Date], Payee[%s unless Type is Transfer then (direction ? ">" + Destination Name : "<" + Source Name) + ], Category[Bucket Name], Number, Deposit[AMOUNT if SourceBucket is -1 or None], Withdrawal[AMOUNT if DestBucket is -1 or None]"
+				#  Category[Bucket Name], Number"
+				# Choose which date to use
+				# Decide whether the AMOUNT is Deposit or Withdrawal
+
+				index += 1
+			# MMEX doesn't share our idea of categories being owned by an account
+			# so when we convert we will prefix the category name with the account id to preserve that information
+			# and then we
+
+
+#------------------------------------------------------------------------------
+
 def createFunction(table, connection, args, command):
 	data = {}
 	for index in range(len(command.args)):
@@ -288,7 +394,7 @@ connect.endTransaction()
 commands['ls'] = Command(showAccountTree)
 commands['info'] = Command(showBucket, "ID")
 commands['dump'] = Command(dumpDB)
-
+commands['exportMMEX'] = Command(exportMMEX)
 
 #setLogLevel(["INFO"], None)
 repl = REPL(exitCallback, commands)

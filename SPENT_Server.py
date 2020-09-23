@@ -1,6 +1,8 @@
 ﻿import mimetypes, json, time, os, sys
 import traceback
 from wsgiref.simple_server import make_server
+
+from SPENT.DBBackup import backupDB
 from SPENT.Old.SPENT import *
 from argparse import ArgumentParser
 
@@ -26,6 +28,9 @@ parser.add_argument("--server-mode",
 parser.add_argument("--serve-any",
 					action="store_true", dest="serveAnyfile", default=False,
 					help="Tell the file provider to serve any file requested")
+parser.add_argument("--log-level",
+					type=str, dest="logLevel", default="INFO",
+					help="Sets the logging level (INFO, WARNING, ERROR, EXCEPTION, DEBUG)")
 
 args = parser.parse_args()
 
@@ -45,6 +50,9 @@ def time_it(f, *args):
 
 class SPENTServer():
 	def __init__(self, port):
+		log.setLevel(args.logLevel)
+
+
 		self.port = port
 
 		# The file handler is the default and gets used when no other match is found
@@ -92,12 +100,19 @@ class SPENTServer():
 		def propTest(args, connection):
 			return "Test is good and successful"
 
+		self.count = 0
+		def counter(args, connection):
+			self.count = self.count + 1
+			return self.count
+
+
 		propertyEndpoint = PropertyEndpoint(args.debugAPI, dbEndpoint.database)
 		propertyEndpoint.registerProperty(Property("SPENT.bucket.availableTreeBalance", getAvailBucketTreeBalance, True))
 		propertyEndpoint.registerProperty(Property("SPENT.bucket.postedTreeBalance", getPostedBucketTreeBalance, True))
 		propertyEndpoint.registerProperty(Property("SPENT.bucket.availableBalance", getAvailBucketBalance, True))
 		propertyEndpoint.registerProperty(Property("SPENT.bucket.postedBalance", getPostedBucketBalance, True))
 		propertyEndpoint.registerProperty(Property("SPENT.property.test", propTest, False))
+		propertyEndpoint.registerProperty(Property("vuex.counter", counter, False))
 		self.handler.registerRequestHandler("POST", "/property/query", propertyEndpoint)
 
 		enumEndpoint = EnumEndpoint(args.debugAPI)
@@ -254,8 +269,11 @@ class EndpointBackend:
 
 class DatabaseEndpoint(EndpointBackend):
 	def __init__(self, dbPath, debugAPI):
+		# First things first... Backup, Backup, Backup!
+		backupDB(["scriptname", dbPath, "SPENT.backup"])
+
 		self.debugAPI = debugAPI
-		self.database = sqlib.Database(dbPath)
+		self.database = sqlib.Database(SPENT_DB_V1, dbPath)
 		self.connection = self.database.getConnection("Server")
 		self.connection.connect()  # TODO: Implement a connection pool
 
@@ -272,10 +290,6 @@ class DatabaseEndpoint(EndpointBackend):
 		self.reverseTypeMapper = {EnumBucketsTable: "account", EnumBucketsTable: "bucket", EnumTransactionTable: "transaction", EnumTransactionGroupsTable: "transaction-group", EnumTransactionTagsTable: "tag"}
 
 
-		self.connection.beginTransaction()
-		for table in self.reverseTypeMapper.keys():
-			self.database.initTable(table, self.connection)
-		self.connection.endTransaction()
 
 	def getDBConnection(self):
 		return self.connection

@@ -403,6 +403,15 @@ function getBucketNameForID(accountBuckets, id){
     return "Invalid ID: " + id;
 }
 
+function refreshBalance(accountID, url){
+    propertyManager.selectRecords(url,
+    [{"name": "SPENT.bucket.availableTreeBalance", "bucket": accountID},
+    {"name": "SPENT.bucket.postedTreeBalance", "bucket": accountID},
+    {"name": "SPENT.bucket.availableBalance", "bucket": accountID},
+    {"name": "SPENT.bucket.postedBalance", "bucket": accountID}]);
+    propertyManager.sendRequest();
+}
+
 function onDocumentReady() {
     // Initialize global variables
 	//// Undefined causes it to use the system local
@@ -1613,12 +1622,7 @@ function SPENT(){
             this.listenTo(uiState, "change:selectedAccount", function(model, selectedAccountID, options){
                 var model = accountBuckets.get(selectedAccountID);
                 if(model){
-                    propertyManager.selectRecords(PropertySet.prototype.url,
-                    [{"name": "SPENT.bucket.availableTreeBalance", "bucket": selectedAccountID},
-                    {"name": "SPENT.bucket.postedTreeBalance", "bucket": selectedAccountID},
-                    {"name": "SPENT.bucket.availableBalance", "bucket": selectedAccountID},
-                    {"name": "SPENT.bucket.postedBalance", "bucket": selectedAccountID}]);
-                    propertyManager.sendRequest();
+                    refreshBalance(selectedAccountID, PropertySet.prototype.url);
                 }
             });
 /*
@@ -2193,12 +2197,12 @@ function SPENT(){
         // Perform updates to the model
         if(model == null){
             // We are creating a new table entry
-            requestManager.createRecords(Object.getPrototypeOf(this.collection).url, [cleanData(data, true, true)]);
+            requestManager.createRecords(Object.getPrototypeOf(this).url, [cleanData(data, true, true)]);
             //this.create(cleanData(data, true, true), {wait: true});
         } else {
             var clean = cleanData(data, true, true);
             clean["ID"] = model.get("ID");
-            requestManager.updateRecords(Object.getPrototypeOf(this.collection).url, [clean]);
+            requestManager.updateRecords(Object.getPrototypeOf(model.collection).url, [clean]);
             //model.set(cleanData(data, true, true));
             //model.save();
             //model.save(cleanData(data), {wait: true});

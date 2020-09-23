@@ -10,8 +10,6 @@ sqldeb = log.getLogger("SQLIB Debug")
 sqlog = log.getLogger("SQL Debug")
 cadeb = log.getLogger("DB Cache Debug")
 
-dbIndex = 0
-
 COLUMN_ANY = None
 
 def sqlRowToDict(row, table):
@@ -153,6 +151,7 @@ class TableRow():
         return self.table.getColumns(self.table)
 
     def asDict(self, columns=None):
+        #TODO: Quick fix for inherent issue
         data = {}
         colList = []
         if columns is not None and len(columns) > 0:
@@ -161,7 +160,10 @@ class TableRow():
             colList = self.getColumns()
 
         for col in colList:
-            data[col.name] = self.getValue(col)
+            nam = col.name
+            if nam == "ID":
+                nam = "id"
+            data[nam] = self.getValue(col)
 
         return data
 
@@ -416,6 +418,16 @@ class EnumTable(EnumBase):
         else:
             raise Exception("Database is locked")
 
+class DatabaseSchema: # This is the schema interface
+    def getTables(self) -> List[EnumTable]:
+        pass
+
+    def getName(self) -> str:
+        pass
+
+    def getVersion(self) -> float:
+        pass
+
 # RowSelection's selections are immutable
 class RowSelection:
     def __init__(self, connection, table, rows, filter = None):
@@ -471,16 +483,14 @@ class RowSelection:
         return oldRows
 
 class Database:
-    def __init__(self, dbPath=":memory:"):
+    def __init__(self, schema, dbPath=":memory:"):
         # Data storage
         self.path = dbPath
         self.connections = {}
         self.cache = DatabaseCacheManager()
+        self.schema = schema # TODO: The entire API needs checks to protect against mismatched schemas
         self._lock_ = None
-
-        global dbIndex
-        self._index_ = dbIndex
-        dbIndex += 1
+        self.initedTables = []
 
     def _getCache_(self):
         return self.cache
@@ -548,16 +558,33 @@ class Database:
     def getDBPath(self):
         return self.path
 
-    def initTable(self, table, connection):
-        result = self._getCache_()._writeTable_(table, connection)
-        table.onInit(table, connection)
-        return result
+    def _initTable_(self, table, connection):
+        #TODO: This function is inefficent and too slow for the number of times it will be called; Find a better way of tracking whether a schema has been initialized
+        if not table.getTableName(self) in self.initedTables:
+            if table in self.schema.getTables():
+                result = self._getCache_()._writeTable_(table, connection)
+                table.onInit(table, connection)
+                self.initedTables.append(table.getTableName(self))
+                return result
+        return None
+
+    #def backupDB(self):
+    #    def progress(status, remaining, total):
+    #        print(f'Copied {total - remaining} of {total} pages...')#
+
+    #    current = self.getConnection("DB Backup Manager")
+    #    bck = sqlite3.connect('backup.db')
+    #    with bck:
+    #        con.backup(bck, pages=1, progress=progress)
+    #    bck.close()
+    #    con.close()
 
 class DatabaseConnection:
-    def __init__(self, database, connectionName):
+    def __init__(self, database, connectionName, path=None):
         self.connection = None
         self.database = database
         self.name = connectionName
+        self.path = self.database.getDBPath() if path is None else path
 
         self._closed_ = False
 
@@ -573,7 +600,15 @@ class DatabaseConnection:
             return False
 
     def _writeSchema_(self):
-        sqlog.debug("STUB: Writing schema to DB...")
+        sqlog.debug("Writing schema to DB...")
+
+        #TODO: Actually check the db version and compatibility with the current schema
+        # Now we initialize the tables
+        sqldeb.debug("Initializing DB at path \"%s\"" % self.path)
+        self.beginTransaction()
+        for table in self.database.schema.getTables():
+            self.database._initTable_(table, self)
+        self.endTransaction()
         #TODO: This is where the database version will be compared to the schema version to determine they are compatable
         return True
 
@@ -595,11 +630,12 @@ class DatabaseConnection:
     def connect(self, enableForeignConstraint=True):
         #TODO: Change this from an error message to an exceptioon
         if (self._assertDBConected_(False, errorMessage="Database is already connected")):
-            sqlog.debug("DatabaseConnection[\"%s\"]: Opening connection to DB %s; Path: \"%s\"; Foreign Key Enforcement: %s" % (self.getName(), self.getDatabase()._index_, self.database.getDBPath(), enableForeignConstraint))
-            self.connection = sql.connect(self.database.getDBPath()) #TODO: This is incompatible with multiple connections to ":memory:"
+            sqlog.debug("DatabaseConnection[\"%s\"]: Opening connection to DB %s; Path: \"%s\"; Foreign Key Enforcement: %s" % (self.getName(), 0, self.path, enableForeignConstraint))
+            self.connection = sql.connect(self.path) #TODO: This is incompatible with multiple connections to ":memory:"
             self.connection.isolation_level = None # Disable the builtin transaction system for the sqlite3 module
+            self.connection.row_factory = sql.Row  # Enable the row factory; Note: this must happen before writeSchema
             if(self._writeSchema_()):
-                self.connection.row_factory = sql.Row # test
+
                 # TODO: Verify that this code will properly handle rolling back in the event of an error
                 if(enableForeignConstraint):
                     self.execute("PRAGMA foreign_keys = ON;")
@@ -734,6 +770,7 @@ class DatabaseCacheManager:
         newRows = []
         idColumn = table.getIDColumn(table)
         for row in rows:
+            #print(row)
             id = row[idColumn.name]
             cacheRowID = self._lookupRow_(id, table)
             if cacheRowID is None:
@@ -998,6 +1035,7 @@ class DatabaseCacheManager:
                     cadeb.debug("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), rowID))
                     return None
 
+                #print(result)
                 parsedRows = self._parseRows_(result, table)
 
                 # TODO: Write logic to handle when (by some crazy sequence of events) more than one row is returned
@@ -1054,10 +1092,11 @@ class DatabaseCacheManager:
 
             # Verify that all the data is clean
             for item in rowData.items():
-                # Note that sanitize will throw an exception if anything goes wrong
-                valueSanitized = item[0].value.sanitize(item[1])
-                keys.append(item[0])
-                values.append(valueSanitized)
+                if not table.hasVirtualColumn(item[0]):
+                    # Note that sanitize will throw an exception if anything goes wrong
+                    valueSanitized = item[0].value.sanitize(item[1])
+                    keys.append(item[0])
+                    values.append(valueSanitized)
 
             query = SQLQueryBuilder(EnumSQLQueryAction.INSERT).INTO(table).COLUMNS(keys).VALUES(values)
             rows = connection.execute(str(query))

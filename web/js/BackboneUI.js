@@ -25,7 +25,6 @@ function setDOMValue(view, key){
     }
     return true;
 }
-
 function getDOMValue(view, key){
     // This function is one way; it updates the dom with the value of the observable property
     var binding = view.domAttrBindings[key];
@@ -52,7 +51,6 @@ function getDOMValue(view, key){
     return value;
 }
 
-
 // Declare the "enums" we need
 var EventList = {
     OBSERVE_CHANGE: "observedChange", // Args: observable, observableName, oldValue, newValue
@@ -63,6 +61,7 @@ var ObservableNames = {
     OBJECT: "object",
     //---- HTML Attributes ----
     HREF: "attr-href",
+    ID: "attr-id",
     HIDDEN: "prop-hidden",
     INPUT_CHECKED: "input_attr-checked",
     INPUT_DISABLED: "input_attr-disabled",
@@ -371,6 +370,170 @@ var ViewContainer = ObservableView.extend({
 
     //TODO: Add a way to remove views and possibly to get specific views by name
 });
+var FormView = ObservableView.extend({
+    tagName: "form",
+    events: {
+        "submit": "_domOnSubmit_",
+    },
+    _domOnSubmit_: function(data){
+        console.log("Form submit");
+    },
+    initialize: function(name, fields, attributes){
+        ObservableView.prototype.initialize.apply(this, [attributes]);
+        this.fields = this.generateFormControls(fields);
+    },
+    generateForm: function(fields){
+        //TODO: Inplements fieldset and legend
+        var cols = []
+        var self = this;
+
+        var listeners = {};
+        var inputs = [];
+        fields.forEach(function(item, index){
+            if(item.visible != false){
+                var div = $("<div class='form-group'></div>");
+
+                var titleStr = (item.title ? item.title : item.name);
+                div.append($('<label>' + titleStr + '</label>').attr('for', item.title));
+
+                var input = null;
+                switch(item.type){
+                    case "textbox": //TODO: textbox should actually be a textarea not a single line
+                    case "text":
+                        input = $("<input></input>").attr("type", "text");
+                        break;
+                    case "number":
+                        input = $("<input></input>").attr("type", "number");
+                        input.attr("step", (item.options ? getOrDefault(item.options, "step", 1) : 1))
+                        break;
+                    case "date":
+                        input = $("<input></input>").attr("type", "date");
+                        break;
+                    case "select":
+                        input = $("<select></select>");
+                        var enumKey = (item.options ? getOrDefault(item.options, "enumKey", "") : "");
+                        var optionsArray = enumManager.getEnumValuesAsArray(enumKey);
+                        optionsArray.forEach(function(item, index){
+                            var option = $('<option value="' + index + '">' + item.name + '</option>');
+                            input.append(option);
+                        });
+                        break;
+                    case "dynamicSelect":
+                        var dynamicSelect = new DynamicSelectView;
+                        input = dynamicSelect.$el;
+
+                        if ((item.options ? getOrDefault(item.options, "showNA", false) : false)){
+                            dynamicSelect.noSelection = {text: "N/A", value: -1};
+                        }
+
+                        if ((item.options ? getOrDefault(item.options, "formatter", false) : false)){
+                            dynamicSelect.nameFormatter = item.options.formatter;
+                        }
+
+                        var model = (item.options ? getOrDefault(item.options, "model", null) : null);
+                        if(model){
+                            dynamicSelect.setModel(model);
+                        }
+                        break;
+                }
+                if(input != null){
+                    input.attr("id", self.tableName + item.name);
+                    input.attr("name", item.name);
+                    input.attr("class", "form-control");
+                    input.attr("required", (item.required == true));
+
+                    if (item.options){
+                        var value = getOrDefault(item.options, "listenTo", null);
+                        if(value != null){
+                            Object.keys(value).forEach(function(key, index){
+                                var array = listeners[key];
+                                if(!array){
+                                    array = {};
+                                    listeners[key] = array;
+                                }
+                                array[item.name] = value[key];
+                            });
+                        }
+                    }
+                    inputs[item.name] = input;
+
+                    div.append(input);
+                    cols.push(div);
+                }
+            }
+        });
+
+        Object.keys(listeners).forEach(function(triggerName, index){
+            var listenList = listeners[triggerName];
+            Object.keys(listenList).forEach(function(listenName, index2){
+                var handlerFunction = listenList[listenName];
+                inputs[triggerName].change({self: inputs[listenName]}, handlerFunction);
+            });
+        });
+
+        var form = $("<form></form>");
+        form.attr("name", this.formName);
+        cols.forEach(function(item, index){
+            form.append(item);
+        });
+        return form;
+    },
+    render: function(){
+        console.log("Render: BaseForm");
+        var data = (this.getModel() ?  this.getModel().toJSON() : {});
+        //alert(JSON.stringify(data));
+
+        // Input Elements
+        var inputs = this.$el.find("input").toArray();
+        inputs.forEach(function(item, index){
+            if (!(item.type == "submit")){
+                var key = item.name;
+                var oldValue = getOrDefault(data, key, "");
+                if(oldValue.toDate){ //TODO: Verify the date processing logic is correct
+                    var d = new Date(1971,01,01);
+                    if(oldValue.toDate() < d){
+                        return "";
+                    }
+                    oldValue = dateToStr(oldValue.toDate());
+                }
+                $(item).val(oldValue);
+            }
+        });
+
+        //Select Elements
+        var inputs = this.$el.find("select").toArray();
+        inputs.forEach(function(item, index){
+            var key = item.name;
+            var oldValue = getOrDefault(data, key, null);
+            if(oldValue == null){
+                item.selectedIndex = 0;
+            } else {
+                $(item).val(oldValue);
+            }
+
+            $(item).change();
+        });
+    },
+    submit: function(){
+        //alert("Form Submit!!");
+        var data = this.$el.serializeArray()
+
+        // Call the submit callback for the affected table
+        console.log("Form Data: " + JSON.stringify(data))
+        var isValid = this.validate(data);
+
+        if (isValid){
+            this.trigger("formSubmit", data, this.getModel());
+        }
+
+        // We return false to prevent the web page from being reloaded
+        return false;
+    },
+    validate: function(data){return true},
+    fillFromModel: function(model){
+
+    },
+});
 
 var TextView = ObservableView.extend({
     tagName: "p",
@@ -441,7 +604,6 @@ var ProgressView = ObservableView.extend({ //TODO: This should also support the 
 
 var BaseInputView = TextView.extend({
     tagName: "input",
-    objectProperty: ObservableNames.INPUT_INIT_VALUE,
     objectProperty: ObservableNames.INPUT_INIT_VALUE,
     inputType: "",
     events: {
@@ -633,6 +795,12 @@ var HorizontalRuleView = ObservableView.extend({
 });
 var LineBreakView = ObservableView.extend({
     tagName: "br",
+});
+var LabelView = TextView.extend({
+    tagName: "label"
+    initialize: function(attributes){
+        TextView.prototype.initialize.apply(this, [attributes]);
+    },
 });
 
 // Text Display

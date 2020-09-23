@@ -253,3 +253,16 @@ class TransactionTypeEnum(sqlib.EnumBase):
     Transfer = 0
     Deposit = 1
     Withdrawal = 2
+
+class SPENT_DB_V1(sqlib.DatabaseSchema):
+    @classmethod
+    def getName(self):
+        return "SPENTDB"
+
+    @classmethod
+    def getVersion(self):
+        return 1.0
+
+    @classmethod
+    def getTables(self):
+        return [EnumTagsTable, EnumBucketsTable, EnumTransactionGroupsTable, EnumTransactionTable, EnumTransactionTagsTable]

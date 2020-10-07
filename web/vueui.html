@@ -9,6 +9,11 @@
         <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/vuex@3.5.1/dist/vuex.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@inkline/inkline/dist/inkline.js"></script>
+        <style>
+            .nodeSelected {
+                background-color: lightblue;
+            }
+        </style>
     </head>
     <body>
         <div id="spent">
@@ -45,12 +50,12 @@
                     <i-column xs="3">
                         <i-row>
                             <i-column xs="12">
-                                <p>Account Balance</p>
+                                <p>{{ selectedBucketBalance }}</p>
                             </i-column>
                         </i-row>
                         <i-row>
                             <i-column xs="12">
-                                <tree-view class="item" :nodes="accountTree"></tree-view>
+                                <tree-view class="item" :nodes="accountTree" :selectednode="selectedBucketID" @node-click="handleNodeClick"></tree-view>
                             </i-column>
                         </i-row>
                     </i-column>
@@ -75,8 +80,48 @@
             <div>
                 <i-modal v-model="visible1">
                     <template slot="header">Modal Header</template>
-                    This is the modal body. Useful information goes here.
-                    <template slot="footer">Modal Footer</template>
+                        <i-form>
+                            <i-form-group>
+                                <i-form-label>Input</i-form-label>
+                                <i-input v-model="input" placeholder="Type something.." />
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Textarea</i-form-label>
+                                <i-textarea v-model="textarea" placeholder="Write a comment.." />
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Select</i-form-label>
+                                <i-select v-model="select" placeholder="Choose an option">
+                                    <i-select-option value="a" label="Option A" />
+                                    <i-select-option value="b" label="Option B" />
+                                    <i-select-option value="c" label="Option C" disabled />
+                                </i-select>
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Checkbox</i-form-label>
+                                <i-checkbox-group v-model="checkbox">
+                                    <i-checkbox value="Football">Football</i-checkbox>
+                                    <i-checkbox value="Volleyball">Volleyball</i-checkbox>
+                                    <i-checkbox value="Tennis" disabled>Tennis</i-checkbox>
+                                </i-checkbox-group>
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Radio</i-form-label>
+                                <i-radio-group v-model="radio">
+                                    <i-radio value="Accept">Accept</i-radio>
+                                    <i-radio value="Decline">Decline</i-radio>
+                                </i-radio-group>
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-button type="submit">Submit</i-button>
+                            </i-form-group>
+                        </i-form>
+                    <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
             </div>
         </div>

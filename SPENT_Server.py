@@ -402,9 +402,15 @@ class DatabaseEndpoint(EndpointBackend):
 
 	def getFunction(self, request, columns, table, connection):
 		#TODO: Ths function needs to use the filter field as a "where"
-		# TODO: Verify that the account table will only return accounts and the bucket table will not include accounts
-		data = request.get("data", {})
-		where = self.dataToWhere(data, table.getIDColumn(table))
+		#TODO: Verify that the account table will only return accounts and the bucket table will not include accounts
+
+		#TODO: RED ALERT! Taking a string from the request and feeding it into the query is very dangerous; This is only for testing
+		whereStr = request.get("filter", None)
+		if whereStr is None:
+			data = request.get("data", {})
+			where = self.dataToWhere(data, table.getIDColumn(table))
+		else:
+			where = SQL_WhereStatementBuilder(whereStr)
 		selectedRows = table.select(connection, where)
 		return self.SQLRowsToArray(selectedRows.getRows().values(), columns)
 

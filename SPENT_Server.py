@@ -107,12 +107,12 @@ class SPENTServer():
 
 
 		propertyEndpoint = PropertyEndpoint(args.debugAPI, dbEndpoint.database)
-		propertyEndpoint.registerProperty(Property("SPENT.bucket.availableTreeBalance", getAvailBucketTreeBalance, True))
-		propertyEndpoint.registerProperty(Property("SPENT.bucket.postedTreeBalance", getPostedBucketTreeBalance, True))
-		propertyEndpoint.registerProperty(Property("SPENT.bucket.availableBalance", getAvailBucketBalance, True))
-		propertyEndpoint.registerProperty(Property("SPENT.bucket.postedBalance", getPostedBucketBalance, True))
+		propertyEndpoint.registerProperty(Property("SPENT_bucket_availableTreeBalance", getAvailBucketTreeBalance, True))
+		propertyEndpoint.registerProperty(Property("SPENT_bucket_postedTreeBalance", getPostedBucketTreeBalance, True))
+		propertyEndpoint.registerProperty(Property("SPENT_bucket_availableBalance", getAvailBucketBalance, True))
+		propertyEndpoint.registerProperty(Property("SPENT_bucket_postedBalance", getPostedBucketBalance, True))
 		propertyEndpoint.registerProperty(Property("SPENT.property.test", propTest, False))
-		propertyEndpoint.registerProperty(Property("vuex.counter", counter, False))
+		propertyEndpoint.registerProperty(Property("vuex_counter", counter, False))
 		self.handler.registerRequestHandler("POST", "/property/query", propertyEndpoint)
 
 		enumEndpoint = EnumEndpoint(args.debugAPI)
@@ -284,12 +284,27 @@ class DatabaseEndpoint(EndpointBackend):
 		self.apiTree["bucket"] = {"get": self.getFunction, "create": self.createBucketFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["transaction"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["transaction-group"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
+		self.apiTree["debug"] = {"refresh": self.debugFunction}
 		# self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag} #Tags are handled differently
 
 		self.typeMapper = {"account": EnumBucketsTable, "bucket": EnumBucketsTable, "transaction": EnumTransactionTable, "transaction-group": EnumTransactionGroupsTable, "tag": EnumTransactionTagsTable}
 		self.reverseTypeMapper = {EnumBucketsTable: "account", EnumBucketsTable: "bucket", EnumTransactionTable: "transaction", EnumTransactionGroupsTable: "transaction-group", EnumTransactionTagsTable: "tag"}
 
-
+	def debugFunction(self, request, columns, table, connection):
+		srvlog.debug("Running debug function")
+		return [{"id": 1,
+				 "Status": 0,
+				 "TransDate": "2020-12-12",
+				 "PostDate": "2000-01-01",
+				 "Amount": 3000000,
+				 "SourceBucket": -1,
+				 "DestBucket": 3,
+				 "Memo": "The Test Worked!!",
+				 "Payee": "Someone",
+				 "GroupID": -1,
+				 "IsTransfer": 0,
+				 "Type": 0
+				 }]
 
 	def getDBConnection(self):
 		return self.connection
@@ -332,6 +347,10 @@ class DatabaseEndpoint(EndpointBackend):
 					srvlog.debug("API Request Handler Ran For: %s" % result[1])
 
 					if result[0] is not None:
+						if packet["action"] == "refresh" and packet["type"] == "debug":
+							packet["action"] = "update"
+							packet["type"] = "transaction"
+
 						pack = {"action": packet["action"], "type": packet["type"], "data": result[0]}
 						if packet["type"] == "enum":
 							pack["enum"] = packet.get("enum", None)
@@ -626,6 +645,9 @@ class PropertyEndpoint(EndpointBackend):
 						property = self.getProperty(item, connection)
 					elif action == "set":
 						property = self.setProperty(item, connection)
+					elif action == "refresh":
+						property = self.debugFunction(item, connection)
+						action = "get"
 					else:
 						pass
 
@@ -641,6 +663,10 @@ class PropertyEndpoint(EndpointBackend):
 			# This print is allowed to stay
 			print(resp)
 		return resp
+
+	def debugFunction(self, property, connection):
+		name = property.get("name", None)
+		return {"name": name, "value": 10000.31}
 
 	def getProperty(self, property, connection):
 		name = property.get("name", None)

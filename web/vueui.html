@@ -18,14 +18,14 @@
     <body>
         <div id="spent">
             <i-container class="_margin-0 _padding-0 _max-width-100">
-                <i-row>
+                <!--i-row>
                     <i-column xs="12">
                         <i-alert variant="info">
                             <template slot="icon"><i-icon icon="info"></i-icon></template>
                             <p>Some quick example text to build on the alert title and make up the bulk of the alert's content.</p>
                         </i-alert>
                     </i-column>
-                </i-row>
+                </i-row-->
                 <i-row>
                     <i-column xs="12">
                         <i-navbar :collapse="false">
@@ -50,7 +50,7 @@
                     <i-column xs="3">
                         <i-row>
                             <i-column xs="12">
-                                <p>{{ selectedBucketBalance }}</p>
+                                <p>Balance: </br>{{ bucketATB }} : {{ bucketPTB }} : {{ bucketAB }} : {{ bucketPB }}</p>
                             </i-column>
                         </i-row>
                         <i-row>
@@ -63,14 +63,15 @@
                         <i-row>
                             <i-column>
                                 <i-nav>
-                                    <i-button variant="primary" @click="visible1 = true">New Transaction</i-button>
+                                    <i-button variant="primary" @click="transactionForm.visible = true">New Transaction</i-button>
                                     <i-button variant="primary">Transaction Filter</i-button>
+                                    <i-button variant="primary" @click="requestChanges">Refresh</i-button>
                                 </i-nav>
                             </i-column>
                         </i-row>
                         <i-row>
                             <i-column>
-                                <i-datatable :columns="transactionColumns" :rows="transactions" :pagination="false"></i-datatable>
+                                <i-datatable hover border striped :columns="transactionColumns" :rows="transactions" :pagination="false" :count-column="false"></i-datatable>
                             </i-column>
                         </i-row>
                     </i-column>
@@ -78,22 +79,12 @@
                 <i-row><i-column xs="12">Footer</i-column></i-row>
             </i-container>
             <div>
-                <i-modal v-model="visible1">
+                <i-modal v-model="transactionForm.visible">
                     <template slot="header">Modal Header</template>
                         <i-form>
                             <i-form-group>
-                                <i-form-label>Input</i-form-label>
-                                <i-input v-model="input" placeholder="Type something.." />
-                            </i-form-group>
-
-                            <i-form-group>
-                                <i-form-label>Textarea</i-form-label>
-                                <i-textarea v-model="textarea" placeholder="Write a comment.." />
-                            </i-form-group>
-
-                            <i-form-group>
-                                <i-form-label>Select</i-form-label>
-                                <i-select v-model="select" placeholder="Choose an option">
+                                <i-form-label>Status</i-form-label>
+                                <i-select v-model="transactionForm.status" placeholder="Choose an option">
                                     <i-select-option value="a" label="Option A" />
                                     <i-select-option value="b" label="Option B" />
                                     <i-select-option value="c" label="Option C" disabled />
@@ -101,20 +92,46 @@
                             </i-form-group>
 
                             <i-form-group>
-                                <i-form-label>Checkbox</i-form-label>
-                                <i-checkbox-group v-model="checkbox">
-                                    <i-checkbox value="Football">Football</i-checkbox>
-                                    <i-checkbox value="Volleyball">Volleyball</i-checkbox>
-                                    <i-checkbox value="Tennis" disabled>Tennis</i-checkbox>
-                                </i-checkbox-group>
+                                <i-form-label>Date</i-form-label>
+                                <i-input v-model="transactionForm.date" placeholder="Type something.." />
                             </i-form-group>
 
                             <i-form-group>
-                                <i-form-label>Radio</i-form-label>
-                                <i-radio-group v-model="radio">
-                                    <i-radio value="Accept">Accept</i-radio>
-                                    <i-radio value="Decline">Decline</i-radio>
-                                </i-radio-group>
+                                <i-form-label>Post Date</i-form-label>
+                                <i-input v-model="transactionForm.postDate" placeholder="Type something.." />
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Amount</i-form-label>
+                                <i-input-number v-model="transactionForm.amount" :precision="2" placeholder="Type something.." />
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Source Bucket</i-form-label>
+                                <i-select v-model="transactionForm.sourceBucket" placeholder="Choose an option">
+                                    <i-select-option value="a" label="Option A" />
+                                    <i-select-option value="b" label="Option B" />
+                                    <i-select-option value="c" label="Option C" disabled />
+                                </i-select>
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Destination Bucket</i-form-label>
+                                <i-select v-model="transactionForm.destBucket" placeholder="Choose an option">
+                                    <i-select-option value="a" label="Option A" />
+                                    <i-select-option value="b" label="Option B" />
+                                    <i-select-option value="c" label="Option C" disabled />
+                                </i-select>
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Memo</i-form-label>
+                                <i-textarea v-model="transactionForm.memo" placeholder="Write a comment.." />
+                            </i-form-group>
+
+                            <i-form-group>
+                                <i-form-label>Payee</i-form-label>
+                                <i-input v-model="transactionForm.payee" placeholder="Type something.." />
                             </i-form-group>
 
                             <i-form-group>

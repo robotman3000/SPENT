@@ -1,3 +1,5 @@
+var formatter = null;
+
 //TODO: Make a common base object for api and properties and enum
 var PropertyRequestManager = function(){
     this.requestPackets = [];
@@ -16,27 +18,14 @@ var PropertyRequestManager = function(){
 
     this.sendRequest = function(){
         var self = this;
-        var promise = this._apiRequest_(this.requestPackets, function(data){
-            self.parseAPIResponse(data);
-        }, this.handleAPIError)
+        var promise = this._apiRequest_(this.requestPackets);
         this.requestPackets = []
         return promise;
     };
 
-    this.parseAPIResponse = function(response){
-        var self = this;
-        var records = response.records;
-        records.forEach(function(item, index){
-            var action = item.action;
-            var data = item.data;
-
-            //alert(JSON.stringify(item));
-        })
-    };
-
     this.handleAPIError = function(data){alert("error!")};
 
-    this._apiRequest_ = function(requestObj, suc, err){
+    this._apiRequest_ = function(requestObj){
         var self = this;
         return $.ajax({
             url: '/property/query',
@@ -45,23 +34,12 @@ var PropertyRequestManager = function(){
             dataType: "json",
             data: JSON.stringify(requestObj),
             success: function(data) {
-                if(data.successful == true){
-                    /*if(suc){
-                        suc(data)
-                    }*/
-                    self.parseAPIResponse(data)
-                } else {
-                    alert("Property Error: " + response.message);
-                    if(err){
-                        err(data)
-                    }
+                if(!data.successful){
+                    alert("API Error: " + response.message);
                 }
             },
             error: function(data) {
-                alert("Server Error with property!! " + JSON.stringify(data));
-                if(err){
-                    err(data)
-                }
+                alert("Server Error!! " + JSON.stringify(data));
             }
         });
     };
@@ -178,9 +156,63 @@ var APIRequestManager = function(){
 };
 var requestManager = new APIRequestManager();
 
-function getOrDefault(object, property, def){
+var EnumRequestManager = function(){
+    this.requestPackets = [];
+
+    this.requestEnum = function(dataTypeName){
+        //TODO: this should check that the function args are valid
+        var packet = this._createRequest_(dataTypeName)
+        this._queueRequestPacket_(packet)
+    };
+
+    this.sendRequest = function(){
+        var self = this;
+        var req = this._apiRequest_(this.requestPackets)
+        this.requestPackets = []
+        return req;
+    };
+
+    this._apiRequest_ = function(requestObj, suc, err){
+        var self = this;
+        return $.ajax({
+            url: '/enum/query',
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            data: JSON.stringify(requestObj),
+            success: function(data) {
+                if(!data.successful){
+                    alert("API Error: " + response.message);
+                }
+            },
+            error: function(data) {
+                alert("Server Error!! " + JSON.stringify(data));
+            }
+        });
+    };
+
+    this._createRequest_ = function(enumName){
+        //TODO: Verify the input data and sanitize it
+        var request = {
+            action: "get",
+            type: "enum",
+            enum: enumName,
+        }
+        return request
+    };
+
+    this._queueRequestPacket_ = function(requestObj){
+        this.requestPackets.push(requestObj);
+    };
+};
+var enumManager = new EnumRequestManager();
+
+function getOrDefault(object, property, def, allowNull){
     if (object){
-        return (object[property] != undefined ? object[property] : def);
+        if(object[property] === null && allowNull){
+            return null;
+        }
+        return (object[property] !== undefined ? object[property] : def);
     }
 	return def;
 }
@@ -240,42 +272,22 @@ function getBucketForID(ID){
     return theBucket;
 };
 
-
-function setProp (obj, props, value) {
-    console.log("running setProp: " + props + " Value: " + value);
-  const prop = props.shift()
-  if (!obj[prop]) {
-    Vue.set(obj, prop, {})
-  }
-  if (!props.length) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      obj[prop] = { ...obj[prop], ...value }
-    } else {
-      obj[prop] = value
+function getTransferDirection(rowData, selectedAccount){
+    // True = Money Coming in; I.E. a positive value
+    // False = Money Going out; I.E. a negative value
+    var ID = selectedAccount;
+    switch(rowData.Type){
+        case 0:
+            return (rowData.DestBucket == ID);
+            break;
+        case 1:
+            return true;
+            break;
+        case 2:
+            return false;
+            break;
     }
-    return
-  }
-  setProp(obj[prop], props, value)
-}
-
-function getProp (obj, props) {
-  const prop = props.shift()
-  if (!obj[prop] || !props.length) {
-    return obj[prop]
-  }
-  return getProp(obj[prop], props)
-}
-
-function deleteProp (obj, props) {
-  const prop = props.shift()
-  if (!obj[prop]) {
-    return
-  }
-  if (!props.length) {
-    Vue.delete(obj, prop)
-    return
-  }
-  deleteProp(obj[prop], props)
+    return null;
 }
 
 Vue.use(Vuex)
@@ -286,6 +298,8 @@ const dbStore = new Vuex.Store({
         transactions: [],
         accounts: [],
         properties: {},
+        enumList: [],
+        enumStore: {},
     },
     getters: {
         accountTree: function(state){
@@ -307,9 +321,14 @@ const dbStore = new Vuex.Store({
         getProperties: function(state){
             return state.properties;
         },
-        getPropertyValue: function(state, propertyName){
-            return getOrDefault(propertyName, state.properties, null);
-        }
+        getEnumNameByValue: (state) => (value, enumKey) => {
+            var enumID = state.enumList.indexOf(enumKey);
+            if(enumID != -1){
+                var result = getOrDefault(getOrDefault(state.enumStore[enumID], value, null), "name", null);
+                return result;
+            }
+            return "Invalid Enum";
+        },
     },
     mutations: {
         setTransactions: function(state, data){
@@ -324,9 +343,10 @@ const dbStore = new Vuex.Store({
             data.forEach(function (item, index){
                 // TODO: We should not use the property name as a key without sanitizing it first, as it comes directly from the web server;
                 var propertyName = getOrDefault(item, "name", null);
-                var propertyValue = getOrDefault(item, "value", undefined);
+                var propertyValue = getOrDefault(item, "value", undefined, true);
 
-                if (propertyName != null && propertyValue != undefined){
+                console.log("parsing prop: " + propertyName + " Value: " + propertyValue + "; " + item);
+                if (propertyName !== null && propertyValue !== undefined){
                     console.log("setting prop: " + propertyName + " Value: " + propertyValue);
                     Vue.set(state.properties, propertyName, {value: propertyValue});
                     //state.properties[propertyName] = {value: propertyValue};
@@ -334,6 +354,16 @@ const dbStore = new Vuex.Store({
                     console.log("Error parsing property at loop index: " + index);
                 }
             });
+        },
+        setEnumValue: function(state, params){
+            console.log("running setEnumValues");
+
+            var enumID = state.enumList.indexOf(params.enumName);
+            if(enumID == -1){
+                enumID = state.enumList.push(params.enumName) - 1;
+            }
+            console.log("setting enum: " + params.enumName + " Value: " + params.data + " Index: " + enumID);
+            Vue.set(state.enumStore, enumID, params.data);
         },
     },
     actions: {
@@ -371,6 +401,25 @@ const dbStore = new Vuex.Store({
                         context.commit("setPropertyValues", data);
                     } else {
                         alert("Error: Cannot commit property: Unknown data type \"" + type + "\"");
+                    }
+                })
+            })
+        },
+        sendEnumRequest(context){
+            console.log("running sendEnumRequest");
+            return enumManager.sendRequest().done(function(response){
+                var self = this;
+                var records = response.records;
+                records.forEach(function(item, index){
+                    var action = item.action;
+                    var type = item.type;
+                    var data = item.data;
+                    var enumName = item.enum;
+
+                    if(type == "enum"){
+                        context.commit("setEnumValue", {data: data, enumName: enumName});
+                    } else {
+                        alert("Error: Cannot commit enum: Unknown data type \"" + type + "\"");
                     }
                 })
             })
@@ -422,7 +471,7 @@ Vue.component("tree-item", {
             return this.item.children && this.item.children.length;
         },
         isSelected: function(){
-            console.log("Checking isSelected: " + (this.item.id == this.currentnode));
+            //console.log("Checking isSelected: " + (this.item.id == this.currentnode));
             return this.item.id == this.currentnode;
         }
     },
@@ -443,63 +492,150 @@ Vue.component("tree-item", {
     }
 });
 
-var vm = new Vue({
-    el: '#spent',
-    store: dbStore,
-    computed: {
-        transactions (){
-            return this.$store.state.transactions;
-        },
-        accountTree (){
-            return this.$store.getters.accountTree;
-        },
-        selectedBucketBalance (){
-            console.log("running selectedBucketBalance");
-            var props = this.$store.getters.getProperties;
-            var availableTreeBalance = getOrDefault(props, "SPENT.bucket.availableTreeBalance", null);
-            var postedTreeBalance = getOrDefault(props, "SPENT.bucket.postedTreeBalance", null);
-            var availableBalance = getOrDefault(props, "SPENT.bucket.availableBalance", null);
-            var postedBalance = getOrDefault(props, "SPENT.bucket.postedBalance", null);
-
-            if(availableTreeBalance && postedTreeBalance && availableBalance && postedBalance){
-                return "ATB: " +  availableTreeBalance.value + "; PTB: " + postedTreeBalance.value + "; AB: " + availableBalance.value + "; PB: " + postedBalance.value;
-            }
-            return "Error getting balance for bucket";
-        }
-    },
-    data: {
-        transactionColumns: [
-            {title: "Status", path: "Status", sortable: true},
-            {title: "Date", path: "TransDate", sortable: true},
-            {title: "Posted", path: "PostDate", sortable: true},
-            {title: "Amount", path: "Amount", sortable: true},
-            {title: "Bucket A", path: "SourceBucket", sortable: true},
-            {title: "Bucket B", path: "DestBucket", sortable: true},
-            {title: "Memo", path: "Memo", sortable: true},
-            {title: "Payee", path: "Payee", sortable: true},
-            {title: "Group", path: "GroupID", sortable: true},
-            {title: "Is Transfer", path: "IsTransfer", sortable: true},
-            {title: "Type", path: "Type", sortable: true},
-        ],
-        selectedBucketID: -1,
-        visible1: false,
-    },
+Vue.component("enum-table-cell", {
+    name: 'enum-table-cell',
+    props: ['row', 'column', 'index'],
+    template: `<span>{{renderEnumCell(row[column.path], column.enumName)}}</span>`,
     methods: {
-        handleNodeClick: function(id){
-            console.log("Tree Node: " + id);
-            console.log("----------------");
-            this.selectedBucketID = id;
-            requestManager.selectRecords("transaction", null, null, "SourceBucket == " + id + " OR DestBucket == " + id);
-            dbStore.dispatch("sendDBRequest");
-
-            propertyManager.selectRecords("property",
-            [{"name": "SPENT.bucket.availableTreeBalance", "bucket": this.selectedBucketID},
-            {"name": "SPENT.bucket.postedTreeBalance", "bucket": this.selectedBucketID},
-            {"name": "SPENT.bucket.availableBalance", "bucket": this.selectedBucketID},
-            {"name": "SPENT.bucket.postedBalance", "bucket": this.selectedBucketID}]);
-            dbStore.dispatch("sendPropRequest");
+        renderEnumCell: function(value, enumKey){
+            console.log("rendering enum cell " + value + " with " + enumKey);
+            return dbStore.getters.getEnumNameByValue(value, enumKey);
         },
-    }
+    },
 });
-requestManager.selectRecords("account");
-dbStore.dispatch("sendDBRequest");
+Vue.component("currency-table-cell", {
+    name: 'currency-table-cell',
+    props: ['row', 'column', 'index'],
+    template: `<span :class="{ '_text-danger': isNegative(row)}">{{renderCell(row[column.path], row)}}</span>`,
+    methods: {
+        renderCell: function(value, rowData){
+            console.log("rendering currency cell " + value + " with " + rowData);
+            return formatter.format(value * (this.isNegative(rowData) ? -1 : 1));
+        },
+        isNegative: function(rowData){
+            return !getTransferDirection(rowData, this.$root.getSelectedBucketID());
+        },
+    },
+});
+Vue.component("bucket-table-cell", {
+    name: 'bucket-table-cell',
+    props: ['row', 'column', 'index'],
+    template: `<span>{{renderCell(row[column.path], row)}}</span>`,
+    methods: {
+        renderCell: function(value, rowData){
+            var id = -2; //This value will cause the name func to return "Invalid ID"
+
+            var transType = rowData.Type;
+            var isDeposit = !this.isNegative(rowData);
+            if(transType != 0){
+                id = (transType == 1 ? rowData.DestBucket : rowData.SourceBucket);
+            } else {
+                id = (isDeposit ? rowData.SourceBucket : rowData.DestBucket);
+            }
+
+            return getBucketForID(id).Name;
+        },
+        isNegative: function(rowData){
+            return !getTransferDirection(rowData, this.$root.getSelectedBucketID());
+        },
+    },
+});
+
+function SPENT(){
+    formatter = new Intl.NumberFormat(undefined, {
+	  style: 'currency',
+	  currency: 'USD',
+	});
+
+    var vm = new Vue({
+        el: '#spent',
+        store: dbStore,
+        computed: {
+            transactions (){
+                return this.$store.state.transactions;
+            },
+            accountTree (){
+                return this.$store.getters.accountTree;
+            },
+            bucketATB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_availableTreeBalance", {value: null}).value},
+            bucketPTB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_postedTreeBalance", {value: null}).value},
+            bucketAB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_availableBalance", {value: null}).value},
+            bucketPB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_postedBalance", {value: null}).value},
+        },
+        data: {
+            transactionForm: {
+                visible: false,
+                status: 0,
+                date: "",
+                postDate: "",
+                amount: 0.0,
+                sourceBucket: -1,
+                destBucket: -1,
+                memo: "",
+                payee: "",
+            },
+            transactionColumns: [
+                {title: "Status", path: "Status", sortable: true, component: "enum-table-cell", enumName: "TransactionStatus"},
+                {title: "Date", path: "TransDate", sortable: true},
+                {title: "Posted", path: "PostDate", sortable: true},
+                {title: "Amount", path: "Amount", sortable: true, component: "currency-table-cell"},
+                {title: "Type", path: "Type", sortable: true},
+                {title: "Bucket", path: "", sortable: true, component: "bucket-table-cell"},
+                // TODO: Quick fix to hide these rows
+                {path: "SourceBucket", sortable: false},
+                {path: "DestBucket", sortable: false},
+                {title: "Memo", path: "Memo", sortable: true},
+                {title: "Payee", path: "Payee", sortable: true},
+            ],
+            selectedBucketID: -1,
+            visible1: false,
+        },
+        methods: {
+            handleNodeClick: function(id){
+                console.log("Tree Node: " + id);
+                console.log("----------------");
+                this.selectedBucketID = id;
+                requestManager.selectRecords("transaction", null, null, "SourceBucket == " + id + " OR DestBucket == " + id);
+                dbStore.dispatch("sendDBRequest");
+
+                propertyManager.selectRecords("property",
+                [{"name": "SPENT_bucket_availableTreeBalance", "bucket": this.selectedBucketID},
+                {"name": "SPENT_bucket_postedTreeBalance", "bucket": this.selectedBucketID},
+                {"name": "SPENT_bucket_availableBalance", "bucket": this.selectedBucketID},
+                {"name": "SPENT_bucket_postedBalance", "bucket": this.selectedBucketID}]);
+                dbStore.dispatch("sendPropRequest");
+            },
+            getSelectedBucketID: function(){
+                return this.selectedBucketID;
+            },
+            requestChanges: function(){
+                var packet = propertyManager._createRequest_("refresh", "debug", [{"name": "SPENT_bucket_postedBalance"}], null, null);
+                propertyManager._queueRequestPacket_(packet);
+
+                var packet2 = requestManager._createRequest_("refresh", "debug", null, null, null);
+                requestManager._queueRequestPacket_(packet2);
+
+                dbStore.dispatch("sendPropRequest");
+                dbStore.dispatch("sendDBRequest");
+            }
+        }
+    });
+    requestManager.selectRecords("account");
+    dbStore.dispatch("sendDBRequest");
+
+}
+
+// The code that uses these enums isn't able to support delayed init so we request them and wait for the response before invoking the main SPENT() function
+enumManager.requestEnum("TransactionStatus");
+enumManager.requestEnum("TransactionType");
+
+// Problem: Vue will update everything that uses "$store.state.properties ...." anytime a new property is added, bringing the potential for massive lag spikes;
+// Solution: Request every property we intend to use during runtime BEFORE the update handlers are registered.
+propertyManager.selectRecords("property", [
+                {"name": "SPENT_bucket_availableTreeBalance"},
+                {"name": "SPENT_bucket_postedTreeBalance"},
+                {"name": "SPENT_bucket_availableBalance"},
+                {"name": "SPENT_bucket_postedBalance"}]);
+
+// Wait for the property and enum requests to come back and be fully processed before starting SPENT
+dbStore.dispatch("sendPropRequest").then( () => (dbStore.dispatch("sendEnumRequest").then( () => SPENT() )));

@@ -332,15 +332,37 @@ const dbStore = new Vuex.Store({
     },
     mutations: {
         setTransactions: function(state, data){
-            state.transactions = data;
+            var action = data.action;
+            if(action == "get"){
+                state.transactions = data.data;
+            } else if (action == "update"){
+                // This is VERY slow; it needs redone
+                data.data.forEach((item) => {
+                    let ind = state.transactions.findIndex(x => x.id == item.id);
+                    if (ind != -1){
+                        let trans = state.transactions[ind]
+                        Object.entries(item).forEach( (attrib) => Vue.set(trans, attrib[0], item[attrib[0]]) );
+                    } else {
+                        console.log("No transaction with id " + item.id + " was found in the store; Moving on...");
+                    }
+                });
+            } else {
+                alert("Error: Cannot commit transaction mutation: Unknown action \"" + action + "\"");
+            }
+
         },
         setAccounts: function(state, data){
-            state.accounts = data;
+            var action = data.action;
+            if(action == "get"){
+                state.accounts = data.data;
+            } else {
+                alert("Error: Cannot commit transaction mutation: Unknown action \"" + action + "\"");
+            }
         },
         setPropertyValues: function(state, data){
             console.log("running setPropertyValues");
             // Now we map the properties so they can be looked up by name before storing them
-            data.forEach(function (item, index){
+            data.data.forEach(function (item, index){
                 // TODO: We should not use the property name as a key without sanitizing it first, as it comes directly from the web server;
                 var propertyName = getOrDefault(item, "name", null);
                 var propertyValue = getOrDefault(item, "value", undefined, true);
@@ -370,62 +392,60 @@ const dbStore = new Vuex.Store({
         sendDBRequest(context){
             console.log("running sendDBRequest");
             return requestManager.sendRequest().done(function(response){
-                var self = this;
                 var records = response.records;
-                records.forEach(function(item, index){
-                    var action = item.action;
-                    var type = item.type;
-                    var data = item.data;
-
-                    if(type == "account"){
-                        context.commit("setAccounts", data);
-                    } else if(type == "transaction"){
-                        context.commit("setTransactions", data);
-                    } else {
-                        alert("Error: Cannot commit data: Unknown data type \"" + type + "\"");
-                    }
-                })
+                records.forEach((item) => parseServerResponse(context, item))
             })
         },
         sendPropRequest(context){
             console.log("running sendPropRequest");
             return propertyManager.sendRequest().done(function(response){
-                var self = this;
                 var records = response.records;
-                records.forEach(function(item, index){
-                    var action = item.action;
-                    var type = item.type;
-                    var data = item.data;
-
-                    if(type == "property"){
-                        context.commit("setPropertyValues", data);
-                    } else {
-                        alert("Error: Cannot commit property: Unknown data type \"" + type + "\"");
-                    }
-                })
+                records.forEach((item) => parseServerResponse(context, item))
             })
         },
         sendEnumRequest(context){
             console.log("running sendEnumRequest");
             return enumManager.sendRequest().done(function(response){
-                var self = this;
                 var records = response.records;
-                records.forEach(function(item, index){
-                    var action = item.action;
-                    var type = item.type;
-                    var data = item.data;
-                    var enumName = item.enum;
-
-                    if(type == "enum"){
-                        context.commit("setEnumValue", {data: data, enumName: enumName});
-                    } else {
-                        alert("Error: Cannot commit enum: Unknown data type \"" + type + "\"");
-                    }
-                })
+                records.forEach((item) => parseServerResponse(context, item))
             })
         },
-    }
+    },
 })
+
+function parseServerResponse(context, responseRecord){
+    var type = responseRecord.type;
+    var action = responseRecord.action;
+    var data = responseRecord.data;
+    var enumName = getOrDefault(responseRecord, "enum", null);
+
+    var functionNameMap = {
+        "account": "setAccounts",
+        "transaction": "setTransactions",
+        "property": "setPropertyValues",
+        "enum": "setEnumValue",
+    };
+    var handlerName = getOrDefault(functionNameMap, type, null)
+    if(handlerName){
+        var payload = {action: action, data: data};
+        if(enumName){
+            payload["enumName"] = enumName
+        }
+        context.commit(handlerName, payload)
+    } else {
+        alert("Error: Cannot commit record: Unknown data type \"" + type + "\"");
+    }
+
+    /*if(type == "account"){
+        context.commit("setAccounts", {data});
+    } else if(type == "transaction"){
+        context.commit("setTransactions", {data});
+    } else if(type == "property"){
+        context.commit("setPropertyValues", data);
+    } else if(type == "enum"){
+        context.commit("setEnumValue", {data: data, enumName: enumName});
+    } */
+}
 
 Vue.component("tree-view", {
     template: `
@@ -495,9 +515,11 @@ Vue.component("tree-item", {
 Vue.component("enum-table-cell", {
     name: 'enum-table-cell',
     props: ['row', 'column', 'index'],
-    template: `<span>{{renderEnumCell(row[column.path], column.enumName)}}</span>`,
-    methods: {
-        renderEnumCell: function(value, enumKey){
+    template: `<span>{{ cellValue }}</span>`,
+    computed: {
+        cellValue (){
+            let value = this.row[this.column.path];
+            let enumKey = this.column.enumName;
             console.log("rendering enum cell " + value + " with " + enumKey);
             return dbStore.getters.getEnumNameByValue(value, enumKey);
         },
@@ -506,37 +528,39 @@ Vue.component("enum-table-cell", {
 Vue.component("currency-table-cell", {
     name: 'currency-table-cell',
     props: ['row', 'column', 'index'],
-    template: `<span :class="{ '_text-danger': isNegative(row)}">{{renderCell(row[column.path], row)}}</span>`,
-    methods: {
-        renderCell: function(value, rowData){
-            console.log("rendering currency cell " + value + " with " + rowData);
-            return formatter.format(value * (this.isNegative(rowData) ? -1 : 1));
+    template: `<span :class="{ '_text-danger': isNegative}">{{ cellValue }}</span>`,
+    computed: {
+        cellValue (){
+            let value = this.row[this.column.path];
+            console.log("rendering currency cell " + value + " with " + this.row);
+            return formatter.format(value * (this.isNegative ? -1 : 1));
         },
-        isNegative: function(rowData){
-            return !getTransferDirection(rowData, this.$root.getSelectedBucketID());
+        isNegative (){
+            return !getTransferDirection(this.row, this.$root.getSelectedBucketID());
         },
     },
 });
 Vue.component("bucket-table-cell", {
     name: 'bucket-table-cell',
     props: ['row', 'column', 'index'],
-    template: `<span>{{renderCell(row[column.path], row)}}</span>`,
-    methods: {
-        renderCell: function(value, rowData){
+    template: `<span>{{ cellValue }}</span>`,
+    computed: {
+        cellValue (){
+            console.log("rendering bucket cell with " + this.row);
             var id = -2; //This value will cause the name func to return "Invalid ID"
 
-            var transType = rowData.Type;
-            var isDeposit = !this.isNegative(rowData);
+            var transType = this.row.Type;
+            var isDeposit = !this.isNegative;
             if(transType != 0){
-                id = (transType == 1 ? rowData.DestBucket : rowData.SourceBucket);
+                id = (transType == 1 ? this.row.DestBucket : this.row.SourceBucket);
             } else {
-                id = (isDeposit ? rowData.SourceBucket : rowData.DestBucket);
+                id = (isDeposit ? this.row.SourceBucket : this.row.DestBucket);
             }
 
             return getBucketForID(id).Name;
         },
-        isNegative: function(rowData){
-            return !getTransferDirection(rowData, this.$root.getSelectedBucketID());
+        isNegative (){
+            return !getTransferDirection(this.row, this.$root.getSelectedBucketID());
         },
     },
 });

@@ -1718,7 +1718,14 @@ function SPENT(){
                     text: text,
                 };
             },
+        },(actionModals){
+            BaseTableView.prototype.initialize.apply(this, [actionModals]);
+            this.listenTo(uiState, "change:selectedAccount", this.loadData); //TODO: ??
+
+            this.knownGroupIDs = [-1]; // We include -1 here to make it as if that id has already been processed, causing it to be ignored
+            this.lastGroupID = -1;
         },
+
         columns: [
             {name: "ID", visible: false},
             {name: "Status", title: "Status", type: "enum", breakpoints:"xs sm md", options: {enumKey: "TransactionStatus"}, responsive: {hide: false}},

@@ -48,12 +48,79 @@ def time_it(f, *args):
 	return [result, (getTimeStr((time.time_ns() - start) / 1000000))]
 #End Flag
 
-class SPENTServer():
+class ServerResponse:
+	def __init__(self, status, mimeType, headers, body):
+		self.status = status
+		self.headers = headers
+		self.mtype = mimeType
+		self.body = body
+
+		self.encodedBody = None
+		self.encodedHeaders = None
+
+	def getStatus(self):
+		return self.status
+
+	def getHeaders(self):
+		return self.headers
+
+	def getBody(self):
+		return self.body
+
+	def getBodyAsString(self):
+		if self.mtype == "text/json":
+			return json.dumps(self.getBody(), indent=2)
+
+		return str(self.getBody())
+
+	def encode(self):
+		self.encodeHeaders()
+		self.encodeBody()
+
+	def encodeHeaders(self):
+		self.encodedHeaders = [('Content-type', self.mtype),
+							   ('Content-Length',
+								str(len(self.encodedBody)))] + self.headers if self.headers is not None else []
+
+	def encodeBody(self):
+		if isinstance(self.getBody(), bytes):
+			self.encodedBody = self.getBody()
+		elif self.mtype == "text/json":
+			self.encodedBody = str.encode(json.dumps(self.getBody(), indent=2))
+		else:
+			self.encodedBody = str.encode(self.getBody())
+
+	def getEncodedBody(self):
+		return self.encodedBody
+
+	def getEncodedHeaders(self):
+		return self.encodedHeaders
+
+	def __str__(self):
+		return "%s %s\n%s" % (self.getStatus(), self.encodedHeaders, self.getBodyAsString())
+
+class RequestHandler:
+	def __init__(self, default):
+		self.handlers = {}
+		self.defaultHandler = default
+
+	def registerRequestHandler(self, method, path, delegate):
+		srvlog.debug("Registering endpoint backend: %s - %s" % (method, path))
+		self.handlers["%s;%s" % (method, path)] = delegate
+
+	def getHandler(self, method, path):
+		srvlog.debug("Searching for endpoint backend for: %s - %s" % (method, path))
+		return self.handlers.get("%s;%s" % (method, path), self.defaultHandler)
+
+class EndpointBackend:
+	pass
+
+# We are ourself a backend so that we can support requests that change internal state
+class SPENTServer(EndpointBackend):
 	def __init__(self, port):
 		log.setLevel(args.logLevel)
-
-
 		self.port = port
+		self.running = True
 
 		# The file handler is the default and gets used when no other match is found
 		fileEndpoint = FileEndpoint(args.serverRoot, args.serveAnyfile)
@@ -104,7 +171,6 @@ class SPENTServer():
 		def counter(args, connection):
 			self.count = self.count + 1
 			return self.count
-
 
 		propertyEndpoint = PropertyEndpoint(args.debugAPI, dbEndpoint.database)
 		propertyEndpoint.registerProperty(Property("SPENT_bucket_availableTreeBalance", getAvailBucketTreeBalance, True))
@@ -185,7 +251,9 @@ class SPENTServer():
 	def start_server(self):
 		"""Start the server."""
 		self.httpd = make_server("", self.port, self.handleRequest)
-		self.httpd.serve_forever()
+		print("Server is ready on port %s" % self.port)
+		while self.running:
+			self.httpd.handle_request()
 	
 	def qsToDict(self, queryString):
 		result = {}
@@ -200,72 +268,6 @@ class SPENTServer():
 	
 	def formToDict(self, form):
 		return self.qsToDict(form.decode("utf-8"))
-
-class ServerResponse:
-	def __init__(self, status, mimeType, headers, body):
-		self.status = status
-		self.headers = headers
-		self.mtype = mimeType
-		self.body = body
-
-		self.encodedBody = None
-		self.encodedHeaders = None
-		
-	def getStatus(self):
-		return self.status
-	
-	def getHeaders(self):
-		return self.headers
-	
-	def getBody(self):
-		return self.body
-
-	def getBodyAsString(self):
-		if self.mtype == "text/json":
-			return json.dumps(self.getBody(), indent=2)
-
-		return str(self.getBody())
-
-	def encode(self):
-		self.encodeHeaders()
-		self.encodeBody()
-
-	def encodeHeaders(self):
-		self.encodedHeaders = [('Content-type', self.mtype),
-				   ('Content-Length', str(len(self.encodedBody)))] + self.headers if self.headers is not None else []
-
-	def encodeBody(self):
-		if isinstance(self.getBody(), bytes):
-			self.encodedBody = self.getBody()
-		elif self.mtype == "text/json":
-			self.encodedBody = str.encode(json.dumps(self.getBody(), indent=2))
-		else:
-			self.encodedBody = str.encode(self.getBody())
-
-	def getEncodedBody(self):
-		return self.encodedBody
-
-	def getEncodedHeaders(self):
-		return self.encodedHeaders
-
-	def __str__(self):
-		return "%s %s\n%s" % (self.getStatus(), self.encodedHeaders, self.getBodyAsString())
-	
-class RequestHandler:
-	def __init__(self, default):
-		self.handlers = {}
-		self.defaultHandler = default
-
-	def registerRequestHandler(self, method, path, delegate):
-		srvlog.debug("Registering endpoint backend: %s - %s" % (method, path))
-		self.handlers["%s;%s" % (method, path)] = delegate
-	
-	def getHandler(self, method, path):
-		srvlog.debug("Searching for endpoint backend for: %s - %s" % (method, path))
-		return self.handlers.get("%s;%s" % (method, path), self.defaultHandler)
-
-class EndpointBackend:
-	pass
 
 class DatabaseEndpoint(EndpointBackend):
 	def __init__(self, dbPath, debugAPI):
@@ -778,8 +780,10 @@ class EnumEndpoint(EndpointBackend):
 
 if args.serverMode:
 	if sys.hexversion >= 0x30001f0:
+		print("Initializing Server")
 		server = SPENTServer(args.port)
 		#server.open_browser()
+		print("Starting Server")
 		server.start_server()
 	else:
 		print("Sorry, your version of python is too old")

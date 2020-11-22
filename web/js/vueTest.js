@@ -1,4 +1,43 @@
+/**
+ * Warn user if the given model is a type of an inherited model that is being
+ * defined without overwriting `Model.types()` because the user will not be
+ * able to use the type mapping feature in this case.
+ */
+VuexORM.Database.prototype.checkModelTypeMappingCapability = function (model) {
+    // We'll not be logging any warning if it's on a production environment,
+    // so let's return here if it is.
+    /* istanbul ignore next */
+    console.log("Patched checkModelTypeMappingCapability");
+    //if (process.env.NODE_ENV === 'production') {
+    //    return;
+    //}
+    // If the model doesn't have `baseEntity` property set, we'll assume it is
+    // not an inherited model so we can stop here.
+    if (!model.baseEntity) {
+        return;
+    }
+    // Now it seems like the model is indeed an inherited model. Let's check if
+    // it has `types()` method declared, or we'll warn the user that it's not
+    // possible to use type mapping feature.
+    var baseModel = this.model(model.baseEntity);
+    if (baseModel && baseModel.types === Model.types) {
+        console.warn("[Vuex ORM] Model `" + model.name + "` extends `" + baseModel.name + "` which doesn't " +
+            'overwrite Model.types(). You will not be able to use type mapping.');
+    }
+};
+//######################
+
 var formatter = null;
+
+var supportsES6 = function() {
+  try {
+    new Function("(a = 0) => a");
+    return true;
+  }
+  catch (err) {
+    return false;
+  }
+}();
 
 //TODO: Make a common base object for api and properties and enum
 var PropertyRequestManager = function(){
@@ -229,11 +268,12 @@ function bucketTreeGenerator(bucketsList, parentChildrenMap, currentNode){
     var childrenIDs = getOrDefault(parentChildrenMap, currentNodeID, null);
     if(childrenIDs){
         childrenIDs.forEach(function(childID){
-            var bucket = getBucketForID(childID);
+            var bucket = Bucket.query().whereId(childID).first()
             var node = {
                 id: bucket["id"],
                 ancestor: bucket["Ancestor"],
                 name: bucket["Name"],
+                balance: bucket["balance"],
                 children: [],
             };
             nodeChildren.push(node);
@@ -260,18 +300,6 @@ function bucketTreeGenerator(bucketsList, parentChildrenMap, currentNode){
     return nodeChildren;
 }
 
-function getBucketForID(ID){
-    //TODO: change this to be independent of the store
-    var theBucket = null;
-    dbStore.state.accounts.forEach(function(bucket){
-        if(getOrDefault(bucket, "id", null) == ID){
-            theBucket = bucket;
-            return;
-        }
-    });
-    return theBucket;
-};
-
 function getTransferDirection(rowData, selectedAccount){
     // True = Money Coming in; I.E. a positive value
     // False = Money Going out; I.E. a negative value
@@ -290,20 +318,100 @@ function getTransferDirection(rowData, selectedAccount){
     return null;
 }
 
-Vue.use(Vuex)
+function parseServerResponse(context, responseRecord){
+    var type = responseRecord.type;
+    var action = responseRecord.action;
+    var data = responseRecord.data;
+    var enumName = getOrDefault(responseRecord, "enum", null);
 
+    var functionNameMap = {
+        "account": "setAccounts",
+        "transaction": "setTransactions",
+        "property": "setPropertyValues",
+        "enum": "setEnumValue",
+    };
+    var handlerName = getOrDefault(functionNameMap, type, null)
+    if(handlerName){
+        var payload = {action: action, data: data};
+        if(enumName){
+            payload["enumName"] = enumName
+        }
+        context.commit(handlerName, payload)
+    } else {
+        alert("Error: Cannot commit record: Unknown data type \"" + type + "\"");
+    }
+
+    /*if(type == "account"){
+        context.commit("setAccounts", {data});
+    } else if(type == "transaction"){
+        context.commit("setTransactions", {data});
+    } else if(type == "property"){
+        context.commit("setPropertyValues", data);
+    } else if(type == "enum"){
+        context.commit("setEnumValue", {data: data, enumName: enumName});
+    } */
+}
+
+// Vuex ORM Models
+//alert(supportsES6);
+class Transaction extends VuexORM.Model {};
+class Bucket extends VuexORM.Model {};
+
+Transaction.entity = 'transaction';
+Transaction.primaryKey = 'id';
+Transaction.fields = function() {
+    return {
+        id: this.number(null),
+        Status: this.number(0),
+        TransDate: this.string("1970-01-01"),
+        PostDate: this.string("1970-01-01"),
+        Amount: this.number(0),
+        SourceBucket: this.number(0),
+        DestBucket: this.number(0),
+        SourceBucketObj: this.belongsTo('bucket', 'SourceBucket'),
+        DestBucketObj: this.belongsTo('bucket', 'DestBucket'),
+        Memo: this.string(null),
+        Payee: this.string(null),
+    }
+};
+
+Bucket.entity = 'bucket';
+Bucket.primaryKey = 'id';
+Bucket.fields = function() {
+    return {
+      id: this.number(null),
+      Name: this.string(null),
+      Parent: this.number(-0),
+      Ancestor: this.number(-0),
+      balance: this.number(() => 300),
+      //transactions: this.has
+    }
+};
+
+Vue.use(Vuex);
+
+// Create a new instance of Database.
+const database = new VuexORM.Database()
+
+// Register Models to Database.
+database.register(Bucket)
+database.register(Transaction)
+
+
+// Create Vuex Store and register database through Vuex ORM.
 const dbStore = new Vuex.Store({
+    plugins: [VuexORM.install(database)],
     strict: true,
     state: {
-        transactions: [],
-        accounts: [],
+        //transactions: [],
+        //accounts: [],
         properties: {},
         enumList: [],
         enumStore: {},
     },
     getters: {
         accountTree: function(state){
-            var accounts = state.accounts;
+            var accounts = Bucket.all();
 
             var parentChildList = {};
             accounts.forEach(function(account){
@@ -334,10 +442,12 @@ const dbStore = new Vuex.Store({
         setTransactions: function(state, data){
             var action = data.action;
             if(action == "get"){
-                state.transactions = data.data;
+                //state.transactions = data.data;
+                Transaction.create({data: data.data});
             } else if (action == "update"){
+                Transaction.insert({data: data.data});
                 // This is VERY slow; it needs redone
-                data.data.forEach((item) => {
+                /*data.data.forEach((item) => {
                     let ind = state.transactions.findIndex(x => x.id == item.id);
                     if (ind != -1){
                         let trans = state.transactions[ind]
@@ -345,7 +455,7 @@ const dbStore = new Vuex.Store({
                     } else {
                         console.log("No transaction with id " + item.id + " was found in the store; Moving on...");
                     }
-                });
+                });*/
             } else {
                 alert("Error: Cannot commit transaction mutation: Unknown action \"" + action + "\"");
             }
@@ -354,7 +464,8 @@ const dbStore = new Vuex.Store({
         setAccounts: function(state, data){
             var action = data.action;
             if(action == "get"){
-                state.accounts = data.data;
+                //state.accounts = data.data;
+                Bucket.create({data: data.data});
             } else {
                 alert("Error: Cannot commit transaction mutation: Unknown action \"" + action + "\"");
             }
@@ -370,7 +481,18 @@ const dbStore = new Vuex.Store({
                 console.log("parsing prop: " + propertyName + " Value: " + propertyValue + "; " + item);
                 if (propertyName !== null && propertyValue !== undefined){
                     console.log("setting prop: " + propertyName + " Value: " + propertyValue);
-                    Vue.set(state.properties, propertyName, {value: propertyValue});
+
+                    if(propertyName == "SPENT_bucket_postedBalance"){
+                        bucketID = getOrDefault(item, "bucket", -1);
+                        if (bucketID != -1){
+                            Bucket.update({
+                                where: bucketID,
+                                data: { balance: propertyValue },
+                            });
+                        }
+                    } else {
+                        //Vue.set(state.properties, propertyName, {value: propertyValue});
+                    }
                     //state.properties[propertyName] = {value: propertyValue};
                 } else {
                     console.log("Error parsing property at loop index: " + index);
@@ -413,43 +535,9 @@ const dbStore = new Vuex.Store({
     },
 })
 
-function parseServerResponse(context, responseRecord){
-    var type = responseRecord.type;
-    var action = responseRecord.action;
-    var data = responseRecord.data;
-    var enumName = getOrDefault(responseRecord, "enum", null);
-
-    var functionNameMap = {
-        "account": "setAccounts",
-        "transaction": "setTransactions",
-        "property": "setPropertyValues",
-        "enum": "setEnumValue",
-    };
-    var handlerName = getOrDefault(functionNameMap, type, null)
-    if(handlerName){
-        var payload = {action: action, data: data};
-        if(enumName){
-            payload["enumName"] = enumName
-        }
-        context.commit(handlerName, payload)
-    } else {
-        alert("Error: Cannot commit record: Unknown data type \"" + type + "\"");
-    }
-
-    /*if(type == "account"){
-        context.commit("setAccounts", {data});
-    } else if(type == "transaction"){
-        context.commit("setTransactions", {data});
-    } else if(type == "property"){
-        context.commit("setPropertyValues", data);
-    } else if(type == "enum"){
-        context.commit("setEnumValue", {data: data, enumName: enumName});
-    } */
-}
-
 Vue.component("tree-view", {
     template: `
-        <ul class="tree-root">
+        <ul class="tree-root _padding-left-1">
             <tree-item v-for="(child, index) in nodes" :key="index" :item="child" @node-click="forwardClick" :currentnode="selectednode"></tree-item>
         </ul>
     `,
@@ -466,13 +554,14 @@ Vue.component("tree-view", {
 });
 Vue.component("tree-item", {
     template: `
-        <li :class="{bold: isFolder}">
-            <div :class="{nodeSelected: isSelected}"
+        <li style="list-style-type: none;" :class="{bold: isFolder}" class="_margin-bottom-0">
+            <div style="display: inline-block; width: 100%; padding-bottom: 8px;" class="tree-item" :class="{nodeSelected: isSelected}"
             @click.self="select">
-            {{ item.name }} {{ isSelected }}
             <span v-if="isFolder" @click.self="toggle">[{{ isOpen ? '-' : '+' }}]</span>
+            {{ item.name }}
+            <i-badge variant="light _float-right">{{ item.balance }}</i-badge>
             </div>
-            <ul v-show="isOpen" v-if="isFolder">
+            <ul v-if="isFolder" :class="{nodeClosed: !isOpen}">
                 <tree-item v-for="(child, index) in item.children" :key="index" :item="child" @node-click="forwardClick" :currentnode="currentnode">></tree-item>
             </ul>
         </li>
@@ -557,7 +646,7 @@ Vue.component("bucket-table-cell", {
                 id = (isDeposit ? this.row.SourceBucket : this.row.DestBucket);
             }
 
-            return getBucketForID(id).Name;
+            return Bucket.query().whereId(id).first().Name;
         },
         isNegative (){
             return !getTransferDirection(this.row, this.$root.getSelectedBucketID());
@@ -576,15 +665,22 @@ function SPENT(){
         store: dbStore,
         computed: {
             transactions (){
-                return this.$store.state.transactions;
+                return Transaction.all();
             },
             accountTree (){
                 return this.$store.getters.accountTree;
             },
-            bucketATB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_availableTreeBalance", {value: null}).value},
+            currentBalance(){
+               var bucket = Bucket.query().whereId(this.selectedBucketID).first();
+               if(bucket){
+                    return bucket.balance;
+               }
+               return "Unknown";
+            }
+            /*bucketATB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_availableTreeBalance", {value: null}).value},
             bucketPTB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_postedTreeBalance", {value: null}).value},
             bucketAB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_availableBalance", {value: null}).value},
-            bucketPB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_postedBalance", {value: null}).value},
+            bucketPB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_postedBalance", {value: null}).value},*/
         },
         data: {
             transactionForm: {
@@ -612,6 +708,7 @@ function SPENT(){
                 {title: "Payee", path: "Payee", sortable: true},
             ],
             selectedBucketID: -1,
+            selectedBucket: null,
             visible1: false,
         },
         methods: {
@@ -619,13 +716,14 @@ function SPENT(){
                 console.log("Tree Node: " + id);
                 console.log("----------------");
                 this.selectedBucketID = id;
+                this.selectedBucket = Bucket.query().whereId(id).first()
                 requestManager.selectRecords("transaction", null, null, "SourceBucket == " + id + " OR DestBucket == " + id);
                 dbStore.dispatch("sendDBRequest");
 
                 propertyManager.selectRecords("property",
-                [{"name": "SPENT_bucket_availableTreeBalance", "bucket": this.selectedBucketID},
+                [/*{"name": "SPENT_bucket_availableTreeBalance", "bucket": this.selectedBucketID},
                 {"name": "SPENT_bucket_postedTreeBalance", "bucket": this.selectedBucketID},
-                {"name": "SPENT_bucket_availableBalance", "bucket": this.selectedBucketID},
+                {"name": "SPENT_bucket_availableBalance", "bucket": this.selectedBucketID},*/
                 {"name": "SPENT_bucket_postedBalance", "bucket": this.selectedBucketID}]);
                 dbStore.dispatch("sendPropRequest");
             },
@@ -646,20 +744,21 @@ function SPENT(){
     });
     requestManager.selectRecords("account");
     dbStore.dispatch("sendDBRequest");
-
 }
 
-// The code that uses these enums isn't able to support delayed init so we request them and wait for the response before invoking the main SPENT() function
-enumManager.requestEnum("TransactionStatus");
-enumManager.requestEnum("TransactionType");
+function bootstrapSPENT(){
+    // The code that uses these enums isn't able to support delayed init so we request them and wait for the response before invoking the main SPENT() function
+    enumManager.requestEnum("TransactionStatus");
+    enumManager.requestEnum("TransactionType");
 
-// Problem: Vue will update everything that uses "$store.state.properties ...." anytime a new property is added, bringing the potential for massive lag spikes;
-// Solution: Request every property we intend to use during runtime BEFORE the update handlers are registered.
-propertyManager.selectRecords("property", [
-                {"name": "SPENT_bucket_availableTreeBalance"},
-                {"name": "SPENT_bucket_postedTreeBalance"},
-                {"name": "SPENT_bucket_availableBalance"},
-                {"name": "SPENT_bucket_postedBalance"}]);
+    // Problem: Vue will update everything that uses "$store.state.properties ...." anytime a new property is added, bringing the potential for massive lag spikes;
+    // Solution: Request every property we intend to use during runtime BEFORE the update handlers are registered.
+    propertyManager.selectRecords("property", [
+                    {"name": "SPENT_bucket_availableTreeBalance"},
+                    {"name": "SPENT_bucket_postedTreeBalance"},
+                    {"name": "SPENT_bucket_availableBalance"},
+                    {"name": "SPENT_bucket_postedBalance"}]);
 
-// Wait for the property and enum requests to come back and be fully processed before starting SPENT
-dbStore.dispatch("sendPropRequest").then( () => (dbStore.dispatch("sendEnumRequest").then( () => SPENT() )));
+    // Wait for the property and enum requests to come back and be fully processed before starting SPENT
+    dbStore.dispatch("sendPropRequest").then( () => (dbStore.dispatch("sendEnumRequest").then( () => SPENT() )));
+};

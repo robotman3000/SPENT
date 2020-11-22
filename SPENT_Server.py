@@ -654,6 +654,7 @@ class PropertyEndpoint(EndpointBackend):
 						pass
 
 					if property is not None:
+						property["bucket"] = item.get("bucket", 2)
 						props.append(property)
 
 				responsePackets.append({"action": action, "type": "property", "data": props})
@@ -668,7 +669,7 @@ class PropertyEndpoint(EndpointBackend):
 
 	def debugFunction(self, property, connection):
 		name = property.get("name", None)
-		return {"name": name, "value": 10000.31}
+		return {"name": name, "value": 10000.31, "bucket": property.get("bucket", -2)}
 
 	def getProperty(self, property, connection):
 		name = property.get("name", None)

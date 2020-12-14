@@ -20,10 +20,42 @@ VuexORM.Database.prototype.checkModelTypeMappingCapability = function (model) {
     // it has `types()` method declared, or we'll warn the user that it's not
     // possible to use type mapping feature.
     var baseModel = this.model(model.baseEntity);
-    if (baseModel && baseModel.types === Model.types) {
+    if (baseModel && baseModel.types === VuexORM.Model.types) {
         console.warn("[Vuex ORM] Model `" + model.name + "` extends `" + baseModel.name + "` which doesn't " +
             'overwrite Model.types(). You will not be able to use type mapping.');
     }
+};
+VuexORM.Relation.prototype.getKeys = function (collection, key) {
+    console.log("Patched Relation.getKeys");
+    return collection.reduce(function (models, model) {
+        if (Object.prototype.toString.call( key ) === '[object Array]'){
+            // TODO: For now we assume an array with two values
+            if (model[key[0]] === null || model[key[0]] === undefined || model[key[1]] === null || model[key[1]] === undefined) {
+                return models;
+            }
+            models.push(JSON.stringify([model[key[0]], model[key[1]]]));
+            return models;
+        }
+
+        if (model[key] === null || model[key] === undefined) {
+            return models;
+        }
+        models.push(model[key]);
+        return models;
+    }, []);
+};
+VuexORM.HasOne.prototype.match = function (collection, relations, name) {
+    console.log("Patched HasOne.match");
+    var _this = this;
+    var dictionary = this.buildDictionary(relations);
+    collection.forEach(function (model) {
+        var id = model[_this.localKey];
+        if (Object.prototype.toString.call( _this.localKey ) === '[object Array]'){
+            id = JSON.stringify([model[_this.localKey[0]], model[_this.localKey[1]]]);
+        }
+        var relation = dictionary[id];
+        model[name] = relation || null;
+    });
 };
 //######################
 
@@ -256,50 +288,6 @@ function getOrDefault(object, property, def, allowNull){
 	return def;
 }
 
-function bucketTreeGenerator(bucketsList, parentChildrenMap, currentNode){
-    var nodeChildren = [];
-
-    var currentNodeID = -1;
-    if(currentNode != null){
-        currentNodeID = currentNode["id"];
-    }
-
-    // Generate the children
-    var childrenIDs = getOrDefault(parentChildrenMap, currentNodeID, null);
-    if(childrenIDs){
-        childrenIDs.forEach(function(childID){
-            var bucket = Bucket.query().whereId(childID).first()
-            var node = {
-                id: bucket["id"],
-                ancestor: bucket["Ancestor"],
-                name: bucket["Name"],
-                balance: bucket["balance"],
-                children: [],
-            };
-            nodeChildren.push(node);
-        });
-    }
-
-    // Now it's time to create the parent node if we are doing the root;
-    if (currentNode == null){
-        currentNode = {
-            id: -1,
-            ancestor: null,
-            name: "Root Node",
-            children: nodeChildren,
-        };
-    } else {
-        // Assign the parent it's children
-        currentNode.children = nodeChildren;
-    }
-
-    // Now loop over the children and repeat
-    nodeChildren.forEach(function(child){
-        bucketTreeGenerator(bucketsList, parentChildrenMap, child);
-    });
-    return nodeChildren;
-}
-
 function getTransferDirection(rowData, selectedAccount){
     // True = Money Coming in; I.E. a positive value
     // False = Money Going out; I.E. a negative value
@@ -318,47 +306,46 @@ function getTransferDirection(rowData, selectedAccount){
     return null;
 }
 
-function parseServerResponse(context, responseRecord){
-    var type = responseRecord.type;
-    var action = responseRecord.action;
-    var data = responseRecord.data;
-    var enumName = getOrDefault(responseRecord, "enum", null);
-
-    var functionNameMap = {
-        "account": "setAccounts",
-        "transaction": "setTransactions",
-        "property": "setPropertyValues",
-        "enum": "setEnumValue",
-    };
-    var handlerName = getOrDefault(functionNameMap, type, null)
-    if(handlerName){
-        var payload = {action: action, data: data};
-        if(enumName){
-            payload["enumName"] = enumName
-        }
-        context.commit(handlerName, payload)
-    } else {
-        alert("Error: Cannot commit record: Unknown data type \"" + type + "\"");
-    }
-
-    /*if(type == "account"){
-        context.commit("setAccounts", {data});
-    } else if(type == "transaction"){
-        context.commit("setTransactions", {data});
-    } else if(type == "property"){
-        context.commit("setPropertyValues", data);
-    } else if(type == "enum"){
-        context.commit("setEnumValue", {data: data, enumName: enumName});
-    } */
-}
-
 // Vuex ORM Models
 //alert(supportsES6);
+function apiUpdate(data, entity){
+    data["ID"] = data["id"];
+    requestManager.updateRecords(entity, [data]);
+};
+function apiCreate(data, entity){
+    data["ID"] = data["id"];
+    requestManager.createRecords(entity, [data]);
+};
+function apiDelete(data, entity){
+    data["ID"] = data["id"];
+    requestManager.deleteRecords(entity, [data]);
+};
+function apiCommit(){
+    dbStore.dispatch("sendDBRequest");
+};
 class Transaction extends VuexORM.Model {};
+//class Payee extends VuexORM.Model {};
+//class Transfer extends VuexORM.Model {};
 class Bucket extends VuexORM.Model {};
+class Account extends Bucket {};
+class Property extends VuexORM.Model {};
+
+Property.entity = 'property';
+Property.primaryKey = ['recordID', 'name'];
+Property.fields = function() {
+    return {
+        name: this.string(null),
+        recordID: this.number(null),
+        value: this.attr(null),
+    }
+};
 
 Transaction.entity = 'transaction';
 Transaction.primaryKey = 'id';
+Transaction.prototype.apiCreate = apiCreate;
+Transaction.prototype.apiUpdate = apiUpdate;
+Transaction.prototype.apiDelete = apiDelete;
+Transaction.prototype.apiCommit = apiCommit;
 Transaction.fields = function() {
     return {
         id: this.number(null),
@@ -372,63 +359,106 @@ Transaction.fields = function() {
         DestBucketObj: this.belongsTo('bucket', 'DestBucket'),
         Memo: this.string(null),
         Payee: this.string(null),
+        Type: this.number(null),
     }
 };
 
 Bucket.entity = 'bucket';
 Bucket.primaryKey = 'id';
+Bucket.typeKey = 'Type';
+Bucket.prototype.apiCreate = apiCreate;
+Bucket.prototype.apiUpdate = apiUpdate;
+Bucket.prototype.apiDelete = apiDelete;
+Bucket.prototype.apiCommit = apiCommit;
 Bucket.fields = function() {
     return {
       id: this.number(null),
       Name: this.string(null),
-      Parent: this.number(-0),
-      Ancestor: this.number(-0),
-      balance: this.number(() => 300),
+      Parent: this.number(-1),
+      Ancestor: this.number(-1),
+      Type: this.number(0),
+      availableBalance: this.hasOne(Property, '$id', ['id', 'availableBalanceKey']),
+      availableBalanceKey: this.string("SPENT.bucket.availableBalance"),
+      availableTreeBalance: this.hasOne(Property, '$id', ['id', 'availableTreeBalanceKey']),
+      availableTreeBalanceKey: this.string("SPENT.bucket.availableTreeBalance"),
+      postedBalance: this.hasOne(Property, '$id', ['id', 'postedBalanceKey']),
+      postedBalanceKey: this.string("SPENT.bucket.postedBalance"),
+      postedTreeBalance: this.hasOne(Property, '$id', ['id', 'postedTreeBalanceKey']),
+      postedTreeBalanceKey: this.string("SPENT.bucket.postedTreeBalance"),
       //transactions: this.has
     }
 };
+Bucket.types = function(){
+    return {
+      0: Bucket,
+      1: Account,
+    }
+}
+
+Account.baseEntity = 'bucket';
+Account.entity = 'account';
+Account.prototype.apiCreate = apiCreate;
+Account.prototype.apiUpdate = apiUpdate;
+Account.prototype.apiDelete = apiDelete;
+Account.prototype.apiCommit = apiCommit;
+Account.fields = function() {
+    return {
+        ...Bucket.fields(),
+    }
+}
 
 Vue.use(Vuex);
+Vue.use(Inkline);
 
 // Create a new instance of Database.
 const database = new VuexORM.Database()
 
 // Register Models to Database.
 database.register(Bucket)
+database.register(Account)
 database.register(Transaction)
+database.register(Property)
 
 
+function parseServerResponse(context, responseRecord){
+    var type = responseRecord.type;
+    var action = responseRecord.action;
+    var data = responseRecord.data;
+    var enumName = getOrDefault(responseRecord, "enum", null);
+
+    var functionNameMap = {
+        "account": "mutateAccounts",
+        "bucket": "mutateBuckets",
+        "transaction": "mutateTransactions",
+        "property": "mutateProperties",
+        "enum": "mutateEnums",
+    };
+    var handlerName = getOrDefault(functionNameMap, type, null)
+    if(handlerName){
+        data.forEach(function(item){
+            if(item['ID']){
+                item['id'] = item['ID']
+            }
+        });
+        var payload = {action: action, data: data};
+
+        if(enumName){
+            payload["enumName"] = enumName
+        }
+        context.commit(handlerName, payload)
+    } else {
+        alert("Error: Cannot commit record: Unknown data type \"" + type + "\"");
+    }
+};
 // Create Vuex Store and register database through Vuex ORM.
 const dbStore = new Vuex.Store({
     plugins: [VuexORM.install(database)],
     strict: true,
     state: {
-        //transactions: [],
-        //accounts: [],
-        properties: {},
         enumList: [],
         enumStore: {},
     },
     getters: {
-        accountTree: function(state){
-            var accounts = Bucket.all();
-
-            var parentChildList = {};
-            accounts.forEach(function(account){
-                var ID = getOrDefault(account, "id", null);
-                var parentID = getOrDefault(account, "Parent", null);
-
-                var siblingList = getOrDefault(parentChildList, parentID, new Set());
-                siblingList.add(ID);
-                parentChildList[parentID] = siblingList;
-            });
-
-            var accTree = bucketTreeGenerator(accounts, parentChildList, null);
-            return accTree;
-        },
-        getProperties: function(state){
-            return state.properties;
-        },
         getEnumNameByValue: (state) => (value, enumKey) => {
             var enumID = state.enumList.indexOf(enumKey);
             if(enumID != -1){
@@ -436,78 +466,6 @@ const dbStore = new Vuex.Store({
                 return result;
             }
             return "Invalid Enum";
-        },
-    },
-    mutations: {
-        setTransactions: function(state, data){
-            var action = data.action;
-            if(action == "get"){
-                //state.transactions = data.data;
-                Transaction.create({data: data.data});
-            } else if (action == "update"){
-                Transaction.insert({data: data.data});
-                // This is VERY slow; it needs redone
-                /*data.data.forEach((item) => {
-                    let ind = state.transactions.findIndex(x => x.id == item.id);
-                    if (ind != -1){
-                        let trans = state.transactions[ind]
-                        Object.entries(item).forEach( (attrib) => Vue.set(trans, attrib[0], item[attrib[0]]) );
-                    } else {
-                        console.log("No transaction with id " + item.id + " was found in the store; Moving on...");
-                    }
-                });*/
-            } else {
-                alert("Error: Cannot commit transaction mutation: Unknown action \"" + action + "\"");
-            }
-
-        },
-        setAccounts: function(state, data){
-            var action = data.action;
-            if(action == "get"){
-                //state.accounts = data.data;
-                Bucket.create({data: data.data});
-            } else {
-                alert("Error: Cannot commit transaction mutation: Unknown action \"" + action + "\"");
-            }
-        },
-        setPropertyValues: function(state, data){
-            console.log("running setPropertyValues");
-            // Now we map the properties so they can be looked up by name before storing them
-            data.data.forEach(function (item, index){
-                // TODO: We should not use the property name as a key without sanitizing it first, as it comes directly from the web server;
-                var propertyName = getOrDefault(item, "name", null);
-                var propertyValue = getOrDefault(item, "value", undefined, true);
-
-                console.log("parsing prop: " + propertyName + " Value: " + propertyValue + "; " + item);
-                if (propertyName !== null && propertyValue !== undefined){
-                    console.log("setting prop: " + propertyName + " Value: " + propertyValue);
-
-                    if(propertyName == "SPENT_bucket_postedBalance"){
-                        bucketID = getOrDefault(item, "bucket", -1);
-                        if (bucketID != -1){
-                            Bucket.update({
-                                where: bucketID,
-                                data: { balance: propertyValue },
-                            });
-                        }
-                    } else {
-                        //Vue.set(state.properties, propertyName, {value: propertyValue});
-                    }
-                    //state.properties[propertyName] = {value: propertyValue};
-                } else {
-                    console.log("Error parsing property at loop index: " + index);
-                }
-            });
-        },
-        setEnumValue: function(state, params){
-            console.log("running setEnumValues");
-
-            var enumID = state.enumList.indexOf(params.enumName);
-            if(enumID == -1){
-                enumID = state.enumList.push(params.enumName) - 1;
-            }
-            console.log("setting enum: " + params.enumName + " Value: " + params.data + " Index: " + enumID);
-            Vue.set(state.enumStore, enumID, params.data);
         },
     },
     actions: {
@@ -532,13 +490,74 @@ const dbStore = new Vuex.Store({
                 records.forEach((item) => parseServerResponse(context, item))
             })
         },
+        fetchAllBucketBalances(context){
+            Bucket.all().forEach(function(item){
+                propertyManager.selectRecords("property",
+                [{"name": "SPENT.bucket.availableTreeBalance", "recordID": item.id},
+                {"name": "SPENT.bucket.postedTreeBalance", "recordID": item.id},
+                {"name": "SPENT.bucket.availableBalance", "recordID": item.id},
+                {"name": "SPENT.bucket.postedBalance", "recordID": item.id}]);
+            });
+            dbStore.dispatch("sendPropRequest");
+        },
+    },
+    mutations: {
+        mutateTransactions: function(state, data){
+            var action = data.action;
+            if(action == "get" || action == "create"){
+                Transaction.create({data: data.data});
+            } else if (action == "update"){
+                Transaction.insert({data: data.data});
+            } else {
+                alert("Error: Cannot commit transaction mutation: Unknown action \"" + action + "\"");
+            }
+        },
+        mutateAccounts: function(state, data){
+            var action = data.action;
+            if(action == "get" || action == "create"){
+                Account.create({data: data.data});
+            } else if (action == "update"){
+                Account.insert({data: data.data});
+            } else {
+                alert("Error: Cannot commit account mutation: Unknown action \"" + action + "\"");
+            }
+        },
+        mutateBuckets: function(state, data){
+            var action = data.action;
+            if(action == "get" || action == "create"){
+                Bucket.create({data: data.data});
+            } else if (action == "update"){
+                Bucket.insert({data: data.data});
+            } else {
+                alert("Error: Cannot commit account mutation: Unknown action \"" + action + "\"");
+            }
+        },
+        mutateProperties: function(state, data){
+            console.log("running setPropertyValues");
+            var action = data.action;
+            if(action == "get"){
+                Property.insert({data: data.data});
+            } else {
+                alert("Error: Cannot commit property mutation: Unknown action \"" + action + "\"");
+            }
+        },
+        mutateEnums: function(state, params){
+            console.log("running setEnumValues");
+
+            var enumID = state.enumList.indexOf(params.enumName);
+            if(enumID == -1){
+                enumID = state.enumList.push(params.enumName) - 1;
+            }
+            console.log("setting enum: " + params.enumName + " Value: " + params.data + " Index: " + enumID);
+            Vue.set(state.enumStore, enumID, params.data);
+        },
     },
 })
 
 Vue.component("tree-view", {
     template: `
         <ul class="tree-root _padding-left-1">
-            <tree-item v-for="(child, index) in nodes" :key="index" :item="child" @node-click="forwardClick" :currentnode="selectednode"></tree-item>
+            <tree-item v-for="(child, index) in parentChildMap[-1]" :key="index" :node="child" :parentChildMap="parentChildMap" @node-click="forwardClick" :currentnode="selectednode"></tree-item>
         </ul>
     `,
     props: {
@@ -550,7 +569,20 @@ Vue.component("tree-view", {
             console.log("Tree Node Forward Click Root: " + id);
             this.$emit("node-click", id);
         },
-    }
+    },
+    computed: {
+        parentChildMap: function(){
+            var parentChildList = {};
+            this.nodes.forEach(function(account){
+                var parentID = getOrDefault(account, "Parent", null);
+
+                var siblingList = getOrDefault(parentChildList, parentID, new Set());
+                siblingList.add(account);
+                parentChildList[parentID] = siblingList;
+            });
+            return parentChildList;
+        },
+    },
 });
 Vue.component("tree-item", {
     template: `
@@ -558,16 +590,17 @@ Vue.component("tree-item", {
             <div style="display: inline-block; width: 100%; padding-bottom: 8px;" class="tree-item" :class="{nodeSelected: isSelected}"
             @click.self="select">
             <span v-if="isFolder" @click.self="toggle">[{{ isOpen ? '-' : '+' }}]</span>
-            {{ item.name }}
-            <i-badge variant="light _float-right">{{ item.balance }}</i-badge>
+            {{ node.Name }}
+            <i-badge :variant="isNegative ? 'danger' : 'light'" class="_float-right" style="min-width: 8em;">{{ node.postedBalance ? format(node.postedBalance.value) : "$-0.00" }}</i-badge>
             </div>
-            <ul v-if="isFolder" :class="{nodeClosed: !isOpen}">
-                <tree-item v-for="(child, index) in item.children" :key="index" :item="child" @node-click="forwardClick" :currentnode="currentnode">></tree-item>
+            <ul v-show="isFolder" :class="{nodeClosed: !isOpen}">
+                <tree-item v-for="(child, index) in parentChildMap[node.id]" :key="index" :node="child" :parentChildMap="parentChildMap" @node-click="forwardClick" :currentnode="currentnode">></tree-item>
             </ul>
         </li>
     `,
     props: {
-        item: Object,
+        node: Object,
+        parentChildMap: Object,
         currentnode: Number,
     },
     data: function() {
@@ -577,12 +610,15 @@ Vue.component("tree-item", {
     },
     computed: {
         isFolder: function() {
-            return this.item.children && this.item.children.length;
+            return this.parentChildMap[this.node.id] && this.parentChildMap[this.node.id].size > 0;
         },
         isSelected: function(){
             //console.log("Checking isSelected: " + (this.item.id == this.currentnode));
-            return this.item.id == this.currentnode;
-        }
+            return this.node.id == this.currentnode;
+        },
+        isNegative: function(){
+            return (this.node.postedBalance ? this.node.postedBalance.value < 0 : false)
+        },
     },
     methods: {
         toggle: function() {
@@ -591,13 +627,14 @@ Vue.component("tree-item", {
             }
         },
         select: function(){
-            console.log("Tree Node Click: " + this.item.id)
-            this.$emit("node-click", this.item.id);
+            console.log("Tree Node Click: " + this.node.id)
+            this.$emit("node-click", this.node.id);
         },
         forwardClick: function(id){
             console.log("Tree Node Forward Click: " + id);
             this.$emit("node-click", id);
         },
+        format: (value) => formatter.format(value),
     }
 });
 
@@ -625,7 +662,7 @@ Vue.component("currency-table-cell", {
             return formatter.format(value * (this.isNegative ? -1 : 1));
         },
         isNegative (){
-            return !getTransferDirection(this.row, this.$root.getSelectedBucketID());
+            return !getTransferDirection(this.row, this.$root.selectedBucketID);
         },
     },
 });
@@ -641,19 +678,160 @@ Vue.component("bucket-table-cell", {
             var transType = this.row.Type;
             var isDeposit = !this.isNegative;
             if(transType != 0){
-                id = (transType == 1 ? this.row.DestBucket : this.row.SourceBucket);
+                id = (transType == 1 ? this.$vnode.data.attrs.data.DestBucket : this.$vnode.data.attrs.data.SourceBucket);
             } else {
-                id = (isDeposit ? this.row.SourceBucket : this.row.DestBucket);
+                id = (isDeposit ? this.$vnode.data.attrs.data.SourceBucket : this.$vnode.data.attrs.data.DestBucket);
             }
 
             return Bucket.query().whereId(id).first().Name;
         },
         isNegative (){
-            return !getTransferDirection(this.row, this.$root.getSelectedBucketID());
+            return !getTransferDirection(this.row, this.$root.selectedBucketID);
         },
     },
 });
 
+function doFormSubmit(formName){
+    var data = this.parseFormData(this.formSchema, this.formSchema.fields);
+
+    if(getOrDefault(data, "id", null) == null){
+        this.formObjectClass.prototype.apiCreate(data, this.formObjectClass.entity);
+    } else {
+        this.formObjectClass.prototype.apiUpdate(data, this.formObjectClass.entity);
+    }
+    this.formObjectClass.prototype.apiCommit();
+    this.$emit('form-submit', formName);
+};
+function parseFormData(obj, fields){
+    var newObj = {};
+    fields.forEach(function(fieldName){
+        let value = null;
+        if (obj){
+            value = getOrDefault(obj, fieldName, undefined, true);
+        }
+        if(value !== undefined){
+            newObj[fieldName] = value.value;
+        } else {
+            console.log("[SPENT] Failed to assign value to object \'" + key + "\'");
+        }
+    });
+    return newObj;
+};
+
+Vue.component("transaction-form", {
+    name: 'transaction-form',
+    props: ['formSchema'],
+    template: `
+        <i-form v-model="formSchema" @submit="doFormSubmit(\'transaction\')">
+            <i-form-group>
+                <i-form-label>Status</i-form-label>
+                <i-select :schema="formSchema.Status" placeholder="Choose a status">
+                    <i-select-option value="0" label="Void" />
+                    <i-select-option value="1" label="Uninitiated" />
+                    <i-select-option value="2" label="Submitted" />
+                    <i-select-option value="3" label="Post Pending" />
+                    <i-select-option value="4" label="Complete" />
+                    <i-select-option value="5" label="Reconciled" />
+                </i-select>
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Date</i-form-label>
+                <i-input :schema="formSchema.TransDate" placeholder="Enter a date" />
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Post Date</i-form-label>
+                <i-input :schema="formSchema.PostDate" placeholder="Enter a date" />
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Amount</i-form-label>
+                <i-input :schema="formSchema.Amount" placeholder="Enter an amount" />
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Source Bucket</i-form-label>
+                <i-input :schema="formSchema.SourceBucket" placeholder="source bucket" />
+                <!--i-select :schema="formSchema.SourceBucket" placeholder="Choose an option">
+                    <i-select-option value="a" label="Option A" />
+                    <i-select-option value="b" label="Option B" />
+                    <i-select-option value="c" label="Option C" disabled />
+                </i-select-->
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Destination Bucket</i-form-label>
+                <i-input :schema="formSchema.DestBucket" placeholder="dest bucket" />
+                <!--i-select :schema="formSchema.DestBucket" placeholder="Choose an option">
+                    <i-select-option value="a" label="Option A" />
+                    <i-select-option value="b" label="Option B" />
+                    <i-select-option value="c" label="Option C" disabled />
+                </i-select-->
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Memo</i-form-label>
+                <i-textarea :schema="formSchema.Memo" placeholder="Write a comment.." />
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Payee</i-form-label>
+                <i-input :schema="formSchema.Payee" placeholder="Enter the payee" />
+            </i-form-group>
+
+            <i-form-group>
+                <i-button type="submit">Submit</i-button>
+            </i-form-group>
+        </i-form>
+    `,
+    data: function(){
+        return {
+            formObjectClass: Transaction,
+        };
+    },
+    methods: {
+        doFormSubmit: doFormSubmit,
+        parseFormData: parseFormData,
+    },
+});
+Vue.component("bucket-form", {
+    name: 'bucket-form',
+    props: ['formSchema'],
+    template: `
+        <i-form v-model="formSchema" @submit="doFormSubmit(\'bucket\')">
+            <i-form-group>
+                <i-form-label>Name</i-form-label>
+                <i-input :schema="formSchema.Name" placeholder="Type something.." />
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Parent</i-form-label>
+                <i-input :schema="formSchema.Parent" placeholder="Type something.." />
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Ancestor</i-form-label>
+                <i-input :schema="formSchema.Ancestor" :precision="2" placeholder="Type something.." />
+            </i-form-group>
+
+            <i-form-group>
+                <i-button type="submit">Submit</i-button>
+            </i-form-group>
+        </i-form>
+    `,
+    data: function(){
+        return {
+            formObjectClass: Bucket,
+        };
+    },
+    methods: {
+        doFormSubmit: doFormSubmit,
+        parseFormData: parseFormData,
+    },
+});
+
+var vueInst = null;
 function SPENT(){
     formatter = new Intl.NumberFormat(undefined, {
 	  style: 'currency',
@@ -664,74 +842,100 @@ function SPENT(){
         el: '#spent',
         store: dbStore,
         computed: {
-            transactions (){
-                return Transaction.all();
-            },
-            accountTree (){
-                return this.$store.getters.accountTree;
-            },
-            currentBalance(){
-               var bucket = Bucket.query().whereId(this.selectedBucketID).first();
-               if(bucket){
-                    return bucket.balance;
-               }
-               return "Unknown";
-            }
-            /*bucketATB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_availableTreeBalance", {value: null}).value},
-            bucketPTB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_postedTreeBalance", {value: null}).value},
-            bucketAB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_availableBalance", {value: null}).value},
-            bucketPB (){ return getOrDefault(this.$store.state.properties, "SPENT_bucket_postedBalance", {value: null}).value},*/
+            transactions: () => Transaction.all(),
+            buckets: () => Bucket.query().with(['postedBalance']).all(),
+            accounts: () => Account.all(),
+            selectedBucket: function(){ return Bucket.query().whereId(this.selectedBucketID).with(['availableBalance', 'postedBalance', 'availableTreeBalance', 'postedTreeBalance']).first() },
         },
-        data: {
-            transactionForm: {
-                visible: false,
-                status: 0,
-                date: "",
-                postDate: "",
-                amount: 0.0,
-                sourceBucket: -1,
-                destBucket: -1,
-                memo: "",
-                payee: "",
-            },
-            transactionColumns: [
-                {title: "Status", path: "Status", sortable: true, component: "enum-table-cell", enumName: "TransactionStatus"},
-                {title: "Date", path: "TransDate", sortable: true},
-                {title: "Posted", path: "PostDate", sortable: true},
-                {title: "Amount", path: "Amount", sortable: true, component: "currency-table-cell"},
-                {title: "Type", path: "Type", sortable: true},
-                {title: "Bucket", path: "", sortable: true, component: "bucket-table-cell"},
-                // TODO: Quick fix to hide these rows
-                {path: "SourceBucket", sortable: false},
-                {path: "DestBucket", sortable: false},
-                {title: "Memo", path: "Memo", sortable: true},
-                {title: "Payee", path: "Payee", sortable: true},
-            ],
-            selectedBucketID: -1,
-            selectedBucket: null,
-            visible1: false,
+        data() {
+            return {
+                selectedBucketID: -1,
+                transactionColumns: [
+                    {title: "Status", path: "Status", sortable: true, component: "enum-table-cell", enumName: "TransactionStatus"},
+                    {title: "Date", path: "TransDate", sortable: true},
+                    {title: "Posted", path: "PostDate", sortable: true},
+                    {title: "Amount", path: "Amount", sortable: true, component: "currency-table-cell"},
+                    {title: "Type", path: "Type", sortable: true, component: "enum-table-cell", enumName: "TransactionType"},
+                    {title: "Bucket", path: "", sortable: true, component: "bucket-table-cell"},
+                    {title: "Memo", path: "Memo", sortable: true},
+                    {title: "Payee", path: "Payee", sortable: true},
+                ],
+                transSchema: this.$inkline.form({
+                    id: {},
+                    Status: {},
+                    TransDate: {},
+                    PostDate: {},
+                    Amount: {
+                        value: 0,
+                        validators: [
+                            { rule: 'number', allowNegative: true, allowDecimal: true, message: "test" }
+                        ],
+                    },
+                    SourceBucket: {},
+                    DestBucket: {},
+                    Memo: {},
+                    Payee: {},
+                    GroupID: {
+                        value: -1,
+                    },
+                }),
+                showTransactionFormModal: false,
+                bucketColumns: [
+                    {title: "Name", path: "Name", sortable: true},
+                    {title: "Parent", path: "Parent", sortable: true},
+                    {title: "Ancestor", path: "Ancestor", sortable: true},
+                ],
+                bucketSchema: this.$inkline.form({
+                    id: {},
+                    Name: {},
+                    Parent: {},
+                    Ancestor: {},
+                }),
+                showBucketFormModal: false,
+                showBucketTableModal: false,
+                accountTreeColumns: [
+                    {title: "Name", path: "Name", sortable: false},
+                    {title: "Balance", path: "postedBalance.value", sortable: false},
+                ],
+            };
         },
-        methods: {
-            handleNodeClick: function(id){
-                console.log("Tree Node: " + id);
-                console.log("----------------");
-                this.selectedBucketID = id;
-                this.selectedBucket = Bucket.query().whereId(id).first()
+        watch: {
+            selectedBucketID: function(id){
+                // Request the transactions for the selected node
                 requestManager.selectRecords("transaction", null, null, "SourceBucket == " + id + " OR DestBucket == " + id);
                 dbStore.dispatch("sendDBRequest");
 
                 propertyManager.selectRecords("property",
-                [/*{"name": "SPENT_bucket_availableTreeBalance", "bucket": this.selectedBucketID},
-                {"name": "SPENT_bucket_postedTreeBalance", "bucket": this.selectedBucketID},
-                {"name": "SPENT_bucket_availableBalance", "bucket": this.selectedBucketID},*/
-                {"name": "SPENT_bucket_postedBalance", "bucket": this.selectedBucketID}]);
+                [{"name": "SPENT.bucket.availableTreeBalance", "recordID": id},
+                {"name": "SPENT.bucket.postedTreeBalance", "recordID": id},
+                {"name": "SPENT.bucket.availableBalance", "recordID": id},
+                {"name": "SPENT.bucket.postedBalance", "recordID": id}]);
                 dbStore.dispatch("sendPropRequest");
             },
-            getSelectedBucketID: function(){
-                return this.selectedBucketID;
+        },
+        methods: {
+            onSelAcc: function(a, b, c){
+                this.selectedBucketID = b.ID || b.id;
+            },
+            setFormObject: function(obj, form){
+                var self = this;
+                form.fields.forEach(function(key){
+                    let value = null;
+                    if (obj){
+                        value = getOrDefault(obj, key, undefined, true);
+                    }
+                    if(value !== undefined){
+                        //form[key].value = value;
+                        form.set(key, {
+                            value: value,
+                        }, { instance: self });
+                    } else {
+                        console.log("[SPENT] Failed to assign value to form element \'" + key + "\'");
+                    }
+                });
             },
             requestChanges: function(){
-                var packet = propertyManager._createRequest_("refresh", "debug", [{"name": "SPENT_bucket_postedBalance"}], null, null);
+                var packet = propertyManager._createRequest_("refresh", "debug", [{"name": "SPENT.bucket.postedBalance"}], null, null);
                 propertyManager._queueRequestPacket_(packet);
 
                 var packet2 = requestManager._createRequest_("refresh", "debug", null, null, null);
@@ -739,26 +943,45 @@ function SPENT(){
 
                 dbStore.dispatch("sendPropRequest");
                 dbStore.dispatch("sendDBRequest");
-            }
-        }
+            },
+            onFormSubmit(formName){
+                switch(formName){
+                    case "transaction":
+                         this.showTransactionFormModal = false;
+                         break;
+                    case "bucket":
+                        this.showBucketFormModal = false;
+                        this.showBucketTableModal = true;
+                }
+            },
+            onNewTransactionClick (){
+                this.setFormObject(null, this.transSchema);
+                this.showTransactionFormModal = true;
+            },
+            onNewBucketClick (){
+                this.setFormObject(null, this.bucketSchema);
+                this.showBucketFormModal = true;
+            },
+            onTransTableRowClick (event, row, rowIndex) { // Edit transaction
+                this.setFormObject(row, this.transSchema);
+                this.showTransactionFormModal = true;
+            },
+            onBucketTableRowClick (event, row, rowIndex) { // Edit transaction
+                this.setFormObject(row, this.bucketSchema);
+                this.showBucketTableModal = false;
+                this.showBucketFormModal = true;
+
+            },
+        },
     });
+    //vueInst = vm;
     requestManager.selectRecords("account");
-    dbStore.dispatch("sendDBRequest");
+    dbStore.dispatch("sendDBRequest").then( () => dbStore.dispatch("fetchAllBucketBalances"));
 }
 
 function bootstrapSPENT(){
     // The code that uses these enums isn't able to support delayed init so we request them and wait for the response before invoking the main SPENT() function
     enumManager.requestEnum("TransactionStatus");
     enumManager.requestEnum("TransactionType");
-
-    // Problem: Vue will update everything that uses "$store.state.properties ...." anytime a new property is added, bringing the potential for massive lag spikes;
-    // Solution: Request every property we intend to use during runtime BEFORE the update handlers are registered.
-    propertyManager.selectRecords("property", [
-                    {"name": "SPENT_bucket_availableTreeBalance"},
-                    {"name": "SPENT_bucket_postedTreeBalance"},
-                    {"name": "SPENT_bucket_availableBalance"},
-                    {"name": "SPENT_bucket_postedBalance"}]);
-
-    // Wait for the property and enum requests to come back and be fully processed before starting SPENT
-    dbStore.dispatch("sendPropRequest").then( () => (dbStore.dispatch("sendEnumRequest").then( () => SPENT() )));
+    dbStore.dispatch("sendEnumRequest").then( () => SPENT() );
 };

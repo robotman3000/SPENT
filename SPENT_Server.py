@@ -136,7 +136,7 @@ class SPENTServer(EndpointBackend):
 
 
 		def getAvailBucketTreeBalance(args, connection):
-			bucketID = args.get("bucket", None)
+			bucketID = args.get("recordID", None)
 			bucket = EnumBucketsTable.getRow(connection, bucketID)
 			print(bucket)
 			if bucket is not None:
@@ -144,21 +144,21 @@ class SPENTServer(EndpointBackend):
 			return None
 
 		def getPostedBucketTreeBalance(args, connection):
-			bucketID = args.get("bucket", None)
+			bucketID = args.get("recordID", None)
 			bucket = EnumBucketsTable.getRow(connection, bucketID)
 			if bucket is not None:
 				return SpentUtil.getPostedBalance(connection, bucket, True)
 			return None
 
 		def getAvailBucketBalance(args, connection):
-			bucketID = args.get("bucket", None)
+			bucketID = args.get("recordID", None)
 			bucket = EnumBucketsTable.getRow(connection, bucketID)
 			if bucket is not None:
 				return SpentUtil.getAvailableBalance(connection, bucket)
 			return None
 
 		def getPostedBucketBalance(args, connection):
-			bucketID = args.get("bucket", None)
+			bucketID = args.get("recordID", None)
 			bucket = EnumBucketsTable.getRow(connection, bucketID)
 			if bucket is not None:
 				return SpentUtil.getPostedBalance(connection, bucket)
@@ -173,10 +173,10 @@ class SPENTServer(EndpointBackend):
 			return self.count
 
 		propertyEndpoint = PropertyEndpoint(args.debugAPI, dbEndpoint.database)
-		propertyEndpoint.registerProperty(Property("SPENT_bucket_availableTreeBalance", getAvailBucketTreeBalance, True))
-		propertyEndpoint.registerProperty(Property("SPENT_bucket_postedTreeBalance", getPostedBucketTreeBalance, True))
-		propertyEndpoint.registerProperty(Property("SPENT_bucket_availableBalance", getAvailBucketBalance, True))
-		propertyEndpoint.registerProperty(Property("SPENT_bucket_postedBalance", getPostedBucketBalance, True))
+		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.availableTreeBalance", getAvailBucketTreeBalance, True))
+		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.postedTreeBalance", getPostedBucketTreeBalance, True))
+		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.availableBalance", getAvailBucketBalance, True))
+		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.postedBalance", getPostedBucketBalance, True))
 		propertyEndpoint.registerProperty(Property("SPENT.property.test", propTest, False))
 		propertyEndpoint.registerProperty(Property("vuex_counter", counter, False))
 		self.handler.registerRequestHandler("POST", "/property/query", propertyEndpoint)
@@ -678,8 +678,12 @@ class PropertyEndpoint(EndpointBackend):
 			prop = self.propertyManager.getProperty(name)
 			if prop is not None:
 				# TODO: "Smart" refresh rather than always refresh
-				value = prop.refreshValue(property, connection)
-				return {"name": prop.getPropertyName(), "value": value}
+				if isinstance(prop, LinkedProperty):
+					recordID = property.get("recordID", None) # Right now we do nothing with this server side but it is needed when we respond to the client
+					if recordID is None:
+						raise Exception("No recordID was provided for LinkedProperty(\"%s\")" % prop.getPropertyName())
+				prop.refreshValue(property, connection)
+				return prop.asDict(property)
 		return None
 
 	def setProperty(self, property, connection):
@@ -710,6 +714,9 @@ class Property:
 	def getPropertyName(self):
 		return self.name
 
+	def getTransportName(self):
+		return self.getPropertyName()
+
 	def getValue(self):
 		return self._value_
 
@@ -737,6 +744,16 @@ class Property:
 				connection.abortTransaction()
 
 		return value
+
+	def asDict(self, argsDict):
+		return {"name": self.getPropertyName(), "value": self.getValue()}
+
+class LinkedProperty(Property):
+	def __init__(self, name, calculatorFunction, needsConnection):
+		super().__init__(name, calculatorFunction, needsConnection)
+
+	def asDict(self, argsDict):
+		return {"name": self.getPropertyName(), "value": self.getValue(), "recordID": argsDict.get("recordID", None)}
 
 class EnumEndpoint(EndpointBackend):
 	def __init__(self, debug):

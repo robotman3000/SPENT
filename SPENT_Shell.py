@@ -103,8 +103,7 @@ class Command():
 def shellPrint(string):
 	print("Shell: %s" % str(string))
 
-database = sqlib.Database(args.dbpath)
-
+database = sqlib.Database(SPENT_DB_V1, args.dbpath)
 # TODO: Stop using global connection once the transaction commit system is implemented
 connection = database.getConnection("Shell")
 connection.connect()
@@ -343,15 +342,15 @@ def remap(input):
 connect = database.getConnection("InitTables")
 connect.connect(False)
 connect.beginTransaction()
-database.initTable(EnumTransactionGroupsTable, connect)
-database.initTable(EnumTransactionTagsTable, connect)
+#database.initTable(EnumTransactionGroupsTable, connect)
+#database.initTable(EnumTransactionTagsTable, connect)
 
 for dtype in dataTypes.items():
 	table = dtype[1]
 	typeName = dtype[0]
 
 	# Init the table in the DB
-	database.initTable(table, connect)
+	#database.initTable(table, connect)
 
 	for action in actions.items():
 		actionName = action[0]

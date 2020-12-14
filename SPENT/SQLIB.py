@@ -12,6 +12,8 @@ cadeb = log.getLogger("DB Cache Debug")
 
 COLUMN_ANY = None
 
+PROPERTY_AUTOGENERATE = "autoGenerate"
+
 def sqlRowToDict(row, table):
     columnNames = [col for col in table]
     dict = {}
@@ -1092,9 +1094,16 @@ class DatabaseCacheManager:
 
             # Verify that all the data is clean
             for item in rowData.items():
+                # If the item is not a virtual column
                 if not table.hasVirtualColumn(item[0]):
                     # Note that sanitize will throw an exception if anything goes wrong
-                    valueSanitized = item[0].value.sanitize(item[1])
+
+                    # If this column is missing its value check if it can be generated
+                    #table.
+                    #print("Item: %s" % item[0].value.getProperty(PROPERTY_AUTOGENERATE))
+
+                    #valueSanitized = item[0].value.sanitize(item[1])
+                    valueSanitized = item[1]
                     keys.append(item[0])
                     values.append(valueSanitized)
 

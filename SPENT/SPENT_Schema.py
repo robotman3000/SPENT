@@ -45,14 +45,20 @@ class EnumTagsTable(sqlib.EnumTable):
     def getRowClass(self, rowData):
         return Tag
 
-def generateAncestorValue(row, colum, value):
-    pass
+def generateAncestorValue(row, column, value):
+    print("Auto Gen!!!!!!!")
+
+def getBucketType(source, tableName, columnName):
+    if source.getValue(EnumBucketsTable.Ancestor) == -1:
+        return BucketTypeEnum.ACCOUNT.value;
+    return BucketTypeEnum.BUCKET.value;
 
 class EnumBucketsTable(sqlib.EnumTable):
     ID = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)
     Name = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=True)
     Parent = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"}, localKey='ID')
-    Ancestor = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name", "autoGenerate": generateAncestorValue}, localKey='ID')
+    Ancestor = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name", sqlib.PROPERTY_AUTOGENERATE: generateAncestorValue}, localKey='ID')
+    Type = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getBucketType)
 
     def onInit(self, connection):
         if connection.canExecuteUnsafe():
@@ -108,7 +114,7 @@ class EnumTransactionGroupsTable(sqlib.EnumTable):
             logman.warning("Failed to completely init Buckets table")
 
 def checkIsTransfer(source, tableName, columnName):
-    return (source.getSourceBucketID() is not -1) and (source.getDestBucketID() is not -1)
+    return (source.getSourceBucketID() != -1) and (source.getDestBucketID() != -1)
 
 def getTransactionType(source, tableName, columnName):
     # 00 = Transfer;
@@ -139,7 +145,7 @@ class EnumTransactionTable(sqlib.EnumTable):
     DestBucket = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, properties={"remapKey": "Buckets:ID:Name"}, foreignKey=EnumBucketsTable.ID)
     Memo = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
     Payee = sqlib.TableColumn(sqlib.EnumColumnType.TEXT, preventNull=False, isPrimaryKey=False, autoIncrement=False, keepUnique=False)
-    GroupID = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, foreignKey=EnumTransactionGroupsTable.ID)
+    #GroupID = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, foreignKey=EnumTransactionGroupsTable.ID)
     IsTransfer = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, checkIsTransfer)
     Type = sqlib.VirtualColumn(sqlib.EnumColumnType.INTEGER, getTransactionType)
 
@@ -253,6 +259,10 @@ class TransactionTypeEnum(sqlib.EnumBase):
     Transfer = 0
     Deposit = 1
     Withdrawal = 2
+
+class BucketTypeEnum(sqlib.EnumBase):
+    BUCKET = 0
+    ACCOUNT = 1
 
 class SPENT_DB_V1(sqlib.DatabaseSchema):
     @classmethod

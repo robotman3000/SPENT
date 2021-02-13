@@ -5,6 +5,7 @@
         <link href="https://cdn.jsdelivr.net/npm/@inkline/inkline/dist/inkline.css" rel="stylesheet">
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
+        <script type="text/javascript" src="https://momentjs.com/downloads/moment.js"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
         <script src="https://unpkg.com/vuex@3.5.1/dist/vuex.js"></script>
@@ -27,6 +28,18 @@
             .tree-item:hover {
                 background-color: lightblue;
             }
+            .testModalClass > div > div {
+                height: 80%;
+                overflow-y: scroll;
+            }
+            .testModalClass > div > div > div.body {
+                height: 100%;
+            }
+            .formStyles {
+                height: 100%;
+                //overflow-y: scroll;
+
+            }
         </style>
     </head>
     <body>
@@ -44,10 +57,15 @@
                     <i-column xs="12">
                         <i-navbar :collapse="false">
                             <i-navbar-brand>SPENT</i-navbar-brand>
-                            <i-navbar-items class="_float-right">
+                            <i-navbar-items class="_justify-content-center">
                                 <i-nav>
-                                    <i-nav-item href="" @click="showBucketTableModal = true">Manage Buckets</i-nav-item>
-                                    <i-nav-item>Save</i-nav-item>
+                                    <!--i-nav-item>Save</i-nav-item-->
+                                    <i-button-group>
+                                        <!--i-button variant="primary" @click="showBucketTableModal = true">Manage Buckets</i-button-->
+                                        <i-button variant="primary" @click="showTransactionFormModal = true; selectedTrans = null">New Transaction</i-button>
+                                        <!--i-button variant="primary">Transaction Filter</i-button-->
+                                        <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>
+                                    </i-button-group>
                                 </i-nav>
                             </i-navbar-items>
                         </i-navbar>
@@ -66,13 +84,13 @@
                                     <tbody>
                                         <tr>
                                             <th>Current</th>
-                                            <td>{{ selectedBucket.postedBalance ? selectedBucket.postedBalance.value : "$-0.00" }}</td>
-                                            <td>{{ selectedBucket.availableBalance ? selectedBucket.availableBalance.value : "$-0.00" }}</td>
+                                            <td><currency-display :balance-obj="selectedBucket.postedBalance"></currency-display></td>
+                                            <td><currency-display :balance-obj="selectedBucket.availableBalance"></currency-display></td>
                                         </tr>
                                         <tr>
                                             <th>Tree</th>
-                                            <td>{{ selectedBucket.postedTreeBalance ? selectedBucket.postedTreeBalance.value : "$-0.00" }}</td>
-                                            <td>{{ selectedBucket.availableTreeBalance ? selectedBucket.postedTreeBalance.value : "$-0.00" }}</td>
+                                            <td><currency-display :balance-obj="selectedBucket.postedTreeBalance"></currency-display></td>
+                                            <td><currency-display :balance-obj="selectedBucket.availableTreeBalance"></currency-display></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -83,25 +101,39 @@
                         </i-row>
                         <i-row>
                             <i-column xs="12">
-                                <tree-view class="item" :nodes="buckets" :selectednode="selectedBucketID" @node-click="(id) => this.selectedBucketID = id"></tree-view>
-                                <!--i-datatable hover striped :columns="accountTreeColumns" :rows="treeBuckets" :pagination="false" :filtering="false" :count-column="false" @tr-click="onSelAcc"></i-datatable-->
+                                <i-button-group>
+                                    <i-button variant="primary" @click="showBucketFormModal = true"><i-icon icon="plus" /><i-icon icon="file" /></i-button>
+                                    <i-button variant="primary" @click="showAccountFormModal = true"><i-icon icon="plus" /><i-icon icon="folder" /></i-button>
+                                </i-button-group>
+                                <i-button-group>
+                                    <i-button :variant="showTree ? 'primary' : 'secondary'" @click="showTree = !showTree">{{ showTree ? "Tree" : "Local"}}</i-button>
+                                    <i-button :variant="clickModeToggle2 ? 'primary' : 'danger'" @click="clickModeToggle2 = !clickModeToggle2">{{ clickModeToggle2 ? "Select Mode" : "Edit Mode"}}</i-button>
+                                </i-button-group>
+                            </i-column>
+                        </i-row>
+                        <i-row>
+                            <i-column xs="12">
+                                <tree-view class="item" :nodes="buckets" :selectednode="selectedBucketID" @node-click="(id) => selectedBucketID = id"></tree-view>
                             </i-column>
                         </i-row>
                     </i-column>
                     <i-column xs="9">
-                        <i-row>
+                        <!--i-row>
                             <i-column>
                                 <i-nav>
-                                    <i-button variant="primary" @click="onNewTransactionClick">New Transaction</i-button>
-                                    <i-button variant="primary" @click="onNewBucketClick">New Bucket</i-button>
-                                    <i-button variant="primary">Transaction Filter</i-button>
-                                    <i-button variant="primary" @click="requestChanges">Refresh</i-button>
+                                    <i-button-group>
+                                        <i-button variant="primary" @click="onNewTransactionClick">New Transaction</i-button>
+                                        <i-button variant="primary" @click="onNewBucketClick">New Bucket</i-button>
+                                        <--i-button variant="primary">Transaction Filter</i-button>
+                                        <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>
+                                    </i-button-group>
                                 </i-nav>
                             </i-column>
-                        </i-row>
+                        </i-row-->
                         <i-row>
                             <i-column>
-                                <i-datatable hover border striped :columns="transactionColumns" :rows="transactions" :pagination="false" :count-column="false" @tr-click="onTransTableRowClick"></i-datatable>
+                                <i-datatable v-show="transactions.length > 0" hover border striped :columns="transactionColumns" :rows="transactions" :pagination="false" :count-column="false" @tr-click="onTransTableRowClick"></i-datatable>
+                                <p v-show="transactions.length == 0">No Transactions</p>
                             </i-column>
                         </i-row>
                     </i-column>
@@ -109,26 +141,19 @@
                 <i-row><i-column xs="12">Footer</i-column></i-row>
             </i-container>
             <div>
-                <i-modal v-model="showTransactionFormModal">
+                <i-modal v-model="showTransactionFormModal" class="testModalClass">
                     <template slot="header">Edit Transaction</template>
-                    <transaction-form :form-schema="transSchema" @form-submit="onFormSubmit"></transaction-form>
+                    <transaction-form :form-object="selectedTrans" :type-options="typeOptions" :status-options="statusOptions" :bucket-options="buckets" @form-submit="onFormSubmit" class="formStyles"></transaction-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
                 <i-modal v-model="showBucketFormModal">
                     <template slot="header">Edit Bucket</template>
-                    <bucket-form :form-schema="bucketSchema" @form-submit="onFormSubmit"></bucket-form>
+                    <bucket-form :form-object="selectedBucket" :bucket-options="buckets" :account-options="accounts" @form-submit="onFormSubmit"></bucket-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
-                <i-modal v-model="showBucketTableModal">
-                    <template slot="header">Manage Accounts</template>
-                    <i-tabs>
-                        <i-tab title="Accounts">
-                            <i-datatable hover border striped :columns="bucketColumns" :rows="accounts" :pagination="false" :count-column="false" @tr-click="onBucketTableRowClick"></i-datatable>
-                        </i-tab>
-                        <i-tab title="Buckets">
-                            <i-datatable hover border striped :columns="bucketColumns" :rows="buckets" :pagination="true" :count-column="false" @tr-click="onBucketTableRowClick"></i-datatable>
-                        </i-tab>
-                    </i-tabs>
+                <i-modal v-model="showAccountFormModal">
+                    <template slot="header">Edit Account</template>
+                    <account-form :form-object="selectedBucket" @form-submit="onFormSubmit"></account-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
             </div>

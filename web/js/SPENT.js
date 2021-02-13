@@ -753,143 +753,32 @@ Vue.component("table-row-buttons", {
     },
 });
 
-
-function BaseForm(name, template, props, data){
-    this.name = name;
-    this.props = props;
-    this.template = template;
-    this.methods = {
-        doFormSubmit: function(formName){
-            var data = this.parseFormData(this.formSchema, this.formSchema.fields);
-            this.$emit('form-submit', formName, data);
-        },
-        parseFormData: function(obj, fields){
-            var newObj = {};
-            fields.forEach(function(fieldName){
-                let value = null;
-                if (obj){
-                    let field = getOrDefault(obj, fieldName, null);
-                    if (field.value === ""){
-                        value = null;
-                    } else {
-                        value = field.value;
-                    }
-                    newObj[fieldName] = value;
-                } else {
-                    console.log("[SPENT] Failed to assign value to object \'" + key + "\'");
-                }
-            });
-            return newObj;
-        },
-        setFormObject: function(obj, form){
-            var self = this;
-            form.fields.forEach(function(key){
-                let value = null;
-                if (obj){
-                    value = getOrDefault(obj, key, undefined, true);
-                }
-                if(value !== undefined){
-                    form[key].value = value;
-                } else {
-                    console.log("[SPENT] Failed to assign value to form element \'" + key + "\'");
-                }
-            });
-        },
-    };
-    this.watch = {
-        "formObject": function(value){
-            this.setFormObject(value, this.formSchema);
-        },
-    };
-    this.data = data;
+function doFormSubmit(formName){
+    var data = this.parseFormData(this.formSchema, this.formSchema.fields);
+    this.$emit('form-submit', formName, data);
 };
-Vue.component("account-form", new BaseForm(
-    "account-form",
-    `<i-form v-model="formSchema" @submit="doFormSubmit(\'account\')">
-        <i-form-group>
-            <i-form-label>Name</i-form-label>
-            <i-input :schema="formSchema.Name" placeholder="Type something.." />
-        </i-form-group>
-
-        <i-form-group>
-            <i-button type="submit">Submit</i-button>
-        </i-form-group>
-    </i-form>`,
-    ['formObject'],
-    function(){
-        return {
-            formSchema: this.$inkline.form({
-                id: {},
-                Name: {
-                    validators: [
-                        { rule: 'alphanumeric', allowSpaces: true },
-                    ],
-                },
-            }),
-        };
-    },
-));
-Vue.component("bucket-form", new BaseForm(
-    "bucket-form",
-    `<i-form v-model="formSchema" @submit="doFormSubmit(\'bucket\')">
-        <i-form-group>
-            <i-form-label>Name</i-form-label>
-            <i-input :schema="formSchema.Name" placeholder="Type something.." />
-        </i-form-group>
-
-        <i-form-group>
-            <i-form-label>Parent</i-form-label>
-            <!--i-input :schema="formSchema.Parent" placeholder="Type something.." /-->
-            <i-select :schema="formSchema.Parent" placeholder="Choose an option">
-                <dynamic-select-options :options="bucketOptions" nameKey="Name" valueKey="id"></dynamic-select-options>
-            </i-select>
-        </i-form-group>
-
-        <!--i-form-group>
-            <i-form-label>Ancestor</i-form-label>
-            <--i-input :schema="formSchema.Ancestor" placeholder="Type something.." /->
-            <i-select :schema="formSchema.Ancestor" placeholder="Choose an option">
-                <dynamic-select-options :options="accountOptions" nameKey="Name" valueKey="id"></dynamic-select-options>
-            </i-select>
-        </i-form-group-->
-
-        <i-form-group>
-            <i-button type="submit">Submit</i-button>
-        </i-form-group>
-    </i-form>`,
-    ['formObject', 'bucketOptions', 'accountOptions'],
-    function(){
-        return {
-            formSchema: this.$inkline.form({
-                id: {},
-                Name: {
-                    validators: [
-                        { rule: 'alphanumeric', allowSpaces: true },
-                    ],
-                },
-                Parent: {
-                    validators: [
-                        {
-                            rule: 'required', message: "Please select an option",
-                        },
-                    ],
-                },
-                /*Ancestor: {
-                    validators: [
-                        {
-                            rule: 'required', message: "Please select an option",
-                        },
-                    ],
-                },*/
-            }),
-        };
-    },
-));
-
+function parseFormData(obj, fields){
+    var newObj = {};
+    fields.forEach(function(fieldName){
+        let value = null;
+        if (obj){
+            let field = getOrDefault(obj, fieldName, null);
+            if (field.value === ""){
+                value = null;
+            } else {
+                value = field.value;
+            }
+            newObj[fieldName] = value;
+        } else {
+            console.log("[SPENT] Failed to assign value to object \'" + key + "\'");
+        }
+    });
+    return newObj;
+};
 
 Vue.component("transaction-form", {
     name: 'transaction-form',
-    props: ['formObject', 'statusOptions', 'typeOptions', 'bucketOptions'],
+    props: ['formSchema', 'statusOptions', 'bucketOptions'],
     template: `
         <i-form v-model="formSchema" @submit="doFormSubmit(\'transaction\')">
             <i-form-group>
@@ -915,14 +804,6 @@ Vue.component("transaction-form", {
             </i-form-group>
 
             <i-form-group>
-                <i-form-label>Type</i-form-label>
-                <!--i-input :schema="formSchema.SourceBucket" placeholder="source bucket" /-->
-                <i-select :schema="formSchema.Type" placeholder="Choose an option" v-on:input="onTypeChange">
-                    <dynamic-select-options :options="typeOptions" nameKey="name" valueKey="value"></dynamic-select-options>
-                </i-select>
-            </i-form-group>
-
-            <i-form-group v-if="showSource" >
                 <i-form-label>Source Bucket</i-form-label>
                 <!--i-input :schema="formSchema.SourceBucket" placeholder="source bucket" /-->
                 <i-select :schema="formSchema.SourceBucket" placeholder="Choose an option">
@@ -930,7 +811,7 @@ Vue.component("transaction-form", {
                 </i-select>
             </i-form-group>
 
-            <i-form-group v-if="showDest">
+            <i-form-group>
                 <i-form-label>Destination Bucket</i-form-label>
                 <!--i-input :schema="formSchema.DestBucket" placeholder="dest bucket" /-->
                 <i-select :schema="formSchema.DestBucket" placeholder="Choose an option">
@@ -956,70 +837,77 @@ Vue.component("transaction-form", {
     data: function(){
         return {
             formObjectClass: Transaction,
-            formSchema: this.$inkline.form({
-                id: {},
-                Status: {
-                    validators: [
-                        { rule: 'required' },
-                    ],
-                },
-                TransDate: {
-                    validators: [
-                        { rule: 'required' },
-                        {
-                            rule: 'custom', validator: (v) => moment(v, 'YYYY-MM-DD',true).isValid(),
-                            message: "Enter a valid date in the form YYYY-MM-DD",
-                        },
-                    ],
-                },
-                PostDate: {
-                    validators: [
-                        {
-                            rule: 'custom', validator: (v) => moment(v, 'YYYY-MM-DD',true).isValid() || v == "",
-                            message: "Enter a valid date in the form YYYY-MM-DD",
-                        },
-                    ],
-                },
-                Amount: {
-                    validators: [
-                        { rule: 'number', allowNegative: false, allowDecimal: true, message: "Enter a valid positive amount" },
-                        { rule: 'required' },
-                    ],
-                },
-                Type: {
-                    value: 0,
-                },
-                SourceBucket: {
-                    validators: [
-                        { rule: 'required', message: "Please choose a source bucket" },
-                    ],
-                },
-                DestBucket: {
-                    validators: [
-                        { rule: 'required', message: "Please choose a destination bucket" },
-                    ],
-                },
-                Memo: {},
-                Payee: {},
-            }),
-            showSource: false,
-            showDest: false,
         };
     },
     methods: {
         doFormSubmit: doFormSubmit,
         parseFormData: parseFormData,
-        onTypeChange(value) {
-            console.log("Type Change")
-            this.showSource = value == 0 || value == 2;
-            this.showDest = value == 0 || value == 1;
-        },
-        setFormObject: setFormObject,
     },
-    watch: {
-        "formObject": function(value){
-            this.setFormObject(value, this.formSchema);
-        },
+});
+Vue.component("bucket-form", {
+    name: 'bucket-form',
+    props: ['formSchema', 'bucketOptions', 'accountOptions'],
+    template: `
+        <i-form v-model="formSchema" @submit="doFormSubmit(\'bucket\')">
+            <i-form-group>
+                <i-form-label>Name</i-form-label>
+                <i-input :schema="formSchema.Name" placeholder="Type something.." />
+            </i-form-group>
+
+            <i-form-group>
+                <i-form-label>Parent</i-form-label>
+                <!--i-input :schema="formSchema.Parent" placeholder="Type something.." /-->
+                <i-select :schema="formSchema.Parent" placeholder="Choose an option">
+                    <dynamic-select-options :options="bucketOptions" nameKey="Name" valueKey="id"></dynamic-select-options>
+                </i-select>
+            </i-form-group>
+
+            <!--i-form-group>
+                <i-form-label>Ancestor</i-form-label>
+                <--i-input :schema="formSchema.Ancestor" placeholder="Type something.." /->
+                <i-select :schema="formSchema.Ancestor" placeholder="Choose an option">
+                    <dynamic-select-options :options="accountOptions" nameKey="Name" valueKey="id"></dynamic-select-options>
+                </i-select>
+            </i-form-group-->
+
+            <i-form-group>
+                <i-button type="submit">Submit</i-button>
+            </i-form-group>
+        </i-form>
+    `,
+    data: function(){
+        return {
+            formObjectClass: Bucket,
+        };
+    },
+    methods: {
+        doFormSubmit: doFormSubmit,
+        parseFormData: parseFormData,
+    },
+});
+Vue.component("account-form", {
+    name: 'account-form',
+    props: ['formSchema'],
+    template: `
+        <i-form v-model="formSchema" @submit="doFormSubmit(\'account\')">
+            <i-form-group>
+                <i-form-label>Name</i-form-label>
+                <i-input :schema="formSchema.Name" placeholder="Type something.." />
+            </i-form-group>
+
+            <i-form-group>
+                <i-button type="submit">Submit</i-button>
+            </i-form-group>
+        </i-form>
+    `,
+    data: function(){
+        return {
+            formObjectClass: Account,
+        };
+    },
+    methods: {
+        doFormSubmit: doFormSubmit,
+        parseFormData: parseFormData,
     },
 });
 
@@ -1037,9 +925,21 @@ function SPENT(){
             transactions: () => Transaction.all(),
             buckets: () => Bucket.query().with(['postedBalance', 'postedTreeBalance']).all(),
             accounts: () => Account.all(),
-            statusOptions: (vue) => vue.getEnumOptions("TransactionStatus"),
-            typeOptions: (vue) => vue.getEnumOptions("TransactionType"),
-            selectedBucket: (vue) => Bucket.query().whereId(vue.selectedBucketID).with(['availableBalance', 'postedBalance', 'availableTreeBalance', 'postedTreeBalance']).first(),
+            statusOptions: function(){
+                console.log("Getting Status Options")
+                var enu = this.$store.getters.getEnum("TransactionStatus");
+                if (enu){
+                    return enu;
+                }
+                return [{name: "No Options", value: "-1"}];
+            },
+            bucketOptions: function(){
+                return Bucket.all();
+            },
+            accountOptions: function(){
+                return Account.all();
+            },
+            selectedBucket: function(){ return Bucket.query().whereId(this.selectedBucketID).with(['availableBalance', 'postedBalance', 'availableTreeBalance', 'postedTreeBalance']).first() },
         },
         data() {
             return {
@@ -1047,7 +947,6 @@ function SPENT(){
                 clickModeToggle: true,
                 clickModeToggle2: true,
                 showTree: true,
-                selectedTrans: null,
                 transactionColumns: [
                     {title: "Status", path: "Status", sortable: true, component: "enum-table-cell", enumName: "TransactionStatus"},
                     {title: "Date", path: "TransDate", sortable: true},
@@ -1071,74 +970,118 @@ function SPENT(){
                     {title: "Payee", path: "Payee", sortable: true},
                     //{title: "", path: "", sortable: false, component: "table-row-buttons"},
                 ],
+                transSchema: this.$inkline.form({
+                    id: {},
+                    Status: {
+                        validators: [
+                            { rule: 'required' },
+                        ],
+                    },
+                    TransDate: {
+                        validators: [
+                            { rule: 'required' },
+                            {
+                                rule: 'custom', validator: (v) => moment(v, 'YYYY-MM-DD',true).isValid(),
+                                message: "Enter a valid date in the form YYYY-MM-DD",
+                            },
+                        ],
+                    },
+                    PostDate: {
+                        validators: [
+                            {
+                                rule: 'custom', validator: (v) => moment(v, 'YYYY-MM-DD',true).isValid() || v == "",
+                                message: "Enter a valid date in the form YYYY-MM-DD",
+                            },
+                        ],
+                    },
+                    Amount: {
+                        validators: [
+                            { rule: 'number', allowNegative: false, allowDecimal: true, message: "Enter a valid positive amount" },
+                            { rule: 'required' },
+                        ],
+                    },
+                    SourceBucket: {
+                        validators: [
+                            { rule: 'required', message: "Please choose a source bucket" },
+                        ],
+                    },
+                    DestBucket: {
+                        validators: [
+                            { rule: 'required', message: "Please choose a destination bucket" },
+                        ],
+                    },
+                    Memo: {},
+                    Payee: {},
+                }),
+                showTransactionFormModal: false,
                 bucketColumns: [
                     {title: "Name", path: "Name", sortable: true},
                     {title: "Parent", path: "Parent", sortable: true, component: "bucket-table-cell"},
                     {title: "Ancestor", path: "Ancestor", sortable: true, component: "bucket-table-cell"},
                 ],
+                bucketSchema: this.$inkline.form({
+                    id: {},
+                    Name: {
+                        validators: [
+                            { rule: 'alphanumeric', allowSpaces: true },
+                        ],
+                    },
+                    Parent: {
+                        validators: [
+                            {
+                                rule: 'required', message: "Please select an option",
+                            },
+                        ],
+                    },
+                    /*Ancestor: {
+                        validators: [
+                            {
+                                rule: 'required', message: "Please select an option",
+                            },
+                        ],
+                    },*/
+                }),
+                showBucketFormModal: false,
+                showBucketTableModal: false,
                 accountColumns: [
                     {title: "Name", path: "Name", sortable: true},
                 ],
-                showTransactionFormModal: false,
-                showBucketFormModal: false,
+                accountSchema: this.$inkline.form({
+                    id: {},
+                    Name: {
+                        validators: [
+                            { rule: 'alphanumeric', allowSpaces: true },
+                        ],
+                    },
+                }),
                 showAccountFormModal: false,
             };
         },
         watch: {
             selectedBucketID: function(id){
                 // Request the transactions for the selected node
-                if(this.clickModeToggle2) {
-                    if (this.showTree) {
-                        //TODO: Get account children
-                        var vals=[];
-                        for(var item of Bucket.query().where('Ancestor', id).orWhere('id', id).all()){
-                            vals.push(item.id);
-                        }
-                        var ids = vals.join(',');
-                        requestManager.selectRecords("transaction", null, null, "SourceBucket in (" + ids + ") OR DestBucket in (" + ids + ")");
-                    } else {
-                        requestManager.selectRecords("transaction", null, null, "SourceBucket == " + id + " OR DestBucket == " + id);
+                if (this.showTree) {
+                    //TODO: Get account children
+                    var vals=[];
+                    for(var item of Bucket.query().where('Ancestor', id).orWhere('id', id).all()){
+                        vals.push(item.id);
                     }
-                    dbStore.dispatch("sendDBRequest");
-
-                    propertyManager.selectRecords("property",
-                    [{"name": "SPENT.bucket.availableTreeBalance", "recordID": id},
-                    {"name": "SPENT.bucket.postedTreeBalance", "recordID": id},
-                    {"name": "SPENT.bucket.availableBalance", "recordID": id},
-                    {"name": "SPENT.bucket.postedBalance", "recordID": id}]);
-                    dbStore.dispatch("sendPropRequest");
+                    var ids = vals.join(',');
+                    requestManager.selectRecords("transaction", null, null, "SourceBucket in (" + ids + ") OR DestBucket in (" + ids + ")");
                 } else {
-                    // Find out if we are working with an account or a bucket
-                    var bucket = Bucket.query().whereId(id).first();
-
-                    var schema = bucket.Type == 0 ? this.bucketSchema : this.accountSchema;
-                    var typeName = bucket.Type == 0 ? "bucket" : "account";
-
-                    if (this.clickModeToggle){ // True == edit; False == Delete
-                        //this.setFormObject(bucket, schema);
-                        if(bucket.Type == 0){
-                            this.showBucketFormModal = true;
-                        } else {
-                            this.showAccountFormModal = true;
-                        }
-                    } else {
-                        if(confirm("Are you sure you want to delete row " + bucket.id + "?")){
-                            requestManager.deleteRecords(typeName, [{"id": bucket.id }]);
-                            dbStore.dispatch("sendDBRequest");
-                        }
-                    }
+                    requestManager.selectRecords("transaction", null, null, "SourceBucket == " + id + " OR DestBucket == " + id);
                 }
+                dbStore.dispatch("sendDBRequest");
+
+                propertyManager.selectRecords("property",
+                [{"name": "SPENT.bucket.availableTreeBalance", "recordID": id},
+                {"name": "SPENT.bucket.postedTreeBalance", "recordID": id},
+                {"name": "SPENT.bucket.availableBalance", "recordID": id},
+                {"name": "SPENT.bucket.postedBalance", "recordID": id}]);
+                dbStore.dispatch("sendPropRequest");
             },
         },
         methods: {
-            getEnumOptions: function(enumName){
-                console.log("Getting Options for " + enumName)
-                var enu = this.$store.getters.getEnum(enumName);
-                if (enu){
-                    return enu;
-                }
-                return [{name: "No Options", value: "-1"}];
-            },
             isNegative(row){
                 // True = Money Coming in; I.E. a positive value
                 // False = Money Going out; I.E. a negative value
@@ -1171,6 +1114,7 @@ function SPENT(){
                          break;
                     case "bucket":
                         this.showBucketFormModal = false;
+                        this.showBucketTableModal = true;
                         break;
                     case "account":
                         this.showAccountFormModal = false;
@@ -1200,13 +1144,88 @@ function SPENT(){
                 }
                 dbStore.dispatch("sendDBRequest");
             },
+            setFormObject: function(obj, form){
+                var self = this;
+                form.fields.forEach(function(key){
+                    let value = null;
+                    if (obj){
+                        value = getOrDefault(obj, key, undefined, true);
+                    }
+                    if(value !== undefined){
+                        form[key].value = value;
+                    } else {
+                        console.log("[SPENT] Failed to assign value to form element \'" + key + "\'");
+                    }
+                });
+            },
+            onBucketTreeClick (id){
+                if(this.clickModeToggle2) {
+                    this.selectedBucketID = id;
+                } else {
+                    // Find out if we are working with an account or a bucket
+                    var bucket = Bucket.query().whereId(id).first();
+
+                    var schema = bucket.Type == 0 ? this.bucketSchema : this.accountSchema;
+                    var typeName = bucket.Type == 0 ? "bucket" : "account";
+
+                    if (this.clickModeToggle){ // True == edit; False == Delete
+                        this.setFormObject(bucket, schema);
+                        if(bucket.Type == 0){
+                            this.showBucketFormModal = true;
+                        } else {
+                            this.showAccountFormModal = true;
+                        }
+                    } else {
+                        if(confirm("Are you sure you want to delete row " + bucket.id + "?")){
+                            requestManager.deleteRecords(typeName, [{"id": bucket.id }]);
+                            dbStore.dispatch("sendDBRequest");
+                        }
+                    }
+                }
+            },
+            onNewTransactionClick (){
+                this.setFormObject(null, this.transSchema);
+                this.showTransactionFormModal = true;
+            },
+            onNewBucketClick (){
+                this.setFormObject(null, this.bucketSchema);
+                this.showBucketFormModal = true;
+            },
+            onNewAccountClick (){
+                this.setFormObject(null, this.accountSchema);
+                this.showAccountFormModal = true;
+            },
             onTransTableRowClick (event, row, rowIndex) { // Edit transaction
                 if (this.clickModeToggle){ // True == edit; False == Delete
-                    this.selectedTrans = row;
+                    this.setFormObject(row, this.transSchema);
                     this.showTransactionFormModal = true;
                 } else {
                     if(confirm("Are you sure you want to delete row " + row.id + "?")){
                         requestManager.deleteRecords("transaction", [{"id": row.id}]);
+                        dbStore.dispatch("sendDBRequest");
+                    }
+                }
+            },
+            onBucketTableRowClick (event, row, rowIndex) { // Edit bucket
+                if (this.clickModeToggle){ // True == edit; False == Delete
+                    this.setFormObject(row, this.bucketSchema);
+                    this.showBucketTableModal = false;
+                    this.showBucketFormModal = true;
+                } else {
+                    if(confirm("Are you sure you want to delete row " + row.id + "?")){
+                        requestManager.deleteRecords("bucket", [{"id": row.id}]);
+                        dbStore.dispatch("sendDBRequest");
+                    }
+                }
+            },
+            onAccountTableRowClick (event, row, rowIndex) { // Edit account
+                if (this.clickModeToggle){ // True == edit; False == Delete
+                    this.setFormObject(row, this.accountSchema);
+                    this.showBucketTableModal = false;
+                    this.showAccountFormModal = true;
+                } else {
+                    if(confirm("Are you sure you want to delete row " + row.id + "?")){
+                        requestManager.deleteRecords("account", [{"id": row.id}]);
                         dbStore.dispatch("sendDBRequest");
                     }
                 }
@@ -1216,6 +1235,7 @@ function SPENT(){
     vueInst = vm;
     requestManager.selectRecords("account");
     dbStore.dispatch("sendDBRequest").then( () => dbStore.dispatch("fetchAllBucketBalances"));
+    $(".menu").toggleClass("scrollFix")
 }
 
 function bootstrapSPENT(){

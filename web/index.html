@@ -28,18 +28,10 @@
             .tree-item:hover {
                 background-color: lightblue;
             }
-            .testModalClass > div > div {
-                height: 80%;
-                overflow-y: scroll;
-            }
-            .testModalClass > div > div > div.body {
-                height: 100%;
-            }
-            .formStyles {
-                height: 100%;
-                //overflow-y: scroll;
-
-            }
+	    .scrollFix {
+		max-height: 258px;
+		overflow-y: scroll;
+	    }
         </style>
     </head>
     <body>
@@ -62,7 +54,7 @@
                                     <!--i-nav-item>Save</i-nav-item-->
                                     <i-button-group>
                                         <!--i-button variant="primary" @click="showBucketTableModal = true">Manage Buckets</i-button-->
-                                        <i-button variant="primary" @click="showTransactionFormModal = true; selectedTrans = null">New Transaction</i-button>
+                                        <i-button variant="primary" @click="onNewTransactionClick">New Transaction</i-button>
                                         <!--i-button variant="primary">Transaction Filter</i-button-->
                                         <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>
                                     </i-button-group>
@@ -102,8 +94,8 @@
                         <i-row>
                             <i-column xs="12">
                                 <i-button-group>
-                                    <i-button variant="primary" @click="showBucketFormModal = true"><i-icon icon="plus" /><i-icon icon="file" /></i-button>
-                                    <i-button variant="primary" @click="showAccountFormModal = true"><i-icon icon="plus" /><i-icon icon="folder" /></i-button>
+                                    <i-button variant="primary" @click="onNewBucketClick"><i-icon icon="plus" /><i-icon icon="file" /></i-button>
+                                    <i-button variant="primary" @click="onNewAccountClick"><i-icon icon="plus" /><i-icon icon="folder" /></i-button>
                                 </i-button-group>
                                 <i-button-group>
                                     <i-button :variant="showTree ? 'primary' : 'secondary'" @click="showTree = !showTree">{{ showTree ? "Tree" : "Local"}}</i-button>
@@ -113,7 +105,7 @@
                         </i-row>
                         <i-row>
                             <i-column xs="12">
-                                <tree-view class="item" :nodes="buckets" :selectednode="selectedBucketID" @node-click="(id) => selectedBucketID = id"></tree-view>
+                                <tree-view class="item" :nodes="buckets" :selectednode="selectedBucketID" @node-click="onBucketTreeClick"></tree-view>
                             </i-column>
                         </i-row>
                     </i-column>
@@ -141,19 +133,31 @@
                 <i-row><i-column xs="12">Footer</i-column></i-row>
             </i-container>
             <div>
-                <i-modal v-model="showTransactionFormModal" class="testModalClass">
+                <i-modal v-model="showTransactionFormModal">
                     <template slot="header">Edit Transaction</template>
-                    <transaction-form :form-object="selectedTrans" :type-options="typeOptions" :status-options="statusOptions" :bucket-options="buckets" @form-submit="onFormSubmit" class="formStyles"></transaction-form>
+                    <transaction-form :form-schema="transSchema" :status-options="statusOptions" :bucket-options="bucketOptions" @form-submit="onFormSubmit"></transaction-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
                 <i-modal v-model="showBucketFormModal">
                     <template slot="header">Edit Bucket</template>
-                    <bucket-form :form-object="selectedBucket" :bucket-options="buckets" :account-options="accounts" @form-submit="onFormSubmit"></bucket-form>
+                    <bucket-form :form-schema="bucketSchema" :bucket-options="bucketOptions" :account-options="accountOptions" @form-submit="onFormSubmit"></bucket-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
                 <i-modal v-model="showAccountFormModal">
                     <template slot="header">Edit Account</template>
-                    <account-form :form-object="selectedBucket" @form-submit="onFormSubmit"></account-form>
+                    <account-form :form-schema="accountSchema" @form-submit="onFormSubmit"></account-form>
+                    <!--template slot="footer">Modal Footer</template-->
+                </i-modal>
+                <i-modal v-model="showBucketTableModal">
+                    <template slot="header">Manage Accounts</template>
+                    <i-tabs>
+                        <i-tab title="Accounts">
+                            <i-datatable hover border striped :columns="accountColumns" :rows="accounts" :pagination="false" :count-column="false" @tr-click="onAccountTableRowClick"></i-datatable>
+                        </i-tab>
+                        <i-tab title="Buckets">
+                            <i-datatable hover border striped :columns="bucketColumns" :rows="buckets" :pagination="true" :count-column="false" @tr-click="onBucketTableRowClick"></i-datatable>
+                        </i-tab>
+                    </i-tabs>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
             </div>

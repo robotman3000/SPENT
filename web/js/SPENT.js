@@ -468,9 +468,9 @@ const dbStore = new Vuex.Store({
     mutations: {
         mutateTransactions: function(state, data){
             var action = data.action;
-            if(action == "get" || action == "create"){
+            if(action == "get"){
                 Transaction.create({data: data.data});
-            } else if (action == "update"){
+            } else if (action == "update" || action == "create"){
                 Transaction.insert({data: data.data});
             } else if (action == "delete"){
                 data.data.forEach((item) => Transaction.delete(item.id));
@@ -480,7 +480,9 @@ const dbStore = new Vuex.Store({
         },
         mutateAccounts: function(state, data){
             var action = data.action;
-            if(action == "get" || action == "create" || action == "update"){
+            if(action == "get"){
+                Account.create({data: data.data});
+            } else if (action == "update" || action == "create"){
                 Account.insert({data: data.data});
             } else if (action == "delete"){
                 data.data.forEach((item) => Account.delete(item.id));
@@ -490,12 +492,14 @@ const dbStore = new Vuex.Store({
         },
         mutateBuckets: function(state, data){
             var action = data.action;
-            if(action == "get" || action == "create" ||  action == "update"){
+            if(action == "get"){
+                Bucket.create({data: data.data});
+            } else if (action == "update" || action == "create"){
                 Bucket.insert({data: data.data});
             } else if (action == "delete"){
                 data.data.forEach((item) => Bucket.delete(item.id));
             } else {
-                alert("Error: Cannot commit account mutation: Unknown action \"" + action + "\"");
+                alert("Error: Cannot commit bucket mutation: Unknown action \"" + action + "\"");
             }
         },
         mutateProperties: function(state, data){
@@ -795,7 +799,7 @@ Vue.component("transaction-form", {
 
             <i-form-group>
                 <i-form-label>Post Date</i-form-label>
-                <i-input :schema="formSchema.PostDate" placeholder="Enter a date" />
+                <i-input :schema="formSchema.PostDate" placeholder="Enter a date"/>
             </i-form-group>
 
             <i-form-group>
@@ -842,6 +846,9 @@ Vue.component("transaction-form", {
     methods: {
         doFormSubmit: doFormSubmit,
         parseFormData: parseFormData,
+        testFunc: function (){
+            console.log("Yay!!!!");
+        },
     },
 });
 Vue.component("bucket-form", {
@@ -987,10 +994,17 @@ function SPENT(){
                         ],
                     },
                     PostDate: {
+                        value: "",
                         validators: [
                             {
-                                rule: 'custom', validator: (v) => moment(v, 'YYYY-MM-DD',true).isValid() || v == "",
+                                rule: 'custom',
+                                validator: (v) => moment(v, 'YYYY-MM-DD',true).isValid() || v == "",
                                 message: "Enter a valid date in the form YYYY-MM-DD",
+                                enabled: function(a, b, c, d){
+                                    console.log(a);
+                                    console.log("Anything?");
+                                    return true;
+                                },
                             },
                         ],
                     },
@@ -1152,6 +1166,18 @@ function SPENT(){
                         value = getOrDefault(obj, key, undefined, true);
                     }
                     if(value !== undefined){
+                        // This is a workaround for a bug with inkline
+                        if (key == "PostDate"){
+                            // We create a custom validator enable function and give it access to the form schema so we can actually do our job
+                            form[key].validators[0].enabled = function(){
+                                if (form[key].value == null && key == "PostDate"){
+                                    console.log("Disabling validator for " + key);
+                                    return false;
+                                }
+                                return true;
+                            }
+                        }
+
                         form[key].value = value;
                     } else {
                         console.log("[SPENT] Failed to assign value to form element \'" + key + "\'");
@@ -1208,6 +1234,7 @@ function SPENT(){
             },
             onBucketTableRowClick (event, row, rowIndex) { // Edit bucket
                 if (this.clickModeToggle){ // True == edit; False == Delete
+                    this.setFormObject(row, this.bucketSchema);
                     this.setFormObject(row, this.bucketSchema);
                     this.showBucketTableModal = false;
                     this.showBucketFormModal = true;

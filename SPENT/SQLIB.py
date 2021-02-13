@@ -493,6 +493,7 @@ class Database:
         self.schema = schema # TODO: The entire API needs checks to protect against mismatched schemas
         self._lock_ = None
         self.initedTables = []
+        sqldeb.debug("Initializing Database with %s version %s" % (schema.getName(), schema.getVersion()))
 
     def _getCache_(self):
         return self.cache
@@ -1102,8 +1103,8 @@ class DatabaseCacheManager:
                     #table.
                     #print("Item: %s" % item[0].value.getProperty(PROPERTY_AUTOGENERATE))
 
-                    #valueSanitized = item[0].value.sanitize(item[1])
-                    valueSanitized = item[1]
+                    valueSanitized = item[0].value.sanitize(item[1])
+                    #valueSanitized = item[1]
                     keys.append(item[0])
                     values.append(valueSanitized)
 
@@ -1385,6 +1386,8 @@ class SQLQueryBuilder:
                         value = ""
                         if type(i[1]) is str:
                             value = "\"%s\"" % i[1]
+                        elif i[1] is None:
+                            value = "null"
                         else:
                             value = i[1]
 

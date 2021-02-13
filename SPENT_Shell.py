@@ -2,7 +2,7 @@ from typing import Callable, List
 from curses import wrapper
 
 import readline
-from SPENT.SPENT_Schema import *
+from SPENT.SPENT_Schema_v1 import *
 from SPENT.Old.SPENT import SpentUtil, SQL_WhereStatementBuilder, VirtualColumn
 logman = log.getLogger("Main")
 
@@ -175,7 +175,7 @@ def listBucketTransactions(bucket) -> None:
 		transList = SpentUtil.getAllBucketTransactions(connection, bucket)
 		for trans in transList:
 			e = EnumTransactionTable
-			propList = [e.ID, e.Status, e.TransDate, e.PostDate, e.Amount, e.SourceBucket, e.DestBucket]#, e.isTransfer]
+			propList = [e.id, e.Status, e.TransDate, e.PostDate, e.Amount, e.SourceBucket, e.DestBucket]#, e.isTransfer]
 			#TODO: Reimplement remapping column values
 			#res = ", ".join(map(str, [("%s: %s" % (i, trans.getValueRemapped(i))) for i in propList]))
 			res = ", ".join(map(str, [("%s: %s" % (i.name, trans.getValue(i))) for i in propList]))

@@ -3,7 +3,10 @@ import traceback
 from wsgiref.simple_server import make_server
 
 from SPENT.DBBackup import backupDB
-from SPENT.Old.SPENT import *
+#from SPENT.Old.SPENT import *
+from SPENT.Util import *
+from SPENT.SPENT_Schema_v1_1 import *
+from SPENT.SQLIB import SQL_WhereStatementBuilder
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
@@ -275,7 +278,7 @@ class DatabaseEndpoint(EndpointBackend):
 		backupDB(["scriptname", dbPath, "SPENT.backup"])
 
 		self.debugAPI = debugAPI
-		self.database = sqlib.Database(SPENT_DB_V1, dbPath)
+		self.database = sqlib.Database(SPENT_DB_V1_1, dbPath)
 		self.connection = self.database.getConnection("Server")
 		self.connection.connect()  # TODO: Implement a connection pool
 
@@ -285,12 +288,11 @@ class DatabaseEndpoint(EndpointBackend):
 		self.apiTree["account"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["bucket"] = {"get": self.getFunction, "create": self.createBucketFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["transaction"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
-		self.apiTree["transaction-group"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
 		self.apiTree["debug"] = {"refresh": self.debugFunction}
 		# self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag} #Tags are handled differently
 
-		self.typeMapper = {"account": EnumBucketsTable, "bucket": EnumBucketsTable, "transaction": EnumTransactionTable, "transaction-group": EnumTransactionGroupsTable, "tag": EnumTransactionTagsTable}
-		self.reverseTypeMapper = {EnumBucketsTable: "account", EnumBucketsTable: "bucket", EnumTransactionTable: "transaction", EnumTransactionGroupsTable: "transaction-group", EnumTransactionTagsTable: "tag"}
+		self.typeMapper = {"account": EnumBucketsTable, "bucket": EnumBucketsTable, "transaction": EnumTransactionTable, "tag": EnumTransactionTagsTable}
+		self.reverseTypeMapper = {EnumBucketsTable: "account", EnumBucketsTable: "bucket", EnumTransactionTable: "transaction", EnumTransactionTagsTable: "tag"}
 
 	def debugFunction(self, request, columns, table, connection):
 		srvlog.debug("Running debug function")
@@ -367,7 +369,7 @@ class DatabaseEndpoint(EndpointBackend):
 			responseCode = "500 OK"
 			responseBody = {"successful": False, "message": "An exception occured while accessing the database: %s" % e,
 							"records": changePackets}
-			sqlog.exception(e)
+			srvlog.exception(e)
 		else:
 			# TODO: Send back the things that changed
 			changedState = connection.endTransaction()

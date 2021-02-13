@@ -130,7 +130,6 @@ class SPENTServer(EndpointBackend):
 		fileEndpoint.registerFile("", "index.html", "text/html")
 		fileEndpoint.registerFile("/css", "SPENT.css", "text/css")
 		fileEndpoint.registerFile("/js", "SPENT.js", "text/javascript")
-		fileEndpoint.registerFile("/js", "backbone-filtered-collection.js", "text/javascript")
 		self.fileHandler = fileEndpoint
 		self.handler = RequestHandler(self.fileHandler)
 

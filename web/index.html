@@ -57,6 +57,7 @@
                                         <i-button variant="primary" @click="onNewTransactionClick">New Transaction</i-button>
                                         <!--i-button variant="primary">Transaction Filter</i-button-->
                                         <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>
+                                        <i-button variant="primary" @click="refreshBalance">Refresh Balance</i-button>
                                     </i-button-group>
                                 </i-nav>
                             </i-navbar-items>
@@ -105,7 +106,8 @@
                         </i-row>
                         <i-row>
                             <i-column xs="12">
-                                <tree-view class="item" :nodes="buckets" :selectednode="selectedBucketID" @node-click="onBucketTreeClick"></tree-view>
+                                <tree-view v-show="buckets.length > 0" class="item" :nodes="buckets" :selectednode="selectedBucketID" @node-click="onBucketTreeClick"></tree-view>
+                                <p v-show="buckets.length == 0">No Accounts</p>
                             </i-column>
                         </i-row>
                     </i-column>

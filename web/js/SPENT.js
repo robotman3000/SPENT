@@ -89,7 +89,14 @@ var PropertyRequestManager = function(){
 
     this.sendRequest = function(){
         var self = this;
-        var promise = this._apiRequest_(this.requestPackets);
+        var promise = null;
+        if(this.requestPackets.length > 0){
+            promise = this._apiRequest_(this.requestPackets);
+        } else {
+            // Return an empty promise
+            //promise = new Promise(() => resolve());
+            promise = $.when(null)
+        }
         this.requestPackets = []
         return promise;
     };
@@ -106,11 +113,11 @@ var PropertyRequestManager = function(){
             data: JSON.stringify(requestObj),
             success: function(data) {
                 if(!data.successful){
-                    alert("API Error: " + response.message);
+                    console.log("API Error: " + response.message);
                 }
             },
             error: function(data) {
-                alert("Server Error!! " + JSON.stringify(data));
+                console.log("Server Error!! " + JSON.stringify(data));
             }
         });
     };
@@ -327,6 +334,39 @@ Transaction.fields = function() {
     }
 };
 
+// This function starts at the bottom of a tree and recurses up the tree
+// fetching the balances of the nodes it finds
+//TOOD: Rename this function to something clearer
+function notifyBucketParents(startIDs){
+    var idList = new Set();
+    var withEach = function(item){
+        // Query the start id
+        //console.log(item)
+        if (item.id > -1){
+            idList.add(item.id)
+            Bucket.query().whereId(item.Parent).all().forEach(withEach);
+        }
+    }
+    var buckets = Bucket.query().whereIdIn([...startIDs]).all();
+    buckets.forEach(withEach)
+
+    console.log(idList)
+    idList.forEach(function(item){
+        propertyManager.selectRecords("property",
+        [{"name": "SPENT.bucket.availableTreeBalance", "recordID": item},
+        {"name": "SPENT.bucket.postedTreeBalance", "recordID": item},
+        {"name": "SPENT.bucket.availableBalance", "recordID": item},
+        {"name": "SPENT.bucket.postedBalance", "recordID": item}]);
+    });
+}
+
+// This fires once for every transaction when whe reset the table
+// TODO: This fires too many times
+/*Transaction.afterDelete = function(model){
+    notifyBucketParents([model.SourceBucket, model.DestBucket]);
+    dbStore.dispatch("sendPropRequest");
+};*/
+
 Bucket.entity = 'bucket';
 Bucket.primaryKey = 'id';
 Bucket.typeKey = 'Type';
@@ -354,6 +394,10 @@ Bucket.types = function(){
       1: Account,
     }
 }
+/*Bucket.afterDelete = function(model){
+    notifyBucketParents([model.Parent]);
+    dbStore.dispatch("sendPropRequest");
+};*/
 
 Account.baseEntity = 'bucket';
 Account.entity = 'account';
@@ -362,6 +406,7 @@ Account.fields = function() {
         ...Bucket.fields(),
     }
 }
+//Account.afterCreate = Bucket.afterCreate;
 
 Vue.use(Vuex);
 Vue.use(Inkline);
@@ -436,22 +481,28 @@ const dbStore = new Vuex.Store({
         sendDBRequest(context){
             console.log("running sendDBRequest");
             return requestManager.sendRequest().done(function(response){
-                var records = response.records;
-                records.forEach((item) => parseServerResponse(context, item))
+                if (response){
+                    var records = response.records;
+                    records.forEach((item) => parseServerResponse(context, item))
+                }
             })
         },
         sendPropRequest(context){
             console.log("running sendPropRequest");
             return propertyManager.sendRequest().done(function(response){
-                var records = response.records;
-                records.forEach((item) => parseServerResponse(context, item))
+                if (response){
+                    var records = response.records;
+                    records.forEach((item) => parseServerResponse(context, item))
+                }
             })
         },
         sendEnumRequest(context){
             console.log("running sendEnumRequest");
             return enumManager.sendRequest().done(function(response){
-                var records = response.records;
-                records.forEach((item) => parseServerResponse(context, item))
+                if (response){
+                    var records = response.records;
+                    records.forEach((item) => parseServerResponse(context, item))
+                }
             })
         },
         fetchAllBucketBalances(context){
@@ -469,11 +520,28 @@ const dbStore = new Vuex.Store({
         mutateTransactions: function(state, data){
             var action = data.action;
             if(action == "get"){
-                Transaction.create({data: data.data});
+                Transaction.create({data: data.data})
             } else if (action == "update" || action == "create"){
-                Transaction.insert({data: data.data});
+                var result = Transaction.insert({data: data.data});
+                result.then((models) => {
+                    var ids = new Set();
+                    if (models.forEach){
+                        models.forEach((item) => {ids.add(item.SourceBucket); ids.add(item.DestBucket)})
+                    } else {
+                        models.transaction.forEach((item) => {ids.add(item.SourceBucket); ids.add(item.DestBucket)})
+                    }
+                    notifyBucketParents(ids);
+                    dbStore.dispatch("sendPropRequest");
+                });
+
             } else if (action == "delete"){
-                data.data.forEach((item) => Transaction.delete(item.id));
+                data.data.forEach((item) => {
+                    var trans = Transaction.find(item.id);
+                    Transaction.delete(item.id)
+
+                    notifyBucketParents([trans.SourceBucket, trans.DestBucket]);
+                    dbStore.dispatch("sendPropRequest");
+                });
             } else {
                 alert("Error: Cannot commit transaction mutation: Unknown action \"" + action + "\"");
             }
@@ -483,7 +551,16 @@ const dbStore = new Vuex.Store({
             if(action == "get"){
                 Account.create({data: data.data});
             } else if (action == "update" || action == "create"){
-                Account.insert({data: data.data});
+                Account.insert({data: data.data}).then((models) => {
+                    var ids = new Set();
+                    if (models.forEach){
+                        models.forEach((item) => ids.add(item.id))
+                    } else {
+                        models.account.forEach((item) => ids.add(item.id))
+                    }
+                    notifyBucketParents(ids);
+                    dbStore.dispatch("sendPropRequest");
+                });
             } else if (action == "delete"){
                 data.data.forEach((item) => Account.delete(item.id));
             } else {
@@ -495,9 +572,23 @@ const dbStore = new Vuex.Store({
             if(action == "get"){
                 Bucket.create({data: data.data});
             } else if (action == "update" || action == "create"){
-                Bucket.insert({data: data.data});
+                Bucket.insert({data: data.data}).then((models) => {
+                    var ids = new Set();
+                    if (models.forEach){
+                        models.forEach((item) => ids.add(item.id))
+                    } else {
+                        models.bucket.forEach((item) => ids.add(item.id))
+                    }
+                    notifyBucketParents(ids);
+                    dbStore.dispatch("sendPropRequest");
+                });
             } else if (action == "delete"){
-                data.data.forEach((item) => Bucket.delete(item.id));
+                data.data.forEach((item) => {
+                    var bucket = Bucket.find(item.id);
+                    Bucket.delete(item.id)
+                    notifyBucketParents([bucket.parent]);
+                    dbStore.dispatch("sendPropRequest");
+                });
             } else {
                 alert("Error: Cannot commit bucket mutation: Unknown action \"" + action + "\"");
             }
@@ -942,6 +1033,7 @@ function SPENT(){
             },
             bucketOptions: function(){
                 return Bucket.all();
+                //return Bucket.query().where('Ancestor', this.selectedBucketID).orWhere('id', this.selectedBucketID).all();
             },
             accountOptions: function(){
                 return Account.all();
@@ -1087,15 +1179,16 @@ function SPENT(){
                 }
                 dbStore.dispatch("sendDBRequest");
 
-                propertyManager.selectRecords("property",
+                /*propertyManager.selectRecords("property",
                 [{"name": "SPENT.bucket.availableTreeBalance", "recordID": id},
                 {"name": "SPENT.bucket.postedTreeBalance", "recordID": id},
                 {"name": "SPENT.bucket.availableBalance", "recordID": id},
                 {"name": "SPENT.bucket.postedBalance", "recordID": id}]);
-                dbStore.dispatch("sendPropRequest");
+                dbStore.dispatch("sendPropRequest");*/
             },
         },
         methods: {
+            refreshBalance: function(){this.$store.dispatch("fetchAllBucketBalances")},
             isNegative(row){
                 // True = Money Coming in; I.E. a positive value
                 // False = Money Going out; I.E. a negative value
@@ -1128,7 +1221,7 @@ function SPENT(){
                          break;
                     case "bucket":
                         this.showBucketFormModal = false;
-                        this.showBucketTableModal = true;
+                        //this.showBucketTableModal = true;
                         break;
                     case "account":
                         this.showAccountFormModal = false;

@@ -3,6 +3,7 @@ from enum import Enum
 from typing import Optional, List
 import datetime
 from SPENT import LOGGER as log
+import traceback
 
 log.initLogger()
 logman = log.getLogger("Main")
@@ -776,7 +777,8 @@ class DatabaseCacheManager:
         newRows = []
         idColumn = table.getIDColumn(table)
         for row in rows:
-            #print(row)
+            print(row.keys())
+            print(idColumn.name)
             id = row[idColumn.name]
             cacheRowID = self._lookupRow_(id, table)
             if cacheRowID is None:
@@ -1041,7 +1043,7 @@ class DatabaseCacheManager:
                     cadeb.debug("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), rowID))
                     return None
 
-                #print(result)
+                print(result)
                 parsedRows = self._parseRows_(result, table)
 
                 # TODO: Write logic to handle when (by some crazy sequence of events) more than one row is returned
@@ -1159,13 +1161,13 @@ class DatabaseCacheManager:
         #TODO: Replace the string based SQL_WhereStatementBuilder with an object/enum based version
         cadeb.debug("%s@%s: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
 
-        #if self._isDirty_() and connection.canExecuteUnsafe():
-        #    # Write the cache to the DB to ensure that when we resolve the query the result will be correct
-        #    try:
-        #        self._writeCache_(connection, False)
-        #    except Exception as e:
-        #        cadeb.exception(e)
-        #        raise e
+        if self._isDirty_() and connection.canExecuteUnsafe():
+            # Write the cache to the DB to ensure that when we resolve the query the result will be correct
+            try:
+                self._writeCache_(connection, False)
+            except Exception as e:
+                cadeb.exception(e)
+                raise e
 
         # If we successfully wrote the cache to the DB
         if not self._isDirty_() and self._inTransaction_:
@@ -1188,6 +1190,7 @@ class DatabaseCacheManager:
             cadeb.error("%s@%s: ID column was none!" % (connection.getName(), table.getTableName(table)))
         else:
             cadeb.error("%s@%s: Can't perform SELECT; Database cache has uncommitted changes" % (connection.getName(), table.getTableName(table)))
+            traceback.print_exc()
         return None
 
     def _RowisDeleted_(self, objectID):
@@ -1418,7 +1421,7 @@ class SQLQueryBuilder:
                     #assert isinstance(column, EnumTable)
                 columnStr = ", ".join([col.name for col in self.columns])
             else:
-                columnStr = "*"
+                columnStr = "*, ROWID"
 
         valueStr = None
         if useVALUES:

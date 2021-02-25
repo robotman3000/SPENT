@@ -178,6 +178,11 @@
                     <tag-form :form-schema="tagSchema" @form-submit="onFormSubmit"></tag-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
+                <i-modal v-model="showTransTagFormModal">
+                    <template slot="header">Edit Transaction Tags</template>
+                    <transaction-tags-form :form-schema="transTagSchema" :tag-options="tags" @form-submit="onFormSubmit"></transaction-tags-form>
+                    <!--template slot="footer">Modal Footer</template-->
+                </i-modal>
             </div>
         </div>
         <script type="text/javascript">

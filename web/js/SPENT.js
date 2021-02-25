@@ -412,9 +412,10 @@ Account.fields = function() {
 //Account.afterCreate = Bucket.afterCreate;
 
 TransactionTag.entity = 'transactionTag'
-TransactionTag.primaryKey = ['TransactionID', 'TagID'];
+TransactionTag.primaryKey = "id";
 TransactionTag.fields = function() {
     return {
+        id: this.number(null),
       TransactionID: this.number(null),
       TagID: this.number(null),
     }
@@ -661,7 +662,7 @@ const dbStore = new Vuex.Store({
             } else if (action == "delete"){
                 data.data.forEach((item) => {
                 //['TransactionID', 'TagID']
-                    TransactionTag.delete(item.TagID)
+                    TransactionTag.delete(item.id)
                 });
             } else {
                 alert("Error: Cannot commit tag map mutation: Unknown action \"" + action + "\"");
@@ -906,14 +907,13 @@ Vue.component("table-row-buttons", {
 Vue.component("table-row-tags", {
     name: 'table-row-tags',
     props: ['row', 'column', 'index'],
-    template: `<span>{{ value }}</span>`,
+    template: `
+        <div>
+            <i-badge v-for="(item, index) in tags" variant="info">{{ item.Name }}</i-badge>
+        </div>`,
     computed: {
-        value: function(){
-            var str = ""
-            this.row[this.column.path].forEach(function(item){
-                str = str + ", " + item.Name
-            });
-            return str;
+        tags: function(){
+            return this.row[this.column.path];
         },
     },
 });
@@ -998,17 +998,59 @@ Vue.component("transaction-form", {
             </i-form-group>
         </i-form>
     `,
-    data: function(){
-        return {
-            formObjectClass: Transaction,
-        };
-    },
     methods: {
         doFormSubmit: doFormSubmit,
         parseFormData: parseFormData,
         testFunc: function (){
             console.log("Yay!!!!");
         },
+    },
+});
+Vue.component("transaction-tags-form", {
+    name: 'transaction-tags-form',
+    props: ['formSchema', 'tagOptions'],
+    template: `
+        <i-form v-model="formSchema" @submit="doFormSubmit(\'tagMap\')">
+            <i-form-group>
+                <i-form-label>Tags</i-form-label>
+                <i-checkbox-group :schema="formSchema.tags" placeholder="Choose tags">
+                    <i-checkbox v-for="(item, index) in tagOptions" :key="index" :value="item.id" v-on:input="doFormSubmit(\'tagMap\')"> <i-badge variant="info">{{ item.Name }}</i-badge> </i-checkbox>
+                </i-checkbox-group>
+            </i-form-group>
+
+            <i-form-group>
+                <i-button type="submit">Submit</i-button>
+            </i-form-group>
+        </i-form>
+    `,
+    methods: {
+        doFormSubmit: function(formName){
+            var data = this.parseFormData(this.formSchema, this.formSchema.fields);
+
+            // Now we modify the data to fit the expected transport format
+            var id = data["id"];
+            var newData = [];
+            var trans = Transaction.query().whereId(id).with("tags").first();
+
+            var newTags = new Set(); // This will be the list of added tags
+            data.tags.forEach((item) => newTags.add(item));
+
+            var oldTags = new Set(); // This will be the list of deleted tags
+            if(trans.tags != null){
+                trans.tags.forEach((item) => oldTags.add(item.id));
+            }
+            var intersection = [...newTags].filter(x => oldTags.has(x));
+            intersection.forEach((item) => {newTags.delete(item); oldTags.delete(item);});
+
+            newTags.forEach((item) => requestManager.createRecords("tagMap", [{"TransactionID": id, "TagID": item}]));
+
+            var theOld = TransactionTag.query().where("TagID",  (value) => oldTags.has(value)).where("TransactionID", id).all()
+            theOld.forEach((item) => requestManager.deleteRecords("tagMap", [{"id": item.id}]));
+            dbStore.dispatch("sendDBRequest");
+
+            this.$emit('form-submit', formName, null);
+        },
+        parseFormData: parseFormData,
     },
 });
 Vue.component("bucket-form", {
@@ -1042,11 +1084,6 @@ Vue.component("bucket-form", {
             </i-form-group>
         </i-form>
     `,
-    data: function(){
-        return {
-            formObjectClass: Bucket,
-        };
-    },
     methods: {
         doFormSubmit: doFormSubmit,
         parseFormData: parseFormData,
@@ -1067,11 +1104,6 @@ Vue.component("account-form", {
             </i-form-group>
         </i-form>
     `,
-    data: function(){
-        return {
-            formObjectClass: Account,
-        };
-    },
     methods: {
         doFormSubmit: doFormSubmit,
         parseFormData: parseFormData,
@@ -1092,11 +1124,6 @@ Vue.component("tag-form", {
             </i-form-group>
         </i-form>
     `,
-    data: function(){
-        return {
-            formObjectClass: Tag,
-        };
-    },
     methods: {
         doFormSubmit: doFormSubmit,
         parseFormData: parseFormData,
@@ -1260,6 +1287,7 @@ function SPENT(){
                 showAccountFormModal: false,
                 showTagFormModal: false,
                 showTagTableModal: false,
+                showTransTagFormModal: false,
                 tagColumns: [
                     {title: "Name", path: "Name", sortable: true},
                 ],
@@ -1270,6 +1298,11 @@ function SPENT(){
                             { rule: 'required' },
                             { rule: 'alphanumeric', allowSpaces: true },
                         ],
+                    },
+                }),
+                transTagSchema: this.$inkline.form({
+                    id: {},
+                    tags: {
                     },
                 }),
             };
@@ -1386,6 +1419,11 @@ function SPENT(){
                             }
                         }
 
+                        if (key == "tags"){
+                            var idList = [];
+                            value.forEach((item) => idList.push(item.id));
+                            value = idList;
+                        }
                         form[key].value = value;
                     } else {
                         console.log("[SPENT] Failed to assign value to form element \'" + key + "\'");
@@ -1442,8 +1480,8 @@ function SPENT(){
                         this.showTransactionFormModal = true;
                     } else {
                         // Tag edit mode
-                        this.setFormObject(row, this.transSchema);
-                        this.showTransactionFormModal = true;
+                        this.setFormObject(row, this.transTagSchema);
+                        this.showTransTagFormModal = true;
                     }
 
                 } else {

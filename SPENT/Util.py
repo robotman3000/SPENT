@@ -89,3 +89,18 @@ class SpentUtil:
 	@classmethod
 	def getAllBucketTransactionsID(self, connection, bucket: 'Bucket') -> List[int]:
 		return [i.getID() for i in self.getAllBucketTransactions(connection, bucket)]
+
+	@classmethod
+	def getTransactionTags(self, connection, transaction):
+		# This table can return multiple rows for one ID (It uses a composite key)
+		# so we use getRows here
+		rows = EnumTransactionTagsTable.getRows(connection, [transaction.getID()])
+		print(rows)
+		return [1, 4, 6, 3, 10]
+
+	@classmethod
+	def setTransactionTags(self, connection, transaction, tags):
+		rows = [{EnumTransactionTagsTable.TransactionID: transaction.getID(),
+				EnumTransactionTagsTable.TagID: tagID} for tagID in tags]
+		for row in rows:
+			EnumTransactionTagsTable.createRow(connection, row)

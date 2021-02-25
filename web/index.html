@@ -57,7 +57,9 @@
                                         <i-button variant="primary" @click="onNewTransactionClick">New Transaction</i-button>
                                         <!--i-button variant="primary">Transaction Filter</i-button-->
                                         <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>
+                                        <i-button :variant="tagModeToggle ? 'primary' : 'secondary'" @click="tagModeToggle = !tagModeToggle">{{ tagModeToggle ? "Transaction Mode" : "Tag Mode"}}</i-button>
                                         <i-button variant="primary" @click="refreshBalance">Refresh Balance</i-button>
+                                        <i-button variant="primary" @click="showTagTableModal = true">Edit Tags</i-button>
                                     </i-button-group>
                                 </i-nav>
                             </i-navbar-items>
@@ -160,6 +162,20 @@
                             <i-datatable hover border striped :columns="bucketColumns" :rows="buckets" :pagination="true" :count-column="false" @tr-click="onBucketTableRowClick"></i-datatable>
                         </i-tab>
                     </i-tabs>
+                    <!--template slot="footer">Modal Footer</template-->
+                </i-modal>
+                <i-modal v-model="showTagTableModal">
+                    <template slot="header">Edit Tags</template>
+                    <i-button-group>
+                        <i-button variant="primary" @click="onNewTagClick">New Tag</i-button>
+                        <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>
+                    </i-button-group>
+                    <i-datatable hover border striped :columns="tagColumns" :rows="tags" :pagination="true" :count-column="false" @tr-click="onTagTableRowClick"></i-datatable>
+                    <!--template slot="footer">Modal Footer</template-->
+                </i-modal>
+                <i-modal v-model="showTagFormModal">
+                    <template slot="header">Edit Tag</template>
+                    <tag-form :form-schema="tagSchema" @form-submit="onFormSubmit"></tag-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
             </div>

@@ -237,6 +237,9 @@ class TableColumn(Column):
     def getProperty(self, name, default=None):
         return self.properties.get(name, default)
 
+ROW_ID_COL = TableColumn(EnumColumnType.INTEGER, True, True, True, True)
+ROW_ID_COL.name = "ROWID"
+
 class VirtualColumn(Column):
     def __init__(self, type, valueFunction):
         super().__init__(type, False, False, False, False)
@@ -1066,7 +1069,17 @@ class DatabaseCacheManager:
 
         if len(missingRows) > 0:
             cadeb.debug("%s@%s: Querying for missing rows: %s" % (connection.getName(), table.getTableName(table), missingRows))
-            query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS(COLUMN_ANY).FROM(table).WHERE_ID_IN(missingRows)
+            print(table.getIDColumn(table).name)
+            if table.getIDColumn(table).name == ROW_ID_COL.name:
+                print("loop")
+                columnSelection = [i for i in table.getColumns(table)]
+                columnSelection.append(ROW_ID_COL)
+                print(columnSelection)
+                print("aa")
+            else:
+                columnSelection = COLUMN_ANY
+
+            query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS(columnSelection).FROM(table).WHERE_ID_IN(missingRows)
             # TODO: Verify that this code will properly handle rolling back in the event of an error
             result = connection.execute(str(query))
             if len(result) < 1:
@@ -1258,11 +1271,11 @@ class RowDataCache:
         return self._cacheManager_._RowisNew_(self._entryID_)
 
     def getValue(self, columnKey):
-        assert (isinstance(columnKey, EnumTable) and isinstance(columnKey.value, Column))
+        assert (isinstance(columnKey, EnumTable) and isinstance(columnKey.value, Column)) or columnKey.name == "ROWID"
         return self._cacheManager_._RowgetValue_(self._entryID_, columnKey)
 
     def setValue(self, columnKey, value):
-        assert (isinstance(columnKey, EnumTable) and isinstance(columnKey.value, Column))
+        assert (isinstance(columnKey, EnumTable) and isinstance(columnKey.value, Column)) or columnKey.name == "ROWID"
         return self._cacheManager_._RowsetValue_(self._entryID_, columnKey, value)
 
 class _NullValue_:
@@ -1294,6 +1307,7 @@ class SQLQueryBuilder:
         return self
 
     def COLUMNS(self, columnList):
+        print(columnList)
         self.columns = columnList
         return self
 
@@ -1400,8 +1414,8 @@ class SQLQueryBuilder:
         else:
             if self.columns is not None and len(self.columns) > 0:
                 for column in self.columns:
-                    #print("Column %s" % column)
-                    assert isinstance(column, EnumTable)
+                    print("Assertion Below: Column %s" % column)
+                    #assert isinstance(column, EnumTable)
                 columnStr = ", ".join([col.name for col in self.columns])
             else:
                 columnStr = "*"

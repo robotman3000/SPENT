@@ -107,17 +107,21 @@ class EnumTransactionTable(sqlib.EnumTable):
 class EnumTransactionTagsTable(sqlib.EnumTable):
     TransactionID = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, foreignKey=EnumTransactionTable.id)
     TagID = sqlib.LinkedColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=False, autoIncrement=False, keepUnique=False, foreignKey=EnumTagsTable.id)
+    ROWID = sqlib.ROW_ID_COL
 
     def getTableName(self):
         return "TransactionTags"
 
     def getIDColumn(self):
         #TODO: This function doesn't account for the possibility of a composite key/id
-        return EnumTransactionTagsTable.ID
+        #return sqlib.CompositeKey(EnumTransactionTagsTable.TransactionID, EnumTransactionTagsTable.TagID)
+        #return [EnumTransactionTagsTable.TagID]
+        return EnumTransactionTagsTable.ROWID
 
     def getConstraints(self):
         return [
-            "unq UNIQUE (%s, %s)" % (EnumTransactionTagsTable.TransactionID.name, EnumTransactionTagsTable.TagID.name)
+            "unq UNIQUE (%s, %s)" % (EnumTransactionTagsTable.TransactionID.name, EnumTransactionTagsTable.TagID.name),
+            "tagCompositeKey PRIMARY KEY(%s, %s)" % (EnumTransactionTagsTable.TransactionID.name, EnumTransactionTagsTable.TagID.name),
         ]
 
 class Tag(sqlib.TableRow):

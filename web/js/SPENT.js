@@ -304,6 +304,8 @@ class Transaction extends VuexORM.Model {};
 class Bucket extends VuexORM.Model {};
 class Account extends Bucket {};
 class Property extends VuexORM.Model {};
+class TransactionTag extends VuexORM.Model {};
+class Tag extends VuexORM.Model {};
 
 Property.entity = 'property';
 Property.primaryKey = ['recordID', 'name'];
@@ -331,6 +333,7 @@ Transaction.fields = function() {
         Memo: this.string(null).nullable(),
         Payee: this.string(null).nullable(),
         Type: this.number(null),
+        tags: this.belongsToMany('tag', 'transactionTag', "TransactionID", 'TagID')
     }
 };
 
@@ -408,6 +411,24 @@ Account.fields = function() {
 }
 //Account.afterCreate = Bucket.afterCreate;
 
+TransactionTag.entity = 'transactionTag'
+TransactionTag.primaryKey = ['TransactionID', 'TagID'];
+TransactionTag.fields = function() {
+    return {
+      TransactionID: this.number(null),
+      TagID: this.number(null),
+    }
+};
+
+Tag.entity = 'tag'
+Tag.primaryKey = 'id';
+Tag.fields = function() {
+    return {
+      id: this.number(null),
+      Name: this.string(null),
+    }
+};
+
 Vue.use(Vuex);
 Vue.use(Inkline);
 
@@ -419,6 +440,9 @@ database.register(Bucket)
 database.register(Account)
 database.register(Transaction)
 database.register(Property)
+database.register(TransactionTag)
+database.register(Tag)
+
 
 function parseServerResponse(context, responseRecord){
     var type = responseRecord.type;
@@ -432,6 +456,8 @@ function parseServerResponse(context, responseRecord){
         "transaction": "mutateTransactions",
         "property": "mutateProperties",
         "enum": "mutateEnums",
+        "tag": "mutateTags",
+        "tagMap": "mutateTagMap",
     };
     var handlerName = getOrDefault(functionNameMap, type, null)
     if(handlerName){
@@ -447,7 +473,7 @@ function parseServerResponse(context, responseRecord){
         }
         context.commit(handlerName, payload)
     } else {
-        alert("Error: Cannot commit record: Unknown data type \"" + type + "\"");
+        console.log("Error: Cannot commit record: Unknown data type \"" + type + "\"");
     }
 };
 
@@ -611,6 +637,35 @@ const dbStore = new Vuex.Store({
             }
             console.log("setting enum: " + params.enumName + " Value: " + params.data + " Index: " + enumID);
             Vue.set(state.enumStore, enumID, params.data);
+        },
+        mutateTags: function(state, data){
+            var action = data.action;
+            if(action == "get"){
+                Tag.create({data: data.data});
+            } else if (action == "update" || action == "create"){
+                Tag.insert({data: data.data});
+            } else if (action == "delete"){
+                data.data.forEach((item) => {
+                    Tag.delete(item.id)
+                });
+            } else {
+                alert("Error: Cannot commit tag mutation: Unknown action \"" + action + "\"");
+            }
+        },
+        mutateTagMap: function(state, data){
+            var action = data.action;
+            if(action == "get"){
+                TransactionTag.create({data: data.data});
+            } else if (action == "update" || action == "create"){
+                TransactionTag.insert({data: data.data});
+            } else if (action == "delete"){
+                data.data.forEach((item) => {
+                //['TransactionID', 'TagID']
+                    TransactionTag.delete(item.TagID)
+                });
+            } else {
+                alert("Error: Cannot commit tag map mutation: Unknown action \"" + action + "\"");
+            }
         },
     },
 })
@@ -843,11 +898,25 @@ Vue.component("table-row-buttons", {
     </span>`,
     methods: {
         buttonClick: function(name){
+
             //this.$emit('meClick', name)
         },
     },
 });
-
+Vue.component("table-row-tags", {
+    name: 'table-row-tags',
+    props: ['row', 'column', 'index'],
+    template: `<span>{{ value }}</span>`,
+    computed: {
+        value: function(){
+            var str = ""
+            this.row[this.column.path].forEach(function(item){
+                str = str + ", " + item.Name
+            });
+            return str;
+        },
+    },
+});
 function doFormSubmit(formName){
     var data = this.parseFormData(this.formSchema, this.formSchema.fields);
     this.$emit('form-submit', formName, data);
@@ -1008,6 +1077,31 @@ Vue.component("account-form", {
         parseFormData: parseFormData,
     },
 });
+Vue.component("tag-form", {
+    name: 'tag-form',
+    props: ['formSchema'],
+    template: `
+        <i-form v-model="formSchema" @submit="doFormSubmit(\'tag\')">
+            <i-form-group>
+                <i-form-label>Name</i-form-label>
+                <i-input :schema="formSchema.Name" placeholder="Type something.." />
+            </i-form-group>
+
+            <i-form-group>
+                <i-button type="submit">Submit</i-button>
+            </i-form-group>
+        </i-form>
+    `,
+    data: function(){
+        return {
+            formObjectClass: Tag,
+        };
+    },
+    methods: {
+        doFormSubmit: doFormSubmit,
+        parseFormData: parseFormData,
+    },
+});
 
 var vueInst = null;
 function SPENT(){
@@ -1020,9 +1114,10 @@ function SPENT(){
         el: '#spent',
         store: dbStore,
         computed: {
-            transactions: () => Transaction.all(),
+            transactions: () => Transaction.query().with(['tags']).all(),
             buckets: () => Bucket.query().with(['postedBalance', 'postedTreeBalance']).all(),
             accounts: () => Account.all(),
+            tags: () => Tag.all(),
             statusOptions: function(){
                 console.log("Getting Status Options")
                 var enu = this.$store.getters.getEnum("TransactionStatus");
@@ -1045,6 +1140,7 @@ function SPENT(){
                 selectedBucketID: -1,
                 clickModeToggle: true,
                 clickModeToggle2: true,
+                tagModeToggle: true,
                 showTree: true,
                 transactionColumns: [
                     {title: "Status", path: "Status", sortable: true, component: "enum-table-cell", enumName: "TransactionStatus"},
@@ -1067,6 +1163,7 @@ function SPENT(){
                     },
                     {title: "Memo", path: "Memo", sortable: true},
                     {title: "Payee", path: "Payee", sortable: true},
+                    {title: "Tags", path: "tags", sortable: true, component: "table-row-tags"},
                     //{title: "", path: "", sortable: false, component: "table-row-buttons"},
                 ],
                 transSchema: this.$inkline.form({
@@ -1161,6 +1258,20 @@ function SPENT(){
                     },
                 }),
                 showAccountFormModal: false,
+                showTagFormModal: false,
+                showTagTableModal: false,
+                tagColumns: [
+                    {title: "Name", path: "Name", sortable: true},
+                ],
+                tagSchema: this.$inkline.form({
+                    id: {},
+                    Name: {
+                        validators: [
+                            { rule: 'required' },
+                            { rule: 'alphanumeric', allowSpaces: true },
+                        ],
+                    },
+                }),
             };
         },
         watch: {
@@ -1225,6 +1336,10 @@ function SPENT(){
                         break;
                     case "account":
                         this.showAccountFormModal = false;
+                        break;
+                    case "tag":
+                        this.showTagFormModal = false;
+                        this.showTagTableModal = true;
                         break;
                 }
 
@@ -1306,6 +1421,11 @@ function SPENT(){
                 this.setFormObject(null, this.transSchema);
                 this.showTransactionFormModal = true;
             },
+            onNewTagClick (){
+                this.setFormObject(null, this.tagSchema);
+                this.showTagTableModal = false;
+                this.showTagFormModal = true;
+            },
             onNewBucketClick (){
                 this.setFormObject(null, this.bucketSchema);
                 this.showBucketFormModal = true;
@@ -1316,8 +1436,16 @@ function SPENT(){
             },
             onTransTableRowClick (event, row, rowIndex) { // Edit transaction
                 if (this.clickModeToggle){ // True == edit; False == Delete
-                    this.setFormObject(row, this.transSchema);
-                    this.showTransactionFormModal = true;
+                    if (this.tagModeToggle){
+                        // Transaction edit mode
+                        this.setFormObject(row, this.transSchema);
+                        this.showTransactionFormModal = true;
+                    } else {
+                        // Tag edit mode
+                        this.setFormObject(row, this.transSchema);
+                        this.showTransactionFormModal = true;
+                    }
+
                 } else {
                     if(confirm("Are you sure you want to delete row " + row.id + "?")){
                         requestManager.deleteRecords("transaction", [{"id": row.id}]);
@@ -1350,10 +1478,24 @@ function SPENT(){
                     }
                 }
             },
+            onTagTableRowClick (event, row, rowIndex) { // Edit tag
+                if (this.clickModeToggle){ // True == edit; False == Delete
+                    this.setFormObject(row, this.tagSchema);
+                    this.showTagTableModal = false;
+                    this.showTagFormModal = true;
+                } else {
+                    if(confirm("Are you sure you want to delete row " + row.id + "?")){
+                        requestManager.deleteRecords("tag", [{"id": row.id}]);
+                        dbStore.dispatch("sendDBRequest");
+                    }
+                }
+            },
         },
     });
     vueInst = vm;
     requestManager.selectRecords("account");
+    requestManager.selectRecords("tag");
+    requestManager.selectRecords("tagMap");
     dbStore.dispatch("sendDBRequest").then( () => dbStore.dispatch("fetchAllBucketBalances"));
     $(".menu").toggleClass("scrollFix")
 }

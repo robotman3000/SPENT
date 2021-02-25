@@ -166,6 +166,26 @@ class SPENTServer(EndpointBackend):
 				return SpentUtil.getPostedBalance(connection, bucket)
 			return None
 
+		def getTransactionTags(args, connection):
+			transID = args.get("recordID", None)
+
+			# Do we actually need to get the transaction
+			# R/N we use this to ensure the requested transaction actually exists
+			transaction = EnumTransactionTable.getRow(connection, transID)
+			if transaction is not None:
+				return SpentUtil.getTransactionTags(connection, transaction)
+			return None
+
+		def setTransactionTags(args, connection):
+			transID = args.get("recordID", None)
+			tags = args.get("tags", {})
+
+			# Do we actually need to get the transaction
+			# R/N we use this to ensure the requested transaction actually exists
+			transaction = EnumTransactionTable.getRow(connection, transID)
+			if transaction is not None:
+				SpentUtil.setTransactionTags(connection, transaction, tags)
+
 		def propTest(args, connection):
 			return "Test is good and successful"
 
@@ -179,6 +199,7 @@ class SPENTServer(EndpointBackend):
 		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.postedTreeBalance", getPostedBucketTreeBalance, True))
 		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.availableBalance", getAvailBucketBalance, True))
 		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.postedBalance", getPostedBucketBalance, True))
+		propertyEndpoint.registerProperty(LinkedMutableProperty("SPENT.transaction.tags", getTransactionTags, setTransactionTags, True))
 		propertyEndpoint.registerProperty(Property("SPENT.property.test", propTest, False))
 		propertyEndpoint.registerProperty(Property("vuex_counter", counter, False))
 		self.handler.registerRequestHandler("POST", "/property/query", propertyEndpoint)
@@ -283,31 +304,17 @@ class DatabaseEndpoint(EndpointBackend):
 
 		self.spentUtil = SpentUtil
 
-		self.apiTree = {}
-		self.apiTree["account"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
-		self.apiTree["bucket"] = {"get": self.getFunction, "create": self.createBucketFunction, "update": self.updateFunction, "delete": self.deleteFunction}
-		self.apiTree["transaction"] = {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
-		self.apiTree["debug"] = {"refresh": self.debugFunction}
-		# self.apiTree["tag"] = {"get": self.getTag, "create": self.createTag, "update": self.updateTag, "delete": self.deleteTag} #Tags are handled differently
+		self.apiTree = {
+			"account": {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction},
+			"bucket": {"get": self.getFunction, "create": self.createBucketFunction, "update": self.updateFunction, "delete": self.deleteFunction},
+			"transaction": {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction},
+			"tag": {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction},
+			"tagMap": {"get": self.getFunction, "create": self.createFunction, "update": self.updateFunction, "delete": self.deleteFunction}
+		}
 
-		self.typeMapper = {"account": EnumBucketsTable, "bucket": EnumBucketsTable, "transaction": EnumTransactionTable, "tag": EnumTransactionTagsTable}
-		self.reverseTypeMapper = {EnumBucketsTable: "account", EnumBucketsTable: "bucket", EnumTransactionTable: "transaction", EnumTransactionTagsTable: "tag"}
-
-	def debugFunction(self, request, columns, table, connection):
-		srvlog.debug("Running debug function")
-		return [{"id": 1,
-				 "Status": 0,
-				 "TransDate": "2020-12-12",
-				 "PostDate": "2000-01-01",
-				 "Amount": 3000000,
-				 "SourceBucket": -1,
-				 "DestBucket": 3,
-				 "Memo": "The Test Worked!!",
-				 "Payee": "Someone",
-				 "GroupID": -1,
-				 "IsTransfer": 0,
-				 "Type": 0
-				 }]
+		self.typeMapper = {"account": EnumBucketsTable, "bucket": EnumBucketsTable, "transaction": EnumTransactionTable, "tag": EnumTagsTable, "tagMap": EnumTransactionTagsTable}
+		self.reverseTypeMapper = {v: k for k, v in self.typeMapper.items()}
+			#{obj[1]: obj[0] for obj in self.typeMapper}
 
 	def getDBConnection(self):
 		return self.connection
@@ -624,6 +631,9 @@ class PropertyEndpoint(EndpointBackend):
 	def registerProperty(self, property):
 		self.propertyManager.registerProperty(property)
 
+	def registerMutableProperty(self, property):
+		self.propertyManager.registerMutableProperty(property)
+
 	def handleGetRequest(self, query, path):
 		pass
 
@@ -648,14 +658,8 @@ class PropertyEndpoint(EndpointBackend):
 						property = self.getProperty(item, connection)
 					elif action == "set":
 						property = self.setProperty(item, connection)
-					elif action == "refresh":
-						property = self.debugFunction(item, connection)
-						action = "get"
-					else:
-						pass
 
 					if property is not None:
-						property["bucket"] = item.get("bucket", 2)
 						props.append(property)
 
 				responsePackets.append({"action": action, "type": "property", "data": props})
@@ -668,10 +672,6 @@ class PropertyEndpoint(EndpointBackend):
 			print(resp)
 		return resp
 
-	def debugFunction(self, property, connection):
-		name = property.get("name", None)
-		return {"name": name, "value": 10000.31, "bucket": property.get("bucket", -2)}
-
 	def getProperty(self, property, connection):
 		name = property.get("name", None)
 		if name is not None:
@@ -680,22 +680,48 @@ class PropertyEndpoint(EndpointBackend):
 			if prop is not None:
 				# TODO: "Smart" refresh rather than always refresh
 				if isinstance(prop, LinkedProperty):
-					recordID = property.get("recordID", None) # Right now we do nothing with this server side but it is needed when we respond to the client
+
+					# This record ID is used by the calculate functions of each property
+					recordID = property.get("recordID", None)
 					if recordID is None:
 						raise Exception("No recordID was provided for LinkedProperty(\"%s\")" % prop.getPropertyName())
 				prop.refreshValue(property, connection)
-				return prop.asDict(property)
+				val = prop.asDict(property)
+				print(val)
+				return val
 		return None
 
 	def setProperty(self, property, connection):
-		pass
+		name = property.get("name", None)
+		if name is not None:
+			# TODO: Allow some sort of arg passing
+			prop = self.propertyManager.getMutableProperty(name)
+			if prop is not None:
+				# TODO: "Smart" refresh rather than always refresh
+				if isinstance(prop, LinkedProperty):
+
+					# Ensure the record ID was provided
+					recordID = property.get("recordID", None)
+					if recordID is None:
+						raise Exception("No recordID was provided for LinkedProperty(\"%s\")" % prop.getPropertyName())
+				prop.setValue(property, connection)
+				return prop.asDict(property)
+			else:
+				print("Property %s is not mutable!!" % name)
+
+		return None
 
 class PropertyManager:
 	def __init__(self):
 		self.properties = {}
+		self.mutableProperties = {}
 
 	def registerProperty(self, property):
 		self.properties[property.getPropertyName()] = property
+
+	def registerMutableProperty(self, property):
+		self.registerProperty(property)
+		self.mutableProperties[property.getPropertyName()] = property
 
 	def getProperty(self, name):
 		pro = self.properties.get(name, None)
@@ -755,6 +781,36 @@ class LinkedProperty(Property):
 
 	def asDict(self, argsDict):
 		return {"name": self.getPropertyName(), "value": self.getValue(), "recordID": argsDict.get("recordID", None)}
+
+class MutableProperty(Property):
+	def __init__(self, name, calculatorFunction, setterFunction, needsConnection):
+		super().__init__(name, calculatorFunction, needsConnection)
+		self.setterFunction = setterFunction
+
+	def setValue(self, argsDict, connection):
+		value = None
+		try:
+			if self.wantsDB:
+				connection.beginTransaction()
+			else:
+				# This is for safety
+				connection = None
+
+			value = self.setterFunction(argsDict, connection)
+
+			if self.wantsDB:
+				connection.endTransaction()
+
+		except Exception as e:
+			srvlog.exception(e)
+			if self.wantsDB:
+				connection.abortTransaction()
+
+		return value
+
+class LinkedMutableProperty(MutableProperty):
+	def __init__(self, name, calculatorFunction, setterFunction, needsConnection):
+		super().__init__(name, calculatorFunction, setterFunction, needsConnection)
 
 class EnumEndpoint(EndpointBackend):
 	def __init__(self, debug):

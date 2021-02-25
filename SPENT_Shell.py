@@ -2,8 +2,9 @@ from typing import Callable, List
 from curses import wrapper
 
 import readline
-from SPENT.SPENT_Schema_v1 import *
-from SPENT.Old.SPENT import SpentUtil, SQL_WhereStatementBuilder, VirtualColumn
+from SPENT.SPENT_Schema_v1_1 import *
+from SPENT.Util import SpentUtil
+from SPENT.SQLIB import SQL_WhereStatementBuilder, VirtualColumn
 logman = log.getLogger("Main")
 
 from argparse import ArgumentParser
@@ -103,7 +104,7 @@ class Command():
 def shellPrint(string):
 	print("Shell: %s" % str(string))
 
-database = sqlib.Database(SPENT_DB_V1, args.dbpath)
+database = sqlib.Database(SPENT_DB_V1_1, args.dbpath)
 # TODO: Stop using global connection once the transaction commit system is implemented
 connection = database.getConnection("Shell")
 connection.connect()

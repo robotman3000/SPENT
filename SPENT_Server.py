@@ -19,6 +19,9 @@ parser.add_argument("--port", type=int, dest="port",
 #parser.add_argument("--debug",
 #                    action="store_true", dest="debugCore", default=False,
 #                    help="Enable debug logging")
+parser.add_argument("--perf-mon",
+                    action="store_true", dest="perfMon", default=False,
+                    help="Enable performance logging")
 parser.add_argument("--debug-API",
                     action="store_true", dest="debugAPI", default=False,
                     help="Enable API request logging")
@@ -211,7 +214,7 @@ class SPENTServer(EndpointBackend):
 
 	def handleRequest(self, environ, start_response):
 		srvlog.debug("--------------------------------------------------------------------------------")
-		runTime = ""
+		runTime = "Not Measured"
 		method = environ['REQUEST_METHOD']
 		path = environ['PATH_INFO']
 		queryStr = self.qsToDict(environ['QUERY_STRING'])
@@ -236,13 +239,20 @@ class SPENTServer(EndpointBackend):
 						request_body = "0"
 
 					# Ask the delegate to handle the request
-					resp = time_it(delegate.handlePostRequest, queryStr, request_body_size, request_body, path)
-					response = resp[0]
-					runTime = resp[1]
+					if args.perfMon:
+						resp = time_it(delegate.handlePostRequest, queryStr, request_body_size, request_body, path)
+						response = resp[0]
+						runTime = resp[1]
+					else:
+						response = delegate.handlePostRequest(queryStr, request_body_size, request_body, path)
+
 				else:
-					resp = time_it(delegate.handleGetRequest, queryStr, path)
-					response = resp[0]
-					runTime = resp[1]
+					if args.perfMon:
+						resp = time_it(delegate.handleGetRequest, queryStr, path)
+						response = resp[0]
+						runTime = resp[1]
+					else:
+						response = delegate.handleGetRequest(queryStr, path)
 			else:
 				srvlog.warning("Failed to find registered handler for: %s - %s" % (method, path))
 				response = ServerResponse("404 OK", "text/text", None, "Invalid request: %s - %s" % (method, path))

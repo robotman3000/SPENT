@@ -418,9 +418,9 @@ class EnumTable(EnumBase):
             raise Exception("Database is locked")
 
     @classmethod
-    def select(table, connection, filter):
+    def select(table, connection, filter, writeCache=False):
         if connection.canExecuteUnsafe():
-            return connection.getDatabase()._getCache_().select(table, connection, filter)
+            return connection.getDatabase()._getCache_().select(table, connection, filter, writeCache)
         else:
             raise Exception("Database is locked")
 
@@ -727,9 +727,9 @@ class DatabaseCacheManager:
         self._inTransaction_ = False
 
     def _isDirty_(self):
-        #print("%s, %s, %s, %s" % (len(self.created) > 0, len(self.deleted) > 0, len(self.changes) > 0,
-        #                      len(self.created) > 0 or len(self.deleted) > 0 or len(self.changes) > 0
-        #                      ))
+        print("%s, %s, %s, %s" % (len(self.created) > 0, len(self.deleted) > 0, len(self.changes) > 0,
+                              len(self.created) > 0 or len(self.deleted) > 0 or len(self.changes) > 0
+                              ))
         return len(self.created) > 0 or len(self.deleted) > 0 or len(self.changes) > 0
 
     def _cacheRow_(self, sqlRow, table):
@@ -818,9 +818,10 @@ class DatabaseCacheManager:
     def _getCacheForID_(self, cacheID):
         return self.cache.get(cacheID, None)
 
-    def _writeCache_(self, connection, clearCache = True):
+    def _writeCache_(self, connection, clearCache = False):
+        print("Write cache called")
         if connection.canExecuteUnsafe():
-            #print("Writing Cache")
+            print("Writing Cache")
             # {Key: Table, Value: (deletedRows, changedRows)}
             pendingChanges = {}
 
@@ -886,8 +887,18 @@ class DatabaseCacheManager:
 
             # Verify and fix the foreign key relationships
             #TODO: Implement this
+
+
+            # Now that the cache has been written to the DB we have to option of clearing the cache
+            # This is useful if keeping the cache state could lead to issues wih consistency. (Particularly in the case
+            # of a rollback)
+
+            # Note that using this feature means that the cache won't do an in memory rollback of it's changes and it
+            # also won't be possible to know what what changed when the transaction ends
+            if clearCache:
+                self._clearCacheState_()
         else:
-            print("DB Disallowed unsafe executes")
+            cadeb.error("Failed to write cache; DB Disallowed unsafe executes")
 
     def _writeTable_(self, table, connection):
         table.P_writeTable_(table, connection)
@@ -905,6 +916,7 @@ class DatabaseCacheManager:
 
     def _endTransaction_(self, connection, rollback = False):
         # TODO: Verify that this code properly handles sql errors
+        exc = None
         try:
             self._writeCache_(connection)
         except Exception as e:
@@ -1157,39 +1169,51 @@ class DatabaseCacheManager:
         cadeb.debug("%s@%s: Failed to delete row: %s" % (connection.getName(), table.getTableName(table), rowID))
         return False
 
-    def select(self, table, connection, filter):
+    def select(self, table, connection, filter, writeCache=False):
         #TODO: Replace the string based SQL_WhereStatementBuilder with an object/enum based version
         cadeb.debug("%s@%s: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
 
-        if self._isDirty_() and connection.canExecuteUnsafe():
+        print("Dirty: %s, allow unsafe: %s, in trans: %s" % (self._isDirty_(), connection.canExecuteUnsafe(), self._inTransaction_))
+        if writeCache and self._isDirty_() and connection.canExecuteUnsafe():
+            cadeb.warning("%s@%s: Using writeCache=True is a bad idea. Consider rewriting the code to not need it" % (connection.getName(), table.getTableName(table)))
             # Write the cache to the DB to ensure that when we resolve the query the result will be correct
             try:
-                self._writeCache_(connection, False)
+                self._writeCache_(connection, True)
             except Exception as e:
                 cadeb.exception(e)
                 raise e
-
-        # If we successfully wrote the cache to the DB
-        if not self._isDirty_() and self._inTransaction_:
-            # First we resolve the query against the DB
-            # and get the list of row id's to consider
-            idCol = table.getIDColumn(table)
-            if idCol is not None:
-                query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS([ idCol ]).FROM(table).WHERE(filter)
-                # TODO: Verify that this code will properly handle rolling back in the event of an error
-                rows = connection.execute(str(query))
-
-                idList = []
-                for row in rows:
-                    idColumn = table.getIDColumn(table)
-                    id = row[idColumn.name]
-                    idList.append(id)
-
-                return self.getRows(table, connection, idList)
-
-            cadeb.error("%s@%s: ID column was none!" % (connection.getName(), table.getTableName(table)))
         else:
-            cadeb.error("%s@%s: Can't perform SELECT; Database cache has uncommitted changes" % (connection.getName(), table.getTableName(table)))
+            if writeCache:
+                cadeb.debug("%s@%s: Failed to clean cache before select: %s" % (connection.getName(), table.getTableName(table), filter))
+
+        #print("New state: %s" % self._isDirty_())
+        # If we successfully wrote the cache to the DB
+        if not self._isDirty_():
+            if connection.canExecuteSafe():
+                # First we resolve the query against the DB
+                # and get the list of row id's to consider
+                idCol = table.getIDColumn(table)
+                if idCol is not None:
+                    query = SQLQueryBuilder(EnumSQLQueryAction.SELECT).COLUMNS([ idCol ]).FROM(table).WHERE(filter)
+                    # TODO: Verify that this code will properly handle rolling back in the event of an error
+                    rows = connection.execute(str(query))
+
+                    idList = []
+                    for row in rows:
+                        idColumn = table.getIDColumn(table)
+                        id = row[idColumn.name]
+                        idList.append(id)
+
+                    return self.getRows(table, connection, idList)
+
+                cadeb.error("%s@%s: ID column was none!" % (connection.getName(), table.getTableName(table)))
+            else:
+                cadeb.error("%s@%s: Can't perform SELECT; Database is locked" % (
+                connection.getName(), table.getTableName(table)))
+                traceback.print_exc()
+        else:
+            cadeb.error("%s@%s: Can't perform SELECT; Database cache has uncommitted changes" % (
+            connection.getName(), table.getTableName(table)))
             traceback.print_exc()
         return None
 

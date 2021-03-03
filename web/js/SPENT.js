@@ -154,6 +154,7 @@ var propertyManager = new PropertyRequestManager();
 
 var APIRequestManager = function(){
     this.requestPackets = [];
+    //this.queuedActions = {"get": [], "update": [], "delete": [], "create": []};
 
     this.selectRecords = function(dataTypeName, fuzzyData, rules, filter){
         //TODO: this should check that the function args are valid
@@ -1042,13 +1043,14 @@ Vue.component("transaction-tags-form", {
             var intersection = [...newTags].filter(x => oldTags.has(x));
             intersection.forEach((item) => {newTags.delete(item); oldTags.delete(item);});
 
-            newTags.forEach((item) => requestManager.createRecords("tagMap", [{"TransactionID": id, "TagID": item}]));
+            var createList = []
+            newTags.forEach((item) => createList.push({"TransactionID": id, "TagID": item}));
 
             var theOld = TransactionTag.query().where("TagID",  (value) => oldTags.has(value)).where("TransactionID", id).all()
-            theOld.forEach((item) => requestManager.deleteRecords("tagMap", [{"id": item.id}]));
-            dbStore.dispatch("sendDBRequest");
+            var deleteList = []
+            theOld.forEach((item) => deleteList.push({"id": item.id}));
 
-            this.$emit('form-submit', formName, null);
+            this.$emit('form-submit', formName, {"create": createList, "delete": deleteList});
         },
         parseFormData: parseFormData,
     },
@@ -1392,12 +1394,23 @@ function SPENT(){
                     }
                 }
 
-                if(getOrDefault(data, "id", null) == null){
-                    requestManager.createRecords(formName, [data]);
+                if(formName == "tagMap"){
+                    create = getOrDefault(data, "create", []);
+                    requestManager.createRecords(formName, create);
+                    dbStore.dispatch("sendDBRequest");
+
+                    dele = getOrDefault(data, "delete", []);
+                    requestManager.deleteRecords(formName, dele);
+                    dbStore.dispatch("sendDBRequest");
                 } else {
-                    requestManager.updateRecords(formName, [data]);
+                    if(getOrDefault(data, "id", null) == null){
+                        requestManager.createRecords(formName, [data]);
+                    } else {
+                        requestManager.updateRecords(formName, [data]);
+                    }
+                    dbStore.dispatch("sendDBRequest");
                 }
-                dbStore.dispatch("sendDBRequest");
+
             },
             setFormObject: function(obj, form){
                 var self = this;

@@ -337,6 +337,8 @@ class DatabaseEndpoint(EndpointBackend):
 
 		# We can assume that if connect() ran without an exception then we are ready to talk to the db
 		connection.beginTransaction()
+
+
 		try:
 			for packet in request:
 				typeDict = self.apiTree.get(packet["type"], {})
@@ -369,11 +371,13 @@ class DatabaseEndpoint(EndpointBackend):
 					raise Exception(
 						"Invalid action or type: (Action: %s, Type: %s)" % (packet["action"], packet["type"]))
 
+
+
 		except Exception as e:
 			changedState = connection.abortTransaction()
 			changePackets = self.parseChangeState(changedState)
 			responseCode = "500 OK"
-			responseBody = {"successful": False, "message": "An exception occured while accessing the database: %s" % e,
+			responseBody = {"successful": False, "message": "An exception occurred while accessing the database: %s" % e,
 							"records": changePackets}
 			srvlog.exception(e)
 		else:
@@ -389,7 +393,7 @@ class DatabaseEndpoint(EndpointBackend):
 		return resp
 
 	def parseChangeState(self, changeState):
-		# print(changeState)
+		print(changeState)
 		packets = []
 		map = {"create": "created", "update": "changed", "delete": "deleted"}
 		for action in map.items():

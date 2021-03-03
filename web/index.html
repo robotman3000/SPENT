@@ -32,11 +32,32 @@
                 max-height: 258px;
                 overflow-y: scroll;
             }
+            .modal-scroll > div > div > div.body {
+                max-height: 70vh;
+                overflow-x: scroll;
+            }
         </style>
     </head>
     <body>
         <div id="spent">
-            <i-container class="_margin-0 _padding-0 _max-width-100">
+            <i-navbar :collapse="false">
+                <i-navbar-brand>SPENT</i-navbar-brand>
+                <i-navbar-items class="_justify-content-center">
+                    <i-nav>
+                        <!--i-nav-item>Save</i-nav-item-->
+                        <i-button-group>
+                            <!--i-button variant="primary" @click="showBucketTableModal = true">Manage Buckets</i-button-->
+                            <i-button variant="primary" @click="onNewTransactionClick">New Transaction</i-button>
+                            <!--i-button variant="primary">Transaction Filter</i-button-->
+                            <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>
+                            <i-button :variant="tagModeToggle ? 'primary' : 'secondary'" @click="tagModeToggle = !tagModeToggle">{{ tagModeToggle ? "Transaction Mode" : "Tag Mode"}}</i-button>
+                            <i-button variant="primary" @click="refreshBalance">Refresh Balance</i-button>
+                            <i-button variant="primary" @click="showTagTableModal = true">Edit Tags</i-button>
+                        </i-button-group>
+                    </i-nav>
+                </i-navbar-items>
+            </i-navbar>
+            <i-container fluid class="">
                 <!--i-row>
                     <i-column xs="12">
                         <i-alert variant="info">
@@ -46,30 +67,14 @@
                     </i-column>
                 </i-row-->
                 <i-row>
-                    <i-column xs="12">
-                        <i-navbar :collapse="false">
-                            <i-navbar-brand>SPENT</i-navbar-brand>
-                            <i-navbar-items class="_justify-content-center">
-                                <i-nav>
-                                    <!--i-nav-item>Save</i-nav-item-->
-                                    <i-button-group>
-                                        <!--i-button variant="primary" @click="showBucketTableModal = true">Manage Buckets</i-button-->
-                                        <i-button variant="primary" @click="onNewTransactionClick">New Transaction</i-button>
-                                        <!--i-button variant="primary">Transaction Filter</i-button-->
-                                        <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>
-                                        <i-button :variant="tagModeToggle ? 'primary' : 'secondary'" @click="tagModeToggle = !tagModeToggle">{{ tagModeToggle ? "Transaction Mode" : "Tag Mode"}}</i-button>
-                                        <i-button variant="primary" @click="refreshBalance">Refresh Balance</i-button>
-                                        <i-button variant="primary" @click="showTagTableModal = true">Edit Tags</i-button>
-                                    </i-button-group>
-                                </i-nav>
-                            </i-navbar-items>
-                        </i-navbar>
+                    <i-column lg="12">
+
                     </i-column>
                 </i-row>
                 <i-row>
-                    <i-column xs="3">
+                    <i-column lg="3">
                         <i-row>
-                            <i-column xs="12">
+                            <i-column lg="12">
                                 <table bordered style="width: 100%" v-if="selectedBucket">
                                     <thead>
                                         <th></th>
@@ -95,7 +100,7 @@
                             </i-column>
                         </i-row>
                         <i-row>
-                            <i-column xs="12">
+                            <i-column lg="12">
                                 <i-button-group>
                                     <i-button variant="primary" @click="onNewBucketClick"><i-icon icon="plus" /><i-icon icon="file" /></i-button>
                                     <i-button variant="primary" @click="onNewAccountClick"><i-icon icon="plus" /><i-icon icon="folder" /></i-button>
@@ -107,13 +112,13 @@
                             </i-column>
                         </i-row>
                         <i-row>
-                            <i-column xs="12">
+                            <i-column lg="12">
                                 <tree-view v-show="buckets.length > 0" class="item" :nodes="buckets" :selectednode="selectedBucketID" @node-click="onBucketTreeClick"></tree-view>
                                 <p v-show="buckets.length == 0">No Accounts</p>
                             </i-column>
                         </i-row>
                     </i-column>
-                    <i-column xs="9">
+                    <i-column lg="9">
                         <!--i-row>
                             <i-column>
                                 <i-nav>
@@ -134,20 +139,20 @@
                         </i-row>
                     </i-column>
                 </i-row>
-                <i-row><i-column xs="12">Footer</i-column></i-row>
             </i-container>
+            <div style="width: 100%">Footer</div>
             <div>
-                <i-modal v-model="showTransactionFormModal">
+                <i-modal v-model="showTransactionFormModal" class="modal-scroll">
                     <template slot="header">Edit Transaction</template>
                     <transaction-form :form-schema="transSchema" :status-options="statusOptions" :bucket-options="bucketOptions" @form-submit="onFormSubmit"></transaction-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
-                <i-modal v-model="showBucketFormModal">
+                <i-modal v-model="showBucketFormModal" class="modal-scroll">
                     <template slot="header">Edit Bucket</template>
                     <bucket-form :form-schema="bucketSchema" :bucket-options="bucketOptions" :account-options="accountOptions" @form-submit="onFormSubmit"></bucket-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
-                <i-modal v-model="showAccountFormModal">
+                <i-modal v-model="showAccountFormModal" class="modal-scroll">
                     <template slot="header">Edit Account</template>
                     <account-form :form-schema="accountSchema" @form-submit="onFormSubmit"></account-form>
                     <!--template slot="footer">Modal Footer</template-->
@@ -173,12 +178,12 @@
                     <i-datatable hover border striped :columns="tagColumns" :rows="tags" :pagination="true" :count-column="false" @tr-click="onTagTableRowClick"></i-datatable>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
-                <i-modal v-model="showTagFormModal">
+                <i-modal v-model="showTagFormModal" class="modal-scroll">
                     <template slot="header">Edit Tag</template>
                     <tag-form :form-schema="tagSchema" @form-submit="onFormSubmit"></tag-form>
                     <!--template slot="footer">Modal Footer</template-->
                 </i-modal>
-                <i-modal v-model="showTransTagFormModal">
+                <i-modal v-model="showTransTagFormModal" class="modal-scroll">
                     <template slot="header">Edit Transaction Tags</template>
                     <transaction-tags-form :form-schema="transTagSchema" :tag-options="tags" @form-submit="onFormSubmit"></transaction-tags-form>
                     <!--template slot="footer">Modal Footer</template-->

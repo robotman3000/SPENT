@@ -59,12 +59,12 @@ class IntegerTypeVerifier(TypeVerifier):
 
         if type(value) is str:
             test = value
-            print(test + " fewq")
-            print(value[1:] + "gfagreahe")
+            #print(test + " fewq")
+            #print(value[1:] + "gfagreahe")
             if value[1:] == "-": # Only first char
                 # Remove the negative sign
                 test = value[:1] # All but first char
-                print("%s grewgreatest" % test.isdigit())
+                #print("%s grewgreatest" % test.isdigit())
             return test.isdigit()
         return False
 
@@ -499,6 +499,13 @@ class Database:
         self.initedTables = []
         sqldeb.debug("Initializing Database with %s version %s" % (schema.getName(), schema.getVersion()))
 
+    def closeDatabase(self):
+        for conn in self.connections:
+            #TODO: Shutdown more gracefully; I.E. check to see if the connection is in use
+            #print(conn)
+            self.connections[conn].disconnect()
+        sqlog.debug("Database at %s is closed" % self.getDBPath())
+
     def _getCache_(self):
         return self.cache
 
@@ -657,6 +664,7 @@ class DatabaseConnection:
         if (self._assertDBConected_(True, errorMessage="Database is not connected")):
             #if(commit):
             #    self.connection.commit()
+            sqlog.debug("DatabaseConnection[\"%s\"]: Closing connection to DB %s; Path: \"%s\"" % (self.getName(), 0, self.path))
             self.connection.close()
             self.connection = None
             self._closed_ = True
@@ -727,9 +735,9 @@ class DatabaseCacheManager:
         self._inTransaction_ = False
 
     def _isDirty_(self):
-        print("%s, %s, %s, %s" % (len(self.created) > 0, len(self.deleted) > 0, len(self.changes) > 0,
-                              len(self.created) > 0 or len(self.deleted) > 0 or len(self.changes) > 0
-                              ))
+        #print("%s, %s, %s, %s" % (len(self.created) > 0, len(self.deleted) > 0, len(self.changes) > 0,
+        #                      len(self.created) > 0 or len(self.deleted) > 0 or len(self.changes) > 0
+        #                      ))
         return len(self.created) > 0 or len(self.deleted) > 0 or len(self.changes) > 0
 
     def _cacheRow_(self, sqlRow, table):
@@ -777,8 +785,8 @@ class DatabaseCacheManager:
         newRows = []
         idColumn = table.getIDColumn(table)
         for row in rows:
-            print(row.keys())
-            print(idColumn.name)
+            #print(row.keys())
+            #print(idColumn.name)
             id = row[idColumn.name]
             cacheRowID = self._lookupRow_(id, table)
             if cacheRowID is None:
@@ -819,9 +827,9 @@ class DatabaseCacheManager:
         return self.cache.get(cacheID, None)
 
     def _writeCache_(self, connection, clearCache = False):
-        print("Write cache called")
+        #print("Write cache called")
         if connection.canExecuteUnsafe():
-            print("Writing Cache")
+            #print("Writing Cache")
             # {Key: Table, Value: (deletedRows, changedRows)}
             pendingChanges = {}
 
@@ -1055,7 +1063,7 @@ class DatabaseCacheManager:
                     cadeb.debug("%s@%s: No rows returned: %s" % (connection.getName(), table.getTableName(table), rowID))
                     return None
 
-                print(result)
+                #print(result)
                 parsedRows = self._parseRows_(result, table)
 
                 # TODO: Write logic to handle when (by some crazy sequence of events) more than one row is returned
@@ -1083,13 +1091,13 @@ class DatabaseCacheManager:
 
         if len(missingRows) > 0:
             cadeb.debug("%s@%s: Querying for missing rows: %s" % (connection.getName(), table.getTableName(table), missingRows))
-            print(table.getIDColumn(table).name)
+            #print(table.getIDColumn(table).name)
             if table.getIDColumn(table).name == ROW_ID_COL.name:
-                print("loop")
+                #print("loop")
                 columnSelection = [i for i in table.getColumns(table)]
                 columnSelection.append(ROW_ID_COL)
-                print(columnSelection)
-                print("aa")
+                #print(columnSelection)
+                #print("aa")
             else:
                 columnSelection = COLUMN_ANY
 
@@ -1173,7 +1181,7 @@ class DatabaseCacheManager:
         #TODO: Replace the string based SQL_WhereStatementBuilder with an object/enum based version
         cadeb.debug("%s@%s: Selecting rows: %s" % (connection.getName(), table.getTableName(table), filter))
 
-        print("Dirty: %s, allow unsafe: %s, in trans: %s" % (self._isDirty_(), connection.canExecuteUnsafe(), self._inTransaction_))
+        #print("Dirty: %s, allow unsafe: %s, in trans: %s" % (self._isDirty_(), connection.canExecuteUnsafe(), self._inTransaction_))
         if writeCache and self._isDirty_() and connection.canExecuteUnsafe():
             cadeb.warning("%s@%s: Using writeCache=True is a bad idea. Consider rewriting the code to not need it" % (connection.getName(), table.getTableName(table)))
             # Write the cache to the DB to ensure that when we resolve the query the result will be correct
@@ -1334,7 +1342,7 @@ class SQLQueryBuilder:
         return self
 
     def COLUMNS(self, columnList):
-        print(columnList)
+        #print(columnList)
         self.columns = columnList
         return self
 
@@ -1441,8 +1449,8 @@ class SQLQueryBuilder:
         else:
             if self.columns is not None and len(self.columns) > 0:
                 for column in self.columns:
-                    print("Assertion Below: Column %s" % column)
-                    #assert isinstance(column, EnumTable)
+                    #print("Assertion Below: Column %s" % column)
+                    assert isinstance(column, EnumTable)
                 columnStr = ", ".join([col.name for col in self.columns])
             else:
                 columnStr = "*, ROWID"

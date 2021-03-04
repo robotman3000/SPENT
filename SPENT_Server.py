@@ -2,11 +2,6 @@
 import traceback
 from wsgiref.simple_server import make_server
 
-from SPENT.DBBackup import backupDB
-#from SPENT.Old.SPENT import *
-from SPENT.Util import *
-from SPENT.SPENT_Schema_v1_1 import *
-from SPENT.SQLIB import SQL_WhereStatementBuilder
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
@@ -39,6 +34,12 @@ parser.add_argument("--log-level",
 					help="Sets the logging level (INFO, WARNING, ERROR, EXCEPTION, DEBUG)")
 
 args = parser.parse_args()
+
+from SPENT.DBBackup import backupDB
+#from SPENT.Old.SPENT import *
+from SPENT.Util import *
+from SPENT.SPENT_Schema_v1_1 import *
+from SPENT.SQLIB import SQL_WhereStatementBuilder
 
 srvlog = log.getLogger("SPENT Server")
 
@@ -119,7 +120,8 @@ class RequestHandler:
 		return self.handlers.get("%s;%s" % (method, path), self.defaultHandler)
 
 class EndpointBackend:
-	pass
+	def shutdown(self):
+		pass
 
 # We are ourself a backend so that we can support requests that change internal state
 class SPENTServer(EndpointBackend):
@@ -212,6 +214,8 @@ class SPENTServer(EndpointBackend):
 		enumEndpoint.registerEnum("TransactionType", TransactionTypeEnum)
 		self.handler.registerRequestHandler("POST", "/enum/query", enumEndpoint)
 
+		self.endpoints = [fileEndpoint, dbEndpoint, propertyEndpoint, enumEndpoint]
+
 	def handleRequest(self, environ, start_response):
 		srvlog.debug("--------------------------------------------------------------------------------")
 		runTime = "Not Measured"
@@ -285,9 +289,17 @@ class SPENTServer(EndpointBackend):
 		"""Start the server."""
 		self.httpd = make_server("", self.port, self.handleRequest)
 		print("Server is ready on port %s" % self.port)
-		while self.running:
-			self.httpd.handle_request()
-	
+		#while self.running:
+		#	self.httpd.handle_request()
+		self.httpd.serve_forever()
+
+
+
+	def close_server(self):
+		for ep in self.endpoints:
+			ep.shutdown()
+		self.httpd.shutdown()
+
 	def qsToDict(self, queryString):
 		result = {}
 		spl = queryString.split("&")
@@ -325,6 +337,9 @@ class DatabaseEndpoint(EndpointBackend):
 		self.typeMapper = {"account": EnumBucketsTable, "bucket": EnumBucketsTable, "transaction": EnumTransactionTable, "tag": EnumTagsTable, "tagMap": EnumTransactionTagsTable}
 		self.reverseTypeMapper = {v: k for k, v in self.typeMapper.items()}
 			#{obj[1]: obj[0] for obj in self.typeMapper}
+
+	def shutdown(self):
+		self.database.closeDatabase()
 
 	def getDBConnection(self):
 		return self.connection
@@ -577,10 +592,6 @@ class DatabaseEndpoint(EndpointBackend):
 		objData = {col: obj.get(col.name) for col in columns}
 		return objData
 
-	def closeDatabase(self, query):
-		self.accountMan.disconnect()
-		self.running = False
-
 class FileEndpoint(EndpointBackend):
 	def __init__(self, serverRoot, serveAny):
 		srvlog.debug("Server Root is %s" % serverRoot)
@@ -750,9 +761,9 @@ class PropertyManager:
 	def getProperty(self, name):
 		pro = self.properties.get(name, None)
 		if pro is None:
-			logman.warning("Failed to find property with name \"%s\"" % name)
+			logman.debug("Failed to find property with name \"%s\"" % name)
 		else:
-			logman.warning("Found property with name \"%s\"" % name)
+			logman.debug("Found property with name \"%s\"" % name)
 		return pro
 
 class Property:
@@ -879,11 +890,16 @@ class EnumEndpoint(EndpointBackend):
 
 if args.serverMode:
 	if sys.hexversion >= 0x30001f0:
-		print("Initializing Server")
-		server = SPENTServer(args.port)
-		#server.open_browser()
-		print("Starting Server")
-		server.start_server()
+		try:
+			print("Initializing Server")
+			server = SPENTServer(args.port)
+			#server.open_browser()
+			print("Starting Server")
+			server.start_server()
+		except KeyboardInterrupt as e:
+			print("Exiting SPENT")
+			server.close_server()
+			print("Goodbye!")
 	else:
 		print("Sorry, your version of python is too old")
 

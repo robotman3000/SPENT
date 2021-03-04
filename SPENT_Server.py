@@ -498,10 +498,11 @@ class DatabaseEndpoint(EndpointBackend):
 
 	def createFunction(self, request, columns, table, connection):
 		data = request.get("data", {})
-		for obj in data:
-			if obj is not None:
-				objData = self.parseSQLObjectToDict(table, obj)
-				table.createRow(connection, objData)
+		if data is not None:
+			for obj in data:
+				if obj is not None:
+					objData = self.parseSQLObjectToDict(table, obj)
+					table.createRow(connection, objData)
 
 		# This function sends no data back to the client because the list of created rows is sent elsewhere
 		return None
@@ -525,15 +526,13 @@ class DatabaseEndpoint(EndpointBackend):
 
 	def deleteFunction(self, request, columns, table, connection):
 		data = request.get("data", [])
+		if data is None or len(data) < 1:
+			# We return here because an empty selection is translated to mean every row in the table...
+			# Not good when deleting
+			return None
 
 		idColumn = table.getIDColumn(table)
-		if idColumn.name == "ROWID":
-			where = SQL_WhereStatementBuilder()
-			for obj in data:
-				where.OR("%s = %s" % (EnumTransactionTagsTable.TransactionID.name, obj[EnumTransactionTagsTable.TransactionID.name]))
-				where.AND("%s = %s" % (EnumTransactionTagsTable.TagID.name, obj[EnumTransactionTagsTable.TagID.name]))
-		else:
-			where = self.dataToWhere(data, idColumn)
+		where = self.dataToWhere(data, idColumn)
 		selectedRows = table.select(connection, where)
 		#if selectedRows is not None:
 		selectedRows.deleteRows()

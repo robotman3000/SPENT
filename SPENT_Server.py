@@ -1,12 +1,14 @@
 ﻿import mimetypes, json, time, os, sys
 import traceback
 from wsgiref.simple_server import make_server
-
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
 parser.add_argument("--file", dest="dbpath",
                     default="SPENT.db")
+parser.add_argument("--use-dropbox",
+                    action="store_true", dest="dropboxEnabled", default=False,
+                    help="Enable syncing with dropbox")
 parser.add_argument("--root", dest="serverRoot",
                     default="./web")
 parser.add_argument("--port", type=int, dest="port",
@@ -23,9 +25,9 @@ parser.add_argument("--debug-API",
 parser.add_argument("--debug-Server",
                     action="store_true", dest="debugServer", default=False,
                     help="Enable server debugging features")
-parser.add_argument("--server-mode",
-					action="store_true", dest="serverMode", default=False,
-					help="Run the server")
+#parser.add_argument("--server-mode",
+#					action="store_true", dest="serverMode", default=False,
+#					help="Run the server")
 parser.add_argument("--serve-any",
 					action="store_true", dest="serveAnyfile", default=False,
 					help="Tell the file provider to serve any file requested")
@@ -35,13 +37,19 @@ parser.add_argument("--log-level",
 
 args = parser.parse_args()
 
+# We wait to import the SPENT libs because the constructors do a lot of work
+# that doesn't need to happen if "--help" is passed.
 from SPENT.DBBackup import backupDB
-#from SPENT.Old.SPENT import *
 from SPENT.Util import *
 from SPENT.SPENT_Schema_v1_1 import *
 from SPENT.SQLIB import SQL_WhereStatementBuilder
+from SPENT.DropboxSupport import *
 
-srvlog = log.getLogger("SPENT Server")
+srvlog = log.getLogger("SPENT.server")
+log.getLogger("dropbox")
+log.getLogger("urllib3.connectionpool")
+
+log.setLevel(args.logLevel)
 
 #Begin Flag (Perf Mon Util)
 def getTimeStr(timeMS):
@@ -107,7 +115,7 @@ class ServerResponse:
 		return "%s %s\n%s" % (self.getStatus(), self.encodedHeaders, self.getBodyAsString())
 
 class RequestHandler:
-	def __init__(self, default):
+	def __init__(self, default=None):
 		self.handlers = {}
 		self.defaultHandler = default
 
@@ -119,6 +127,9 @@ class RequestHandler:
 		srvlog.debug("Searching for endpoint backend for: %s - %s" % (method, path))
 		return self.handlers.get("%s;%s" % (method, path), self.defaultHandler)
 
+	def setDefaultHandler(self, handler):
+		self.defaultHandler = handler
+
 class EndpointBackend:
 	def shutdown(self):
 		pass
@@ -126,9 +137,11 @@ class EndpointBackend:
 # We are ourself a backend so that we can support requests that change internal state
 class SPENTServer(EndpointBackend):
 	def __init__(self, port):
-		log.setLevel(args.logLevel)
 		self.port = port
-		self.running = True
+		self.running = False
+		self.handler = RequestHandler()
+
+	def init_engine(self):
 
 		# The file handler is the default and gets used when no other match is found
 		fileEndpoint = FileEndpoint(args.serverRoot, args.serveAnyfile)
@@ -136,11 +149,10 @@ class SPENTServer(EndpointBackend):
 		fileEndpoint.registerFile("/css", "SPENT.css", "text/css")
 		fileEndpoint.registerFile("/js", "SPENT.js", "text/javascript")
 		self.fileHandler = fileEndpoint
-		self.handler = RequestHandler(self.fileHandler)
+		self.handler.setDefaultHandler(self.fileHandler)
 
 		dbEndpoint = DatabaseEndpoint(args.dbpath, args.debugAPI)
 		self.handler.registerRequestHandler("POST", "/database/apiRequest", dbEndpoint)
-
 
 		def getAvailBucketTreeBalance(args, connection):
 			bucketID = args.get("recordID", None)
@@ -191,22 +203,12 @@ class SPENTServer(EndpointBackend):
 			if transaction is not None:
 				SpentUtil.setTransactionTags(connection, transaction, tags)
 
-		def propTest(args, connection):
-			return "Test is good and successful"
-
-		self.count = 0
-		def counter(args, connection):
-			self.count = self.count + 1
-			return self.count
-
 		propertyEndpoint = PropertyEndpoint(args.debugAPI, dbEndpoint.database)
 		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.availableTreeBalance", getAvailBucketTreeBalance, True))
 		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.postedTreeBalance", getPostedBucketTreeBalance, True))
 		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.availableBalance", getAvailBucketBalance, True))
 		propertyEndpoint.registerProperty(LinkedProperty("SPENT.bucket.postedBalance", getPostedBucketBalance, True))
 		propertyEndpoint.registerProperty(LinkedMutableProperty("SPENT.transaction.tags", getTransactionTags, setTransactionTags, True))
-		propertyEndpoint.registerProperty(Property("SPENT.property.test", propTest, False))
-		propertyEndpoint.registerProperty(Property("vuex_counter", counter, False))
 		self.handler.registerRequestHandler("POST", "/property/query", propertyEndpoint)
 
 		enumEndpoint = EnumEndpoint(args.debugAPI)
@@ -293,8 +295,6 @@ class SPENTServer(EndpointBackend):
 		#	self.httpd.handle_request()
 		self.httpd.serve_forever()
 
-
-
 	def close_server(self):
 		for ep in self.endpoints:
 			ep.shutdown()
@@ -316,8 +316,6 @@ class SPENTServer(EndpointBackend):
 
 class DatabaseEndpoint(EndpointBackend):
 	def __init__(self, dbPath, debugAPI):
-		# First things first... Backup, Backup, Backup!
-		backupDB(["scriptname", dbPath, "SPENT.backup"])
 
 		self.debugAPI = debugAPI
 		self.database = sqlib.Database(SPENT_DB_V1_1, dbPath)
@@ -887,17 +885,35 @@ class EnumEndpoint(EndpointBackend):
 				return data
 		return None
 
-if args.serverMode:
+if __name__ == '__main__':
 	if sys.hexversion >= 0x30001f0:
 		try:
+			# First we fetch the latest version of the db from dropbox
+			# First things first, we have to ensure we have a database file
+			# if we have one then we backup before doing anything else
+			if os.path.exists(args.dbpath) and os.path.isfile(args.dbpath):
+				# Backup, Backup, Backup!
+				backupDB(["scriptname", args.dbpath, "SPENT.backup"])
+
+			if args.dropboxEnabled:
+				dbHelp = DropboxHelper(args.dbpath)
+				dbHelp.sync_file(args.dbpath)
+			# Else we do nothing because if the file doesn't exist SQLIB will create it for us
+
 			print("Initializing Server")
 			server = SPENTServer(args.port)
-			#server.open_browser()
+			server.init_engine()
 			print("Starting Server")
 			server.start_server()
 		except KeyboardInterrupt as e:
 			print("Exiting SPENT")
 			server.close_server()
+
+			# Sync the file to ensure changes are saved
+			if args.dropboxEnabled:
+				dbHelp.sync_file(args.dbpath)
+			# Else we do nothing because if the file doesn't exist SQLIB will create it for us
+
 			print("Goodbye!")
 	else:
 		print("Sorry, your version of python is too old")

@@ -3,8 +3,8 @@ from typing import Optional
 from SPENT import SQLIB as sqlib
 from SPENT import LOGGER as log
 
-log.initLogger()
-logman = log.getLogger("Main")
+#log.initLogger()
+logman = log.getLogger("SPENT.main")
 
 class EnumTagsTable(sqlib.EnumTable):
     id = sqlib.TableColumn(sqlib.EnumColumnType.INTEGER, preventNull=True, isPrimaryKey=True, autoIncrement=True, keepUnique=True)

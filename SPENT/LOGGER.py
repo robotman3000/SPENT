@@ -1,12 +1,7 @@
 import logging
-#%(relativeCreated)6d _
-#%(processName)-10s
-#%(asctime)s
 
 ########## Credit to https://stackoverflow.com/a/384125 for the ColoredFormatter
 BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE = range(8)
-
-#The background is set with 40 plus the number of the color, and the foreground with 30
 
 #These are the sequences need to get colored ouput
 RESET_SEQ = "\033[0m"
@@ -42,7 +37,7 @@ class ColoredFormatter(logging.Formatter):
 
 # Custom logger class with multiple destinations
 class ColoredLogger(logging.Logger):
-    FORMAT = "[%(threadName)-15s][$BOLD%(name)-15s$RESET][%(levelname)-18s]  %(message)s ($BOLD%(filename)s$RESET:%(lineno)d)"
+    FORMAT = "[%(threadName)-15s][$BOLD%(name)-25s$RESET][%(levelname)-18s]  %(message)s ($BOLD%(filename)s$RESET:%(lineno)d)"
     COLOR_FORMAT = formatter_message(FORMAT, True)
 
     def __init__(self, name):
@@ -53,22 +48,28 @@ class ColoredLogger(logging.Logger):
         console = logging.StreamHandler()
         console.setFormatter(color_formatter)
 
+        if self.hasHandlers():
+            self.handlers.clear()
+
         self.addHandler(console)
         return
 
-##########
-
-def initLogger(level=logging.DEBUG, format='%(threadName)s - %(levelname)s[%(name)s] @ %(module)s.%(funcName)s: %(message)s'):
-    logging.setLoggerClass(ColoredLogger)
-
+logging.setLoggerClass(ColoredLogger)
 loggers = {}
 
 def getLogger(name):
+    #print("Getting Logger: %s" % name)
+    if loggers.get(name) is not None:
+        #print("Using existing")
+        return loggers[name]
+
+    #print("Using super")
     logger = logging.getLogger(name)
+    logger.propagate = False
     loggers[name] = logger
     return logger
 
 def setLevel(level):
     for logger in loggers.items():
         logger[1].setLevel(level)
-        print(logger)
+        #print(logger)

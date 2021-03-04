@@ -5,11 +5,11 @@ import datetime
 from SPENT import LOGGER as log
 import traceback
 
-log.initLogger()
-logman = log.getLogger("Main")
-sqldeb = log.getLogger("SQLIB Debug")
-sqlog = log.getLogger("SQL Debug")
-cadeb = log.getLogger("DB Cache Debug")
+#log.initLogger()
+logman = log.getLogger("SPENT.main")
+sqldeb = log.getLogger("SPENT.db")
+sqlog = log.getLogger("SPENT.db.sql")
+cadeb = log.getLogger("SPENT.db.cache")
 
 COLUMN_ANY = None
 

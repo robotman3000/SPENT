@@ -46,7 +46,7 @@
                     <i-nav>
                         <!--i-nav-item>Save</i-nav-item-->
                         <i-button-group>
-                            <!--i-button variant="primary" @click="showBucketTableModal = true">Manage Buckets</i-button-->
+                            <i-button variant="danger" href="/server/quit">Quit</i-button>
                             <i-button variant="primary" @click="onNewTransactionClick">New Transaction</i-button>
                             <!--i-button variant="primary">Transaction Filter</i-button-->
                             <i-button :variant="clickModeToggle ? 'primary' : 'danger'" @click="clickModeToggle = !clickModeToggle">{{ clickModeToggle ? "Edit Mode" : "Delete Mode"}}</i-button>

@@ -1,4 +1,4 @@
-﻿import mimetypes, json, time, os, sys
+﻿import mimetypes, json, time, os, sys, http.client
 import traceback
 from wsgiref.simple_server import make_server
 from argparse import ArgumentParser
@@ -140,6 +140,7 @@ class SPENTServer(EndpointBackend):
 		self.port = port
 		self.running = False
 		self.handler = RequestHandler()
+		self.handler.registerRequestHandler("GET", "/server/quit", self)
 
 	def init_engine(self):
 
@@ -287,18 +288,35 @@ class SPENTServer(EndpointBackend):
 		srvlog.debug("Request Delegate ran for: %s" % runTime)
 		return [response.getEncodedBody()]
 
+	def handleGetRequest(self, query, path):
+		if "quit" in path:
+			self.running = False
+			response_body = """
+				<html>
+					<head></head>
+					<body><p>Closing SPENT....</p></body>
+				</html>
+			"""
+			return ServerResponse("200 OK", "text/html", None, response_body)
+
 	def start_server(self):
 		"""Start the server."""
 		self.httpd = make_server("", self.port, self.handleRequest)
+		self.running = True
 		print("Server is ready on port %s" % self.port)
-		#while self.running:
-		#	self.httpd.handle_request()
-		self.httpd.serve_forever()
+		while self.running:
+			self.httpd.handle_request()
+		#self.httpd.serve_forever()
 
 	def close_server(self):
-		for ep in self.endpoints:
-			ep.shutdown()
-		self.httpd.shutdown()
+		#conn = http.client.HTTPConnection("localhost:%d" % self.port)
+		#conn.request("QUIT", "/")
+		#conn.getresponse()
+		if self.running:
+			for ep in self.endpoints:
+				ep.shutdown()
+			self.httpd.shutdown()
+			self.running = False
 
 	def qsToDict(self, queryString):
 		result = {}
@@ -887,6 +905,7 @@ class EnumEndpoint(EndpointBackend):
 
 if __name__ == '__main__':
 	if sys.hexversion >= 0x30001f0:
+		server = None
 		try:
 			# First we fetch the latest version of the db from dropbox
 			# First things first, we have to ensure we have a database file
@@ -906,15 +925,17 @@ if __name__ == '__main__':
 			print("Starting Server")
 			server.start_server()
 		except KeyboardInterrupt as e:
-			print("Exiting SPENT")
-			server.close_server()
+			server.running = False
 
-			# Sync the file to ensure changes are saved
-			if args.dropboxEnabled:
-				dbHelp.sync_file(args.dbpath)
-			# Else we do nothing because if the file doesn't exist SQLIB will create it for us
+		print("Exiting SPENT")
+		server.close_server()
 
-			print("Goodbye!")
+		# Sync the file to ensure changes are saved
+		if args.dropboxEnabled:
+			dbHelp.sync_file(args.dbpath)
+		# Else we do nothing because if the file doesn't exist SQLIB will create it for us
+
+		print("Goodbye!")
 	else:
 		print("Sorry, your version of python is too old")
 

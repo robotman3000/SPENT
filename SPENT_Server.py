@@ -25,9 +25,9 @@ parser.add_argument("--debug-API",
 parser.add_argument("--debug-Server",
                     action="store_true", dest="debugServer", default=False,
                     help="Enable server debugging features")
-#parser.add_argument("--server-mode",
-#					action="store_true", dest="serverMode", default=False,
-#					help="Run the server")
+parser.add_argument("--server-mode",
+					action="store_true", dest="serverMode", default=False,
+					help="Run the server")
 parser.add_argument("--serve-any",
 					action="store_true", dest="serveAnyfile", default=False,
 					help="Tell the file provider to serve any file requested")
@@ -903,7 +903,7 @@ class EnumEndpoint(EndpointBackend):
 				return data
 		return None
 
-if __name__ == '__main__':
+if __name__ == '__main__' or args.serverMode:
 	if sys.hexversion >= 0x30001f0:
 		server = None
 		try:
@@ -916,7 +916,7 @@ if __name__ == '__main__':
 
 			if args.dropboxEnabled:
 				dbHelp = DropboxHelper(args.dbpath)
-				dbHelp.sync_file(args.dbpath)
+				dbHelp.sync_file(args.dbpath, False, True)
 			# Else we do nothing because if the file doesn't exist SQLIB will create it for us
 
 			print("Initializing Server")
@@ -932,7 +932,7 @@ if __name__ == '__main__':
 
 		# Sync the file to ensure changes are saved
 		if args.dropboxEnabled:
-			dbHelp.sync_file(args.dbpath)
+			dbHelp.sync_file(args.dbpath, True, False)
 		# Else we do nothing because if the file doesn't exist SQLIB will create it for us
 
 		print("Goodbye!")

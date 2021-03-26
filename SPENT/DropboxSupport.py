@@ -102,7 +102,7 @@ class DropboxHelper:
         # Return the oldest revision (first entry, because revisions was sorted oldest:newest)
         return revisions[0].rev
 
-    def sync_file(self, localfileName):
+    def sync_file(self, localfileName, forceUpload = False, forceDownload = False):
         # If this fails then we assume the file doesn't exist and we upload our version if any exists
 
         fileName = "/" + localfileName
@@ -117,9 +117,50 @@ class DropboxHelper:
             dplog.info(localfileName + ' exists on local but not remote, uploading')
             self.upload(self.dbx, localfileName, fileName)
         elif md is not None:
+            if not os.path.exists(localfileName) or not os.path.isfile(localfileName):
+                dplog.info(localfileName + ' exists on remote but not local, downloading')
+                res = self.download(self.dbx, fileName)
+                with open(localfileName, 'wb') as f:
+                    f.write(res)
+
+            if forceUpload:
+                dplog.info(localfileName + ' force upload')
+                self.upload(self.dbx, localfileName, fileName, overwrite=True)
+
+            if forceDownload:
+                dplog.info(localfileName + ' force download')
+                res = self.download(self.dbx, fileName)
+                with open(localfileName, 'wb') as f:
+                    f.write(res)
+
+        else:
+            dplog.error("Failed to sync DB")
+
+    def sync_file_smart(self, localfileName):
+        # If this fails then we assume the file doesn't exist and we upload our version if any exists
+
+        fileName = "/" + localfileName
+        dplog.debug("Using remote file \'%s\'" % fileName)
+        md = None
+        try:
+            md = self.dbx.files_get_metadata(fileName)
+        except dropbox.exceptions.ApiError as err:
+            dplog.exception(err)
+
+        if md is None and os.path.exists(localfileName) and os.path.isfile(localfileName):
+            dplog.info(localfileName + ' exists on local but not remote, uploading')
+            self.upload(self.dbx, localfileName, fileName)
+        elif md is not None:
+            if not os.path.exists(localfileName) or not os.path.isfile(localfileName):
+                dplog.info(localfileName + ' exists on remote but not local, downloading')
+                res = self.download(self.dbx, fileName)
+                with open(localfileName, 'wb') as f:
+                    f.write(res)
+
             mtime = os.path.getmtime(localfileName)
             mtime_dt = datetime.datetime(*time.gmtime(mtime)[:6])
             size = os.path.getsize(localfileName)
+
             if (isinstance(md, dropbox.files.FileMetadata) and
                     mtime_dt == md.client_modified and size == md.size):
                 dplog.info(localfileName + ' is already synced [stats match]')

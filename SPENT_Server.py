@@ -134,6 +134,23 @@ class EndpointBackend:
 	def shutdown(self):
 		pass
 
+	def doAPICall(self, apiData):
+		pass
+
+	def handleGetRequest(self, query, path):
+		pass
+
+	def handlePostRequest(self, query, size, content, path):
+		request = json.loads(content)
+		responseBody = self.doAPICall(request)
+		responseCode = "200 OK" if responseBody.get("successful", False) else "500 OK"
+
+		resp = ServerResponse(responseCode, "text/json", None, responseBody)
+		if self.debugAPI:
+			# This print is allowed to stay
+			print(resp)
+		return resp
+
 # We are ourself a backend so that we can support requests that change internal state
 class SPENTServer(EndpointBackend):
 	def __init__(self, port):
@@ -265,6 +282,7 @@ class SPENTServer(EndpointBackend):
 				response = ServerResponse("404 OK", "text/text", None, "Invalid request: %s - %s" % (method, path))
 
 		except Exception as e:
+			print("Caught unhandled exception")
 			srvlog.exception(e)
 			response_body = "An unhandled exception occured!!\n"
 			response_body += str(e) + "\n"
@@ -287,6 +305,27 @@ class SPENTServer(EndpointBackend):
 		# This should always print
 		srvlog.debug("Request Delegate ran for: %s" % runTime)
 		return [response.getEncodedBody()]
+
+	def APIRequest(self, apiPath, apiData):
+		srvlog.debug("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		try:
+			delegate = self.handler.getHandler("POST", apiPath)
+			if delegate is not None:
+				srvlog.debug("Using registered handler for: %s - %s" % (method, path))
+
+				# Ask the delegate to handle the request
+				if args.perfMon:
+					resp = time_it(delegate.doAPICall, apiData)
+					response = resp[0]
+					runTime = resp[1]
+				else:
+					response = delegate.doAPICall(queryStr, apiData)
+			srvlog.debug("API Delegate ran for: %s" % runTime)
+		except Exception as ex:
+			srvlog.exception(ex)
+			return {"successful": False, "message": "An unhandled exception occurred: %s" % e}
+
+		return response
 
 	def handleGetRequest(self, query, path):
 		if "quit" in path:
@@ -360,14 +399,12 @@ class DatabaseEndpoint(EndpointBackend):
 	def getDBConnection(self):
 		return self.connection
 
-	def handlePostRequest(self, query, contentLen, content, path):
-		request = json.loads(content)
+	def doAPICall(self, apiData):
 		responsePackets = []
-		responseCode = "200 OK"
 
 		if self.debugAPI:
 			# This print is allowed to stay
-			print(json.dumps(request, indent=2))
+			print(json.dumps(apiData, indent=2))
 
 		# This function is responsible for every request against the database
 		# so we start by getting a connection (for the db) and ensuring that it
@@ -379,9 +416,8 @@ class DatabaseEndpoint(EndpointBackend):
 		# We can assume that if connect() ran without an exception then we are ready to talk to the db
 		connection.beginTransaction()
 
-
 		try:
-			for packet in request:
+			for packet in apiData:
 				typeDict = self.apiTree.get(packet["type"], {})
 				table = self.typeMapper.get(packet["type"], None)
 
@@ -412,13 +448,11 @@ class DatabaseEndpoint(EndpointBackend):
 					raise Exception(
 						"Invalid action or type: (Action: %s, Type: %s)" % (packet["action"], packet["type"]))
 
-
-
 		except Exception as e:
 			changedState = connection.abortTransaction()
 			changePackets = self.parseChangeState(changedState)
-			responseCode = "500 OK"
-			responseBody = {"successful": False, "message": "An exception occurred while accessing the database: %s" % e,
+			responseBody = {"successful": False,
+							"message": "An exception occurred while accessing the database: %s" % e,
 							"records": changePackets}
 			srvlog.exception(e)
 		else:
@@ -427,11 +461,7 @@ class DatabaseEndpoint(EndpointBackend):
 			changePackets = self.parseChangeState(changedState)
 			responseBody = {"successful": True, "records": responsePackets + changePackets}
 
-		resp = ServerResponse(responseCode, "text/json", None, responseBody)
-		if self.debugAPI:
-			# This print is allowed to stay
-			print(resp)
-		return resp
+		return responseBody
 
 	def parseChangeState(self, changeState):
 		print(changeState)
@@ -669,9 +699,6 @@ class FileEndpoint(EndpointBackend):
 			srvlog.warning("Unregistered file was requested: %s" % path)
 		return ServerResponse(status, mimeType, None, response_body)
 
-	def handlePostRequest(self, query, size, body, path):
-		pass
-
 class PropertyEndpoint(EndpointBackend):
 	def __init__(self, debugAPI, database):
 		self.debugAPI = debugAPI
@@ -684,20 +711,16 @@ class PropertyEndpoint(EndpointBackend):
 	def registerMutableProperty(self, property):
 		self.propertyManager.registerMutableProperty(property)
 
-	def handleGetRequest(self, query, path):
-		pass
-
-	def handlePostRequest(self, query, size, content, path):
-		request = json.loads(content)
+	def doAPICall(self, apiData):
 		responsePackets = []
 
 		if self.debugAPI:
 			# This print is allowed to stay
-			print(json.dumps(request, indent=2))
+			print(json.dumps(apiData, indent=2))
 
 		connection = self.database.getConnection("Property Calc")
 		connection.connect()
-		for packet in request:
+		for packet in apiData:
 			action = packet.get("action", None)
 			data = packet.get("data", [])
 
@@ -716,11 +739,7 @@ class PropertyEndpoint(EndpointBackend):
 		connection.disconnect()
 
 		responseBody = {"successful": True, "records": responsePackets}
-		resp = ServerResponse("200 OK", "text/json", None, responseBody)
-		if self.debugAPI:
-			# This print is allowed to stay
-			print(resp)
-		return resp
+		return responseBody
 
 	def getProperty(self, property, connection):
 		name = property.get("name", None)
@@ -871,15 +890,14 @@ class EnumEndpoint(EndpointBackend):
 		srvlog.debug("Enum Backend: Registering Enum %s - %s" % (enumName, enumObject))
 		self.enumRegistry[enumName] = enumObject
 
-	def handlePostRequest(self, query, size, content, path):
-		request = json.loads(content)
+	def doAPICall(self, apiData):
 		responsePackets = []
 
 		if self.debugAPI:
 			# This print is allowed to stay
-			print(json.dumps(request, indent=2))
+			print(json.dumps(apiData, indent=2))
 
-		for packet in request:
+		for packet in apiData:
 			enumName = packet.get("enum", None)
 			if enumName is not None:
 				enumValues = self.getEnum(enumName)
@@ -887,11 +905,7 @@ class EnumEndpoint(EndpointBackend):
 					responsePackets.append({"action": "get", "type": "enum", "enum": enumName, "data": enumValues})
 
 		responseBody = {"successful": True, "records": responsePackets}
-		resp = ServerResponse("200 OK", "text/json", None, responseBody)
-		if self.debugAPI:
-			# This print is allowed to stay
-			print(resp)
-		return resp
+		return responseBody
 
 	def getEnum(self, enumName):
 		if enumName is not None:
@@ -938,8 +952,3 @@ if __name__ == '__main__' or args.serverMode:
 		print("Goodbye!")
 	else:
 		print("Sorry, your version of python is too old")
-
-# localhost:8080/database/query
-# localhost:8080/files/$filename
-# localhost:8080/property/query
-# localhost:8080/enum/query

@@ -1,2 +1,2 @@
 # SPENT
-The SimPle ExpeNse Tracker
+The Simple Expense Tracker

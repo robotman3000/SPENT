@@ -43,6 +43,53 @@ extension Bucket {
     var children: QueryInterfaceRequest<Bucket> {
         request(for: Bucket.children)
     }
+    
+    var tree: QueryInterfaceRequest<Bucket> {
+        // First use an optimization if we are dealing with an account
+        if ancestorID == nil {
+            return Bucket.filter(Bucket.Columns.ancestor == id)
+        }
+        
+        var theID: String = "NULL"
+        if self.id != nil {
+            theID = "\(self.id!)"
+        }
+        
+        //TODO: Is it posible to do this without raw sql?
+        let cte = CommonTableExpression(
+            recursive: true,
+            named: "cte_Buckets",
+            sql: """
+                SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo
+                FROM Buckets e
+                WHERE e.id = \(theID)
+                
+                UNION ALL
+                
+                SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo
+                FROM Buckets e
+                JOIN cte_Buckets c ON c.id = e.Parent
+            """
+        )
+        return cte.all().with(cte).asRequest(of: Bucket.self)
+    }
+    
+    /*
+     WITH RECURSIVE cte_Buckets(id, Name, Parent, Ancestor, Memo) AS (
+         SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo
+         FROM Buckets e
+         WHERE e.id = 5
+         
+         UNION ALL
+         
+         SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo
+         FROM Buckets e
+         JOIN cte_Buckets c ON c.id = e.Parent
+     )
+
+     SELECT * FROM cte_Buckets
+     */
+    
     //    var children: QueryInterfaceRequest<Bucket> {
     //        guard id != nil else {
     //            return Bucket.none()

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BucketRow: View {
-    let bucket: Bucket
+    @State var bucket: Bucket
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4.0) {
@@ -16,8 +16,9 @@ struct BucketRow: View {
                 Text(bucket.name)
                     .font(.headline)
                 Spacer()
-                Text(6038.currencyFormat)
+                BalanceText(bucket: $bucket)
                     .font(.headline)
+                
             }
             //Text("Parent ID: \(bucket.parentID ?? -1)")
             //Text("Memo: \(bucket.memo)")

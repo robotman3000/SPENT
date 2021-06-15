@@ -287,6 +287,111 @@ extension AppDatabase {
             try Tag.fetchOne(db, id: id!)
         }
     }
+    
+    private func getTreeAtBucket(_ bucket: Bucket) throws -> [Bucket]{
+        return try databaseReader.read { db in
+            try bucket.tree.fetchAll(db)
+        }
+    }
+    
+    func getPostedBalance(_ bucket: Bucket) throws -> Int {
+        return try getBalanceQuery(buckets: [bucket], statusTypes: Transaction.StatusTypes.allCases.filter({status in
+            status.rawValue > 2
+        }))
+    }
+    
+    func getAvailableBalance(_ bucket: Bucket) throws -> Int {
+        return try getBalanceQuery(buckets: [bucket], statusTypes: Transaction.StatusTypes.allCases.filter({status in
+            status.rawValue != 0
+        }))
+    }
+    
+    func getPostedTreeBalance(_ bucket: Bucket) throws -> Int {
+        return try getBalanceQuery(buckets: getTreeAtBucket(bucket), statusTypes: Transaction.StatusTypes.allCases.filter({status in
+            status.rawValue > 2
+        }))
+    }
+    
+    func getAvailableTreeBalance(_ bucket: Bucket) throws -> Int {
+        return try getBalanceQuery(buckets: getTreeAtBucket(bucket), statusTypes: Transaction.StatusTypes.allCases.filter({status in
+            status.rawValue != 0
+        }))
+    }
+    
+    private func getBalanceQuery(buckets: [Bucket], statusTypes: [Transaction.StatusTypes]) throws -> Int {
+        var statusIDs: [Int] = []
+        for status in statusTypes {
+            statusIDs.append(status.rawValue)
+        }
+        let statusStr: String = statusIDs.map({ val in return "\(val)" }).joined(separator: ", ")
+        
+        var bucketIDs: [Int64] = []
+        for bucket in buckets {
+            if bucket.id != nil {
+                bucketIDs.append(bucket.id!)
+            }
+        }
+        let bucketStr: String = bucketIDs.map({ val in return "\(val)" }).joined(separator: ", ")
+        
+        var balance: Int = 0
+        try databaseReader.read { db in
+            db.trace(options: .statement) { event in
+                print("SQL: \(event)")
+            }
+            print(statusStr)
+            if let row = try Row.fetchOne(db, sql: """
+                    SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (
+                        SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (\(bucketStr)) AND Status IN (\(statusStr))
+                    
+                        UNION ALL
+                    
+                        SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (\(bucketStr)) AND Status IN (\(statusStr))
+                    )
+            """, arguments: []) {
+                print(row)
+                balance = row["Amount"]
+            }
+        }
+        
+        return balance
+    }
+    
+//    @classmethod
+//    def getPostedBalance(self, connection, bucket: 'Bucket', includeChildren: bool = False) -> float:
+//        return self._calculateBalance_(connection, bucket, True, includeChildren)
+//
+//    @classmethod
+//    def getAvailableBalance(self, connection, bucket: 'Bucket', includeChildren: bool = False) -> float:
+//        return self._calculateBalance_(connection, bucket, False, includeChildren)
+//
+//    @classmethod
+//    def _calculateBalance_(self, connection, bucket: 'Bucket', posted: bool = False, includeChildren: bool = False) -> float:
+//        ids = []
+//        if includeChildren:
+//            ids = self.getAllBucketChildrenID(connection, bucket)
+//        ids.append(bucket.getID())  # We can't forget ourself
+//        idStr = ", ".join(map(str, ids))
+//
+//        statusStr = ""
+//        if posted:
+//            statusStr = "AND Status > 2"
+//
+//        query = "
+//
+//    SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (
+//        SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) %s AND Status != 0
+//
+//        UNION ALL
+//
+//        SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) %s AND Status != 0
+//    )" % (
+//        idStr, statusStr, idStr, statusStr)
+//        column = "Amount"
+//
+//        result = connection.execute(query)
+//        if len(result) > 0:
+//            return round(float(result[0][column]), 2)
+//        return 0
 }
 
 extension AppDatabase {

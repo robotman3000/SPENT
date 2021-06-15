@@ -41,6 +41,7 @@
 		A228FC5D264C574C00CD5BB6 /* TransactionRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5B264C574C00CD5BB6 /* TransactionRequest.swift */; };
 		A228FC5F264C57E700CD5BB6 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */; };
 		A228FC60264C57E700CD5BB6 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */; };
+		A24033C22672898C00A2B5CE /* BalanceText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* BalanceText.swift */; };
 		A2A56710262740EC009C7E8C /* SPENTmacOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */; };
 		A2A56714262740ED009C7E8C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2A56713262740ED009C7E8C /* Assets.xcassets */; };
 		A2A56717262740ED009C7E8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2A56716262740ED009C7E8C /* Preview Assets.xcassets */; };
@@ -81,6 +82,7 @@
 		A228FC58264C571800CD5BB6 /* Query.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
 		A228FC5B264C574C00CD5BB6 /* TransactionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRequest.swift; sourceTree = "<group>"; };
 		A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
+		A24033C12672898C00A2B5CE /* BalanceText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceText.swift; sourceTree = "<group>"; };
 		A2487765265582A7002D7D9F /* TagForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagForm.swift; sourceTree = "<group>"; };
 		A2A5670D262740EC009C7E8C /* SPENT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPENT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTmacOS.swift; sourceTree = "<group>"; };
@@ -205,6 +207,7 @@
 				A20DCD74264ED0270070EB07 /* BalanceTable.swift */,
 				A20DCD76264ED04A0070EB07 /* BucketRow.swift */,
 				A20DAF7C2671802A00347205 /* TransactionRow.swift */,
+				A24033C12672898C00A2B5CE /* BalanceText.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -437,6 +440,7 @@
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
 				A20DAF69267015D700347205 /* FormManager.swift in Sources */,
 				A20DAF6426700CB600347205 /* SidebarNavigable.swift in Sources */,
+				A24033C22672898C00A2B5CE /* BalanceText.swift in Sources */,
 				A20781F8266001CC00DE372A /* TransactionTags.swift in Sources */,
 				A228FC5D264C574C00CD5BB6 /* TransactionRequest.swift in Sources */,
 				A20DAF7D2671802A00347205 /* TransactionRow.swift in Sources */,

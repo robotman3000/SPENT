@@ -8,19 +8,21 @@
 import SwiftUI
 
 struct BalanceTable: View {
-    
-    var bucket: Bucket?
+    @EnvironmentObject var sc: StateController
+    @Binding var bucket: Bucket?
     
     var body: some View {
         VStack (spacing: 15){
             Text(bucket?.name ?? "No Selection")
+
+            let bal = sc.getBucketBalance(bucket)
             HStack (spacing: 15) {
-                BalanceView(text: "Posted", balance: 67)
-                BalanceView(text: "Posted in Tree", balance: 67)
+                BalanceView(text: "Posted", balance: bal.posted)
+                BalanceView(text: "Posted in Tree", balance: bal.postedInTree)
             }
             HStack (spacing: 15) {
-                BalanceView(text: "Available", balance: 67)
-                BalanceView(text: "Available in Tree", balance: 67)
+                BalanceView(text: "Available", balance: bal.available)
+                BalanceView(text: "Available in Tree", balance: bal.availableInTree)
             }
         }
         //.background(Color.white)
@@ -30,15 +32,16 @@ struct BalanceTable: View {
     struct BalanceView: View {
         
         let text: String
-        @State var balance: Int
+        let balance: Int
         
         var body: some View {
             VStack {
                 HStack {
                     Image(systemName: "circle.fill")
                     Spacer()
-                    Text(balance.currencyFormat)
-                        .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                    CurrencyText(balance: balance)
+                        .font(.headline)
+                        //.fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
                 }
                 HStack {
                     Text(text)

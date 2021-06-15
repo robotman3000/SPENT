@@ -8,11 +8,9 @@
 import SwiftUI
 
 struct MacSidebar: View {
-    @State var selected: Int64?
     @State var selectedType = SidebarListOptions.bucket
     
     var body: some View {
-        //Text("SPENT")
         Picker("Type", selection: $selectedType) {
             ForEach(SidebarListOptions.allCases) { type in
                 Text(type.name).tag(type)
@@ -25,16 +23,10 @@ struct MacSidebar: View {
                 })
             }
         }
-        //Text("Selected Item :\(self.selected ?? -1)")
-        //Text(selectedType.rawValue)
         switch selectedType {
-        case .bucket: BucketNavigation(selectedID: $selected).onAppear(perform: clearSelection)
-        case .tag: TagNavigation(selectedID: $selected).onAppear(perform: clearSelection)
+        case .bucket: BucketNavigation()
+        case .tag: TagNavigation()
         }
-    }
-    
-    func clearSelection(){
-        selected = nil
     }
     
     private func toggleSidebar() {

@@ -10,48 +10,39 @@ import SwiftUI
 struct BucketNavigation: View, SidebarNavigable {
     
     @EnvironmentObject var stateController: StateController
-    @Binding var selectedID: Int64?
-    @State var selectedIndex: Int = 0
+    @State var selectedBucket: Bucket?
     @Query(BucketRequest()) var buckets: [Bucket]
     @State var bucketTree: [BucketNode] = []
     @State private var showingAlert = false
     @State private var showingForm = false
     
     var body: some View {
-        BalanceTable(bucket: getBucket(index: selectedIndex))
-        List(selection: $selectedID) {
+        BalanceTable(bucket: $selectedBucket)
+        List(selection: $selectedBucket) {
             Section(header: Text("Accounts")){
-                //ForEach(Array(buckets.enumerated()), id: \.element) { index, bucket in
-                OutlineGroup(getBucketTree(treeList: buckets), id: \.bucket.id, children: \.children) { node in
-                    NavigationLink(destination: ListTransactionsView(query: TransactionRequest(node.bucket), title: node.bucket.name).onAppear(perform: {
-                        selectedID = node.bucket.id
-                        selectedIndex = node.index
-                    })) {
+                OutlineGroup(getBucketTree(treeList: buckets), id: \.bucket, children: \.children) { node in
+                    NavigationLink(destination: ListTransactionsView(query: TransactionRequest(node.bucket), title: node.bucket.name)) {
                         BucketRow(bucket: node.bucket)
                     }
                     .contextMenu {
                         Button("Edit") {
-                            print("Index: \(selectedIndex)")
-                            selectedID = node.bucket.id
-                            selectedIndex = node.index
-                            print("Index2: \(selectedIndex)")
                             showingForm.toggle()
+                            
                         }
                     }
                 }
-                //}
             }//.collapsible(false)
         }.listStyle(SidebarListStyle())
         .onDeleteCommand {
             do {
-                try stateController.database.deleteBucket(id: buckets[selectedIndex].id!)
-                selectedID = nil
+                try stateController.database.deleteBucket(id: selectedBucket!.id!)
+                selectedBucket = nil
             } catch {
                 showingAlert.toggle()
             }
         }
         .sheet(isPresented: $showingForm) {
-            BucketForm(title: "Edit Tag", bucket: buckets[selectedIndex], onSubmit: onSubmitBucket, onCancel: {showingForm.toggle()})
+            BucketForm(title: "Edit Tag", bucket: selectedBucket!, onSubmit: onSubmitBucket, onCancel: {showingForm.toggle()})
             .padding()
         }
         .alert(isPresented: $showingAlert) {
@@ -70,13 +61,6 @@ struct BucketNavigation: View, SidebarNavigable {
         } catch {
             showingAlert.toggle()
         }
-    }
-    
-    func getBucket(index: Int) -> Bucket? {
-        if buckets.count > index && index > -1 {
-            return buckets[selectedIndex]
-        }
-        return nil
     }
     
     func getBucketTree(treeList: [Bucket]) -> [BucketNode] {

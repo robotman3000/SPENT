@@ -10,28 +10,20 @@ import SwiftUI
 struct TagNavigation: View, SidebarNavigable {
         
     @EnvironmentObject var stateController: StateController
-    @Binding var selectedID: Int64?
-    @State var selectedIndex: Int = -1
+    @State var selectedTag: Tag?
     @Query(TagRequest()) var tags: [Tag]
     @State private var showingAlert = false
     @State private var showingForm = false
 
     var body: some View {
-        List(selection: $selectedID) {
+        List(selection: $selectedTag) {
             Section(header: Text("Tags")){
                 ForEach(Array(tags.enumerated()), id: \.element) { index, tag in
-                    NavigationLink(destination: ListTransactionsView(query: TransactionRequest(tag), title: tag.name).onAppear(perform: {
-                        selectedID = tag.id
-                        selectedIndex = index
-                    })) {
+                    NavigationLink(destination: ListTransactionsView(query: TransactionRequest(tag), title: tag.name)) {
                         Text(tag.name)
                     }
                     .contextMenu {
                         Button("Edit") {
-                            print("Index: \(selectedIndex)")
-                            selectedID = tag.id
-                            selectedIndex = index
-                            print("Index2: \(selectedIndex)")
                             showingForm.toggle()
                         }
                     }
@@ -40,14 +32,14 @@ struct TagNavigation: View, SidebarNavigable {
         }
         .onDeleteCommand {
             do {
-                try stateController.database.deleteTag(id: tags[selectedIndex].id!)
-                selectedID = nil
+                try stateController.database.deleteTag(id: selectedTag!.id!)
+                selectedTag = nil
             } catch {
                 showingAlert.toggle()
             }
         }
         .sheet(isPresented: $showingForm) {
-            TagForm(title: "Edit Tag", tag: tags[selectedIndex], onSubmit: onSubmitTag, onCancel: {showingForm.toggle()})
+            TagForm(title: "Edit Tag", tag: selectedTag!, onSubmit: onSubmitTag, onCancel: {showingForm.toggle()})
             .padding()
         }
         .alert(isPresented: $showingAlert) {

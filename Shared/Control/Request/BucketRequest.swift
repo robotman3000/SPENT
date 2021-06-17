@@ -8,16 +8,6 @@
 
 import GRDB
 
-/// A player request defines how to feed the player list
-//struct TransactionRequest {
-//    enum Ordering {
-//        case byScore
-//        case byName
-//    }
-//
-//    var ordering: Ordering
-//}
-
 /// Make `PlayerRequest` able to be used with the `@Query` property wrapper.
 struct BucketRequest: Queryable {
     static func == (lhs: BucketRequest, rhs: BucketRequest) -> Bool {

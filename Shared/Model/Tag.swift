@@ -23,12 +23,6 @@ extension Tag {
     var transactions: QueryInterfaceRequest<Transaction> {
         request(for: Tag.transactions)
     }
-//    var transactions: QueryInterfaceRequest<Transaction> {
-//        guard id != nil else {
-//            return Transaction.none()
-//        }
-//        return Transaction.filter(TransactionTag.filter(TransactionTag.Columns.tagID == id).select(TransactionTag.Columns.transactionID))
-//    }
 }
 
 

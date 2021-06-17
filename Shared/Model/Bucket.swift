@@ -73,29 +73,6 @@ extension Bucket {
         )
         return cte.all().with(cte).asRequest(of: Bucket.self)
     }
-    
-    /*
-     WITH RECURSIVE cte_Buckets(id, Name, Parent, Ancestor, Memo) AS (
-         SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo
-         FROM Buckets e
-         WHERE e.id = 5
-         
-         UNION ALL
-         
-         SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo
-         FROM Buckets e
-         JOIN cte_Buckets c ON c.id = e.Parent
-     )
-
-     SELECT * FROM cte_Buckets
-     */
-    
-    //    var children: QueryInterfaceRequest<Bucket> {
-    //        guard id != nil else {
-    //            return Bucket.none()
-    //        }
-    //        return Bucket.all().filter(parent: id!)
-    //    }
 }
 
 

@@ -18,15 +18,9 @@ struct ListTransactionsView: View {
     @State var editIndex: Int?
     
     init(query: TransactionRequest, title: String){
-        //print("init trans list")
         self._transactions = Query(query)
         self.title = title
     }
-    
-//    init(_ title: String, query: QueryInterfaceRequest<Transaction>){
-//        self._transactions = Query(ObservedQuery(query: query))
-//        self.title = title
-//    }
     
     var body: some View {
         Text("\(selectedIndex ?? -1)")
@@ -68,41 +62,6 @@ struct ListTransactionsView: View {
         } else {
             Text("No Transactions")
         }
-        //Text("\(selectedID ?? -1)")
-//        List(selection: $selectedID) {
-//            if !transactions.isEmpty {
-//                //.sorted(by: { $0.TransDate >= $1.TransDate })
-//                ForEach(Array(transactions.enumerated()), id: \.element) { index, transaction in
-//                    TransactionRow(transaction: transaction).onHover(perform: { hovered in
-////                        if hovered {
-////                            print("Index: \(selectedIndex)")
-////                            selectedIndex = index
-////                            print("Index2: \(selectedIndex)")
-////                        }
-//                    }).contextMenu {
-//                        Button("Edit") {
-//                            showingForm.toggle()
-//                        }
-//                        Button("Delete") {
-//
-//                        }
-//                    }//.frame(height: 30)
-//                }
-//            } else {
-//                Text("No Transactions")
-//            }
-//        }.listStyle(PlainListStyle()).navigationTitle(title)
-//        .sheet(isPresented: $showingForm) {
-//            TransactionForm(title: "Edit Transaction", transaction: transactions[selectedIndex], onSubmit: updateTransaction, onCancel: {showingForm.toggle()})
-//            .padding()
-//        }
-//        .alert(isPresented: $showingAlert) {
-//            Alert(
-//                title: Text("Database Error"),
-//                message: Text("Failed to delete tag"),
-//                dismissButton: .default(Text("OK"))
-//            )
-//        }
     }
     
     func updateTransaction(_ data: inout Transaction){

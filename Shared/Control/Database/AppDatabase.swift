@@ -14,10 +14,61 @@ import Foundation
 /// It applies the pratices recommended at
 /// https://github.com/groue/GRDB.swift/blob/master/Documentation/GoodPracticesForDesigningRecordTypes.md
 struct AppDatabase {
-    /// Creates an `AppDatabase`, and make sure the database schema is ready.
-    init(_ dbWriter: DatabaseWriter) throws {
-        self.dbWriter = dbWriter
-        try migrator.migrate(dbWriter)
+    init(){
+        do {
+            print("Using Memory DB")
+            self.dbWriter = DatabaseQueue()
+            try migrator.migrate(dbWriter)
+        } catch {
+            // Replace this implementation with code to handle the error appropriately.
+            // fatalError() causes the application to generate a crash log and terminate.
+            //
+            // Typical reasons for an error here include:
+            // * The parent directory cannot be created, or disallows writing.
+            // * The database is not accessible, due to permissions or data protection when the device is locked.
+            // * The device is out of space.
+            // * The database could not be migrated to its latest schema version.
+            // Check the error message to determine what the actual problem was.
+            fatalError("Unresolved error \(error)")
+        }
+    }
+    
+    init(path: URL){
+        do {
+            print("Using New DB")
+            self.dbWriter = try DatabaseQueue(path: path.absoluteString)
+            try migrator.migrate(dbWriter)
+        } catch {
+            // Replace this implementation with code to handle the error appropriately.
+            // fatalError() causes the application to generate a crash log and terminate.
+            //
+            // Typical reasons for an error here include:
+            // * The parent directory cannot be created, or disallows writing.
+            // * The database is not accessible, due to permissions or data protection when the device is locked.
+            // * The device is out of space.
+            // * The database could not be migrated to its latest schema version.
+            // Check the error message to determine what the actual problem was.
+            fatalError("Unresolved error \(error)")
+        }
+    }
+    
+    init(_ fileWrapper: FileWrapper, tempURL: URL){
+        do {
+            print("Using DB from FileWrapper: \(fileWrapper.regularFileContents)")
+            self.dbWriter = try DatabaseQueue(fileWrapper: fileWrapper, tempURL: tempURL)
+            try migrator.migrate(dbWriter)
+        } catch {
+            // Replace this implementation with code to handle the error appropriately.
+            // fatalError() causes the application to generate a crash log and terminate.
+            //
+            // Typical reasons for an error here include:
+            // * The parent directory cannot be created, or disallows writing.
+            // * The database is not accessible, due to permissions or data protection when the device is locked.
+            // * The device is out of space.
+            // * The database could not be migrated to its latest schema version.
+            // Check the error message to determine what the actual problem was.
+            fatalError("Unresolved error \(error)")
+        }
     }
     
     /// Provides access to the database.
@@ -42,7 +93,10 @@ struct AppDatabase {
         
         migrator.registerMigration("v1") { db in
             /// This is the initial version one schema
-            
+//            db.trace(options: .statement) { event in
+//                print("SQL: \(event)")
+//            }
+//            
             // Create a table
             // See https://github.com/groue/GRDB.swift#create-tables
             try db.create(table: "Buckets") { t in
@@ -80,7 +134,7 @@ struct AppDatabase {
                 t.uniqueKey(["TransactionID", "TagID"])
             }
             
-            try db.execute(sql: "INSERT INTO Transactions VALUES (-1, \"ROOT\", NULL, NULL)")
+            try db.execute(sql: "INSERT INTO Buckets VALUES (-1, \'ROOT\', NULL, NULL)")
         }
         
         migrator.registerMigration("v1.1") { db in
@@ -125,10 +179,6 @@ struct AppDatabase {
         }
         
         migrator.registerMigration("v1.2") { db in
-            db.trace(options: .statement) { event in
-                print("SQL: \(event)")
-            }
-            
             // *** Eliminate the "Root" bucket ***
             
             // Allow a null transaction source and destination and disable nulls in the memo
@@ -392,53 +442,4 @@ extension AppDatabase {
 //        if len(result) > 0:
 //            return round(float(result[0][column]), 2)
 //        return 0
-}
-
-extension AppDatabase {
-    /// The database for the application
-    //static let shared = loadDB()
-    
-    static func loadDB() -> AppDatabase {
-        do {
-            // Pick a folder for storing the SQLite database, as well as
-            // the various temporary files created during normal database
-            // operations (https://sqlite.org/tempfiles.html).
-            let fileManager = FileManager()
-            let folderURL = try fileManager
-                .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-                .appendingPathComponent("database", isDirectory: true)
-
-            // Support for tests: delete the database if requested
-            if CommandLine.arguments.contains("-reset") {
-                print("Resetting DB as requested")
-                try? fileManager.removeItem(at: folderURL)
-            }
-            
-            // Create the database folder if needed
-            try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true)
-            
-            // Connect to a database on disk
-            // See https://github.com/groue/GRDB.swift/blob/master/README.md#database-connections
-            let dbURL = folderURL.appendingPathComponent("db.sqlite")
-            
-            print("Using DB at: \(dbURL.absoluteString)")
-            let dbPool = try DatabasePool(path: dbURL.path)
-            
-            // Create the AppDatabase
-            let appDatabase = try AppDatabase(dbPool)
-            
-            return appDatabase
-        } catch {
-            // Replace this implementation with code to handle the error appropriately.
-            // fatalError() causes the application to generate a crash log and terminate.
-            //
-            // Typical reasons for an error here include:
-            // * The parent directory cannot be created, or disallows writing.
-            // * The database is not accessible, due to permissions or data protection when the device is locked.
-            // * The device is out of space.
-            // * The database could not be migrated to its latest schema version.
-            // Check the error message to determine what the actual problem was.
-            fatalError("Unresolved error \(error)")
-        }
-    }
 }

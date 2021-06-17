@@ -12,8 +12,8 @@ import GRDB
 class StateController: ObservableObject {
     let database: AppDatabase
     
-    init(){
-        database = AppDatabase.loadDB()
+    init(_ fileConfig: FileDocumentConfiguration<SPENTDatabaseDocument>){
+        self.database = fileConfig.document.database
     }
     
     func initStore(onReady: () -> Void){

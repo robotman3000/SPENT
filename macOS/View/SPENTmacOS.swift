@@ -15,29 +15,34 @@ private struct AppDatabaseKey: EnvironmentKey {
 
 extension EnvironmentValues {
     var appDatabase: AppDatabase? {
-        get { self[AppDatabaseKey.self] }
-        set { self[AppDatabaseKey.self] = newValue }
+        get { print("adb get \(self[AppDatabaseKey.self])"); return self[AppDatabaseKey.self] }
+        set { print("adb set \(newValue)"); self[AppDatabaseKey.self] = newValue }
     }
+}
+
+extension URL {
+    var typeIdentifier: String? { (try? resourceValues(forKeys: [.typeIdentifierKey]))?.typeIdentifier }
+    var localizedName: String? { (try? resourceValues(forKeys: [.localizedNameKey]))?.localizedName }
 }
 
 @main
 struct SPENTmacOS: App {
     @State var isActive: Bool = false
-    let stateController: StateController = StateController()
     @StateObject var formController: FormManager = FormManager()
     
     var body: some Scene {
-        WindowGroup {
+        DocumentGroup(newDocument: SPENTDatabaseDocument()) { file in
             if isActive {
-                MainView(formController: formController).environment(\.appDatabase, stateController.database).environmentObject(stateController)
+                MainView(file: file, formController: formController)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 800, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0) { // Change `2.0` to the desired number of seconds.
                         print("Initializing State Controller")
-                        stateController.initStore {
-                            print("Ready!!")
-                            isActive = true
-                        }
+                        isActive = true
+//                        stateController.initStore {
+//                            print("Ready!!")
+//
+//                        }
                     }
                 }
             }
@@ -66,58 +71,52 @@ struct SPENTmacOS: App {
 }
 
 struct MainView: View {
-    
-    @EnvironmentObject var stateController: StateController
+    @State var file: FileDocumentConfiguration<SPENTDatabaseDocument>
     @ObservedObject var formController: FormManager
     
     var body: some View {
+        let sc = StateController(file)
         NavigationView {
             MacSidebar()
                 .navigationTitle("Accounts")
                 .sheet(isPresented: $formController.showTransactionForm) {
-                    TransactionForm(title: "Create Transaction", onSubmit: createNewTransaction, onCancel: {formController.showTransactionForm.toggle()})
+                    TransactionForm(title: "Create Transaction", onSubmit: { data in
+                        print(data)
+                        do {
+                            try sc.database.saveTransaction(&data)
+                            formController.showTransactionForm.toggle()
+                        } catch {
+                            print(error)
+                        }
+                    }, onCancel: {formController.showTransactionForm.toggle()})
                     .padding()
                 }
                 .sheet(isPresented: $formController.showBucketForm) {
-                    BucketForm(title: "Create Bucket", onSubmit: createNewBucket, onCancel: {formController.showBucketForm.toggle()})
+                    BucketForm(title: "Create Bucket", onSubmit: { data in
+                        print(data)
+                        do {
+                            try sc.database.saveBucket(&data)
+                            formController.showBucketForm.toggle()
+                        } catch {
+                            print(error)
+                        }
+                    }, onCancel: {formController.showBucketForm.toggle()})
                     .padding()
                 }
                 .sheet(isPresented: $formController.showTagForm) {
-                    TagForm(title: "Create Tag", onSubmit: createNewTag, onCancel: {formController.showTagForm.toggle()})
+                    TagForm(title: "Create Tag", onSubmit: { data in
+                        print(data)
+                        do {
+                            try sc.database.saveTag(&data)
+                            formController.showTagForm.toggle()
+                        } catch {
+                            print(error)
+                        }
+                    }, onCancel: {formController.showTagForm.toggle()})
                     .padding()
                 }
             MacHome()
-        }
-    }
-    
-    func createNewTransaction(data: inout Transaction){
-        print(data)
-        do {
-            try stateController.database.saveTransaction(&data)
-            formController.showTransactionForm.toggle()
-        } catch {
-            print(error)
-        }
-    }
-    
-    func createNewTag(data: inout Tag){
-        print(data)
-        do {
-            try stateController.database.saveTag(&data)
-            formController.showTagForm.toggle()
-        } catch {
-            print(error)
-        }
-    }
-    
-    func createNewBucket(data: inout Bucket){
-        print(data)
-        do {
-            try stateController.database.saveBucket(&data)
-            formController.showBucketForm.toggle()
-        } catch {
-            print(error)
-        }
+        }.environment(\.appDatabase, file.document.database).environmentObject(sc)
     }
 }
 

@@ -17,6 +17,7 @@ struct TransactionForm: View {
     @State var transType: Transaction.TransType = .Deposit
     @State var sourceIndex = 0
     @State var destIndex = 0
+    @State var amount: String = ""
     @Query(BucketRequest()) var parentChoices: [Bucket]
     
     
@@ -35,7 +36,7 @@ struct TransactionForm: View {
                 DatePicker("Date", selection: $transaction.date, displayedComponents: [.date])
                 DatePicker("Posting Date", selection: $postDate, displayedComponents: [.date]).disabled(transaction.status.rawValue < Transaction.StatusTypes.Complete.rawValue)
                 
-                TextField("Amount", value: $transaction.amount, formatter: NumberFormatter())
+                TextField("Amount", text: $amount)
 
                 Picker(selection: $transType, label: Text("Type")) {
                     ForEach(Transaction.TransType.allCases) { tType in
@@ -94,6 +95,8 @@ struct TransactionForm: View {
                 transType = transaction.getType()
                 
                 payee = transaction.payee ?? ""
+                
+                amount = "\(transaction.amount)"
             }
             .toolbar(content: {
                 ToolbarItem(placement: .confirmationAction){
@@ -119,6 +122,8 @@ struct TransactionForm: View {
                         } else {
                             transaction.payee = payee
                         }
+                        
+                        transaction.amount = Int(amount)!
                         
                         onSubmit(&transaction)
                     })

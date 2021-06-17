@@ -10,8 +10,8 @@ import GRDB
 
 struct ListTransactionsView: View {
     let title: String
+    @Environment(\.appDatabase) private var database: AppDatabase?
     @Query<TransactionRequest> private var transactions: [Transaction]
-    @EnvironmentObject var stateController: StateController
     @State private var showingAlert = false
     @State private var showingForm = false
     @State var selectedIndex: Int?
@@ -47,7 +47,7 @@ struct ListTransactionsView: View {
             }.onDeleteCommand {
                 do {
                     if selectedIndex != nil {
-                        try stateController.database.deleteTransactions(ids: [transactions[selectedIndex!].id!])
+                        try database!.deleteTransactions(ids: [transactions[selectedIndex!].id!])
                     }
                     selectedIndex = nil
                 } catch {
@@ -108,7 +108,7 @@ struct ListTransactionsView: View {
     func updateTransaction(_ data: inout Transaction){
         print(data)
         do {
-            try stateController.database.saveTransaction(&data)
+            try database!.saveTransaction(&data)
             showingForm.toggle()
         } catch {
             print(error)

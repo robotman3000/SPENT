@@ -406,40 +406,25 @@ extension AppDatabase {
         return balance
     }
     
-//    @classmethod
-//    def getPostedBalance(self, connection, bucket: 'Bucket', includeChildren: bool = False) -> float:
-//        return self._calculateBalance_(connection, bucket, True, includeChildren)
-//
-//    @classmethod
-//    def getAvailableBalance(self, connection, bucket: 'Bucket', includeChildren: bool = False) -> float:
-//        return self._calculateBalance_(connection, bucket, False, includeChildren)
-//
-//    @classmethod
-//    def _calculateBalance_(self, connection, bucket: 'Bucket', posted: bool = False, includeChildren: bool = False) -> float:
-//        ids = []
-//        if includeChildren:
-//            ids = self.getAllBucketChildrenID(connection, bucket)
-//        ids.append(bucket.getID())  # We can't forget ourself
-//        idStr = ", ".join(map(str, ids))
-//
-//        statusStr = ""
-//        if posted:
-//            statusStr = "AND Status > 2"
-//
-//        query = "
-//
-//    SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (
-//        SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (%s) %s AND Status != 0
-//
-//        UNION ALL
-//
-//        SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (%s) %s AND Status != 0
-//    )" % (
-//        idStr, statusStr, idStr, statusStr)
-//        column = "Amount"
-//
-//        result = connection.execute(query)
-//        if len(result) > 0:
-//            return round(float(result[0][column]), 2)
-//        return 0
+    func getBucketBalance(_ bucket: Bucket?) -> BucketBalance {
+        var pb = 0
+        var ptb = 0
+        var ab = 0
+        var atb = 0
+        
+        do {
+        if bucket != nil {
+            // TODO: Calculate the balance
+            pb = try getPostedBalance(bucket!)
+            ab = try getAvailableBalance(bucket!)
+            ptb = try getPostedTreeBalance(bucket!)
+            atb = try getAvailableTreeBalance(bucket!)
+        }
+        } catch {
+            print("Error while calculating balance for bucket")
+            print(error)
+        }
+        
+        return BucketBalance(posted: pb, available: ab, postedInTree: ptb, availableInTree: atb)
+    }
 }

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct BalanceText: View {
-    @EnvironmentObject var sc: StateController
+    @Environment(\.appDatabase) private var database: AppDatabase?
     @Binding var bucket: Bucket
     
     var body: some View {
@@ -17,7 +17,7 @@ struct BalanceText: View {
     
     func getBalance() -> Int {
         do {
-            return try sc.database.getAvailableBalance(bucket)
+            return try database!.getAvailableBalance(bucket)
         } catch {
             print(error)
         }

@@ -8,14 +8,14 @@
 import SwiftUI
 
 struct BalanceTable: View {
-    @EnvironmentObject var sc: StateController
+    @Environment(\.appDatabase) private var database: AppDatabase?
     @Binding var bucket: Bucket?
     
     var body: some View {
         VStack (spacing: 15){
             Text(bucket?.name ?? "No Selection")
 
-            let bal = sc.getBucketBalance(bucket)
+            let bal = database!.getBucketBalance(bucket)
             HStack (spacing: 15) {
                 BalanceView(text: "Posted", balance: bal.posted)
                 BalanceView(text: "Posted in Tree", balance: bal.postedInTree)

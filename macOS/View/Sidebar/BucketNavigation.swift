@@ -9,7 +9,7 @@ import SwiftUI
 
 struct BucketNavigation: View, SidebarNavigable {
     
-    @EnvironmentObject var stateController: StateController
+    @Environment(\.appDatabase) private var database: AppDatabase?
     @State var selectedBucket: Bucket?
     @Query(BucketRequest()) var buckets: [Bucket]
     @State var bucketTree: [BucketNode] = []
@@ -35,7 +35,7 @@ struct BucketNavigation: View, SidebarNavigable {
         }.listStyle(SidebarListStyle())
         .onDeleteCommand {
             do {
-                try stateController.database.deleteBucket(id: selectedBucket!.id!)
+                try database!.deleteBucket(id: selectedBucket!.id!)
                 selectedBucket = nil
             } catch {
                 showingAlert.toggle()
@@ -56,7 +56,7 @@ struct BucketNavigation: View, SidebarNavigable {
     
     func onSubmitBucket(_ bucket: inout Bucket) {
         do {
-            try stateController.database.saveBucket(&bucket)
+            try database!.saveBucket(&bucket)
             showingForm.toggle()
         } catch {
             showingAlert.toggle()

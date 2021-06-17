@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TagNavigation: View, SidebarNavigable {
         
-    @EnvironmentObject var stateController: StateController
+    @Environment(\.appDatabase) private var database: AppDatabase?
     @State var selectedTag: Tag?
     @Query(TagRequest()) var tags: [Tag]
     @State private var showingAlert = false
@@ -32,7 +32,7 @@ struct TagNavigation: View, SidebarNavigable {
         }
         .onDeleteCommand {
             do {
-                try stateController.database.deleteTag(id: selectedTag!.id!)
+                try database!.deleteTag(id: selectedTag!.id!)
                 selectedTag = nil
             } catch {
                 showingAlert.toggle()
@@ -53,7 +53,7 @@ struct TagNavigation: View, SidebarNavigable {
     
     func onSubmitTag(_ tag: inout Tag) {
         do {
-            try stateController.database.saveTag(&tag)
+            try database!.saveTag(&tag)
             showingForm.toggle()
         } catch {
             showingAlert.toggle()

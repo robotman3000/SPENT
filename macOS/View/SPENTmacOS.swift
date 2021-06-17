@@ -75,7 +75,6 @@ struct MainView: View {
     @ObservedObject var formController: FormManager
     
     var body: some View {
-        let sc = StateController(file)
         NavigationView {
             MacSidebar()
                 .navigationTitle("Accounts")
@@ -83,7 +82,7 @@ struct MainView: View {
                     TransactionForm(title: "Create Transaction", onSubmit: { data in
                         print(data)
                         do {
-                            try sc.database.saveTransaction(&data)
+                            try file.document.database.saveTransaction(&data)
                             formController.showTransactionForm.toggle()
                         } catch {
                             print(error)
@@ -95,7 +94,7 @@ struct MainView: View {
                     BucketForm(title: "Create Bucket", onSubmit: { data in
                         print(data)
                         do {
-                            try sc.database.saveBucket(&data)
+                            try file.document.database.saveBucket(&data)
                             formController.showBucketForm.toggle()
                         } catch {
                             print(error)
@@ -107,7 +106,7 @@ struct MainView: View {
                     TagForm(title: "Create Tag", onSubmit: { data in
                         print(data)
                         do {
-                            try sc.database.saveTag(&data)
+                            try file.document.database.saveTag(&data)
                             formController.showTagForm.toggle()
                         } catch {
                             print(error)
@@ -116,7 +115,7 @@ struct MainView: View {
                     .padding()
                 }
             MacHome()
-        }.environment(\.appDatabase, file.document.database).environmentObject(sc)
+        }.environment(\.appDatabase, file.document.database)
     }
 }
 

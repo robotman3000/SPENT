@@ -27,11 +27,26 @@ struct Query<Query: Queryable>: DynamicProperty {
     /// The database reader that makes it possible to observe the database
     @Environment(\.appDatabase?.databaseReader) private var databaseReader: DatabaseReader?
     @StateObject private var core = Core()
+
     private var baseQuery: Query
     
     /// The fetched value
     var wrappedValue: Query.Value {
         core.value ?? Query.defaultValue
+    }
+    
+    var wrappedValueBinding: Binding<Query.Value> {
+        get {
+            Binding<Query.Value>(
+                get: {
+                    print("Wrapped value get: \(core.value ?? Query.defaultValue)")
+                    return wrappedValue
+                },
+                set: { arg in
+                    print("wraped binding: ignoring set")
+                }
+            )
+        }
     }
     
     /// A binding to the query, that lets your views modify it.
@@ -51,7 +66,7 @@ struct Query<Query: Queryable>: DynamicProperty {
     }
     
     func update() {
-        print("Update....")
+        //print("Update....")
         guard let databaseReader = databaseReader else {
             fatalError("Attempting to use @Query without any database in the environment")
         }
@@ -103,11 +118,13 @@ struct Query<Query: Queryable>: DynamicProperty {
                 .sink(
                     receiveCompletion: { _ in
                         // Ignore errors
+                        print("Done")
                     },
                     receiveValue: { [weak self] value in
                         guard let self = self else { return }
                         // Tell SwiftUI about the new value
                         self.objectWillChange.send()
+                        print("RecieveValue: \(value)")
                         self.value = value
                     })
         }

@@ -21,7 +21,7 @@ struct BucketNavigation: View, SidebarNavigable {
         List(selection: $selectedBucket) {
             Section(header: Text("Accounts")){
                 OutlineGroup(getBucketTree(treeList: buckets), id: \.bucket, children: \.children) { node in
-                    NavigationLink(destination: ListTransactionsView(query: TransactionRequest(node.bucket), title: node.bucket.name)) {
+                    NavigationLink(destination: MacTransactionView(title: node.bucket.name, query: TransactionRequest(node.bucket))) {
                         BucketRow(bucket: node.bucket)
                     }
                     .contextMenu {

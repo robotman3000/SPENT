@@ -19,7 +19,7 @@ struct TagNavigation: View, SidebarNavigable {
         List(selection: $selectedTag) {
             Section(header: Text("Tags")){
                 ForEach(Array(tags.enumerated()), id: \.element) { index, tag in
-                    NavigationLink(destination: ListTransactionsView(query: TransactionRequest(tag), title: tag.name)) {
+                    NavigationLink(destination: MacTransactionView(title: tag.name, query: TransactionRequest(tag))) {
                         Text(tag.name)
                     }
                     .contextMenu {

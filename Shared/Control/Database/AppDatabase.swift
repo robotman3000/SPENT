@@ -138,7 +138,6 @@ struct AppDatabase {
         }
         
         migrator.registerMigration("v1.1") { db in
-            print("Migration 1.1")
             // Change Transaction.Amount to an integer
             
             /*
@@ -236,14 +235,37 @@ struct AppDatabase {
             }
         }
         
-        //migrator.registerMigration("v2") { db in
-            // Rename all columns and tables
-        
-            // Recipts storage table
-            // Recipts assignment storage table
-            // Schedules table
-        //}
-
+        migrator.registerMigration("v2") { db in
+            // Create schedules table
+            try db.create(table: "Schedules") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("Name", .text).notNull()
+                t.column("Type", .integer).notNull()
+                t.column("Rule", .integer).notNull()
+                t.column("CustomRule", .blob)
+                t.column("MarkerID", .integer).notNull().references("Tags")
+                t.column("Memo", .text)
+                //t.column("LastRun", .date)
+            }
+            
+            // Add budget schedule column to buckets, allow null
+            try db.alter(table: "Buckets") { t in
+                t.add(column: "BudgetID", .text).notNull().defaults(to: "Schedules")
+            }
+            
+            // Create recipts table
+            try db.create(table: "Recipts") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("Blob", .blob).notNull()
+            }
+            
+            // Create recipts assignments
+            try db.create(table: "TransactionRecipts") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("TransactionID", .integer).notNull()
+                t.column("ReciptID", .integer).notNull()
+            }
+        }
         
         // Migrations for future application versions will be inserted here:
         // migrator.registerMigration(...) { db in
@@ -346,25 +368,25 @@ extension AppDatabase {
     
     func getPostedBalance(_ bucket: Bucket) throws -> Int {
         return try getBalanceQuery(buckets: [bucket], statusTypes: Transaction.StatusTypes.allCases.filter({status in
-            status.rawValue > 2
+            status.rawValue > Transaction.StatusTypes.Submitted.rawValue
         }))
     }
     
     func getAvailableBalance(_ bucket: Bucket) throws -> Int {
         return try getBalanceQuery(buckets: [bucket], statusTypes: Transaction.StatusTypes.allCases.filter({status in
-            status.rawValue != 0
+            status.rawValue != Transaction.StatusTypes.Void.rawValue
         }))
     }
     
     func getPostedTreeBalance(_ bucket: Bucket) throws -> Int {
         return try getBalanceQuery(buckets: getTreeAtBucket(bucket), statusTypes: Transaction.StatusTypes.allCases.filter({status in
-            status.rawValue > 2
+            status.rawValue > Transaction.StatusTypes.Submitted.rawValue
         }))
     }
     
     func getAvailableTreeBalance(_ bucket: Bucket) throws -> Int {
         return try getBalanceQuery(buckets: getTreeAtBucket(bucket), statusTypes: Transaction.StatusTypes.allCases.filter({status in
-            status.rawValue != 0
+            status.rawValue != Transaction.StatusTypes.Submitted.rawValue
         }))
     }
     

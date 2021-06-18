@@ -78,6 +78,7 @@ extension Transaction {
     enum StatusTypes: Int, Codable, CaseIterable, Identifiable {
         case Void
         case Uninitiated
+        case Scheduled
         case Submitted
         case Posting
         case Complete
@@ -89,6 +90,7 @@ extension Transaction {
             switch self {
             case .Void: return "Void"
             case .Uninitiated: return "Uninitiated"
+            case .Scheduled: return "Scheduled"
             case .Submitted: return "Submitted"
             case .Posting: return "Posting"
             case .Complete: return "Complete"

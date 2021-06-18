@@ -14,9 +14,10 @@ struct Bucket: Identifiable, Codable, Hashable {
     var parentID: Int64?
     var ancestorID: Int64?
     var memo: String = ""
+    var budgetID: Int64?
     
     private enum CodingKeys: String, CodingKey {
-        case id, name = "Name", parentID = "Parent", ancestorID = "Ancestor", memo = "Memo"
+        case id, name = "Name", parentID = "Parent", ancestorID = "Ancestor", memo = "Memo", budgetID = "BudgetID"
     }
 }
 
@@ -29,6 +30,11 @@ extension Bucket {
     static let ancestor = belongsTo(Bucket.self, key: "Ancestor")
     var ancestor: QueryInterfaceRequest<Bucket> {
         request(for: Bucket.ancestor)
+    }
+    
+    static let budget = belongsTo(Schedule.self, key: "BudgetID")
+    var budget: QueryInterfaceRequest<Schedule> {
+        request(for: Bucket.budget)
     }
     
     //static let transactions = hasMany(Transaction.self)
@@ -92,6 +98,7 @@ extension Bucket: FetchableRecord, MutablePersistableRecord {
         static let parent = Column(CodingKeys.parentID)
         static let ancestor = Column(CodingKeys.ancestorID)
         static let memo = Column(CodingKeys.memo)
+        static let budgetID = Column(CodingKeys.budgetID)
     }
 }
 

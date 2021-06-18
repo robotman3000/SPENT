@@ -7,6 +7,7 @@
 
 import Foundation
 import GRDB
+import SwiftUI
 
 func getDocumentsDirectory() -> URL {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
@@ -105,4 +106,20 @@ extension String {
   func trunc(length: Int, trailing: String = "…") -> String {
     return (self.count > length) ? self.prefix(length) + trailing : self
   }
+}
+
+extension Array {
+    func getByIndex(_ index: Int) -> Element? {
+        if self.count > index {
+            return self[index]
+        }
+        return nil
+    }
+}
+
+extension Bool {
+    mutating func flipFlop() -> Bool {
+        self.toggle()
+        return self
+    }
 }

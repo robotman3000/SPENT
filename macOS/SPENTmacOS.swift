@@ -17,12 +17,12 @@ extension URL {
 struct SPENTmacOS: App {
     @State var isActive: Bool = false
     @State var activeSheet: CommandMenuSheet? = nil
-    @StateObject var formController: FormManager = FormManager()
+    @StateObject var globalState: GlobalState = GlobalState()
     
     var body: some Scene {
         DocumentGroup(newDocument: SPENTDatabaseDocument()) { file in
             if isActive {
-                MainView(file: file, activeSheet: $activeSheet)
+                MainView(file: file, activeSheet: $activeSheet).environmentObject(globalState)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 800, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0) { // Change `2.0` to the desired number of seconds.
@@ -32,12 +32,15 @@ struct SPENTmacOS: App {
                 }
             }
         }.commands {
-            CommandGroup(after: CommandGroupPlacement.newItem) {
+            CommandGroup(after: .newItem) {
                 Menu("Create") {
                     Button("Transaction") { activeSheet = .transaction }
                     Button("Bucket") { activeSheet = .bucket }
                     Button("Tag") { activeSheet = .tag }
                 }
+            }
+            CommandGroup(after: .textEditing) {
+                Button("Database") { activeSheet = .manager }
             }
         }
         
@@ -66,6 +69,8 @@ struct MainView: View {
                         BucketForm(title: "Create Bucket", onSubmit: createBucket, onCancel: {activeSheet = nil}).padding()
                     case .tag:
                         TagForm(title: "Create Tag", onSubmit: createTag, onCancel: {activeSheet = nil}).padding()
+                    case .manager:
+                        DatabaseManagerView(onCancel: { activeSheet = nil })
                     }
                 }
             MacHome()
@@ -103,8 +108,12 @@ struct MainView: View {
     }
 }
 
+class GlobalState: ObservableObject {
+    @Published var selectedView = TransactionViewType.Table
+}
+
 enum CommandMenuSheet : String, Identifiable {
-    case transaction, bucket, tag
+    case transaction, bucket, tag, manager
     
     var id: String { return self.rawValue }
 }

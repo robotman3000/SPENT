@@ -27,7 +27,6 @@ struct BucketNavigation: View, SidebarNavigable {
                     .contextMenu {
                         Button("Edit") {
                             showingForm.toggle()
-                            
                         }
                     }
                 }

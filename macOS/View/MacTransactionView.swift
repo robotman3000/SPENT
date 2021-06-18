@@ -13,7 +13,7 @@ struct MacTransactionView: View {
     @Environment(\.appDatabase) private var database: AppDatabase?
     let title: String
     @State var query: TransactionRequest
-    @State var selectedView = TransactionViewType.List
+    @EnvironmentObject var appState: GlobalState
     @State var selected: Transaction?
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
@@ -44,7 +44,7 @@ struct MacTransactionView: View {
                 }
             }.padding()
             Spacer()
-            Picker("View As", selection: $selectedView) {
+            Picker("View As", selection: $appState.selectedView) {
                 ForEach(TransactionViewType.allCases) { type in
                     Text(type.rawValue).tag(type)
                 }
@@ -85,9 +85,9 @@ struct MacTransactionView: View {
             }
         }
         
-        switch selectedView {
+        switch appState.selectedView {
         case .List: ListTransactionsView(query: query, selection: $selected).onAppear(perform: {print("list appear")})
-        case .Table: Text("Table View")
+        case .Table: TableTransactionsView(query: query, selection: $selected).onAppear(perform: {print("table appear")})
         case .Calendar: Text("Calendar View")
         }
     }

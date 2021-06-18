@@ -17,8 +17,8 @@ private struct AppDatabaseKey: EnvironmentKey {
 
 extension EnvironmentValues {
     var appDatabase: AppDatabase? {
-        get { print("adb get \(self[AppDatabaseKey.self])"); return self[AppDatabaseKey.self] }
-        set { print("adb set \(newValue)"); self[AppDatabaseKey.self] = newValue }
+        get { return self[AppDatabaseKey.self] }
+        set { self[AppDatabaseKey.self] = newValue }
     }
 }
 

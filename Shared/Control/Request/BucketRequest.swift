@@ -8,7 +8,7 @@
 
 import GRDB
 
-/// Make `PlayerRequest` able to be used with the `@Query` property wrapper.
+/// Make `BucketRequest` able to be used with the `@Query` property wrapper.
 struct BucketRequest: Queryable {
     static func == (lhs: BucketRequest, rhs: BucketRequest) -> Bool {
         return lhs.hash == rhs.hash
@@ -18,19 +18,24 @@ struct BucketRequest: Queryable {
     
     private let hash: Int
     private let query: QueryInterfaceRequest<Bucket>
+    var ordering: Ordering
     
     /// Selects every transaction in the database
-    init(){
+    init(order: Ordering = .byTree){
         query = Bucket.all()
         hash = genHash([1234567])
+        self.ordering = order
     }
     
     func fetchValue(_ db: Database) throws -> [Bucket] {
-//        switch ordering {
-//        case .byScore: return try Transaction.all().orderedByScore().fetchAll(db)
-//        case .byName: return try Player.all().orderedByName().fetchAll(db)
-//        }
-        return try query.fetchAll(db)
+        switch ordering {
+        case .byTree: return try query.fetchAll(db)
+        }
+    }
+    
+    enum Ordering {
+        case byTree
+        //case byName
     }
 }
 

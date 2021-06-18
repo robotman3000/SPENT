@@ -16,42 +16,27 @@ extension URL {
 @main
 struct SPENTmacOS: App {
     @State var isActive: Bool = false
+    @State var activeSheet: CommandMenuSheet? = nil
     @StateObject var formController: FormManager = FormManager()
     
     var body: some Scene {
         DocumentGroup(newDocument: SPENTDatabaseDocument()) { file in
             if isActive {
-                MainView(file: file, formController: formController)
+                MainView(file: file, activeSheet: $activeSheet)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 800, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0) { // Change `2.0` to the desired number of seconds.
                         print("Initializing State Controller")
                         isActive = true
-//                        stateController.initStore {
-//                            print("Ready!!")
-//
-//                        }
                     }
                 }
             }
         }.commands {
-//            CommandMenu("Vieeew") {
-//                Button("Print message") {
-//                    print("Hello World!")
-//                }.keyboardShortcut("p")
-//            }
             CommandGroup(after: CommandGroupPlacement.newItem) {
                 Menu("Create") {
-                    Button("Transaction") {
-                        formController.showTransactionForm.toggle()
-                    }
-                    Button("Bucket") {
-                        formController.showBucketForm.toggle()
-                    }
-                    Button("Tag") {
-                        print("New Tag")
-                        formController.showTagForm.toggle()
-                    }
+                    Button("Transaction") { activeSheet = .transaction }
+                    Button("Bucket") { activeSheet = .bucket }
+                    Button("Tag") { activeSheet = .tag }
                 }
             }
         }
@@ -67,23 +52,21 @@ struct SPENTmacOS: App {
 
 struct MainView: View {
     @State var file: FileDocumentConfiguration<SPENTDatabaseDocument>
-    @ObservedObject var formController: FormManager
+    @Binding var activeSheet: CommandMenuSheet?
     
     var body: some View {
         NavigationView {
             MacSidebar()
                 .navigationTitle("Accounts")
-                .sheet(isPresented: $formController.showTransactionForm) {
-                    TransactionForm(title: "Create Transaction", onSubmit: createTransaction, onCancel: {formController.showTransactionForm.toggle()})
-                    .padding()
-                }
-                .sheet(isPresented: $formController.showBucketForm) {
-                    BucketForm(title: "Create Bucket", onSubmit: createBucket, onCancel: {formController.showBucketForm.toggle()})
-                    .padding()
-                }
-                .sheet(isPresented: $formController.showTagForm) {
-                    TagForm(title: "Create Tag", onSubmit: createTag, onCancel: {formController.showTagForm.toggle()})
-                    .padding()
+                .sheet(item: $activeSheet) { sheet in
+                    switch sheet {
+                    case .transaction:
+                        TransactionForm(title: "Create Transaction", onSubmit: createTransaction, onCancel: {activeSheet = nil}).padding()
+                    case .bucket:
+                        BucketForm(title: "Create Bucket", onSubmit: createBucket, onCancel: {activeSheet = nil}).padding()
+                    case .tag:
+                        TagForm(title: "Create Tag", onSubmit: createTag, onCancel: {activeSheet = nil}).padding()
+                    }
                 }
             MacHome()
         }.environment(\.appDatabase, file.document.database)
@@ -93,7 +76,7 @@ struct MainView: View {
         print(data)
         do {
             try file.document.database.saveTransaction(&data)
-            formController.showTransactionForm.toggle()
+            activeSheet = nil
         } catch {
             print(error)
         }
@@ -103,7 +86,7 @@ struct MainView: View {
         print(data)
         do {
             try file.document.database.saveBucket(&data)
-            formController.showBucketForm.toggle()
+            activeSheet = nil
         } catch {
             print(error)
         }
@@ -113,11 +96,17 @@ struct MainView: View {
         print(data)
         do {
             try file.document.database.saveTag(&data)
-            formController.showTagForm.toggle()
+            activeSheet = nil
         } catch {
             print(error)
         }
     }
+}
+
+enum CommandMenuSheet : String, Identifiable {
+    case transaction, bucket, tag
+    
+    var id: String { return self.rawValue }
 }
 
 enum SidebarListOptions: String, CaseIterable, Identifiable {

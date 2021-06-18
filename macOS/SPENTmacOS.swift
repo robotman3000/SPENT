@@ -74,43 +74,49 @@ struct MainView: View {
             MacSidebar()
                 .navigationTitle("Accounts")
                 .sheet(isPresented: $formController.showTransactionForm) {
-                    TransactionForm(title: "Create Transaction", onSubmit: { data in
-                        print(data)
-                        do {
-                            try file.document.database.saveTransaction(&data)
-                            formController.showTransactionForm.toggle()
-                        } catch {
-                            print(error)
-                        }
-                    }, onCancel: {formController.showTransactionForm.toggle()})
+                    TransactionForm(title: "Create Transaction", onSubmit: createTransaction, onCancel: {formController.showTransactionForm.toggle()})
                     .padding()
                 }
                 .sheet(isPresented: $formController.showBucketForm) {
-                    BucketForm(title: "Create Bucket", onSubmit: { data in
-                        print(data)
-                        do {
-                            try file.document.database.saveBucket(&data)
-                            formController.showBucketForm.toggle()
-                        } catch {
-                            print(error)
-                        }
-                    }, onCancel: {formController.showBucketForm.toggle()})
+                    BucketForm(title: "Create Bucket", onSubmit: createBucket, onCancel: {formController.showBucketForm.toggle()})
                     .padding()
                 }
                 .sheet(isPresented: $formController.showTagForm) {
-                    TagForm(title: "Create Tag", onSubmit: { data in
-                        print(data)
-                        do {
-                            try file.document.database.saveTag(&data)
-                            formController.showTagForm.toggle()
-                        } catch {
-                            print(error)
-                        }
-                    }, onCancel: {formController.showTagForm.toggle()})
+                    TagForm(title: "Create Tag", onSubmit: createTag, onCancel: {formController.showTagForm.toggle()})
                     .padding()
                 }
             MacHome()
         }.environment(\.appDatabase, file.document.database)
+    }
+    
+    func createTransaction(_ data: inout Transaction){
+        print(data)
+        do {
+            try file.document.database.saveTransaction(&data)
+            formController.showTransactionForm.toggle()
+        } catch {
+            print(error)
+        }
+    }
+    
+    func createBucket(_ data: inout Bucket){
+        print(data)
+        do {
+            try file.document.database.saveBucket(&data)
+            formController.showBucketForm.toggle()
+        } catch {
+            print(error)
+        }
+    }
+    
+    func createTag(_ data: inout Tag){
+        print(data)
+        do {
+            try file.document.database.saveTag(&data)
+            formController.showTagForm.toggle()
+        } catch {
+            print(error)
+        }
     }
 }
 

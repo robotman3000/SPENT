@@ -67,6 +67,13 @@ struct SPENTmacOS: App {
                 }
             }
         }
+        
+        Settings{
+            VStack {
+                Text("Settings Window")
+            }.padding()
+            
+        }
     }
 }
 

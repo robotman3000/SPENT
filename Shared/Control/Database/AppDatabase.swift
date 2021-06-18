@@ -8,6 +8,19 @@
 import Combine
 import GRDB
 import Foundation
+import SwiftUI
+
+// Let SwiftUI views access the database through the SwiftUI environment
+private struct AppDatabaseKey: EnvironmentKey {
+    static let defaultValue: AppDatabase? = nil
+}
+
+extension EnvironmentValues {
+    var appDatabase: AppDatabase? {
+        get { print("adb get \(self[AppDatabaseKey.self])"); return self[AppDatabaseKey.self] }
+        set { print("adb set \(newValue)"); self[AppDatabaseKey.self] = newValue }
+    }
+}
 
 /// AppDatabase lets the application access the database.
 ///

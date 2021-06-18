@@ -14,6 +14,32 @@ func getDocumentsDirectory() -> URL {
     return documentsDirectory
 }
 
+func getDBURL() throws -> URL{
+    // Pick a folder for storing the SQLite database, as well as
+    // the various temporary files created during normal database
+    // operations (https://sqlite.org/tempfiles.html).
+//    let fileManager = FileManager()
+//    let folderURL = try fileManager
+//        .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+//        .appendingPathComponent("database", isDirectory: true)
+//
+//    // Support for tests: delete the database if requested
+//    if CommandLine.arguments.contains("-reset") {
+//        print("Resetting DB as requested")
+//        try? fileManager.removeItem(at: folderURL)
+//    }
+//
+    // Create the database folder if needed
+    //try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true)
+    
+    // Connect to a database on disk
+    // See https://github.com/groue/GRDB.swift/blob/master/README.md#database-connections
+    let dbURL = getDocumentsDirectory().appendingPathComponent("db.spentdb")
+    
+    print("Using DB at: \(dbURL.absoluteString)")
+    return dbURL
+}
+
 func generateRandomDate(daysBack: Int)-> Date? {
     let day = arc4random_uniform(UInt32(daysBack))+1
     let hour = arc4random_uniform(23)

@@ -7,26 +7,45 @@
 
 import SwiftUI
 
-struct Data {
-    var transactions: [Transactions]
-}
-
 @main
 struct SPENTiOSApp: App {
-    @State
-    var isActive: Bool = false
+    @State var isActive: Bool = false
+    @State var database: AppDatabase
+    
+    init() {
+        do {
+            database = try AppDatabase(path: getDBURL())
+        } catch {
+            print(error)
+            database = AppDatabase()
+        }
+    }
     
     var body: some Scene {
         WindowGroup {
             if isActive {
-                TransactionList(transactions: loadData())
+                TransactionList().environment(\.appDatabase, database)
             } else {
                 SplashView(showLoading: true).onAppear(){
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                         isActive = true
                     }
                 }
             }
+        }
+    }
+}
+
+struct TransactionList: View {
+    @Query(TransactionRequest(true)) var transactions: [Transaction]
+    
+    var body: some View {
+        if !transactions.isEmpty {
+            List(transactions){ transaction in
+                TransactionRow(transaction: transaction)
+            }
+        } else {
+            Text("No Transactions Found")
         }
     }
 }

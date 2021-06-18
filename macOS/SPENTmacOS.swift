@@ -8,18 +8,6 @@
 import SwiftUI
 import GRDB
 
-// Let SwiftUI views access the database through the SwiftUI environment
-private struct AppDatabaseKey: EnvironmentKey {
-    static let defaultValue: AppDatabase? = nil
-}
-
-extension EnvironmentValues {
-    var appDatabase: AppDatabase? {
-        get { print("adb get \(self[AppDatabaseKey.self])"); return self[AppDatabaseKey.self] }
-        set { print("adb set \(newValue)"); self[AppDatabaseKey.self] = newValue }
-    }
-}
-
 extension URL {
     var typeIdentifier: String? { (try? resourceValues(forKeys: [.typeIdentifierKey]))?.typeIdentifier }
     var localizedName: String? { (try? resourceValues(forKeys: [.localizedNameKey]))?.localizedName }

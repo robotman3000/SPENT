@@ -62,7 +62,7 @@ struct TransactionRow: View {
                         Text(transaction.amount.currencyFormat)
                             .fontWeight(.bold)
                             .font(.title2)
-                            .foregroundColor(transaction.getType() == .Withdrawal ? .red : .black)
+                            .foregroundColor(transaction.getType() == .Withdrawal ? .red : .gray)
                         Direction(transaction: $transaction)
                     }
                 }

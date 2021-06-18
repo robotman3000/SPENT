@@ -29,12 +29,14 @@ struct TransactionRequest: Queryable {
     private let hash: Int
     private let query: QueryInterfaceRequest<Transaction>?
     
-    /// Selects every transaction in the database
-    init(){
-        //query = Transaction.all()
-        //print("Nil init")
-        query = nil
-        hash = genHash([1234567])
+    /// Selects every transaction in the database if includeAll is true
+    init(_ includeAll: Bool = false){
+        if includeAll {
+            query = Transaction.all()
+        } else {
+            query = nil
+        }
+        hash = genHash([1234567, includeAll])
     }
     
     init(_ bucket: Bucket){

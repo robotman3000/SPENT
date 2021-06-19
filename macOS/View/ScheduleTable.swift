@@ -93,7 +93,7 @@ struct ScheduleTable: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        deleteTransaction(selected!.id!, database: database!)
+                        deleteSchedule(selected!.id!, database: database!)
                     })
                 )
             }

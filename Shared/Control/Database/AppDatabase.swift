@@ -269,7 +269,7 @@ struct AppDatabase {
             
             // Add budget schedule column to buckets, allow null
             try db.alter(table: "Buckets") { t in
-                t.add(column: "BudgetID", .text).notNull().defaults(to: "Schedules")
+                t.add(column: "BudgetID", .text).references("Schedules")
             }
             
             // Create recipts table

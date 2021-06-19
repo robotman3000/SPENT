@@ -91,7 +91,7 @@ struct BucketTable: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        deleteTransaction(selected!.id!, database: database!)
+                        deleteBucket(selected!.id!, database: database!)
                     })
                 )
             }

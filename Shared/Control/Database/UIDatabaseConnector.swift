@@ -7,7 +7,11 @@
 
 import Foundation
 
-func updateTransaction(_ data: inout Transaction, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = {_ in }){
+private func printError(error: Error) {
+    print(error)
+}
+
+func updateTransaction(_ data: inout Transaction, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
     print(data)
     do {
         try database.saveTransaction(&data)
@@ -17,7 +21,7 @@ func updateTransaction(_ data: inout Transaction, database: AppDatabase, onCompl
     }
 }
 
-func deleteTransaction(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = {_ in }){
+func deleteTransaction(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
     do {
         try database.deleteTransactions(ids: [id])
         onComplete()
@@ -26,7 +30,7 @@ func deleteTransaction(_ id: Int64, database: AppDatabase, onComplete: () -> Voi
     }
 }
 
-func updateBucket(_ data: inout Bucket, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = {_ in }){
+func updateBucket(_ data: inout Bucket, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
     print(data)
     do {
         try database.saveBucket(&data)
@@ -36,7 +40,7 @@ func updateBucket(_ data: inout Bucket, database: AppDatabase, onComplete: () ->
     }
 }
 
-func deleteBucket(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = {_ in }){
+func deleteBucket(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
     do {
         try database.deleteBucket(id: id)
         onComplete()
@@ -45,7 +49,7 @@ func deleteBucket(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {
     }
 }
 
-func updateTag(_ data: inout Tag, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = {_ in }){
+func updateTag(_ data: inout Tag, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
     print(data)
     do {
         try database.saveTag(&data)
@@ -55,7 +59,7 @@ func updateTag(_ data: inout Tag, database: AppDatabase, onComplete: () -> Void 
     }
 }
 
-func deleteTag(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = {_ in }){
+func deleteTag(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
     do {
         try database.deleteTag(id: id)
         onComplete()
@@ -64,7 +68,7 @@ func deleteTag(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, 
     }
 }
 
-func updateSchedule(_ data: inout Schedule, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = {_ in }){
+func updateSchedule(_ data: inout Schedule, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
     print(data)
     do {
         try database.saveSchedule(&data)
@@ -74,7 +78,7 @@ func updateSchedule(_ data: inout Schedule, database: AppDatabase, onComplete: (
     }
 }
 
-func deleteSchedule(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = {_ in }){
+func deleteSchedule(_ id: Int64, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
     do {
         try database.deleteSchedule(id: id)
         onComplete()

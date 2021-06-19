@@ -31,16 +31,12 @@ struct TagNavigation: View, SidebarNavigable {
             }//.collapsible(false)
         }
         .onDeleteCommand {
-            do {
-                try database!.deleteTag(id: selectedTag!.id!)
-                selectedTag = nil
-            } catch {
-                showingAlert.toggle()
-            }
+            deleteTag(selectedTag!.id!, database: database!, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
         }
         .sheet(isPresented: $showingForm) {
-            TagForm(title: "Edit Tag", tag: selectedTag!, onSubmit: onSubmitTag, onCancel: {showingForm.toggle()})
-            .padding()
+            TagForm(title: "Edit Tag", tag: selectedTag!, onSubmit: {data in
+                updateTag(&data, database: database!, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
+            }, onCancel: dismissModal).padding()
         }
         .alert(isPresented: $showingAlert) {
             Alert(
@@ -51,13 +47,9 @@ struct TagNavigation: View, SidebarNavigable {
         }
     }
     
-    func onSubmitTag(_ tag: inout Tag) {
-        do {
-            try database!.saveTag(&tag)
-            showingForm.toggle()
-        } catch {
-            showingAlert.toggle()
-        }
+    func dismissModal(){
+        showingForm = false
+        showingAlert = false
     }
     
 }

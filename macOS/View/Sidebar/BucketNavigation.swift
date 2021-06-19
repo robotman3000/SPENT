@@ -33,16 +33,12 @@ struct BucketNavigation: View, SidebarNavigable {
             }//.collapsible(false)
         }.listStyle(SidebarListStyle())
         .onDeleteCommand {
-            do {
-                try database!.deleteBucket(id: selectedBucket!.id!)
-                selectedBucket = nil
-            } catch {
-                showingAlert.toggle()
-            }
+            deleteBucket(selectedBucket!.id!, database: database!, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
         }
         .sheet(isPresented: $showingForm) {
-            BucketForm(title: "Edit Tag", bucket: selectedBucket!, onSubmit: onSubmitBucket, onCancel: {showingForm.toggle()})
-            .padding()
+            BucketForm(title: "Edit Bucket", bucket: selectedBucket!, onSubmit: {data in
+                updateBucket(&data, database: database!, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
+            }, onCancel: dismissModal).padding()
         }
         .alert(isPresented: $showingAlert) {
             Alert(
@@ -50,15 +46,6 @@ struct BucketNavigation: View, SidebarNavigable {
                 message: Text("Failed to delete account"),
                 dismissButton: .default(Text("OK"))
             )
-        }
-    }
-    
-    func onSubmitBucket(_ bucket: inout Bucket) {
-        do {
-            try database!.saveBucket(&bucket)
-            showingForm.toggle()
-        } catch {
-            showingAlert.toggle()
         }
     }
     
@@ -116,6 +103,11 @@ struct BucketNavigation: View, SidebarNavigable {
         return Array(accounts).sorted(by: { a, b in
             a.bucket.name < b.bucket.name
         })
+    }
+    
+    func dismissModal(){
+        showingForm = false
+        showingAlert = false
     }
 }
 

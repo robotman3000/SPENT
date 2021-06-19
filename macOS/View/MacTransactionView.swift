@@ -27,15 +27,16 @@ struct MacTransactionView: View {
                     Text(type.rawValue).tag(type)
                 }
             }
-            Text("\(selected?.memo ?? "None")")
         }.sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
-                TransactionForm(title: "New Transaction", onSubmit: updateTransaction, onCancel: {activeSheet = nil}).padding()
+                TransactionForm(title: "Create Transaction", onSubmit: {data in
+                    updateTransaction(&data, database: database!, onComplete: dismissModal)
+                }, onCancel: dismissModal).padding()
             case .edit:
-                TransactionForm(title: "Edit Transaction", transaction: selected!,
-                                onSubmit: updateTransaction, onCancel: {activeSheet = nil})
-                .padding()
+                TransactionForm(title: "Create Transaction", transaction: selected!, onSubmit: {data in
+                    updateTransaction(&data, database: database!, onComplete: dismissModal)
+                }, onCancel: dismissModal).padding()
             }
         }.alert(item: $activeAlert) { alert in
             switch alert {
@@ -57,7 +58,7 @@ struct MacTransactionView: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        deleteTransaction(selected!.id!)
+                        deleteTransaction(selected!.id!, database: database!)
                     })
                 )
             }
@@ -70,25 +71,9 @@ struct MacTransactionView: View {
         }
     }
     
-    func updateTransaction(_ data: inout Transaction){
-        print(data)
-        do {
-            try database!.saveTransaction(&data)
-            activeSheet = nil
-        } catch {
-            print(error)
-        }
+    func dismissModal(){
+        activeSheet = nil
     }
-    
-    func deleteTransaction(_ id: Int64){
-        do {
-            try database!.deleteTransactions(ids: [id])
-            activeSheet = nil
-        } catch {
-            print(error)
-        }
-    }
-    
 }
 
 enum TransactionViewType: String, CaseIterable, Identifiable {

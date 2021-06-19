@@ -65,11 +65,17 @@ struct MainView: View {
                 .sheet(item: $activeSheet) { sheet in
                     switch sheet {
                     case .transaction:
-                        TransactionForm(title: "Create Transaction", onSubmit: createTransaction, onCancel: {activeSheet = nil}).padding()
+                        TransactionForm(title: "Create Transaction", onSubmit: {data in
+                            updateTransaction(&data, database: file.document.database, onComplete: dismissModal)
+                        }, onCancel: dismissModal).padding()
                     case .bucket:
-                        BucketForm(title: "Create Bucket", onSubmit: createBucket, onCancel: {activeSheet = nil}).padding()
+                        BucketForm(title: "Create Bucket", onSubmit: {data in
+                            updateBucket(&data, database: file.document.database, onComplete: dismissModal)
+                        }, onCancel: dismissModal).padding()
                     case .tag:
-                        TagForm(title: "Create Tag", onSubmit: createTag, onCancel: {activeSheet = nil}).padding()
+                        TagForm(title: "Create Tag", onSubmit: {data in
+                            updateTag(&data, database: file.document.database, onComplete: dismissModal)
+                        }, onCancel: dismissModal).padding()
                     case .manager:
                         DatabaseManagerView(onCancel: { activeSheet = nil })
                     }
@@ -78,34 +84,8 @@ struct MainView: View {
         }.environment(\.appDatabase, file.document.database)
     }
     
-    func createTransaction(_ data: inout Transaction){
-        print(data)
-        do {
-            try file.document.database.saveTransaction(&data)
-            activeSheet = nil
-        } catch {
-            print(error)
-        }
-    }
-    
-    func createBucket(_ data: inout Bucket){
-        print(data)
-        do {
-            try file.document.database.saveBucket(&data)
-            activeSheet = nil
-        } catch {
-            print(error)
-        }
-    }
-    
-    func createTag(_ data: inout Tag){
-        print(data)
-        do {
-            try file.document.database.saveTag(&data)
-            activeSheet = nil
-        } catch {
-            print(error)
-        }
+    func dismissModal(){
+        activeSheet = nil
     }
 }
 

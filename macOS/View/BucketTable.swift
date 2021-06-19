@@ -8,17 +8,19 @@
 import SwiftUI
 
 struct BucketTable: View {
+    
+    @Environment(\.appDatabase) private var database: AppDatabase?
     @Query(BucketRequest(order: .byTree)) var buckets: [Bucket]
-    @State var selectedB: Bucket?
+    @State var selected: Bucket?
     @Binding var activeSheet : ActiveSheet?
     @Binding var activeAlert : ActiveAlert?
     
     var body: some View {
-        VStack{
+        VStack {
             Section(header:
                 VStack {
                     HStack {
-                        TableToolbar(selected: $selectedB, activeSheet: $activeSheet, activeAlert: $activeAlert)
+                        TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
                         Spacer()
                     }
                     TableRow(content: [
@@ -39,7 +41,7 @@ struct BucketTable: View {
                         })
                     ])
                 }){}
-            List(buckets, id: \.self, selection: $selectedB){ bucket in
+            List(buckets, id: \.self, selection: $selected){ bucket in
                 TableRow(content: [
                     AnyView(TableCell {
                         Text(bucket.name)
@@ -56,9 +58,48 @@ struct BucketTable: View {
                     AnyView(TableCell {
                         Text("\(bucket.budgetID ?? -1)")
                     })
-                ])
+                ]).tag(bucket)
+            }
+        }.sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .new:
+                BucketForm(title: "Create Bucket", onSubmit: {data in
+                    updateBucket(&data, database: database!, onComplete: dismissModal)
+                }, onCancel: dismissModal).padding()
+            case .edit:
+                BucketForm(title: "Edit Bucket", bucket: selected!, onSubmit: {data in
+                    updateBucket(&data, database: database!, onComplete: dismissModal)
+                }, onCancel: dismissModal).padding()
+            }
+        }.alert(item: $activeAlert) { alert in
+            switch alert {
+            case .deleteFail:
+                return Alert(
+                    title: Text("Database Error"),
+                    message: Text("Failed to delete bucket"),
+                    dismissButton: .default(Text("OK"))
+                )
+            case .selectSomething:
+                return Alert(
+                    title: Text("Alert"),
+                    message: Text("Select a bucket first"),
+                    dismissButton: .default(Text("OK"))
+                )
+            case .confirmDelete:
+                return Alert(
+                    title: Text("Confirm Delete"),
+                    message: Text("Are you sure you want to delete this?"),
+                    primaryButton: .cancel(),
+                    secondaryButton: .destructive(Text("Confirm"), action: {
+                        deleteTransaction(selected!.id!, database: database!)
+                    })
+                )
             }
         }
+    }
+    
+    func dismissModal(){
+        activeSheet = nil
     }
 }
 

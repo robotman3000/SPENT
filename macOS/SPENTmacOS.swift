@@ -24,7 +24,7 @@ struct SPENTmacOS: App {
             if isActive {
                 MainView(file: file, activeSheet: $activeSheet).environmentObject(globalState)
             } else {
-                SplashView(showLoading: true).frame(minWidth: 800, minHeight: 600).onAppear {
+                SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0) { // Change `2.0` to the desired number of seconds.
                         print("Initializing State Controller")
                         isActive = true
@@ -60,6 +60,7 @@ struct MainView: View {
     var body: some View {
         NavigationView {
             MacSidebar()
+                .frame(minWidth: 300)
                 .navigationTitle("Accounts")
                 .sheet(item: $activeSheet) { sheet in
                     switch sheet {

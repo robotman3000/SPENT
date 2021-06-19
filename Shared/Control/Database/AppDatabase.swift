@@ -67,7 +67,7 @@ struct AppDatabase {
     
     init(_ fileWrapper: FileWrapper, tempURL: URL){
         do {
-            print("Using DB from FileWrapper: \(fileWrapper.regularFileContents)")
+            print("Using DB from FileWrapper")
             self.dbWriter = try DatabaseQueue(fileWrapper: fileWrapper, tempURL: tempURL)
             try migrator.migrate(dbWriter)
         } catch {
@@ -250,6 +250,12 @@ struct AppDatabase {
         
         migrator.registerMigration("v2") { db in
             // Create schedules table
+            
+            print("v2 Schema Migration")
+            db.trace(options: .statement) { event in
+                print("SQL: \(event)")
+            }
+            
             try db.create(table: "Schedules") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("Name", .text).notNull()
@@ -305,8 +311,8 @@ extension AppDatabase {
         }
     }
     
-    /// Saves (inserts or updates) a player. When the method returns, the
-    /// player is present in the database, and its id is not nil.
+    /// Saves (inserts or updates) a transaction. When the method returns, the
+    /// transaction is present in the database, and its id is not nil.
     func saveTransaction(_ player: inout Transaction) throws {
 //        if player.name.isEmpty {
 //            throw ValidationError.missingName
@@ -316,14 +322,14 @@ extension AppDatabase {
         }
     }
     
-    /// Delete the specified players
+    /// Delete the specified transactions
     func deleteTransactions(ids: [Int64]) throws {
         try dbWriter.write { db in
             _ = try Transaction.deleteAll(db, keys: ids)
         }
     }
     
-    /// Delete all players
+    /// Delete all transactions
     func deleteAllTransactions() throws {
         try dbWriter.write { db in
             _ = try Transaction.deleteAll(db)
@@ -351,6 +357,18 @@ extension AppDatabase {
     func deleteBucket(id: Int64) throws {
         try dbWriter.write { db in
             _ = try Bucket.deleteOne(db, id: id)
+        }
+    }
+    
+    func saveSchedule(_ schedule: inout Schedule) throws {
+        try dbWriter.write { db in
+            try schedule.save(db)
+        }
+    }
+    
+    func deleteSchedule(id: Int64) throws {
+        try dbWriter.write { db in
+            _ = try Schedule.deleteOne(db, id: id)
         }
     }
 }

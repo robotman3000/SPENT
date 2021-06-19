@@ -114,7 +114,7 @@ struct TransactionForm: View {
                         case .Withdrawal:
                             transaction.destID = nil
                         case .Transfer:
-                            1+1
+                            print("Make the compiler happy")
                         }
                         
                         if payee.isEmpty {

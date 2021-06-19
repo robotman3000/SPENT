@@ -12,30 +12,38 @@ struct DatabaseManagerView: View {
     let onCancel: () -> Void
     
     @Query(BucketRequest(order: .byTree)) var buckets: [Bucket]
+    @State var selected: Transaction?
+    @State var activeSheet : ActiveSheet? = nil
+    @State var activeAlert : ActiveAlert? = nil
     
     var body: some View {
         VStack{
             TabView {
                 VStack{
                     Section(header:
-                        TableRow(content: [
-                            AnyView(TableCell {
-                                Text("Name")
-                            }),
-                            AnyView(TableCell {
-                                Text("Parent")
-                            }),
-                            AnyView(TableCell {
-                                Text("Ancestor")
-                            }),
-                            AnyView(TableCell {
-                                Text("Memo")
-                            }),
-                            AnyView(TableCell {
-                                Text("Budget")
-                            })
-                        ])
-                    ){}
+                        VStack {
+                            HStack {
+                                TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
+                                Spacer()
+                            }
+                            TableRow(content: [
+                                AnyView(TableCell {
+                                    Text("Name")
+                                }),
+                                AnyView(TableCell {
+                                    Text("Parent")
+                                }),
+                                AnyView(TableCell {
+                                    Text("Ancestor")
+                                }),
+                                AnyView(TableCell {
+                                    Text("Memo")
+                                }),
+                                AnyView(TableCell {
+                                    Text("Budget")
+                                })
+                            ])
+                        }){}
                     List(buckets){ bucket in
                         TableRow(content: [
                             AnyView(TableCell {

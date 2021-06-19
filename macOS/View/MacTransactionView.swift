@@ -20,29 +20,7 @@ struct MacTransactionView: View {
     
     var body: some View {
         HStack {
-            HStack {
-                Button(action: { activeSheet = .new }) {
-                    Image(systemName: "plus")
-                }
-                Button(action: {
-                    if selected != nil {
-                        activeSheet = .edit
-                    } else {
-                        activeAlert = .selectTransaction
-                    }
-                }) {
-                    Image(systemName: "square.and.pencil")
-                }
-                Button(action: {
-                    if selected != nil {
-                        activeAlert = .confirmDelete
-                    } else {
-                        activeAlert = .selectTransaction
-                    }
-                }) {
-                    Image(systemName: "trash")
-                }
-            }.padding()
+            TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
             Spacer()
             Picker("View As", selection: $appState.selectedView) {
                 ForEach(TransactionViewType.allCases) { type in
@@ -67,7 +45,7 @@ struct MacTransactionView: View {
                     message: Text("Failed to delete transaction"),
                     dismissButton: .default(Text("OK"))
                 )
-            case .selectTransaction:
+            case .selectSomething:
                 return Alert(
                     title: Text("Alert"),
                     message: Text("Select a transaction first"),
@@ -111,18 +89,6 @@ struct MacTransactionView: View {
         }
     }
     
-}
-
-enum ActiveSheet : String, Identifiable { // <--- note that it's now Identifiable
-    case new, edit
-    
-    var id: String { return self.rawValue }
-}
-
-enum ActiveAlert : String, Identifiable { // <--- note that it's now Identifiable
-    case deleteFail, selectTransaction, confirmDelete
-    
-    var id: String { return self.rawValue }
 }
 
 enum TransactionViewType: String, CaseIterable, Identifiable {

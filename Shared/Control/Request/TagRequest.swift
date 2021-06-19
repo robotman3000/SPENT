@@ -18,18 +18,22 @@ struct TagRequest: Queryable {
     
     private let hash: Int
     private let query: QueryInterfaceRequest<Tag>
+    var ordering: Ordering
     
     /// Selects every transaction in the database
-    init(){
+    init(order: Ordering = .none){
         query = Tag.all()
         hash = genHash([1234567])
+        self.ordering = order
     }
     
     func fetchValue(_ db: Database) throws -> [Tag] {
-//        switch ordering {
-//        case .byScore: return try Transaction.all().orderedByScore().fetchAll(db)
-//        case .byName: return try Player.all().orderedByName().fetchAll(db)
-//        }
-        return try query.fetchAll(db)
+        switch ordering {
+        case .none: return try query.fetchAll(db)
+        }
+    }
+    
+    enum Ordering {
+        case none
     }
 }

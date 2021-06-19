@@ -11,70 +11,62 @@ struct DatabaseManagerView: View {
     
     let onCancel: () -> Void
     
-    @Query(BucketRequest(order: .byTree)) var buckets: [Bucket]
-    @State var selected: Transaction?
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
+    @State fileprivate var editType: DatabaseEditorTab = .account
     
     var body: some View {
         VStack{
             TabView {
-                VStack{
-                    Section(header:
-                        VStack {
-                            HStack {
-                                TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
-                                Spacer()
-                            }
-                            TableRow(content: [
-                                AnyView(TableCell {
-                                    Text("Name")
-                                }),
-                                AnyView(TableCell {
-                                    Text("Parent")
-                                }),
-                                AnyView(TableCell {
-                                    Text("Ancestor")
-                                }),
-                                AnyView(TableCell {
-                                    Text("Memo")
-                                }),
-                                AnyView(TableCell {
-                                    Text("Budget")
-                                })
-                            ])
-                        }){}
-                    List(buckets){ bucket in
-                        TableRow(content: [
-                            AnyView(TableCell {
-                                Text(bucket.name)
-                            }),
-                            AnyView(TableCell {
-                                Text("\(bucket.parentID ?? -1)")
-                            }),
-                            AnyView(TableCell {
-                                Text("\(bucket.ancestorID ?? -1)")
-                            }),
-                            AnyView(TableCell {
-                                Text(bucket.memo)
-                            }),
-                            AnyView(TableCell {
-                                Text("\(bucket.budgetID ?? -1)")
-                            })
-                        ])
-                    }
-                }.tabItem {
-                    Text("Accounts")
-                }
+                BucketTable(activeSheet: $activeSheet, activeAlert: $activeAlert).tabItem {
+                    Label("Accounts", systemImage: "folder")
+                }.onAppear(perform: {editType = .account})
              
-                Text("Bookmark Tab")
-                .tabItem {
-                    Text("Schedules")
-                }
+                ScheduleTable(activeSheet: $activeSheet, activeAlert: $activeAlert).tabItem {
+                    Label("Schedules", systemImage: "calendar.badge.clock")
+                }.onAppear(perform: {editType = .schedule})
          
-                Text("Video Tab")
-                .tabItem {
-                    Text("Tags")
+                TagTable(activeSheet: $activeSheet, activeAlert: $activeAlert).tabItem {
+                    Label("Tags", systemImage: "tag")
+                }.onAppear(perform: {editType = .tag})
+            }.sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .new:
+                    switch editType {
+                    case .account: BucketForm(title: "New Bucket", onSubmit: <#T##(inout Bucket) -> Void#>, onCancel: <#T##() -> Void#>)
+                    case .schedule: Text("4543")
+                    case .tag: Text("4543")
+                    }
+                case .edit:
+                    switch editType {
+                    case .account: Text("4543")
+                    case .schedule: Text("4543")
+                    case .tag: Text("4543")
+                    }
+                }
+            }.alert(item: $activeAlert) { alert in
+                switch alert {
+                case .deleteFail:
+                    return Alert(
+                        title: Text("Database Error"),
+                        message: Text("Failed to delete record"),
+                        dismissButton: .default(Text("OK"))
+                    )
+                case .selectSomething:
+                    return Alert(
+                        title: Text("Alert"),
+                        message: Text("Select a row first"),
+                        dismissButton: .default(Text("OK"))
+                    )
+                case .confirmDelete:
+                    return Alert(
+                        title: Text("Confirm Delete"),
+                        message: Text("Are you sure you want to delete this?"),
+                        primaryButton: .cancel(),
+                        secondaryButton: .destructive(Text("Confirm"), action: {
+                            //deleteTransaction(selected!.id!)
+                        })
+                    )
                 }
             }
             HStack {
@@ -85,6 +77,12 @@ struct DatabaseManagerView: View {
             }
         }.padding().frame(minWidth: 600, minHeight: 400)
     }
+}
+
+private enum DatabaseEditorTab: String, CaseIterable, Identifiable {
+    case account, schedule, tag
+    
+    var id: String { self.rawValue }
 }
 
 //struct DatabaseManagerView_Previews: PreviewProvider {

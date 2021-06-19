@@ -29,11 +29,13 @@ struct BucketRequest: Queryable {
     
     func fetchValue(_ db: Database) throws -> [Bucket] {
         switch ordering {
-        case .byTree: return try query.fetchAll(db)
+        case .byTree: return try query.orderByTree().fetchAll(db)
+        case .none: return try query.fetchAll(db)
         }
     }
     
     enum Ordering {
+        case none
         case byTree
         //case byName
     }

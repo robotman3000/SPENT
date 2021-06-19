@@ -28,6 +28,7 @@ struct TransactionRequest: Queryable {
     
     private let hash: Int
     private let query: QueryInterfaceRequest<Transaction>?
+    var ordering: Ordering = .none
     
     /// Selects every transaction in the database if includeAll is true
     init(_ includeAll: Bool = false){
@@ -67,5 +68,10 @@ struct TransactionRequest: Queryable {
         }
         print("Returning empty result")
         return []
+    }
+
+    enum Ordering {
+        case none
+        //case byName
     }
 }

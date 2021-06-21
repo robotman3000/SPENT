@@ -124,7 +124,7 @@ struct Query<Query: Queryable>: DynamicProperty {
                         guard let self = self else { return }
                         // Tell SwiftUI about the new value
                         self.objectWillChange.send()
-                        print("RecieveValue: \(value)")
+                        //print("RecieveValue: \(value)")
                         self.value = value
                     })
         }

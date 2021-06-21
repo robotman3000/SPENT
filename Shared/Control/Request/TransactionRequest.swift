@@ -63,7 +63,7 @@ struct TransactionRequest: Queryable {
         if query != nil {
             let result = try query!.fetchAll(db)
             print("Returning DB Query")
-            print(result)
+            //print(result)
             return result
         }
         print("Returning empty result")

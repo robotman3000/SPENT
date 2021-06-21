@@ -107,9 +107,9 @@ struct AppDatabase {
         
         migrator.registerMigration("v1") { db in
             /// This is the initial version one schema
-            db.trace(options: .statement) { event in
-                print("SQL: \(event)")
-            }
+//            db.trace(options: .statement) { event in
+//                print("SQL: \(event)")
+//            }
 //            
             // Create a table
             // See https://github.com/groue/GRDB.swift#create-tables
@@ -253,9 +253,9 @@ struct AppDatabase {
             // Create schedules table
             
             print("v2 Schema Migration")
-            db.trace(options: .statement) { event in
-                print("SQL: \(event)")
-            }
+//            db.trace(options: .statement) { event in
+//                print("SQL: \(event)")
+//            }
             
             try db.create(table: "Schedules") { t in
                 t.autoIncrementedPrimaryKey("id")
@@ -394,7 +394,9 @@ extension AppDatabase {
     
     private func getTreeAtBucket(_ bucket: Bucket) throws -> [Bucket]{
         return try databaseReader.read { db in
-            try bucket.tree.fetchAll(db)
+            var result = try bucket.tree.fetchAll(db)
+            result.append(bucket)
+            return result
         }
     }
     
@@ -439,9 +441,6 @@ extension AppDatabase {
         
         var balance: Int = 0
         try databaseReader.read { db in
-            db.trace(options: .statement) { event in
-                print("SQL: \(event)")
-            }
             print(statusStr)
             if let row = try Row.fetchOne(db, sql: """
                     SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (
@@ -461,6 +460,18 @@ extension AppDatabase {
     }
     
     func getBucketBalance(_ bucket: Bucket?) -> BucketBalance {
+//
+//        ValueObservation
+//            .tracking { db -> BucketBalance in
+//                return getBucketBalance(bucket)
+//            }.publisher(in: databaseReader, scheduling: .immediate)
+//            .sink(
+//                receiveCompletion: { _ in },
+//                receiveValue: {
+//                    print("fresh players: \($0)")
+//                })
+//        
+        
         var pb = 0
         var ptb = 0
         var ab = 0

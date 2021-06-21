@@ -8,20 +8,16 @@
 import SwiftUI
 
 struct BalanceText: View {
-    @Environment(\.appDatabase) private var database: AppDatabase?
     @Binding var bucket: Bucket
+    @Query<BucketBalanceRequest> var bal: BucketBalance
     
-    var body: some View {
-        CurrencyText(balance: getBalance())
+    init(bucket: Binding<Bucket>){
+        _bucket = bucket
+        _bal = Query(BucketBalanceRequest(bucket.wrappedValue))
     }
     
-    func getBalance() -> Int {
-        do {
-            return try database!.getAvailableBalance(bucket)
-        } catch {
-            print(error)
-        }
-        return 0
+    var body: some View {
+        CurrencyText(balance: bal.availableInTree)
     }
 }
 

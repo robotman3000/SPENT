@@ -6,16 +6,20 @@
 //
 
 import SwiftUI
+import GRDB
 
 struct BalanceTable: View {
-    @Environment(\.appDatabase) private var database: AppDatabase?
     @Binding var bucket: Bucket?
+    @Query<BucketBalanceRequest> var bal: BucketBalance
+    
+    init(bucket: Binding<Bucket?>){
+        _bucket = bucket
+        _bal = Query(BucketBalanceRequest(bucket.wrappedValue))
+    }
     
     var body: some View {
         VStack (spacing: 15){
             Text(bucket?.name ?? "No Selection")
-
-            let bal = database!.getBucketBalance(bucket)
             HStack (spacing: 15) {
                 BalanceView(text: "Posted", balance: bal.posted)
                 BalanceView(text: "Posted in Tree", balance: bal.postedInTree)

@@ -25,6 +25,11 @@ struct SPENTDatabaseDocument: FileDocument {
         print("Creating a new DB")
         database = AppDatabase(path: tempURL)
     }
+
+    init(url: URL){
+        print("Reading Existing DB; Using provided path \(url.absoluteString)")
+        database = AppDatabase(path: url)
+    }
     
     init(configuration: ReadConfiguration) throws {
         print("Reading Existing DB; Using temp path \(tempURL.absoluteString)")

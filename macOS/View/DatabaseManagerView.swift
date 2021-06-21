@@ -11,21 +11,18 @@ struct DatabaseManagerView: View {
     
     let onCancel: () -> Void
     
-    @State var activeSheet : ActiveSheet? = nil
-    @State var activeAlert : ActiveAlert? = nil
-    
     var body: some View {
         VStack{
             TabView {
-                BucketTable(activeSheet: $activeSheet, activeAlert: $activeAlert).tabItem {
+                BucketTable().tabItem {
                     Label("Accounts", systemImage: "folder")
                 }
              
-                ScheduleTable(activeSheet: $activeSheet, activeAlert: $activeAlert).tabItem {
+                ScheduleTable().tabItem {
                     Label("Schedules", systemImage: "calendar.badge.clock")
                 }
          
-                TagTable(activeSheet: $activeSheet, activeAlert: $activeAlert).tabItem {
+                TagTable().tabItem {
                     Label("Tags", systemImage: "tag")
                 }
             }

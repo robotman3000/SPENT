@@ -12,8 +12,8 @@ struct BucketTable: View {
     @Environment(\.appDatabase) private var database: AppDatabase?
     @Query(BucketRequest(order: .byTree)) var buckets: [Bucket]
     @State var selected: Bucket?
-    @Binding var activeSheet : ActiveSheet?
-    @Binding var activeAlert : ActiveAlert?
+    @State var activeSheet : ActiveSheet? = nil
+    @State var activeAlert : ActiveAlert? = nil
     
     var body: some View {
         VStack {

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 private func printError(error: Error) {
     print(error)
@@ -28,6 +29,17 @@ func deleteTransaction(_ id: Int64, database: AppDatabase, onComplete: () -> Voi
     } catch {
         onError(error)
     }
+}
+
+func getEmptyTransaction() -> Binding<Transaction> {
+    return Binding<Transaction>(
+        get: {
+            Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
+        },
+        set: { _ in
+            print("Trans binding: ignoring set")
+        }
+    )
 }
 
 func updateBucket(_ data: inout Bucket, database: AppDatabase, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){

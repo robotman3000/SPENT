@@ -9,13 +9,18 @@ import Foundation
 import GRDB
 import SwiftUI
 
+/// This wraps the struct of Type in an observable class so that we can know when the struct is changed or becomes nil
+class ObservableStructWrapper<Type>: ObservableObject {
+    @Published var wrappedStruct: Type?
+}
+
 func getDocumentsDirectory() -> URL {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     let documentsDirectory = paths[0]
     return documentsDirectory
 }
 
-func getDBURL() throws -> URL{
+func getDBURL() -> URL{
     // Pick a folder for storing the SQLite database, as well as
     // the various temporary files created during normal database
     // operations (https://sqlite.org/tempfiles.html).

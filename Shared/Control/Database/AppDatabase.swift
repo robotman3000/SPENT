@@ -46,21 +46,22 @@ struct AppDatabase {
         }
     }
     
-    init(path: URL){
+    init(path: URL) {
         do {
-            print("Using New DB")
+            print("Using DB from path: \(path.absoluteString)")
             self.dbWriter = try DatabaseQueue(path: path.absoluteString)
             try migrator.migrate(dbWriter)
-        } catch {
-            // Replace this implementation with code to handle the error appropriately.
-            // fatalError() causes the application to generate a crash log and terminate.
-            //
-            // Typical reasons for an error here include:
-            // * The parent directory cannot be created, or disallows writing.
-            // * The database is not accessible, due to permissions or data protection when the device is locked.
-            // * The device is out of space.
-            // * The database could not be migrated to its latest schema version.
-            // Check the error message to determine what the actual problem was.
+        }
+        catch {
+//             Replace this implementation with code to handle the error appropriately.
+//             fatalError() causes the application to generate a crash log and terminate.
+//
+//             Typical reasons for an error here include:
+//             * The parent directory cannot be created, or disallows writing.
+//             * The database is not accessible, due to permissions or data protection when the device is locked.
+//             * The device is out of space.
+//             * The database could not be migrated to its latest schema version.
+//             Check the error message to determine what the actual problem was.
             fatalError("Unresolved error \(error)")
         }
     }
@@ -106,9 +107,9 @@ struct AppDatabase {
         
         migrator.registerMigration("v1") { db in
             /// This is the initial version one schema
-//            db.trace(options: .statement) { event in
-//                print("SQL: \(event)")
-//            }
+            db.trace(options: .statement) { event in
+                print("SQL: \(event)")
+            }
 //            
             // Create a table
             // See https://github.com/groue/GRDB.swift#create-tables

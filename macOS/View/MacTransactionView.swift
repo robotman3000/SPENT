@@ -14,18 +14,25 @@ struct MacTransactionView: View {
     let title: String
     @State var query: TransactionRequest
     @EnvironmentObject var appState: GlobalState
-    @State var selected: Transaction?
+    @StateObject var selected: ObservableStructWrapper<Transaction> = ObservableStructWrapper<Transaction>()
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
     
     var body: some View {
-        HStack {
-            TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
-            Spacer()
-            Picker("View As", selection: $appState.selectedView) {
-                ForEach(TransactionViewType.allCases) { type in
-                    Text(type.rawValue).tag(type)
+        VStack {
+            HStack {
+                TableToolbar(selected: $selected.wrappedStruct, activeSheet: $activeSheet, activeAlert: $activeAlert)
+                Spacer()
+                Picker("View As", selection: $appState.selectedView) {
+                    ForEach(TransactionViewType.allCases) { type in
+                        Text(type.rawValue).tag(type)
+                    }
                 }
+            }
+            switch appState.selectedView {
+            case .List: ListTransactionsView(query: query, selection: $selected.wrappedStruct).onAppear(perform: {print("list appear")})
+            case .Table: TableTransactionsView(query: query, selection: $selected.wrappedStruct).onAppear(perform: {print("table appear")})
+            case .Calendar: Text("Calendar View")
             }
         }.sheet(item: $activeSheet) { sheet in
             switch sheet {
@@ -34,7 +41,7 @@ struct MacTransactionView: View {
                     updateTransaction(&data, database: database!, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
-                TransactionForm(title: "Create Transaction", transaction: selected!, onSubmit: {data in
+                TransactionForm(title: "Create Transaction", transaction: selected.wrappedStruct!, onSubmit: {data in
                     updateTransaction(&data, database: database!, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }
@@ -58,16 +65,10 @@ struct MacTransactionView: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        deleteTransaction(selected!.id!, database: database!)
+                        deleteTransaction(selected.wrappedStruct!.id!, database: database!)
                     })
                 )
             }
-        }
-        
-        switch appState.selectedView {
-        case .List: ListTransactionsView(query: query, selection: $selected).onAppear(perform: {print("list appear")})
-        case .Table: TableTransactionsView(query: query, selection: $selected).onAppear(perform: {print("table appear")})
-        case .Calendar: Text("Calendar View")
         }
     }
     

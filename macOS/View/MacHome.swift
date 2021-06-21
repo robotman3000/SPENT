@@ -8,8 +8,11 @@
 import SwiftUI
 
 struct MacHome: View {
+    @State var filename = "Filename"
+    @State var showFileChooser = false
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        Text("Welcome to SPENT!")
     }
 }
 

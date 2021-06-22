@@ -74,7 +74,7 @@ struct TableTransactionsView: View {
                             Text("\(item.destID ?? -1)")
                         }),
                         AnyView(TableCell {
-                            Text(item.memo.trunc(length: 30))
+                            Text(item.memo)
                         }),
                         AnyView(TableCell {
                             Text(item.payee ?? "N/A")
@@ -82,7 +82,7 @@ struct TableTransactionsView: View {
                         AnyView(TableCell {
                             Text(item.group?.uuidString ?? "N/A")
                         })
-                    ]).frame(minHeight: 30)
+                    ]).frame(height: 20)
                 //}
             }.listStyle(PlainListStyle()).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         } else {

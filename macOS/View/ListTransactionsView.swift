@@ -21,7 +21,8 @@ struct ListTransactionsView: View {
         if !transactions.isEmpty {
             List(selection: $selection){
                 ForEach(transactions, id:\.self ){ item in
-                    TransactionRow(transaction: item)
+                    //Text(item.memo).frame(height: 30)
+                    TransactionRow(transaction: item).frame(height: 55)
                 }
             }
         } else {

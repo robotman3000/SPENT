@@ -13,11 +13,12 @@ struct MacTransactionView: View {
     @Environment(\.appDatabase) private var database: AppDatabase?
     let title: String
     @State var query: TransactionRequest
+    @Binding var contextBucket: Bucket?
     @EnvironmentObject var appState: GlobalState
     @StateObject var selected: ObservableStructWrapper<Transaction> = ObservableStructWrapper<Transaction>()
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
-    
+
     var body: some View {
         VStack {
             HStack {
@@ -30,8 +31,8 @@ struct MacTransactionView: View {
                 }
             }
             switch appState.selectedView {
-            case .List: ListTransactionsView(query: query, selection: $selected.wrappedStruct).onAppear(perform: {print("list appear")})
-            case .Table: TableTransactionsView(query: query, selection: $selected.wrappedStruct).onAppear(perform: {print("table appear")})
+            case .List: ListTransactionsView(query: query, selection: $selected.wrappedStruct, bucket: $contextBucket).onAppear(perform: {print("list appear")})
+            case .Table: TableTransactionsView(query: query, selection: $selected.wrappedStruct, bucket: $contextBucket).onAppear(perform: {print("table appear")})
             case .Calendar: Text("Calendar View")
             }
         }.sheet(item: $activeSheet) { sheet in

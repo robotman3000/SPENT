@@ -11,10 +11,12 @@ import GRDB
 struct ListTransactionsView: View {
     @Query<TransactionRequest> var transactions: [Transaction]
     @Binding var selection: Transaction?
+    @Binding var bucket: Bucket?
     
-    init(query: TransactionRequest, selection: Binding<Transaction?>){
+    init(query: TransactionRequest, selection: Binding<Transaction?>, bucket: Binding<Bucket?>){
         self._transactions = Query(query)
         self._selection = selection
+        self._bucket = bucket
     }
     
     var body: some View {
@@ -22,7 +24,7 @@ struct ListTransactionsView: View {
             List(selection: $selection){
                 ForEach(transactions, id:\.self ){ item in
                     //Text(item.memo).frame(height: 30)
-                    TransactionRow(transaction: item).frame(height: 55)
+                    TransactionRow(transaction: item, bucket: bucket!).frame(height: 55)
                 }
             }
         } else {

@@ -113,9 +113,15 @@ extension Transaction {
         var id: String { self.rawValue }
     }
     
-    func getType() -> Transaction.TransType {
+    func getType(convertTransfer: Bool = false, bucket: Int64 = -1) -> Transaction.TransType {
         if sourceID != nil {
             if destID != nil {
+                if convertTransfer {
+                    if sourceID == bucket {
+                        return .Withdrawal
+                    }
+                    return .Deposit
+                }
                 return .Transfer
             } else {
                 return .Withdrawal

@@ -91,6 +91,7 @@ struct MainView: View {
 
 class GlobalState: ObservableObject {
     @Published var selectedView = TransactionViewType.Table
+    @Published var contextBucket: Bucket?
 }
 
 enum CommandMenuSheet : String, Identifiable {

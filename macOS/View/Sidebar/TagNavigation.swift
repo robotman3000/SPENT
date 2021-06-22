@@ -19,14 +19,14 @@ struct TagNavigation: View, SidebarNavigable {
         List(selection: $selectedTag) {
             Section(header: Text("Tags")){
                 ForEach(Array(tags.enumerated()), id: \.element) { index, tag in
-                    NavigationLink(destination: MacTransactionView(title: tag.name, query: TransactionRequest(tag))) {
-                        Text(tag.name)
-                    }
-                    .contextMenu {
-                        Button("Edit") {
-                            showingForm.toggle()
-                        }
-                    }
+//                    NavigationLink(destination: MacTransactionView(title: tag.name, query: TransactionRequest(tag))) {
+//                        Text(tag.name)
+//                    }
+//                    .contextMenu {
+//                        Button("Edit") {
+//                            showingForm.toggle()
+//                        }
+//                    }
                 }
             }//.collapsible(false)
         }

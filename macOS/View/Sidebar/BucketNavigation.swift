@@ -21,8 +21,10 @@ struct BucketNavigation: View, SidebarNavigable {
         List(selection: $selectedBucket) {
             Section(header: Text("Accounts")){
                 OutlineGroup(getBucketTree(treeList: buckets), id: \.bucket, children: \.children) { node in
-                    NavigationLink(destination: MacTransactionView(title: node.bucket.name, query: TransactionRequest(node.bucket))) {
-                        BucketRow(bucket: node.bucket)
+                    NavigationLink(destination: MacTransactionView(title: node.bucket.name, query: TransactionRequest(node.bucket), contextBucket: $selectedBucket)) {
+                        BucketRow(bucket: node.bucket).onAppear(perform: {
+                            print("Row Appeared: \(node.bucket.name)")
+                        })
                     }
                     .contextMenu {
                         Button("Edit") {
@@ -32,6 +34,7 @@ struct BucketNavigation: View, SidebarNavigable {
                 }
             }//.collapsible(false)
         }.listStyle(SidebarListStyle())
+        
         .onDeleteCommand {
             deleteBucket(selectedBucket!.id!, database: database!, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
         }

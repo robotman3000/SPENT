@@ -9,21 +9,33 @@ import SwiftUI
 
 struct TransactionRow: View {
     @State var transaction: Transaction
+    @State var bucket: Bucket
+    @Environment(\.appDatabase) private var database: AppDatabase?
     
     struct Direction: View {
         @Binding var transaction: Transaction
+        @State var bucketID: Int64
         
         var body: some View {
             HStack {
-                Text(transaction.getType().rawValue)
-                    .foregroundColor(.gray)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+//                Text(transaction.getType().rawValue)
+//                    .foregroundColor(.gray)
+//                    .font(.subheadline)
+//                    .fontWeight(.medium)
                 
-                Image(systemName: transaction.getType() == .Withdrawal ? "arrow.left" : "arrow.right")
+                let transDirection = transaction.getType(convertTransfer: true, bucket: bucketID)
+                
+                if transaction.getType() == .Transfer {
+                    Text(transDirection == .Deposit ? toString(transaction.sourceID) : toString(transaction.destID))
+                        .foregroundColor(.gray)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                
+                Image(systemName: transDirection == .Withdrawal ? "arrow.left" : "arrow.right")
                 //Image(systemName: "arrow.right")
                 
-                Text(toString(transaction.sourceID))
+                Text(transDirection == .Deposit ? toString(transaction.destID) : toString(transaction.sourceID))
                     .foregroundColor(.gray)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -50,7 +62,7 @@ struct TransactionRow: View {
             VStack (alignment: .leading){
                 HStack {
                     VStack (alignment: .leading){
-                        Text(transaction.payee ?? "N/A")
+                        Text(transaction.payee ?? transaction.getType().rawValue)
                             .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
                         Text(transaction.date.transactionFormat)
                             .foregroundColor(.gray)
@@ -62,13 +74,13 @@ struct TransactionRow: View {
                         Text(transaction.amount.currencyFormat)
                             .fontWeight(.bold)
                             .font(.title2)
-                            .foregroundColor(transaction.getType() == .Withdrawal ? .red : .gray)
-                        Direction(transaction: $transaction)
+                            .foregroundColor(transaction.getType(convertTransfer: true, bucket: bucket.id!) == .Withdrawal ? .red : .gray)
+                        Direction(transaction: $transaction, bucketID: bucket.id!)
                     }
                 }
-                Text((transaction.memo).trunc(length: 60))
+                Text((transaction.memo).trunc(length: 70))
 //                    HStack(){
-//                        ForEach(transaction.tags){ tag in
+//                        ForEach(transaction.tags.fetchAll(database!.databaseReader)){ tag in
 //                            Text("[\(tag.name)]")
 //                        }
 //                    }

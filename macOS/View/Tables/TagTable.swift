@@ -23,24 +23,10 @@ struct TagTable: View {
                         TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
                         Spacer()
                     }
-                    TableRow(content: [
-                        AnyView(TableCell {
-                            Text("Name")
-                        }),
-                        AnyView(TableCell {
-                            Text("Memo")
-                        })
-                    ])
+                    Header()
                 }){}
             List(tags, id: \.self, selection: $selected){ tag in
-                TableRow(content: [
-                    AnyView(TableCell {
-                        Text(tag.name)
-                    }),
-                    AnyView(TableCell {
-                        Text(tag.memo)
-                    })
-                ]).tag(tag)
+                Row(tag: tag).tag(tag)
             }
         }.sheet(item: $activeSheet) { sheet in
             switch sheet {
@@ -82,6 +68,36 @@ struct TagTable: View {
     
     func dismissModal(){
         activeSheet = nil
+    }
+    
+    struct Header: View {
+        var body: some View {
+            TableRow(content: [
+                AnyView(TableCell {
+                    Text("Name")
+                }),
+                AnyView(TableCell {
+                    Text("Memo")
+                })
+            ])
+        }
+    }
+    
+    struct Row: View {
+        
+        //TODO: This should really be a binding
+        @State var tag: Tag
+        
+        var body: some View {
+            TableRow(content: [
+                AnyView(TableCell {
+                    Text(tag.name)
+                }),
+                AnyView(TableCell {
+                    Text(tag.memo)
+                })
+            ])
+        }
     }
 }
 

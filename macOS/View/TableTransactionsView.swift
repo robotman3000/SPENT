@@ -18,75 +18,83 @@ struct TableTransactionsView: View {
     
     var body: some View {
         if !transactions.isEmpty {
-            Section(header:
-                TableRow(content: [
-                    AnyView(TableCell {
-                        Text("Staus")
-                    }),
-                    AnyView(TableCell {
-                        Text("Date")
-                    }),
-                    AnyView(TableCell {
-                        Text("Post Date")
-                    }),
-                    AnyView(TableCell {
-                        Text("Amount")
-                    }),
-                    AnyView(TableCell {
-                        Text("Source Bucket")
-                    }),
-                    AnyView(TableCell {
-                        Text("Dest Bucket")
-                    }),
-                    AnyView(TableCell {
-                        Text("Memo")
-                    }),
-                    AnyView(TableCell {
-                        Text("Payee")
-                    }),
-                    AnyView(TableCell {
-                        Text("Group ID")
-                    })
-                ])
-            ){}
-            //var rowColor = false
-            //    .background(rowColor.flipFlop() ? Color.white.saturation(1) : Color.red.saturation(0.1))
+            Section(header: Header()){}
             List(transactions, id:\.self, selection: $selection){ item in
-                
-                //ForEach(){ item in
-                    TableRow(content: [
-                        AnyView(TableCell {
-                            Text(item.status.getStringName())
-                        }),
-                        AnyView(TableCell {
-                            Text(item.date.transactionFormat)
-                        }),
-                        AnyView(TableCell {
-                            Text(item.posted?.transactionFormat ?? "N/A")
-                        }),
-                        AnyView(TableCell {
-                            Text(item.amount.currencyFormat)
-                        }),
-                        AnyView(TableCell {
-                            Text("\(item.sourceID ?? -1)")
-                        }),
-                        AnyView(TableCell {
-                            Text("\(item.destID ?? -1)")
-                        }),
-                        AnyView(TableCell {
-                            Text(item.memo)
-                        }),
-                        AnyView(TableCell {
-                            Text(item.payee ?? "N/A")
-                        }),
-                        AnyView(TableCell {
-                            Text(item.group?.uuidString ?? "N/A")
-                        })
-                    ]).frame(height: 20)
-                //}
+                Row(transaction: item).frame(height: 20)
             }.listStyle(PlainListStyle()).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
         } else {
             Text("No Transactions")
+        }
+    }
+    
+    struct Header: View {
+        var body: some View {
+            TableRow(content: [
+                AnyView(TableCell {
+                    Text("Staus")
+                }),
+                AnyView(TableCell {
+                    Text("Date")
+                }),
+                AnyView(TableCell {
+                    Text("Post Date")
+                }),
+                AnyView(TableCell {
+                    Text("Amount")
+                }),
+                AnyView(TableCell {
+                    Text("Source Bucket")
+                }),
+                AnyView(TableCell {
+                    Text("Dest Bucket")
+                }),
+                AnyView(TableCell {
+                    Text("Memo")
+                }),
+                AnyView(TableCell {
+                    Text("Payee")
+                }),
+                AnyView(TableCell {
+                    Text("Group ID")
+                })
+            ])
+        }
+    }
+    
+    struct Row: View {
+        
+        @State var transaction: Transaction
+        
+        var body: some View {
+            TableRow(content: [
+                AnyView(TableCell {
+                    Text(transaction.status.getStringName())
+                }),
+                AnyView(TableCell {
+                    Text(transaction.date.transactionFormat)
+                }),
+                AnyView(TableCell {
+                    Text(transaction.posted?.transactionFormat ?? "N/A")
+                }),
+                AnyView(TableCell {
+                    Text(transaction.amount.currencyFormat)
+                }),
+                AnyView(TableCell {
+                    Text("\(transaction.sourceID ?? -1)")
+                }),
+                AnyView(TableCell {
+                    Text("\(transaction.destID ?? -1)")
+                }),
+                AnyView(TableCell {
+                    Text(transaction.memo)
+                }),
+                AnyView(TableCell {
+                    Text(transaction.payee ?? "N/A")
+                }),
+                AnyView(TableCell {
+                    Text(transaction.group?.uuidString ?? "N/A")
+                })
+            ])
         }
     }
 }

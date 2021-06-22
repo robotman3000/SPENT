@@ -23,42 +23,10 @@ struct BucketTable: View {
                         TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
                         Spacer()
                     }
-                    TableRow(content: [
-                        AnyView(TableCell {
-                            Text("Name")
-                        }),
-                        AnyView(TableCell {
-                            Text("Parent")
-                        }),
-                        AnyView(TableCell {
-                            Text("Ancestor")
-                        }),
-                        AnyView(TableCell {
-                            Text("Memo")
-                        }),
-                        AnyView(TableCell {
-                            Text("Budget")
-                        })
-                    ])
+                    Header()
                 }){}
             List(buckets, id: \.self, selection: $selected){ bucket in
-                TableRow(content: [
-                    AnyView(TableCell {
-                        Text(bucket.name)
-                    }),
-                    AnyView(TableCell {
-                        Text("\(bucket.parentID ?? -1)")
-                    }),
-                    AnyView(TableCell {
-                        Text("\(bucket.ancestorID ?? -1)")
-                    }),
-                    AnyView(TableCell {
-                        Text(bucket.memo)
-                    }),
-                    AnyView(TableCell {
-                        Text("\(bucket.budgetID ?? -1)")
-                    })
-                ]).tag(bucket)
+                Row(bucket: bucket).tag(bucket)
             }
         }.sheet(item: $activeSheet) { sheet in
             switch sheet {
@@ -95,6 +63,54 @@ struct BucketTable: View {
                     })
                 )
             }
+        }
+    }
+    
+    struct Header: View {
+        var body: some View {
+            TableRow(content: [
+                AnyView(TableCell {
+                    Text("Name")
+                }),
+                AnyView(TableCell {
+                    Text("Parent")
+                }),
+                AnyView(TableCell {
+                    Text("Ancestor")
+                }),
+                AnyView(TableCell {
+                    Text("Memo")
+                }),
+                AnyView(TableCell {
+                    Text("Budget")
+                })
+            ])
+        }
+    }
+    
+    struct Row: View {
+        
+        //TODO: This should really be a binding
+        @State var bucket: Bucket
+        
+        var body: some View {
+            TableRow(content: [
+                AnyView(TableCell {
+                    Text(bucket.name)
+                }),
+                AnyView(TableCell {
+                    Text("\(bucket.parentID ?? -1)")
+                }),
+                AnyView(TableCell {
+                    Text("\(bucket.ancestorID ?? -1)")
+                }),
+                AnyView(TableCell {
+                    Text(bucket.memo)
+                }),
+                AnyView(TableCell {
+                    Text("\(bucket.budgetID ?? -1)")
+                })
+            ])
         }
     }
     

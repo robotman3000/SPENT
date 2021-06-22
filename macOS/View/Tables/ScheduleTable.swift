@@ -23,42 +23,10 @@ struct ScheduleTable: View {
                         TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
                         Spacer()
                     }
-                    TableRow(content: [
-                        AnyView(TableCell {
-                            Text("Name")
-                        }),
-                        AnyView(TableCell {
-                            Text("Type")
-                        }),
-                        AnyView(TableCell {
-                            Text("Rule")
-                        }),
-                        AnyView(TableCell {
-                            Text("Marker ID")
-                        }),
-                        AnyView(TableCell {
-                            Text("Memo")
-                        })
-                    ])
+                    Header()
                 }){}
             List(schedules, id: \.self, selection: $selected){ schedule in
-                TableRow(content: [
-                    AnyView(TableCell {
-                        Text(schedule.name)
-                    }),
-                    AnyView(TableCell {
-                        Text(schedule.scheduleType.getStringName())
-                    }),
-                    AnyView(TableCell {
-                        Text(schedule.rule.getStringName())
-                    }),
-                    AnyView(TableCell {
-                        Text("\(schedule.markerID)")
-                    }),
-                    AnyView(TableCell {
-                        Text(schedule.memo ?? "N/A")
-                    })
-                ]).tag(schedule)
+                Row(schedule: schedule).tag(schedule)
             }
         }
         .sheet(item: $activeSheet) { sheet in
@@ -102,6 +70,54 @@ struct ScheduleTable: View {
     
     func dismissModal(){
         activeSheet = nil
+    }
+    
+    struct Header: View {
+        var body: some View {
+            TableRow(content: [
+                AnyView(TableCell {
+                    Text("Name")
+                }),
+                AnyView(TableCell {
+                    Text("Type")
+                }),
+                AnyView(TableCell {
+                    Text("Rule")
+                }),
+                AnyView(TableCell {
+                    Text("Marker ID")
+                }),
+                AnyView(TableCell {
+                    Text("Memo")
+                })
+            ])
+        }
+    }
+    
+    struct Row: View {
+        
+        //TODO: This should really be a binding
+        @State var schedule: Schedule
+        
+        var body: some View {
+            TableRow(content: [
+                AnyView(TableCell {
+                    Text(schedule.name)
+                }),
+                AnyView(TableCell {
+                    Text(schedule.scheduleType.getStringName())
+                }),
+                AnyView(TableCell {
+                    Text(schedule.rule.getStringName())
+                }),
+                AnyView(TableCell {
+                    Text("\(schedule.markerID)")
+                }),
+                AnyView(TableCell {
+                    Text(schedule.memo ?? "N/A")
+                })
+            ])
+        }
     }
 }
 

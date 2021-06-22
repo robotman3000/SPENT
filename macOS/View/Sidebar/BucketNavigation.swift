@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct BucketNavigation: View, SidebarNavigable {
+struct BucketNavigation: View {
     
     @Environment(\.appDatabase) private var database: AppDatabase?
     @State var selectedBucket: Bucket?

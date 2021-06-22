@@ -8,24 +8,14 @@
 import SwiftUI
 
 struct MacSidebar: View {
-    @State var selectedType = SidebarListOptions.bucket
-    
     var body: some View {
-        Picker("Type", selection: $selectedType) {
-            ForEach(SidebarListOptions.allCases) { type in
-                Text(type.name).tag(type)
-            }
-        }.padding()
-        .toolbar(){
+        BucketNavigation()
+            .toolbar(){
             ToolbarItem(placement: .navigation) {
                 Button(action: toggleSidebar, label: {
                     Image(systemName: "sidebar.left")
                 })
             }
-        }
-        switch selectedType {
-        case .bucket: BucketNavigation()
-        case .tag: TagNavigation()
         }
     }
     

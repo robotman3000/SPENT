@@ -99,19 +99,3 @@ enum CommandMenuSheet : String, Identifiable {
     
     var id: String { return self.rawValue }
 }
-
-enum SidebarListOptions: String, CaseIterable, Identifiable {
-    case bucket
-    case tag
-    
-    var id: String { self.rawValue }
-}
-
-extension SidebarListOptions {
-    var name: String {
-        switch self {
-        case .bucket: return "Buckets"
-        case .tag: return "Tags"
-        }
-    }
-}

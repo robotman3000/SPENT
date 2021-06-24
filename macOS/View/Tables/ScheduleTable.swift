@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ScheduleTable: View {
 
-    @Environment(\.appDatabase) private var database: AppDatabase?
+    @EnvironmentObject var store: DatabaseStore
     @Query(ScheduleRequest(order: .none)) var schedules: [Schedule]
     @State var selected: Schedule?
     @State var activeSheet : ActiveSheet? = nil
@@ -33,11 +33,11 @@ struct ScheduleTable: View {
             switch sheet {
             case .new:
                 ScheduleForm(title: "Create Schedule", onSubmit: {data in
-                    updateSchedule(&data, database: database!, onComplete: dismissModal)
+                    store.updateSchedule(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
                 ScheduleForm(title: "Edit Schedule", schedule: selected!, onSubmit: {data in
-                    updateSchedule(&data, database: database!, onComplete: dismissModal)
+                    store.updateSchedule(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }
         }
@@ -61,7 +61,7 @@ struct ScheduleTable: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        deleteSchedule(selected!.id!, database: database!)
+                        store.deleteSchedule(selected!.id!)
                     })
                 )
             }

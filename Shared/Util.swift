@@ -20,7 +20,7 @@ func getDocumentsDirectory() -> URL {
     return documentsDirectory
 }
 
-func getDBURL() -> URL{
+func getDBURL() -> URL {
     // Pick a folder for storing the SQLite database, as well as
     // the various temporary files created during normal database
     // operations (https://sqlite.org/tempfiles.html).
@@ -78,6 +78,13 @@ func toString(_ str: String?) -> String {
 }
 
 func toString(_ int: Int64?) -> String {
+    if int == nil {
+        return "nil"
+    }
+    return int!.description
+}
+
+func toString(_ int: Int?) -> String {
     if int == nil {
         return "nil"
     }

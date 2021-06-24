@@ -9,7 +9,7 @@ import SwiftUI
 
 struct TagTable: View {
     
-    @Environment(\.appDatabase) private var database: AppDatabase?
+    @EnvironmentObject var store: DatabaseStore
     @Query(TagRequest(order: .none)) var tags: [Tag]
     @State var selected: Tag?
     @State var activeSheet : ActiveSheet? = nil
@@ -32,11 +32,11 @@ struct TagTable: View {
             switch sheet {
             case .new:
                 TagForm(title: "Create Tag", onSubmit: {data in
-                    updateTag(&data, database: database!, onComplete: dismissModal)
+                    store.updateTag(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
                 TagForm(title: "Edit Tag", tag: selected!, onSubmit: {data in
-                    updateTag(&data, database: database!, onComplete: dismissModal)
+                    store.updateTag(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }
         }.alert(item: $activeAlert) { alert in
@@ -59,7 +59,7 @@ struct TagTable: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        deleteTag(selected!.id!, database: database!)
+                        store.deleteTag(selected!.id!)
                     })
                 )
             }

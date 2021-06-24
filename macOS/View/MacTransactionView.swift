@@ -11,18 +11,22 @@ import GRDB
 struct MacTransactionView: View {
     
     @Environment(\.appDatabase) private var database: AppDatabase?
-    let title: String
-    @State var query: TransactionRequest
-    @Binding var contextBucket: Bucket?
+    @EnvironmentObject var store: DatabaseStore
+    @ObservedObject var model: TransactionViewModel
     @EnvironmentObject var appState: GlobalState
     @StateObject var selected: ObservableStructWrapper<Transaction> = ObservableStructWrapper<Transaction>()
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
-
+    
+    init(contextBucket: Bucket) {
+        model = TransactionViewModel(query: Transaction.all(), bucket: contextBucket)
+    }
+    
     var body: some View {
         VStack {
             HStack {
                 TableToolbar(selected: $selected.wrappedStruct, activeSheet: $activeSheet, activeAlert: $activeAlert)
+                //FilterBar(query: $model.query)
                 Spacer()
                 Picker("View As", selection: $appState.selectedView) {
                     ForEach(TransactionViewType.allCases) { type in
@@ -30,23 +34,29 @@ struct MacTransactionView: View {
                     }
                 }
             }
+            Spacer()
             switch appState.selectedView {
-            case .List: ListTransactionsView(query: query, selection: $selected.wrappedStruct, bucket: $contextBucket).onAppear(perform: {print("list appear")})
-            case .Table: TableTransactionsView(query: query, selection: $selected.wrappedStruct, bucket: $contextBucket).onAppear(perform: {print("table appear")})
+            case .List: ListTransactionsView(transactions: model.transactions,
+                                             selection: $selected.wrappedStruct,
+                                             bucket: model.contextBucket).onAppear(perform: {print("list appear")})
+            case .Table: TableTransactionsView(transactions: model.transactions,
+                                               selection: $selected.wrappedStruct,
+                                               bucket: model.contextBucket).onAppear(perform: {print("table appear")})
             case .Calendar: Text("Calendar View")
             }
         }.sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
                 TransactionForm(title: "Create Transaction", onSubmit: {data in
-                    updateTransaction(&data, database: database!, onComplete: dismissModal)
+                    store.updateTransaction(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
                 TransactionForm(title: "Create Transaction", transaction: selected.wrappedStruct!, onSubmit: {data in
-                    updateTransaction(&data, database: database!, onComplete: dismissModal)
+                    store.updateTransaction(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }
-        }.alert(item: $activeAlert) { alert in
+        }
+        .alert(item: $activeAlert) { alert in
             switch alert {
             case .deleteFail:
                 return Alert(
@@ -66,11 +76,15 @@ struct MacTransactionView: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        deleteTransaction(selected.wrappedStruct!.id!, database: database!)
+                        store.deleteTransaction(selected.wrappedStruct!.id!)
                     })
                 )
             }
         }
+        .onAppear(perform: {
+            print("mav view render")
+            model.load(database!)
+        })
     }
     
     func dismissModal(){

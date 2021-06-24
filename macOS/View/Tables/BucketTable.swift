@@ -9,8 +9,7 @@ import SwiftUI
 
 struct BucketTable: View {
     
-    @Environment(\.appDatabase) private var database: AppDatabase?
-    @Query(BucketRequest(order: .byTree)) var buckets: [Bucket]
+    @EnvironmentObject var store: DatabaseStore
     @State var selected: Bucket?
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
@@ -25,18 +24,18 @@ struct BucketTable: View {
                     }
                     Header()
                 }){}
-            List(buckets, id: \.self, selection: $selected){ bucket in
+            List(store.buckets, id: \.self, selection: $selected){ bucket in
                 Row(bucket: bucket).tag(bucket)
             }
         }.sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
                 BucketForm(title: "Create Bucket", onSubmit: {data in
-                    updateBucket(&data, database: database!, onComplete: dismissModal)
+                    store.updateBucket(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
                 BucketForm(title: "Edit Bucket", bucket: selected!, onSubmit: {data in
-                    updateBucket(&data, database: database!, onComplete: dismissModal)
+                    store.updateBucket(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }
         }.alert(item: $activeAlert) { alert in
@@ -59,7 +58,7 @@ struct BucketTable: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        deleteBucket(selected!.id!, database: database!)
+                        store.deleteBucket(selected!.id!)
                     })
                 )
             }
@@ -92,6 +91,7 @@ struct BucketTable: View {
         
         //TODO: This should really be a binding
         @State var bucket: Bucket
+        @EnvironmentObject var store: DatabaseStore
         
         var body: some View {
             TableRow(content: [
@@ -99,10 +99,10 @@ struct BucketTable: View {
                     Text(bucket.name)
                 }),
                 AnyView(TableCell {
-                    Text("\(bucket.parentID ?? -1)")
+                    Text(store.getBucketByID(bucket.parentID)?.name ?? "")
                 }),
                 AnyView(TableCell {
-                    Text("\(bucket.ancestorID ?? -1)")
+                    Text(store.getBucketByID(bucket.ancestorID)?.name ?? "")
                 }),
                 AnyView(TableCell {
                     Text(bucket.memo)

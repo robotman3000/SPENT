@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct TransactionRow: View {
+    @EnvironmentObject var store: DatabaseStore
     @State var transaction: Transaction
     @State var bucket: Bucket
-    @Environment(\.appDatabase) private var database: AppDatabase?
-    
+
     struct Direction: View {
         @Binding var transaction: Transaction
-        @State var bucketID: Int64
+        let sourceName: String
+        let destName: String
+        let direction: Transaction.TransType
         
         var body: some View {
             HStack {
@@ -23,19 +25,17 @@ struct TransactionRow: View {
 //                    .font(.subheadline)
 //                    .fontWeight(.medium)
                 
-                let transDirection = transaction.getType(convertTransfer: true, bucket: bucketID)
-                
-                if transaction.getType() == .Transfer {
-                    Text(transDirection == .Deposit ? toString(transaction.sourceID) : toString(transaction.destID))
+                if transaction.type == .Transfer {
+                    Text(direction == .Deposit ? sourceName : destName)
                         .foregroundColor(.gray)
                         .font(.subheadline)
                         .fontWeight(.medium)
                 }
                 
-                Image(systemName: transDirection == .Withdrawal ? "arrow.left" : "arrow.right")
+                Image(systemName: direction == .Withdrawal ? "arrow.left" : "arrow.right")
                 //Image(systemName: "arrow.right")
                 
-                Text(transDirection == .Deposit ? toString(transaction.destID) : toString(transaction.sourceID))
+                Text(direction == .Deposit ? destName : sourceName)
                     .foregroundColor(.gray)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -48,7 +48,7 @@ struct TransactionRow: View {
         
         var body: some View {
             ZStack(alignment: .center){
-                Circle().foregroundColor(.gray).frame(width: 60, height: 60)
+                Circle().foregroundColor(.gray).frame(width: 40, height: 40)
                 Text(status.rawValue.description)
                     .fontWeight(.heavy)
                     .font(.title)
@@ -57,13 +57,24 @@ struct TransactionRow: View {
     }
     
     var body: some View {
-        HStack (alignment: .top){
+        let sourceName = store.getBucketByID(transaction.sourceID)?.name ?? ""
+        let destName = store.getBucketByID(transaction.destID)?.name ?? ""
+        let direction = transaction.getType(convertTransfer: true, bucket: bucket.id!)
+        
+        HStack (alignment: .center){
             Status(status: $transaction.status)
             VStack (alignment: .leading){
                 HStack {
                     VStack (alignment: .leading){
-                        Text(transaction.payee ?? transaction.getType().rawValue)
-                            .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                        HStack {
+                            Text(transaction.payee ?? transaction.type.rawValue)
+                                .fontWeight(.bold)
+//                            HStack(){
+//                                ForEach(database?.getTransactionTags(transaction) ?? [], id: \.self){ tag in
+//                                    Text("[\(tag.name)]")
+//                                }
+//                            }
+                        }
                         Text(transaction.date.transactionFormat)
                             .foregroundColor(.gray)
                             .font(.subheadline)
@@ -74,16 +85,11 @@ struct TransactionRow: View {
                         Text(transaction.amount.currencyFormat)
                             .fontWeight(.bold)
                             .font(.title2)
-                            .foregroundColor(transaction.getType(convertTransfer: true, bucket: bucket.id!) == .Withdrawal ? .red : .gray)
-                        Direction(transaction: $transaction, bucketID: bucket.id!)
+                            .foregroundColor(direction == .Withdrawal ? .red : .gray)
+                        Direction(transaction: $transaction, sourceName: sourceName, destName: destName, direction: direction)
                     }
                 }
                 Text((transaction.memo).trunc(length: 70))
-//                    HStack(){
-//                        ForEach(transaction.tags.fetchAll(database!.databaseReader)){ tag in
-//                            Text("[\(tag.name)]")
-//                        }
-//                    }
             }
         }
     }

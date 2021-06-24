@@ -8,24 +8,24 @@
 import SwiftUI
 
 struct TableTransactionsView: View {
-    @Query<TransactionRequest> var transactions: [Transaction]
-    @Binding var selection: Transaction?
-    @Binding var bucket: Bucket?
+    @Environment(\.appDatabase) private var database: AppDatabase?
     
-    init(query: TransactionRequest, selection: Binding<Transaction?>, bucket: Binding<Bucket?>){
-        self._transactions = Query(query)
-        self._selection = selection
-        self._bucket = bucket
-    }
+    var transactions: [Transaction] = []
+    @Binding var selection: Transaction?
+    var bucket: Bucket?
     
     var body: some View {
-        if !transactions.isEmpty {
+        VStack{
             Section(header: Header()){}
-            List(transactions, id:\.self, selection: $selection){ item in
-                Row(transaction: item, bucket: bucket!).frame(height: 20)
-            }.listStyle(PlainListStyle()).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-        } else {
-            Text("No Transactions")
+            if !transactions.isEmpty {
+                List(transactions, id:\.self, selection: $selection){ item in
+                    Row(transaction: item, bucket: bucket!).frame(height: 20)
+                }.listStyle(PlainListStyle()).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            } else {
+                List{
+                    Text("No Transactions")
+                }
+            }
         }
     }
     
@@ -65,10 +65,15 @@ struct TableTransactionsView: View {
     
     struct Row: View {
         
+        @Environment(\.appDatabase) private var database: AppDatabase?
         @State var transaction: Transaction
         @State var bucket: Bucket
         
         var body: some View {
+            let sourceName = database!.getBucketFromID(transaction.sourceID)?.name ?? "NIL"
+            let destName = database!.getBucketFromID(transaction.destID)?.name ?? "NIL"
+            let direction = transaction.getType(convertTransfer: true, bucket: bucket.id!)
+            
             TableRow(content: [
                 AnyView(TableCell {
                     Text(transaction.status.getStringName())
@@ -81,13 +86,13 @@ struct TableTransactionsView: View {
                 }),
                 AnyView(TableCell {
                     Text(transaction.amount.currencyFormat)
-                        .foregroundColor(transaction.getType(convertTransfer: true, bucket: bucket.id!) == .Withdrawal ? .red : .gray)
+                        .foregroundColor(direction == .Withdrawal ? .red : .gray)
                 }),
                 AnyView(TableCell {
-                    Text("\(transaction.sourceID ?? -1)")
+                    Text(sourceName)
                 }),
                 AnyView(TableCell {
-                    Text("\(transaction.destID ?? -1)")
+                    Text(destName)
                 }),
                 AnyView(TableCell {
                     Text(transaction.memo)

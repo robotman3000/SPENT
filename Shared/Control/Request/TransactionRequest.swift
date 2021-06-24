@@ -46,6 +46,12 @@ struct TransactionRequest: Queryable {
         hash = genHash([bucket])
     }
     
+    init(_ bucket: Bucket, query: QueryInterfaceRequest<Transaction>){
+        //print("bucket iinit")
+        self.query = query.filter(sql: "SourceBucket == ? OR DestBucket == ?", arguments: [bucket.id, bucket.id])
+        hash = genHash([bucket])
+    }
+    
     init(_ tag: Tag){
         //print("tag init")
         //query = Transaction.sql(sql: "SELECT * FROM () as a", arguments: [tag.id])

@@ -27,6 +27,12 @@ struct TagRequest: Queryable {
         self.ordering = order
     }
     
+    init(_ transaction: Transaction, order: Ordering = .none){
+        query = transaction.tags
+        hash = genHash([1234567, transaction])
+        self.ordering = order
+    }
+    
     func fetchValue(_ db: Database) throws -> [Tag] {
         switch ordering {
         case .none: return try query.fetchAll(db)

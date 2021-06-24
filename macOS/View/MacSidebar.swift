@@ -8,8 +8,9 @@
 import SwiftUI
 
 struct MacSidebar: View {
+    
     var body: some View {
-        BucketNavigation()
+        BucketNavigation().onAppear(perform: {print("Sidebar appear")})
             .toolbar(){
             ToolbarItem(placement: .navigation) {
                 Button(action: toggleSidebar, label: {

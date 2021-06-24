@@ -20,7 +20,18 @@ struct Transaction: Identifiable, Codable, Hashable {
     var payee: String?
     var group: UUID?
     
-    //transaction group
+    var type: TransType {
+        get {
+            if sourceID != nil {
+                if destID != nil {
+                    return .Transfer
+                } else {
+                    return .Withdrawal
+                }
+            }
+            return .Deposit
+        }
+    }
     
     private enum CodingKeys: String, CodingKey {
         case id, status = "Status", date = "TransDate", posted = "PostDate", amount = "Amount", sourceID = "SourceBucket", destID = "DestBucket", memo = "Memo", payee = "Payee", group = "Group"
@@ -114,20 +125,13 @@ extension Transaction {
     }
     
     func getType(convertTransfer: Bool = false, bucket: Int64 = -1) -> Transaction.TransType {
-        if sourceID != nil {
-            if destID != nil {
-                if convertTransfer {
-                    if sourceID == bucket {
-                        return .Withdrawal
-                    }
-                    return .Deposit
-                }
-                return .Transfer
-            } else {
+        if sourceID != nil && destID != nil && convertTransfer {
+            if sourceID == bucket {
                 return .Withdrawal
             }
+            return .Deposit
         }
-        return .Deposit
+        return type
     }
 }
 

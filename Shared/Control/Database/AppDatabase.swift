@@ -382,6 +382,50 @@ extension AppDatabase {
         dbWriter
     }
     
+    func resolve<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> [Type] {
+        do {
+            return try databaseReader.read { db in
+                return try query.fetchAll(db)
+            }
+        } catch {
+            print(error)
+        }
+        return []
+    }
+    
+    func resolveOne<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> Type? {
+        do {
+            return try databaseReader.read { db in
+                db.trace(options: .statement) { event in
+                    print("SQL: \(event)")
+                }
+                return try query.fetchOne(db)
+            }
+        } catch {
+            print(error)
+        }
+        return nil
+    }
+    
+    func getBucketFromID(_ bucketID: Int64?) -> Bucket? {
+        guard bucketID != nil else {
+            return nil
+        }
+        
+        do {
+            return try databaseReader.read { db in
+                return try Bucket.filter(id: bucketID!).fetchOne(db)
+            }
+        } catch {
+            print(error)
+        }
+        return nil
+    }
+    
+    func getTransactionTags(_ transaction: Transaction) -> [Tag] {
+        return resolve(transaction.tags)
+    }
+    
     func getTag(_ id: Int64?) throws -> Tag? {
         guard id != nil else {
             return nil
@@ -400,96 +444,5 @@ extension AppDatabase {
         }
     }
     
-    func getPostedBalance(_ bucket: Bucket) throws -> Int {
-        return try getBalanceQuery(buckets: [bucket], statusTypes: Transaction.StatusTypes.allCases.filter({status in
-            status.rawValue > Transaction.StatusTypes.Submitted.rawValue
-        }))
-    }
-    
-    func getAvailableBalance(_ bucket: Bucket) throws -> Int {
-        return try getBalanceQuery(buckets: [bucket], statusTypes: Transaction.StatusTypes.allCases.filter({status in
-            status.rawValue != Transaction.StatusTypes.Void.rawValue
-        }))
-    }
-    
-    func getPostedTreeBalance(_ bucket: Bucket) throws -> Int {
-        return try getBalanceQuery(buckets: getTreeAtBucket(bucket), statusTypes: Transaction.StatusTypes.allCases.filter({status in
-            status.rawValue > Transaction.StatusTypes.Submitted.rawValue
-        }))
-    }
-    
-    func getAvailableTreeBalance(_ bucket: Bucket) throws -> Int {
-        return try getBalanceQuery(buckets: getTreeAtBucket(bucket), statusTypes: Transaction.StatusTypes.allCases.filter({status in
-            status.rawValue != Transaction.StatusTypes.Submitted.rawValue
-        }))
-    }
-    
-    private func getBalanceQuery(buckets: [Bucket], statusTypes: [Transaction.StatusTypes]) throws -> Int {
-        var statusIDs: [Int] = []
-        for status in statusTypes {
-            statusIDs.append(status.rawValue)
-        }
-        let statusStr: String = statusIDs.map({ val in return "\(val)" }).joined(separator: ", ")
-        
-        var bucketIDs: [Int64] = []
-        for bucket in buckets {
-            if bucket.id != nil {
-                bucketIDs.append(bucket.id!)
-            }
-        }
-        let bucketStr: String = bucketIDs.map({ val in return "\(val)" }).joined(separator: ", ")
-        
-        var balance: Int = 0
-        try databaseReader.read { db in
-            print(statusStr)
-            if let row = try Row.fetchOne(db, sql: """
-                    SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (
-                        SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (\(bucketStr)) AND Status IN (\(statusStr))
-                    
-                        UNION ALL
-                    
-                        SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (\(bucketStr)) AND Status IN (\(statusStr))
-                    )
-            """, arguments: []) {
-                print(row)
-                balance = row["Amount"]
-            }
-        }
-        
-        return balance
-    }
-    
-    func getBucketBalance(_ bucket: Bucket?) -> BucketBalance {
-//
-//        ValueObservation
-//            .tracking { db -> BucketBalance in
-//                return getBucketBalance(bucket)
-//            }.publisher(in: databaseReader, scheduling: .immediate)
-//            .sink(
-//                receiveCompletion: { _ in },
-//                receiveValue: {
-//                    print("fresh players: \($0)")
-//                })
-//        
-        
-        var pb = 0
-        var ptb = 0
-        var ab = 0
-        var atb = 0
-        
-        do {
-        if bucket != nil {
-            // TODO: Calculate the balance
-            pb = try getPostedBalance(bucket!)
-            ab = try getAvailableBalance(bucket!)
-            ptb = try getPostedTreeBalance(bucket!)
-            atb = try getAvailableTreeBalance(bucket!)
-        }
-        } catch {
-            print("Error while calculating balance for bucket")
-            print(error)
-        }
-        
-        return BucketBalance(posted: pb, available: ab, postedInTree: ptb, availableInTree: atb)
-    }
+
 }

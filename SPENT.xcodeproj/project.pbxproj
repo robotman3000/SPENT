@@ -9,6 +9,16 @@
 /* Begin PBXBuildFile section */
 		A206D77D267BBF5C00CB094D /* BucketBalance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D77C267BBF5C00CB094D /* BucketBalance.swift */; };
 		A206D77E267BBF5C00CB094D /* BucketBalance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D77C267BBF5C00CB094D /* BucketBalance.swift */; };
+		A206D780267C10BA00CB094D /* Schedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D77F267C10BA00CB094D /* Schedule.swift */; };
+		A206D781267C10BA00CB094D /* Schedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D77F267C10BA00CB094D /* Schedule.swift */; };
+		A206D783267C110600CB094D /* Recipt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D782267C110600CB094D /* Recipt.swift */; };
+		A206D784267C110600CB094D /* Recipt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D782267C110600CB094D /* Recipt.swift */; };
+		A206D786267C111F00CB094D /* TransactionRecipt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D785267C111F00CB094D /* TransactionRecipt.swift */; };
+		A206D787267C111F00CB094D /* TransactionRecipt.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D785267C111F00CB094D /* TransactionRecipt.swift */; };
+		A206D789267C475400CB094D /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7C2671802A00347205 /* TransactionRow.swift */; };
+		A206D78A267C47A200CB094D /* BucketRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD76264ED04A0070EB07 /* BucketRow.swift */; };
+		A206D78B267C47A400CB094D /* BalanceText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* BalanceText.swift */; };
+		A206D78C267C4A2E00CB094D /* SPENTDatabaseDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */; };
 		A20781ED265E954C00DE372A /* BucketRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20781EC265E954C00DE372A /* BucketRequest.swift */; };
 		A20781EE265E954C00DE372A /* BucketRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20781EC265E954C00DE372A /* BucketRequest.swift */; };
 		A20781F7266001CC00DE372A /* TransactionTags.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20781F6266001CC00DE372A /* TransactionTags.swift */; };
@@ -17,9 +27,6 @@
 		A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20B3C9E26558BB400555CF1 /* TagRequest.swift */; };
 		A20B3CA026558BB400555CF1 /* TagRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20B3C9E26558BB400555CF1 /* TagRequest.swift */; };
 		A20DAF62266FFA5000347205 /* BucketNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF61266FFA5000347205 /* BucketNavigation.swift */; };
-		A20DAF6426700CB600347205 /* SidebarNavigable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF6326700CB600347205 /* SidebarNavigable.swift */; };
-		A20DAF662670127B00347205 /* TagNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF652670127B00347205 /* TagNavigation.swift */; };
-		A20DAF69267015D700347205 /* FormManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF68267015D700347205 /* FormManager.swift */; };
 		A20DAF6B267019D200347205 /* MacSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF6A267019D200347205 /* MacSidebar.swift */; };
 		A20DAF6D26701A4300347205 /* MacHome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF6C26701A4300347205 /* MacHome.swift */; };
 		A20DAF6F2670233100347205 /* BaseForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF6E2670233100347205 /* BaseForm.swift */; };
@@ -43,6 +50,26 @@
 		A228FC5F264C57E700CD5BB6 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */; };
 		A228FC60264C57E700CD5BB6 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */; };
 		A24033C22672898C00A2B5CE /* BalanceText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* BalanceText.swift */; };
+		A24CF68626814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24CF68526814EDA0037BBEF /* BucketBalanceRequest.swift */; };
+		A24CF68726814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24CF68526814EDA0037BBEF /* BucketBalanceRequest.swift */; };
+		A2676C73267CD04300548F06 /* MacTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C72267CD04300548F06 /* MacTransactionView.swift */; };
+		A2676C7C267D035300548F06 /* DatabaseManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C7A267D035300548F06 /* DatabaseManagerView.swift */; };
+		A2676C81267D0ABD00548F06 /* TableRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C80267D0ABD00548F06 /* TableRow.swift */; };
+		A2676C82267D0ABD00548F06 /* TableRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C80267D0ABD00548F06 /* TableRow.swift */; };
+		A2676C87267D279600548F06 /* TableTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C86267D279600548F06 /* TableTransactionsView.swift */; };
+		A2676C88267D279600548F06 /* TableTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C86267D279600548F06 /* TableTransactionsView.swift */; };
+		A2676C8D267E367900548F06 /* TableToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C8C267E367900548F06 /* TableToolbar.swift */; };
+		A2676C8E267E367900548F06 /* TableToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C8C267E367900548F06 /* TableToolbar.swift */; };
+		A2676C90267E3D2700548F06 /* ScheduleRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C8F267E3D2700548F06 /* ScheduleRequest.swift */; };
+		A2676C91267E3D2700548F06 /* ScheduleRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C8F267E3D2700548F06 /* ScheduleRequest.swift */; };
+		A2676C94267E3E9C00548F06 /* BucketTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C92267E3E9C00548F06 /* BucketTable.swift */; };
+		A2676C96267E3EF300548F06 /* ScheduleTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C95267E3EF300548F06 /* ScheduleTable.swift */; };
+		A2676C97267E3EF300548F06 /* ScheduleTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C95267E3EF300548F06 /* ScheduleTable.swift */; };
+		A2676C9A267E3F6000548F06 /* TagTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C98267E3F6000548F06 /* TagTable.swift */; };
+		A2676C9C267E599400548F06 /* UIDatabaseConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C9B267E599400548F06 /* UIDatabaseConnector.swift */; };
+		A2676C9D267E599400548F06 /* UIDatabaseConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C9B267E599400548F06 /* UIDatabaseConnector.swift */; };
+		A2676C9F267E630B00548F06 /* ScheduleForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C9E267E630B00548F06 /* ScheduleForm.swift */; };
+		A2676CA0267E630B00548F06 /* ScheduleForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C9E267E630B00548F06 /* ScheduleForm.swift */; };
 		A2A56710262740EC009C7E8C /* SPENTmacOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */; };
 		A2A56714262740ED009C7E8C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2A56713262740ED009C7E8C /* Assets.xcassets */; };
 		A2A56717262740ED009C7E8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2A56716262740ED009C7E8C /* Preview Assets.xcassets */; };
@@ -53,20 +80,33 @@
 		A2A5673C26289DEE009C7E8C /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A2A5673B26289DEE009C7E8C /* GRDB */; settings = {ATTRIBUTES = (Required, ); }; };
 		A2A567422628A01C009C7E8C /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A2A567412628A01C009C7E8C /* GRDB */; };
 		A2C4C0CE2613E61A0048DB83 /* SPENTiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C4C0CD2613E61A0048DB83 /* SPENTiOSApp.swift */; };
-		A2C4C0D02613E61A0048DB83 /* iOSMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C4C0CF2613E61A0048DB83 /* iOSMainView.swift */; };
 		A2C4C0D22613E61A0048DB83 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2C4C0D12613E61A0048DB83 /* Assets.xcassets */; };
 		A2C4C0D52613E61A0048DB83 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2C4C0D42613E61A0048DB83 /* Preview Assets.xcassets */; };
+		A2EE03E52684C5D30092F63E /* TransactionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03E42684C5D30092F63E /* TransactionViewModel.swift */; };
+		A2EE03EF268502FD0092F63E /* BucketBalanceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03EE268502FD0092F63E /* BucketBalanceViewModel.swift */; };
+		A2EE03F02685122B0092F63E /* BucketNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF61266FFA5000347205 /* BucketNavigation.swift */; };
+		A2EE03F1268512400092F63E /* BalanceTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD74264ED0270070EB07 /* BalanceTable.swift */; };
+		A2EE03F2268512590092F63E /* TagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2487765265582A7002D7D9F /* TagForm.swift */; };
+		A2EE03F32685125B0092F63E /* BucketForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD78264ED0620070EB07 /* BucketForm.swift */; };
+		A2EE03F42685125D0092F63E /* TransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7A2671509B00347205 /* TransactionForm.swift */; };
+		A2EE03F5268513190092F63E /* ListTransactionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD6F264ECFDD0070EB07 /* ListTransactionsView.swift */; };
+		A2EE03F62685153D0092F63E /* DatabaseManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C7A267D035300548F06 /* DatabaseManagerView.swift */; };
+		A2EE03F7268515650092F63E /* BucketTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C92267E3E9C00548F06 /* BucketTable.swift */; };
+		A2EE03F8268515690092F63E /* TagTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C98267E3F6000548F06 /* TagTable.swift */; };
+		A2EE03FA268518BF0092F63E /* iOSTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03F9268518BF0092F63E /* iOSTransactionView.swift */; };
+		A2EE03FB268519C60092F63E /* TransactionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03E42684C5D30092F63E /* TransactionViewModel.swift */; };
+		A2EE03FC268519CC0092F63E /* BucketBalanceViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03EE268502FD0092F63E /* BucketBalanceViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A206D77C267BBF5C00CB094D /* BucketBalance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketBalance.swift; sourceTree = "<group>"; };
+		A206D77F267C10BA00CB094D /* Schedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Schedule.swift; sourceTree = "<group>"; };
+		A206D782267C110600CB094D /* Recipt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recipt.swift; sourceTree = "<group>"; };
+		A206D785267C111F00CB094D /* TransactionRecipt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRecipt.swift; sourceTree = "<group>"; };
 		A20781EC265E954C00DE372A /* BucketRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketRequest.swift; sourceTree = "<group>"; };
 		A20781F6266001CC00DE372A /* TransactionTags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTags.swift; sourceTree = "<group>"; };
 		A20B3C9E26558BB400555CF1 /* TagRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagRequest.swift; sourceTree = "<group>"; };
 		A20DAF61266FFA5000347205 /* BucketNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketNavigation.swift; sourceTree = "<group>"; };
-		A20DAF6326700CB600347205 /* SidebarNavigable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarNavigable.swift; sourceTree = "<group>"; };
-		A20DAF652670127B00347205 /* TagNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagNavigation.swift; sourceTree = "<group>"; };
-		A20DAF68267015D700347205 /* FormManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormManager.swift; sourceTree = "<group>"; };
 		A20DAF6A267019D200347205 /* MacSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSidebar.swift; sourceTree = "<group>"; };
 		A20DAF6C26701A4300347205 /* MacHome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHome.swift; sourceTree = "<group>"; };
 		A20DAF6E2670233100347205 /* BaseForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseForm.swift; sourceTree = "<group>"; };
@@ -86,6 +126,18 @@
 		A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
 		A24033C12672898C00A2B5CE /* BalanceText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceText.swift; sourceTree = "<group>"; };
 		A2487765265582A7002D7D9F /* TagForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagForm.swift; sourceTree = "<group>"; };
+		A24CF68526814EDA0037BBEF /* BucketBalanceRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketBalanceRequest.swift; sourceTree = "<group>"; };
+		A2676C72267CD04300548F06 /* MacTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacTransactionView.swift; sourceTree = "<group>"; };
+		A2676C7A267D035300548F06 /* DatabaseManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerView.swift; sourceTree = "<group>"; };
+		A2676C80267D0ABD00548F06 /* TableRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableRow.swift; sourceTree = "<group>"; };
+		A2676C86267D279600548F06 /* TableTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableTransactionsView.swift; sourceTree = "<group>"; };
+		A2676C8C267E367900548F06 /* TableToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableToolbar.swift; sourceTree = "<group>"; };
+		A2676C8F267E3D2700548F06 /* ScheduleRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRequest.swift; sourceTree = "<group>"; };
+		A2676C92267E3E9C00548F06 /* BucketTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketTable.swift; sourceTree = "<group>"; };
+		A2676C95267E3EF300548F06 /* ScheduleTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleTable.swift; sourceTree = "<group>"; };
+		A2676C98267E3F6000548F06 /* TagTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagTable.swift; sourceTree = "<group>"; };
+		A2676C9B267E599400548F06 /* UIDatabaseConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIDatabaseConnector.swift; sourceTree = "<group>"; };
+		A2676C9E267E630B00548F06 /* ScheduleForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleForm.swift; sourceTree = "<group>"; };
 		A2A5670D262740EC009C7E8C /* SPENT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPENT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTmacOS.swift; sourceTree = "<group>"; };
 		A2A56713262740ED009C7E8C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -104,7 +156,6 @@
 		A2A56737262879BD009C7E8C /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
 		A2C4C0CA2613E61A0048DB83 /* SPENT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPENT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2C4C0CD2613E61A0048DB83 /* SPENTiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTiOSApp.swift; sourceTree = "<group>"; };
-		A2C4C0CF2613E61A0048DB83 /* iOSMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSMainView.swift; sourceTree = "<group>"; };
 		A2C4C0D12613E61A0048DB83 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2C4C0D42613E61A0048DB83 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A2C4C0D62613E61A0048DB83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -115,6 +166,9 @@
 		A2C4C0E32613E67A0048DB83 /* libOpenSSL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libOpenSSL.a; path = Lib/iOS/lib/libOpenSSL.a; sourceTree = "<group>"; };
 		A2C4C0E42613E67A0048DB83 /* libPython.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPython.a; path = Lib/iOS/lib/libPython.a; sourceTree = "<group>"; };
 		A2C4C0E52613E67A0048DB83 /* libxz.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libxz.a; path = Lib/iOS/lib/libxz.a; sourceTree = "<group>"; };
+		A2EE03E42684C5D30092F63E /* TransactionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionViewModel.swift; sourceTree = "<group>"; };
+		A2EE03EE268502FD0092F63E /* BucketBalanceViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketBalanceViewModel.swift; sourceTree = "<group>"; };
+		A2EE03F9268518BF0092F63E /* iOSTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSTransactionView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,12 +191,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A206D788267C46FF00CB094D /* Database */ = {
+			isa = PBXGroup;
+			children = (
+				A20DCD68264EBC260070EB07 /* Transaction.swift */,
+				A20DCD6B264EBC470070EB07 /* Bucket.swift */,
+				A20DCD82264EEB510070EB07 /* Tag.swift */,
+				A20781F6266001CC00DE372A /* TransactionTags.swift */,
+				A206D77F267C10BA00CB094D /* Schedule.swift */,
+				A206D782267C110600CB094D /* Recipt.swift */,
+				A206D785267C111F00CB094D /* TransactionRecipt.swift */,
+			);
+			path = Database;
+			sourceTree = "<group>";
+		};
 		A20781F92661627500DE372A /* Request */ = {
 			isa = PBXGroup;
 			children = (
 				A228FC5B264C574C00CD5BB6 /* TransactionRequest.swift */,
 				A20B3C9E26558BB400555CF1 /* TagRequest.swift */,
+				A2676C8F267E3D2700548F06 /* ScheduleRequest.swift */,
 				A20781EC265E954C00DE372A /* BucketRequest.swift */,
+				A24CF68526814EDA0037BBEF /* BucketBalanceRequest.swift */,
 			);
 			path = Request;
 			sourceTree = "<group>";
@@ -152,6 +222,7 @@
 			children = (
 				A228FC58264C571800CD5BB6 /* Query.swift */,
 				A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */,
+				A2676C9B267E599400548F06 /* UIDatabaseConnector.swift */,
 			);
 			path = Database;
 			sourceTree = "<group>";
@@ -163,35 +234,25 @@
 				A20DCD78264ED0620070EB07 /* BucketForm.swift */,
 				A20DAF6E2670233100347205 /* BaseForm.swift */,
 				A20DAF7A2671509B00347205 /* TransactionForm.swift */,
+				A2676C9E267E630B00548F06 /* ScheduleForm.swift */,
 			);
 			path = Forms;
 			sourceTree = "<group>";
 		};
-		A20DAF60266FF9D100347205 /* Sidebar */ = {
+		A20DAF60266FF9D100347205 /* Navigation */ = {
 			isa = PBXGroup;
 			children = (
 				A20DAF61266FFA5000347205 /* BucketNavigation.swift */,
-				A20DAF6326700CB600347205 /* SidebarNavigable.swift */,
-				A20DAF652670127B00347205 /* TagNavigation.swift */,
 			);
-			path = Sidebar;
-			sourceTree = "<group>";
-		};
-		A20DAF67267015C700347205 /* Control */ = {
-			isa = PBXGroup;
-			children = (
-				A20DAF68267015D700347205 /* FormManager.swift */,
-			);
-			path = Control;
+			path = Navigation;
 			sourceTree = "<group>";
 		};
 		A20DCD67264EBBFC0070EB07 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				A20DCD68264EBC260070EB07 /* Transaction.swift */,
-				A20DCD6B264EBC470070EB07 /* Bucket.swift */,
-				A20DCD82264EEB510070EB07 /* Tag.swift */,
-				A20781F6266001CC00DE372A /* TransactionTags.swift */,
+				A2EE03E32684C5B50092F63E /* ViewModel */,
+				A206D788267C46FF00CB094D /* Database */,
+				A206D77C267BBF5C00CB094D /* BucketBalance.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -199,16 +260,10 @@
 		A20DCD6E264ECF9B0070EB07 /* View */ = {
 			isa = PBXGroup;
 			children = (
-				A20DAF60266FF9D100347205 /* Sidebar */,
-				A20781FD266168C600DE372A /* Forms */,
-				A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */,
 				A20DAF6C26701A4300347205 /* MacHome.swift */,
 				A20DAF6A267019D200347205 /* MacSidebar.swift */,
-				A20DCD6F264ECFDD0070EB07 /* ListTransactionsView.swift */,
-				A20DCD74264ED0270070EB07 /* BalanceTable.swift */,
-				A20DCD76264ED04A0070EB07 /* BucketRow.swift */,
-				A20DAF7C2671802A00347205 /* TransactionRow.swift */,
-				A24033C12672898C00A2B5CE /* BalanceText.swift */,
+				A2676C72267CD04300548F06 /* MacTransactionView.swift */,
+				A2676C86267D279600548F06 /* TableTransactionsView.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -216,6 +271,15 @@
 		A20DCD7A264ED0B80070EB07 /* View */ = {
 			isa = PBXGroup;
 			children = (
+				A2676C7A267D035300548F06 /* DatabaseManagerView.swift */,
+				A24CF688268262ED0037BBEF /* Tables */,
+				A20781FD266168C600DE372A /* Forms */,
+				A20DAF60266FF9D100347205 /* Navigation */,
+				A20DCD6F264ECFDD0070EB07 /* ListTransactionsView.swift */,
+				A20DAF7C2671802A00347205 /* TransactionRow.swift */,
+				A20DCD76264ED04A0070EB07 /* BucketRow.swift */,
+				A24033C12672898C00A2B5CE /* BalanceText.swift */,
+				A20DCD74264ED0270070EB07 /* BalanceTable.swift */,
 				A2A56734262747A7009C7E8C /* SplashView.swift */,
 			);
 			path = View;
@@ -224,6 +288,8 @@
 		A20DCD7B264ED0C50070EB07 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */,
+				A2A56737262879BD009C7E8C /* Util.swift */,
 				A20DCD7A264ED0B80070EB07 /* View */,
 				A20DCD67264EBBFC0070EB07 /* Model */,
 				A2A5671D262741F4009C7E8C /* Control */,
@@ -231,11 +297,22 @@
 			path = Shared;
 			sourceTree = "<group>";
 		};
+		A24CF688268262ED0037BBEF /* Tables */ = {
+			isa = PBXGroup;
+			children = (
+				A2676C80267D0ABD00548F06 /* TableRow.swift */,
+				A2676C8C267E367900548F06 /* TableToolbar.swift */,
+				A2676C92267E3E9C00548F06 /* BucketTable.swift */,
+				A2676C95267E3EF300548F06 /* ScheduleTable.swift */,
+				A2676C98267E3F6000548F06 /* TagTable.swift */,
+			);
+			path = Tables;
+			sourceTree = "<group>";
+		};
 		A2A5670E262740EC009C7E8C /* macOS */ = {
 			isa = PBXGroup;
 			children = (
-				A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */,
-				A20DAF67267015C700347205 /* Control */,
+				A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */,
 				A20DCD6E264ECF9B0070EB07 /* View */,
 				A2A56713262740ED009C7E8C /* Assets.xcassets */,
 				A2A56718262740ED009C7E8C /* Info.plist */,
@@ -258,8 +335,6 @@
 			children = (
 				A20781FA266162A200DE372A /* Database */,
 				A20781F92661627500DE372A /* Request */,
-				A2A56737262879BD009C7E8C /* Util.swift */,
-				A206D77C267BBF5C00CB094D /* BucketBalance.swift */,
 			);
 			path = Control;
 			sourceTree = "<group>";
@@ -288,7 +363,7 @@
 			isa = PBXGroup;
 			children = (
 				A2C4C0CD2613E61A0048DB83 /* SPENTiOSApp.swift */,
-				A2C4C0CF2613E61A0048DB83 /* iOSMainView.swift */,
+				A2EE03F9268518BF0092F63E /* iOSTransactionView.swift */,
 				A2C4C0D12613E61A0048DB83 /* Assets.xcassets */,
 				A2C4C0D62613E61A0048DB83 /* Info.plist */,
 				A22727DF2616341900814696 /* iOS.entitlements */,
@@ -325,6 +400,15 @@
 				A2C4C0DD2613E6660048DB83 /* libz.1.2.8.tbd */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A2EE03E32684C5B50092F63E /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				A2EE03E42684C5D30092F63E /* TransactionViewModel.swift */,
+				A2EE03EE268502FD0092F63E /* BucketBalanceViewModel.swift */,
+			);
+			path = ViewModel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -436,27 +520,40 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2676C8E267E367900548F06 /* TableToolbar.swift in Sources */,
 				A20DCD84264EEB510070EB07 /* Tag.swift in Sources */,
 				A20DCD6A264EBC260070EB07 /* Transaction.swift in Sources */,
 				A20DCD75264ED0270070EB07 /* BalanceTable.swift in Sources */,
 				A20DCD77264ED04A0070EB07 /* BucketRow.swift in Sources */,
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
-				A20DAF69267015D700347205 /* FormManager.swift in Sources */,
-				A20DAF6426700CB600347205 /* SidebarNavigable.swift in Sources */,
+				A2676C7C267D035300548F06 /* DatabaseManagerView.swift in Sources */,
+				A2676C9A267E3F6000548F06 /* TagTable.swift in Sources */,
 				A24033C22672898C00A2B5CE /* BalanceText.swift in Sources */,
 				A20781F8266001CC00DE372A /* TransactionTags.swift in Sources */,
 				A228FC5D264C574C00CD5BB6 /* TransactionRequest.swift in Sources */,
 				A20DAF7D2671802A00347205 /* TransactionRow.swift in Sources */,
-				A20DAF662670127B00347205 /* TagNavigation.swift in Sources */,
 				A20DAF62266FFA5000347205 /* BucketNavigation.swift in Sources */,
+				A206D784267C110600CB094D /* Recipt.swift in Sources */,
 				A20B3C9D2655840600555CF1 /* TagForm.swift in Sources */,
 				A20DAF7B2671509B00347205 /* TransactionForm.swift in Sources */,
 				A20DCD79264ED0620070EB07 /* BucketForm.swift in Sources */,
 				A228FC60264C57E700CD5BB6 /* AppDatabase.swift in Sources */,
 				A20781EE265E954C00DE372A /* BucketRequest.swift in Sources */,
+				A24CF68726814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */,
+				A2676C9D267E599400548F06 /* UIDatabaseConnector.swift in Sources */,
+				A206D787267C111F00CB094D /* TransactionRecipt.swift in Sources */,
+				A2676C82267D0ABD00548F06 /* TableRow.swift in Sources */,
+				A206D781267C10BA00CB094D /* Schedule.swift in Sources */,
+				A2676CA0267E630B00548F06 /* ScheduleForm.swift in Sources */,
+				A2676C91267E3D2700548F06 /* ScheduleRequest.swift in Sources */,
+				A2EE03EF268502FD0092F63E /* BucketBalanceViewModel.swift in Sources */,
+				A2676C97267E3EF300548F06 /* ScheduleTable.swift in Sources */,
 				A20DCD71264ECFDD0070EB07 /* ListTransactionsView.swift in Sources */,
+				A2676C94267E3E9C00548F06 /* BucketTable.swift in Sources */,
 				A228FC5A264C571800CD5BB6 /* Query.swift in Sources */,
 				A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */,
+				A2676C88267D279600548F06 /* TableTransactionsView.swift in Sources */,
+				A2676C73267CD04300548F06 /* MacTransactionView.swift in Sources */,
 				A20DCD6D264EBC470070EB07 /* Bucket.swift in Sources */,
 				A2A56739262879BD009C7E8C /* Util.swift in Sources */,
 				A20DAF6F2670233100347205 /* BaseForm.swift in Sources */,
@@ -465,6 +562,7 @@
 				A2A56710262740EC009C7E8C /* SPENTmacOS.swift in Sources */,
 				A206D77E267BBF5C00CB094D /* BucketBalance.swift in Sources */,
 				A228202B267B9518006C38AC /* SPENTDatabaseDocument.swift in Sources */,
+				A2EE03E52684C5D30092F63E /* TransactionViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -474,17 +572,43 @@
 			files = (
 				A20DCD69264EBC260070EB07 /* Transaction.swift in Sources */,
 				A20781ED265E954C00DE372A /* BucketRequest.swift in Sources */,
-				A2C4C0D02613E61A0048DB83 /* iOSMainView.swift in Sources */,
+				A2EE03F8268515690092F63E /* TagTable.swift in Sources */,
+				A24CF68626814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */,
+				A2676C87267D279600548F06 /* TableTransactionsView.swift in Sources */,
+				A2EE03F42685125D0092F63E /* TransactionForm.swift in Sources */,
+				A2EE03F2268512590092F63E /* TagForm.swift in Sources */,
+				A206D78B267C47A400CB094D /* BalanceText.swift in Sources */,
+				A206D780267C10BA00CB094D /* Schedule.swift in Sources */,
+				A2EE03FA268518BF0092F63E /* iOSTransactionView.swift in Sources */,
+				A206D78C267C4A2E00CB094D /* SPENTDatabaseDocument.swift in Sources */,
+				A2676C9C267E599400548F06 /* UIDatabaseConnector.swift in Sources */,
 				A2A56735262747A7009C7E8C /* SplashView.swift in Sources */,
 				A228FC5C264C574C00CD5BB6 /* TransactionRequest.swift in Sources */,
 				A20781F7266001CC00DE372A /* TransactionTags.swift in Sources */,
+				A2EE03FC268519CC0092F63E /* BucketBalanceViewModel.swift in Sources */,
 				A228FC5F264C57E700CD5BB6 /* AppDatabase.swift in Sources */,
+				A2EE03F02685122B0092F63E /* BucketNavigation.swift in Sources */,
 				A2C4C0CE2613E61A0048DB83 /* SPENTiOSApp.swift in Sources */,
+				A2676C9F267E630B00548F06 /* ScheduleForm.swift in Sources */,
+				A2EE03F1268512400092F63E /* BalanceTable.swift in Sources */,
+				A2676C81267D0ABD00548F06 /* TableRow.swift in Sources */,
+				A206D789267C475400CB094D /* TransactionRow.swift in Sources */,
 				A228FC59264C571800CD5BB6 /* Query.swift in Sources */,
+				A2EE03F5268513190092F63E /* ListTransactionsView.swift in Sources */,
 				A20B3CA026558BB400555CF1 /* TagRequest.swift in Sources */,
 				A20DCD6C264EBC470070EB07 /* Bucket.swift in Sources */,
+				A2EE03FB268519C60092F63E /* TransactionViewModel.swift in Sources */,
+				A2676C96267E3EF300548F06 /* ScheduleTable.swift in Sources */,
+				A206D78A267C47A200CB094D /* BucketRow.swift in Sources */,
+				A206D786267C111F00CB094D /* TransactionRecipt.swift in Sources */,
 				A2A56738262879BD009C7E8C /* Util.swift in Sources */,
 				A206D77D267BBF5C00CB094D /* BucketBalance.swift in Sources */,
+				A206D783267C110600CB094D /* Recipt.swift in Sources */,
+				A2EE03F7268515650092F63E /* BucketTable.swift in Sources */,
+				A2676C8D267E367900548F06 /* TableToolbar.swift in Sources */,
+				A2EE03F32685125B0092F63E /* BucketForm.swift in Sources */,
+				A2EE03F62685153D0092F63E /* DatabaseManagerView.swift in Sources */,
+				A2676C90267E3D2700548F06 /* ScheduleRequest.swift in Sources */,
 				A20DCD83264EEB510070EB07 /* Tag.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -510,10 +634,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Lib/macOS/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.robotman3000.SPENT;
 				PRODUCT_NAME = SPENT;
@@ -542,10 +663,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Lib/macOS/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.robotman3000.SPENT;
 				PRODUCT_NAME = SPENT;
@@ -615,7 +733,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/Lib/iOS/include/python3.9\"/**";
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Debug;
 		};
@@ -671,7 +789,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
-				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/Lib/iOS/include/python3.9\"/**";
+				USER_HEADER_SEARCH_PATHS = "";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -694,10 +812,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Lib/iOS/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.robotman3000.SPENT;
 				PRODUCT_NAME = SPENT;
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -727,10 +842,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Lib/iOS/lib",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.robotman3000.SPENT;
 				PRODUCT_NAME = SPENT;
 				SUPPORTS_MACCATALYST = NO;

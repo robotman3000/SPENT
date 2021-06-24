@@ -16,10 +16,13 @@ struct BucketNavigation: View {
     
     var body: some View {
         //BalanceTable(model: BucketBalanceViewModel(bucket: _selectedBuck)).padding()
+        #if os(macOS)
         BalanceTable(bucket: $selectedBucket)
-        List(selection: $selectedBucket) {
+        #endif
+        let theList = List(selection: $selectedBucket) {
             Section(header: Text("Accounts")){
                 OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in
+                    #if os(macOS)
                     NavigationLink(destination: MacTransactionView(contextBucket: node.bucket).onAppear(perform: {print("Mac transa view appear")})) {
                         BucketRow(bucket: node.bucket).onAppear(perform: {
                             print("Row Appeared: \(node.bucket.name)")
@@ -30,13 +33,16 @@ struct BucketNavigation: View {
                             showingForm.toggle()
                         }
                     }
+                    #else
+                    NavigationLink(destination: ListTransactionsView()) {
+                        BucketRow(bucket: node.bucket).onAppear(perform: {
+                            print("Row Appeared: \(node.bucket.name)")
+                        })
+                    }
+                    #endif
                 }
             }//.collapsible(false)
         }.listStyle(SidebarListStyle())
-        
-        .onDeleteCommand {
-            store.deleteBucket(selectedBucket!.id!, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
-        }
         .sheet(isPresented: $showingForm) {
             BucketForm(title: "Edit Bucket", bucket: selectedBucket!, onSubmit: {data in
                 store.updateBucket(&data, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
@@ -49,6 +55,12 @@ struct BucketNavigation: View {
                 dismissButton: .default(Text("OK"))
             )
         }
+        
+        #if os(macOS)
+        theList.onDeleteCommand {
+            store.deleteBucket(selectedBucket!.id!, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
+        }
+        #endif
     }
     
     func dismissModal(){

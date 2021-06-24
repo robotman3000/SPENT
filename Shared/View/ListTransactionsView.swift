@@ -10,11 +10,14 @@ import GRDB
 
 struct ListTransactionsView: View {
     var transactions: [Transaction] = []
+    #if os(macOS)
     @Binding var selection: Transaction?
+    #else
+    @State var selection: Transaction?
+    #endif
     var bucket: Bucket?
     
     var body: some View {
-        Text(bucket?.name ?? "No Name")
         List(selection: $selection){
             if !transactions.isEmpty {
                 ForEach(transactions, id:\.self ){ item in
@@ -23,7 +26,7 @@ struct ListTransactionsView: View {
             } else {
                 Text("No Transactions")
             }
-        }
+        }.navigationTitle(bucket?.name ?? "No Name")
     }
 }
 

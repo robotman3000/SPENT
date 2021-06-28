@@ -26,12 +26,12 @@ struct DatabaseManagerView: View {
                     Label("Tags", systemImage: "tag")
                 }
             }
-            HStack {
-                Spacer()
-                Button("Done", action: {
-                    onCancel()
-                })
-            }
+//            HStack {
+//                Spacer()
+//                Button("Done", action: {
+//                    onCancel()
+//                })
+//            }
         }.padding().frame(minWidth: 600, minHeight: 400)
     }
 }

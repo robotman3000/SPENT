@@ -47,10 +47,7 @@ struct SPENTmacOS: App {
         }
         
         Settings{
-            VStack {
-                Text("Settings Window")
-            }.padding()
-            
+            SettingsView().environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database)
         }
     }
 }
@@ -89,6 +86,56 @@ struct MainView: View {
     
     func dismissModal(){
         activeSheet = nil
+    }
+}
+
+struct SettingsView: View {
+    private enum Tabs: Hashable {
+        case general, buckets, schedules, tags
+    }
+    var body: some View {
+        TabView {
+            GeneralSettingsView()
+                .tabItem {
+                    Label("General", systemImage: "gear")
+                }
+                .tag(Tabs.general)
+            
+            BucketTable()
+                .tabItem {
+                    Label("Accounts", systemImage: "folder")
+                }.tag(Tabs.buckets)
+         
+            ScheduleTable()
+                .tabItem {
+                    Label("Schedules", systemImage: "calendar.badge.clock")
+                }.tag(Tabs.schedules)
+     
+            TagTable()
+                .tabItem {
+                    Label("Tags", systemImage: "tag")
+                }.tag(Tabs.tags)
+                
+        }
+        .padding(20)
+        .frame(width: 600, height: 400)
+    }
+}
+
+struct GeneralSettingsView: View {
+    //@AppStorage("showPreview") private var showPreview = true
+    //@AppStorage("fontSize") private var fontSize = 12.0
+
+    var body: some View {
+//        Form {
+//            Toggle("Show Previews", isOn: $showPreview)
+//            Slider(value: $fontSize, in: 9...96) {
+//                Text("Font Size (\(fontSize, specifier: "%.0f") pts)")
+//            }
+//        }
+        Text("Nothing to see here!")
+        .padding(20)
+        .frame(width: 350, height: 100)
     }
 }
 

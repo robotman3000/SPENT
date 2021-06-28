@@ -35,7 +35,7 @@ class BucketNode: Hashable {
 }
 
 class DatabaseStore: ObservableObject {
-    private var database: AppDatabase?
+    var database: AppDatabase?
     
     @Published var buckets: [Bucket] = [] {
         didSet {

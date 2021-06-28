@@ -37,6 +37,7 @@ struct MacTransactionView: View {
             Spacer()
             switch appState.selectedView {
             case .List: ListTransactionsView(transactions: model.transactions,
+                                             transactionTags: model.tags,
                                              selection: $selected.wrappedStruct,
                                              bucket: model.contextBucket).onAppear(perform: {print("list appear")})
             case .Table: TableTransactionsView(transactions: model.transactions,

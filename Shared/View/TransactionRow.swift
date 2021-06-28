@@ -11,7 +11,16 @@ struct TransactionRow: View {
     @EnvironmentObject var store: DatabaseStore
     @State var transaction: Transaction
     @State var bucket: Bucket
+    @State var tags: [Tag]
 
+    struct TagBadge: View {
+        @State var tag: Tag
+        
+        var body: some View {
+            Text(tag.name).padding(5).background(Color.gray).cornerRadius(25)
+        }
+    }
+    
     struct Direction: View {
         @Binding var transaction: Transaction
         let sourceName: String
@@ -69,11 +78,11 @@ struct TransactionRow: View {
                         HStack {
                             Text(transaction.payee ?? transaction.type.rawValue)
                                 .fontWeight(.bold)
-//                            HStack(){
-//                                ForEach(database?.getTransactionTags(transaction) ?? [], id: \.self){ tag in
-//                                    Text("[\(tag.name)]")
-//                                }
-//                            }
+                            HStack(){
+                                ForEach(tags, id: \.self){ tag in
+                                    TagBadge(tag: tag)
+                                }
+                            }
                         }
                         Text(transaction.date.transactionFormat)
                             .foregroundColor(.gray)

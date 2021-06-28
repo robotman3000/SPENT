@@ -91,19 +91,19 @@ func toString(_ int: Int?) -> String {
     return int!.description
 }
 
+let nformatter = NumberFormatter()
 extension Int {
     var currencyFormat: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        return formatter.string(from: NSNumber(value: Double(self) / 100.0)) ?? ""
+        nformatter.numberStyle = .currency
+        return nformatter.string(from: NSNumber(value: Double(self) / 100.0)) ?? ""
     }
 }
 
+let dformatter = DateFormatter()
 extension Date {
     var transactionFormat: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: self)
+        dformatter.dateStyle = .medium
+        return dformatter.string(from: self)
     }
 }
 

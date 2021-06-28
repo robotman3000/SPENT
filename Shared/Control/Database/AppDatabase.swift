@@ -51,6 +51,11 @@ struct AppDatabase {
             print("Using DB from path: \(path.absoluteString)")
             self.dbWriter = try DatabaseQueue(path: path.absoluteString)
             try migrator.migrate(dbWriter)
+            try databaseReader.read { db in
+                db.trace(options: .statement) { event in
+                    print("SQL: \(event)")
+                }
+            }
         }
         catch {
 //             Replace this implementation with code to handle the error appropriately.

@@ -13,7 +13,7 @@ import SwiftUI
 class TransactionViewModel: ObservableObject {
     private var database: AppDatabase?
     @Published var transactions: [Transaction] = []
-    @Published var tags: [Int64 : [Tag]] = [:]
+    @Published var tags: [Transaction : [Tag]] = [:]
     @Published var query: TransactionRequest
     private(set) var contextBucket: Bucket
     
@@ -47,15 +47,11 @@ class TransactionViewModel: ObservableObject {
             .sink(
                 receiveCompletion: {_ in},
                 receiveValue: { [weak self] (links: [TransactionTagLink]) in
+                    print("Tag Values \(links)")
                     for link in links {
-                        self?.tags[link.transaction.id!] = link.TagIDs
+                        self?.tags[link.transaction] = link.TagIDs
                     }
                 }
             )
-    }
-    
-    struct TransactionTagLink: FetchableRecord, Decodable {
-        var transaction: Transaction
-        var TagIDs: [Tag]
     }
 }

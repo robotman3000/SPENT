@@ -354,6 +354,16 @@ extension AppDatabase {
         }
     }
     
+    func setTransactionTags(transaction: Transaction, tags: [Tag]) throws {
+        try dbWriter.write { db in
+            try TransactionTag.filter(TransactionTag.Columns.transactionID == transaction.id!).deleteAll(db)
+            try tags.forEach({ tag in
+                var tTag = TransactionTag(id: nil, transactionID: transaction.id!, tagID: tag.id!)
+                try tTag.save(db)
+            })
+        }
+    }
+    
     func saveBucket(_ bucket: inout Bucket) throws {
         try dbWriter.write { db in
             try bucket.save(db)

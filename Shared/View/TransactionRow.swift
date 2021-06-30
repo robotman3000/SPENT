@@ -11,7 +11,7 @@ struct TransactionRow: View {
     @EnvironmentObject var store: DatabaseStore
     @State var transaction: Transaction
     @State var bucket: Bucket
-    @State var tags: [Tag]
+    @State var tags: [Tag]?
 
     struct TagBadge: View {
         @State var tag: Tag
@@ -79,8 +79,12 @@ struct TransactionRow: View {
                             Text(transaction.payee ?? transaction.type.rawValue)
                                 .fontWeight(.bold)
                             HStack(){
-                                ForEach(tags, id: \.self){ tag in
-                                    TagBadge(tag: tag)
+                                if tags != nil {
+                                    ForEach(tags!, id: \.self){ tag in
+                                        TagBadge(tag: tag)
+                                    }
+                                } else {
+                                    Text("NIL")
                                 }
                             }
                         }

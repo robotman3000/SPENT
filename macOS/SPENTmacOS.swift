@@ -91,9 +91,10 @@ struct SPENTmacOS: App {
                     Button("Tag") { activeSheet = .tag }
                 }
             }
-            CommandGroup(after: .textEditing) {
-                Button("Database") { activeSheet = .manager }
-            }
+            
+//            CommandGroup(after: .textEditing) {
+//                Button("Database") { activeSheet = .manager }
+//            }
         }
         
         Settings{

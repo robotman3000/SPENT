@@ -20,16 +20,66 @@ struct SPENTmacOS: App {
     @StateObject var globalState: GlobalState = GlobalState()
     @StateObject var dbStore: DatabaseStore = DatabaseStore()
     
+//    import Foundation
+//
+//    let filePath = NSHomeDirectory() + "/Documents/" + "test.txt"
+//    if (FileManager.default.createFile(atPath: filePath, contents: nil, attributes: nil)) {
+//        print("File created successfully.")
+//    } else {
+//        print("File not created.")
+//    }
+    
     var body: some Scene {
-        DocumentGroup(newDocument: SPENTDatabaseDocument()) { file in
+        WindowGroup {
             if isActive {
-                MainView(file: file, activeSheet: $activeSheet).environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, file.document.database)
+                MainView(activeSheet: $activeSheet)
+                    .environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
-                    isActive = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) { // Change `2.0` to the desired number of seconds.
                         print("Initializing State Controller")
-                        dbStore.load(file.document.database)
+                        let panel = NSOpenPanel()
+                        panel.allowsMultipleSelection = false
+                        panel.canChooseDirectories = false
+                        panel.canChooseFiles = true
+                        panel.allowedContentTypes = [.spentDatabase]
+                        if panel.runModal() == .OK {
+                            let selectedFile = panel.url?.absoluteURL
+                            if selectedFile != nil {
+                                if selectedFile!.startAccessingSecurityScopedResource() {
+                                    defer { selectedFile!.stopAccessingSecurityScopedResource() }
+                                    let database = AppDatabase(path: selectedFile!)
+                                    dbStore.load(database)
+                                    isActive = true
+                                }
+                            }
+                        } else {
+                            let panel = NSSavePanel()
+                            //panel.allowsMultipleSelection = false
+                            //panel.canChooseDirectories = false
+                            //panel.canChooseFiles = true
+                            panel.allowedContentTypes = [.spentDatabase]
+                            if panel.runModal() == .OK {
+                                let selectedFile = panel.url?.absoluteURL
+                                if selectedFile != nil {
+                                    if selectedFile!.startAccessingSecurityScopedResource() {
+                                        if !FileManager.default.fileExists(atPath: selectedFile!.path) {
+                                            do {
+                                                try FileManager.default.createDirectory(atPath: selectedFile!.path, withIntermediateDirectories: true, attributes: nil)
+                                            } catch {
+                                                print(error.localizedDescription)
+                                            }
+                                        }
+                                        defer { selectedFile!.stopAccessingSecurityScopedResource() }
+                                        let database = AppDatabase(path: selectedFile!)
+                                        dbStore.load(database)
+                                        isActive = true
+                                    }
+                                }
+                            } else {
+                                exit(0)
+                            }
+                        }
                     }
                 }
             }
@@ -54,7 +104,7 @@ struct SPENTmacOS: App {
 
 struct MainView: View {
     @EnvironmentObject var store: DatabaseStore
-    @State var file: FileDocumentConfiguration<SPENTDatabaseDocument>
+    //@State var file: FileDocumentConfiguration<SPENTDatabaseDocument>
     @Binding var activeSheet: CommandMenuSheet?
     
     var body: some View {

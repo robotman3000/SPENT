@@ -48,8 +48,9 @@ struct AppDatabase {
     
     init(path: URL) {
         do {
-            print("Using DB from path: \(path.absoluteString)")
-            self.dbWriter = try DatabaseQueue(path: path.absoluteString)
+            let newURL = path.appendingPathComponent("db.sqlite")
+            print("Using DB from path: \(newURL.absoluteString)")
+            self.dbWriter = try DatabaseQueue(path: newURL.absoluteString)
             try migrator.migrate(dbWriter)
             try databaseReader.read { db in
                 db.trace(options: .statement) { event in

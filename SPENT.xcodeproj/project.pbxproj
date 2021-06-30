@@ -70,6 +70,10 @@
 		A2676C9D267E599400548F06 /* UIDatabaseConnector.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C9B267E599400548F06 /* UIDatabaseConnector.swift */; };
 		A2676C9F267E630B00548F06 /* ScheduleForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C9E267E630B00548F06 /* ScheduleForm.swift */; };
 		A2676CA0267E630B00548F06 /* ScheduleForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C9E267E630B00548F06 /* ScheduleForm.swift */; };
+		A278085A268BC63900CEA560 /* TransactionTagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780859268BC63900CEA560 /* TransactionTagForm.swift */; };
+		A278085B268BC63900CEA560 /* TransactionTagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780859268BC63900CEA560 /* TransactionTagForm.swift */; };
+		A278085D268BC6FA00CEA560 /* TransactionTagLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A278085C268BC6FA00CEA560 /* TransactionTagLink.swift */; };
+		A278085E268BC6FA00CEA560 /* TransactionTagLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A278085C268BC6FA00CEA560 /* TransactionTagLink.swift */; };
 		A2A56710262740EC009C7E8C /* SPENTmacOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */; };
 		A2A56714262740ED009C7E8C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2A56713262740ED009C7E8C /* Assets.xcassets */; };
 		A2A56717262740ED009C7E8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2A56716262740ED009C7E8C /* Preview Assets.xcassets */; };
@@ -138,6 +142,8 @@
 		A2676C98267E3F6000548F06 /* TagTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagTable.swift; sourceTree = "<group>"; };
 		A2676C9B267E599400548F06 /* UIDatabaseConnector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIDatabaseConnector.swift; sourceTree = "<group>"; };
 		A2676C9E267E630B00548F06 /* ScheduleForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleForm.swift; sourceTree = "<group>"; };
+		A2780859268BC63900CEA560 /* TransactionTagForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTagForm.swift; sourceTree = "<group>"; };
+		A278085C268BC6FA00CEA560 /* TransactionTagLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTagLink.swift; sourceTree = "<group>"; };
 		A2A5670D262740EC009C7E8C /* SPENT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPENT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTmacOS.swift; sourceTree = "<group>"; };
 		A2A56713262740ED009C7E8C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -235,6 +241,7 @@
 				A20DAF6E2670233100347205 /* BaseForm.swift */,
 				A20DAF7A2671509B00347205 /* TransactionForm.swift */,
 				A2676C9E267E630B00548F06 /* ScheduleForm.swift */,
+				A2780859268BC63900CEA560 /* TransactionTagForm.swift */,
 			);
 			path = Forms;
 			sourceTree = "<group>";
@@ -407,6 +414,7 @@
 			children = (
 				A2EE03E42684C5D30092F63E /* TransactionViewModel.swift */,
 				A2EE03EE268502FD0092F63E /* BucketBalanceViewModel.swift */,
+				A278085C268BC6FA00CEA560 /* TransactionTagLink.swift */,
 			);
 			path = ViewModel;
 			sourceTree = "<group>";
@@ -521,6 +529,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A2676C8E267E367900548F06 /* TableToolbar.swift in Sources */,
+				A278085B268BC63900CEA560 /* TransactionTagForm.swift in Sources */,
 				A20DCD84264EEB510070EB07 /* Tag.swift in Sources */,
 				A20DCD6A264EBC260070EB07 /* Transaction.swift in Sources */,
 				A20DCD75264ED0270070EB07 /* BalanceTable.swift in Sources */,
@@ -531,6 +540,7 @@
 				A24033C22672898C00A2B5CE /* BalanceText.swift in Sources */,
 				A20781F8266001CC00DE372A /* TransactionTags.swift in Sources */,
 				A228FC5D264C574C00CD5BB6 /* TransactionRequest.swift in Sources */,
+				A278085E268BC6FA00CEA560 /* TransactionTagLink.swift in Sources */,
 				A20DAF7D2671802A00347205 /* TransactionRow.swift in Sources */,
 				A20DAF62266FFA5000347205 /* BucketNavigation.swift in Sources */,
 				A206D784267C110600CB094D /* Recipt.swift in Sources */,
@@ -591,6 +601,7 @@
 				A2C4C0CE2613E61A0048DB83 /* SPENTiOSApp.swift in Sources */,
 				A2676C9F267E630B00548F06 /* ScheduleForm.swift in Sources */,
 				A2EE03F1268512400092F63E /* BalanceTable.swift in Sources */,
+				A278085D268BC6FA00CEA560 /* TransactionTagLink.swift in Sources */,
 				A2676C81267D0ABD00548F06 /* TableRow.swift in Sources */,
 				A206D789267C475400CB094D /* TransactionRow.swift in Sources */,
 				A228FC59264C571800CD5BB6 /* Query.swift in Sources */,
@@ -599,6 +610,7 @@
 				A20DCD6C264EBC470070EB07 /* Bucket.swift in Sources */,
 				A2EE03FB268519C60092F63E /* TransactionViewModel.swift in Sources */,
 				A2676C96267E3EF300548F06 /* ScheduleTable.swift in Sources */,
+				A278085A268BC63900CEA560 /* TransactionTagForm.swift in Sources */,
 				A206D78A267C47A200CB094D /* BucketRow.swift in Sources */,
 				A206D786267C111F00CB094D /* TransactionRecipt.swift in Sources */,
 				A2A56738262879BD009C7E8C /* Util.swift in Sources */,

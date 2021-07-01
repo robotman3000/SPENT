@@ -21,10 +21,18 @@ struct ListTransactionsView: View {
     var bucket: Bucket?
     
     var body: some View {
+        var knownGroups: Set<UUID> = []
         List(selection: $selection){
             if !transactions.isEmpty {
                 ForEach(transactions, id:\.self ){ item in
-                    TransactionRow(transaction: item, bucket: bucket!, tags: getTags(item)).frame(height: 55)
+                    let syntaxHack: () -> UUID = {knownGroups.insert(item.group!); return item.group!}
+                    if item.group != nil && !knownGroups.contains(item.group!){
+                        Section(header: Text("Group Header")){
+                            GroupTransactionRow(syntaxHack(), bucket: bucket!)
+                        }.collapsible(true)
+                    } else if item.group == nil {
+                        TransactionRow(transaction: item, bucket: bucket!, tags: getTags(item)).frame(height: 55)
+                    }
                 }
             } else {
                 Text("No Transactions")
@@ -33,6 +41,12 @@ struct ListTransactionsView: View {
         .contextMenu(ContextMenu(menuItems: {
             Button("Edit Tags"){
                 editTags.toggle()
+            }
+            Button("Set Group ID"){
+                if selection != nil {
+                    selection!.group = UUID()
+                    store.updateTransaction(&selection!)
+                }
             }
         })).sheet(isPresented: $editTags, content: {
             if selection == nil {

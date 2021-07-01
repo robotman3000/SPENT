@@ -40,6 +40,7 @@ class DatabaseStore: ObservableObject {
     @Published var buckets: [Bucket] = [] {
         didSet {
             bucketTree = getBucketTree(treeList: buckets)
+            print(bucketTree)
         }
     }
     @Published var bucketTree: [BucketNode] = []

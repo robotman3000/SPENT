@@ -18,6 +18,8 @@ struct Transaction: Identifiable, Codable, Hashable {
     var destID: Int64?
     var memo: String = ""
     var payee: String?
+    
+    static let databaseUUIDEncodingStrategy = DatabaseUUIDEncodingStrategy.string
     var group: UUID?
     
     var type: TransType {

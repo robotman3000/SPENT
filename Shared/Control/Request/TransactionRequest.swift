@@ -7,6 +7,7 @@
 
 
 import GRDB
+import Foundation
 
 /// A player request defines how to feed the player list
 //struct TransactionRequest {
@@ -38,6 +39,11 @@ struct TransactionRequest: Queryable {
             query = nil
         }
         hash = genHash([1234567, includeAll])
+    }
+    
+    init(_ groupID: UUID){
+        query = Transaction.filter(Transaction.Columns.group == groupID.uuidString)
+        hash = genHash([groupID])
     }
     
     init(_ bucket: Bucket){

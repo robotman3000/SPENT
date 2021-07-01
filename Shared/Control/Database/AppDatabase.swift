@@ -239,7 +239,7 @@ struct AppDatabase {
             
             // Alter Transactions table to add the Group ID
             try db.alter(table: "Transactions") { t in
-                t.add(column: "Group", .blob)
+                t.add(column: "Group", .text)
             }
             
             // *** Additional storage colums for the user ***

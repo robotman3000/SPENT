@@ -45,7 +45,8 @@ struct MacTransactionView: View {
                                                bucket: model.contextBucket).onAppear(perform: {print("table appear")})
             case .Calendar: Text("Calendar View")
             }
-        }.sheet(item: $activeSheet) { sheet in
+        }.navigationTitle(model.contextBucket.name)
+        .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
                 TransactionForm(title: "Create Transaction", onSubmit: {data in

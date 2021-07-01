@@ -8,36 +8,21 @@
 import SwiftUI
 import GRDB
 
-extension URL {
-    var typeIdentifier: String? { (try? resourceValues(forKeys: [.typeIdentifierKey]))?.typeIdentifier }
-    var localizedName: String? { (try? resourceValues(forKeys: [.localizedNameKey]))?.localizedName }
-}
-
 @main
 struct SPENTmacOS: App {
     @State var isActive: Bool = false
-    @State var activeSheet: CommandMenuSheet? = nil
+    @State var showWelcomeSheet: Bool = false
     @StateObject var globalState: GlobalState = GlobalState()
     @StateObject var dbStore: DatabaseStore = DatabaseStore()
-    @State var showWelcomeSheet: Bool = false
-    
-//    import Foundation
-//
-//    let filePath = NSHomeDirectory() + "/Documents/" + "test.txt"
-//    if (FileManager.default.createFile(atPath: filePath, contents: nil, attributes: nil)) {
-//        print("File created successfully.")
-//    } else {
-//        print("File not created.")
-//    }
     
     var body: some Scene {
         WindowGroup {
             if isActive {
-                MainView(activeSheet: $activeSheet)
+                MainView()
                     .environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now()) { // Change `2.0` to the desired number of seconds.
+                    DispatchQueue.main.asyncAfter(deadline: .now()) {
                         print("Initializing State Controller")
                         showWelcomeSheet.toggle()
                     }
@@ -98,12 +83,6 @@ struct SPENTmacOS: App {
             }
         }.commands {
             CommandGroup(after: .newItem) {
-                Menu("Create") {
-                    Button("Transaction") { activeSheet = .transaction }
-                    Button("Bucket") { activeSheet = .bucket }
-                    Button("Tag") { activeSheet = .tag }
-                }
-                
                 Menu("Import") {
                     Button("SPENT Dev Legacy") {
                         DispatchQueue.main.async {
@@ -118,10 +97,6 @@ struct SPENTmacOS: App {
 //                    Button("Tag") { activeSheet = .tag }
                 }
             }
-            
-//            CommandGroup(after: .textEditing) {
-//                Button("Database") { activeSheet = .manager }
-//            }
         }
         
         Settings{
@@ -275,38 +250,14 @@ struct SPENTmacOS: App {
 
 struct MainView: View {
     @EnvironmentObject var store: DatabaseStore
-    //@State var file: FileDocumentConfiguration<SPENTDatabaseDocument>
-    @Binding var activeSheet: CommandMenuSheet?
     
     var body: some View {
         NavigationView {
             MacSidebar()
                 .frame(minWidth: 300)
                 .navigationTitle("Accounts")
-                .sheet(item: $activeSheet) { sheet in
-                    switch sheet {
-                    case .transaction:
-                        TransactionForm(title: "Create Transaction", onSubmit: {data in
-                            store.updateTransaction(&data, onComplete: dismissModal)
-                        }, onCancel: dismissModal).padding()
-                    case .bucket:
-                        BucketForm(title: "Create Bucket", onSubmit: {data in
-                            store.updateBucket(&data, onComplete: dismissModal)
-                        }, onCancel: dismissModal).padding()
-                    case .tag:
-                        TagForm(title: "Create Tag", onSubmit: {data in
-                            store.updateTag(&data, onComplete: dismissModal)
-                        }, onCancel: dismissModal).padding()
-                    case .manager:
-                        DatabaseManagerView(onCancel: { activeSheet = nil })
-                    }
-                }
             MacHome()
         }
-    }
-    
-    func dismissModal(){
-        activeSheet = nil
     }
 }
 
@@ -363,10 +314,4 @@ struct GeneralSettingsView: View {
 class GlobalState: ObservableObject {
     @Published var selectedView = TransactionViewType.Table
     @Published var contextBucket: Bucket?
-}
-
-enum CommandMenuSheet : String, Identifiable {
-    case transaction, bucket, tag, manager
-    
-    var id: String { return self.rawValue }
 }

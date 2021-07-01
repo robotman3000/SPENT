@@ -19,6 +19,7 @@ struct SPENTmacOS: App {
     @State var activeSheet: CommandMenuSheet? = nil
     @StateObject var globalState: GlobalState = GlobalState()
     @StateObject var dbStore: DatabaseStore = DatabaseStore()
+    @State var showWelcomeSheet: Bool = false
     
 //    import Foundation
 //
@@ -36,29 +37,17 @@ struct SPENTmacOS: App {
                     .environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) { // Change `2.0` to the desired number of seconds.
+                    DispatchQueue.main.asyncAfter(deadline: .now()) { // Change `2.0` to the desired number of seconds.
                         print("Initializing State Controller")
-                        let panel = NSOpenPanel()
-                        panel.allowsMultipleSelection = false
-                        panel.canChooseDirectories = false
-                        panel.canChooseFiles = true
-                        panel.allowedContentTypes = [.spentDatabase]
-                        if panel.runModal() == .OK {
-                            let selectedFile = panel.url?.absoluteURL
-                            if selectedFile != nil {
-                                if selectedFile!.startAccessingSecurityScopedResource() {
-                                    defer { selectedFile!.stopAccessingSecurityScopedResource() }
-                                    let database = AppDatabase(path: selectedFile!)
-                                    dbStore.load(database)
-                                    isActive = true
-                                }
-                            }
-                        } else {
+                        showWelcomeSheet.toggle()
+                    }
+                }
+                .sheet(isPresented: $showWelcomeSheet, content: {
+                    VStack {
+                        Button("New Database"){
                             let panel = NSSavePanel()
-                            //panel.allowsMultipleSelection = false
-                            //panel.canChooseDirectories = false
-                            //panel.canChooseFiles = true
                             panel.allowedContentTypes = [.spentDatabase]
+                            showWelcomeSheet.toggle()
                             if panel.runModal() == .OK {
                                 let selectedFile = panel.url?.absoluteURL
                                 if selectedFile != nil {
@@ -77,11 +66,35 @@ struct SPENTmacOS: App {
                                     }
                                 }
                             } else {
-                                exit(0)
+                                showWelcomeSheet.toggle()
                             }
                         }
-                    }
-                }
+                        Button("Open Database"){
+                            let panel = NSOpenPanel()
+                            panel.allowsMultipleSelection = false
+                            panel.canChooseDirectories = false
+                            panel.canChooseFiles = true
+                            panel.allowedContentTypes = [.spentDatabase]
+                            showWelcomeSheet.toggle()
+                            if panel.runModal() == .OK {
+                                let selectedFile = panel.url?.absoluteURL
+                                if selectedFile != nil {
+                                    if selectedFile!.startAccessingSecurityScopedResource() {
+                                        defer { selectedFile!.stopAccessingSecurityScopedResource() }
+                                        let database = AppDatabase(path: selectedFile!)
+                                        dbStore.load(database)
+                                        isActive = true
+                                    }
+                                }
+                            } else {
+                                showWelcomeSheet.toggle()
+                            }
+                        }
+                        Button("Quit"){
+                            exit(0)
+                        }
+                    }.padding().frame(width: 300, height: 200, alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/)
+                })
             }
         }.commands {
             CommandGroup(after: .newItem) {

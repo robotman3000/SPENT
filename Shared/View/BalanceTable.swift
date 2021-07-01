@@ -22,10 +22,10 @@ struct BalanceTable: View {
             Text(bucket?.name ?? "No Selection")
             HStack (spacing: 15) {
                 BalanceView(text: "Posted", balance: bal.posted)
-                BalanceView(text: "Posted in Tree", balance: bal.postedInTree)
+                BalanceView(text: "Available", balance: bal.available)
             }
             HStack (spacing: 15) {
-                BalanceView(text: "Available", balance: bal.available)
+                BalanceView(text: "Posted in Tree", balance: bal.postedInTree)
                 BalanceView(text: "Available in Tree", balance: bal.availableInTree)
             }
         }

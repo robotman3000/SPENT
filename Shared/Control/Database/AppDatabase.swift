@@ -318,6 +318,10 @@ extension AppDatabase {
         }
     }
     
+    func getWriter() -> DatabaseWriter {
+        return dbWriter
+    }
+    
     /// Saves (inserts or updates) a transaction. When the method returns, the
     /// transaction is present in the database, and its id is not nil.
     func saveTransaction(_ player: inout Transaction) throws {

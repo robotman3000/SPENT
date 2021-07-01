@@ -54,7 +54,7 @@ struct BucketBalanceRequest: Queryable {
 
                 // Available Tree
                 if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: getTreeAtBucket(bucket!, db: db), statusTypes: Transaction.StatusTypes.allCases.filter({status in
-                    status.rawValue != Transaction.StatusTypes.Submitted.rawValue
+                    status.rawValue != Transaction.StatusTypes.Void.rawValue
                 })), arguments: []) {
                     atb = row["Amount"]
                 }

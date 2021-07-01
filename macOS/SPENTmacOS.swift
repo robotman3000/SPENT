@@ -90,6 +90,20 @@ struct SPENTmacOS: App {
                     Button("Bucket") { activeSheet = .bucket }
                     Button("Tag") { activeSheet = .tag }
                 }
+                
+                Menu("Import") {
+                    Button("SPENT Dev Legacy") {
+                        DispatchQueue.main.async {
+                            importSPENTLegacy()
+                        }
+                    }
+                }
+                
+                Menu("Export As") {
+//                    Button("Transaction") { activeSheet = .transaction }
+//                    Button("Bucket") { activeSheet = .bucket }
+//                    Button("Tag") { activeSheet = .tag }
+                }
             }
             
 //            CommandGroup(after: .textEditing) {
@@ -99,6 +113,149 @@ struct SPENTmacOS: App {
         
         Settings{
             SettingsView().environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database)
+        }
+    }
+    
+    func importSPENTLegacy(){
+        //TODO: This function will eventually need to be split up and moved into the import and export manager (Once ready)
+        
+        // Select our legacy db
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        if panel.runModal() == .OK {
+            let selectedFile = panel.url?.absoluteURL
+            if selectedFile != nil {
+                if selectedFile!.startAccessingSecurityScopedResource() {
+                    defer { selectedFile!.stopAccessingSecurityScopedResource() }
+                    
+                    do {
+                        // Then connect to it
+                        let dbQueue = try DatabaseQueue(path: selectedFile!.absoluteString)
+                        
+                        // And proceed to read everything into memory
+                        
+                        /* Note: We are able to create the new database objects using the old data
+                         because the old and new still bear a close resemblance. This is subject to change
+                         */
+                        var buckets: [Bucket] = []
+                        var tags: [Tag] = []
+                        var transactions: [Transaction] = []
+                        var transactionTags: [TransactionTag] = []
+                        
+                        try dbQueue.read { db in
+                            // Start with the buckets/accounts
+                            let bucketRows = try Row.fetchCursor(db, sql: "SELECT * FROM Buckets")
+                            while let row = try bucketRows.next() {
+                                let id: Int64 = row["id"]
+                                let name: String = row["Name"]
+                                var parent: Int64? = row["Parent"]
+                                var ancestor: Int64? = row["Ancestor"]
+                                
+                                // Skip the "ROOT" account
+                                if id == -1 {
+                                    continue
+                                }
+                                
+                                // Remove/fix all references to the ROOT account
+                                if parent == -1 || parent == nil {
+                                    parent = nil
+                                }
+                                if ancestor == -1 || ancestor == nil {
+                                    ancestor = nil
+                                }
+                                
+                                // Create the new db object
+                                buckets.append(Bucket(id: id, name: name, parentID: parent, ancestorID: ancestor, memo: "", budgetID: nil))
+                            }
+                            
+                            // Then fetch the tags
+                            let tagRows = try Row.fetchCursor(db, sql: "SELECT * FROM Tags")
+                            while let row = try tagRows.next() {
+                                let id: Int64 = row["id"]
+                                let name: String = row["Name"]
+                            
+                                // Create the new db object
+                                tags.append(Tag(id: id, name: name, memo: ""))
+                            }
+                            
+                            // Followed by the transactions
+                            let statusMap: [Int : Transaction.StatusTypes] = [0: .Void, 1: .Uninitiated, 2: .Submitted, 3: .Posting, 4: .Complete, 5: .Reconciled]
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.locale = Locale(identifier: "en_US_POSIX") // set locale to reliable US_POSIX
+                            dateFormatter.dateFormat = "yyyy-MM-dd"
+                            let transactionRows = try Row.fetchCursor(db, sql: "SELECT * FROM Transactions")
+                            while let row = try transactionRows.next() {
+                                let id: Int64 = row["id"]
+                                let status: Int = row["Status"]
+                                let date: String = row["TransDate"]
+                                let postDate: String? = row["PostDate"]
+                                let amount: Double = row["Amount"]
+                                var source: Int64? = row["SourceBucket"]
+                                var destination: Int64? = row["DestBucket"]
+                                let memo: String = row["Memo"] ?? ""
+                                let payee: String? = row["Payee"]
+                            
+                                // Update the status value
+                                let newStatus = statusMap[status] ?? .Void
+                                
+                                // Convert the amount from a floating point to an int
+                                let newAmount = Int(amount * 1000.00) / 10
+                                
+                                let newDate = dateFormatter.date(from:date)!
+                                let newPDate = dateFormatter.date(from:postDate ?? "")
+                                
+                                // Remove/fix all references to the ROOT account
+                                if source == -1 || source == nil {
+                                    source = nil
+                                }
+                                if destination == -1 || destination == nil {
+                                    destination = nil
+                                }
+                                
+                                // Create the new db object
+                                transactions.append(Transaction(id: id, status: newStatus, date: newDate, posted: newPDate, amount: newAmount, sourceID: source, destID: destination, memo: memo, payee: payee, group: nil))
+                            }
+                            
+                            
+                            // And finally the tag assignments (TransactionTags)
+                            let tTagRows = try Row.fetchCursor(db, sql: "SELECT * FROM TransactionTags")
+                            while let row = try tTagRows.next() {
+                                let id: Int64 = row["id"]
+                                let tag: Int64 = row["TagID"]
+                                let transaction: Int64 = row["TransactionID"]
+                                
+                                // Create the new db object
+                                transactionTags.append(TransactionTag(id: id, transactionID: transaction, tagID: tag))
+                            }
+                        }
+                        
+                        try dbStore.database!.getWriter().write { db in
+                            // Having created all the database objects, we now proceed to store them
+                            // We turn off foreign key verification so that we don't have any "doesn't exist when needed" issues
+                            
+                            for var bucket in buckets {
+                                try bucket.save(db)
+                            }
+                            
+                            for var tag in tags {
+                                try tag.save(db)
+                            }
+                            
+                            for var transaction in transactions {
+                                try transaction.save(db)
+                            }
+                            
+                            for var tTag in transactionTags {
+                                try tTag.save(db)
+                            }
+                        }
+                    } catch {
+                        print(error)
+                    }
+                }
+            }
         }
     }
 }

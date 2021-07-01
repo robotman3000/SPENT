@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct TransactionRow: View {
+    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var store: DatabaseStore
     @State var transaction: Transaction
     @State var bucket: Bucket
@@ -98,7 +99,7 @@ struct TransactionRow: View {
                         Text(transaction.amount.currencyFormat)
                             .fontWeight(.bold)
                             .font(.title2)
-                            .foregroundColor(direction == .Withdrawal ? .red : .gray)
+                            .foregroundColor(direction == .Withdrawal ? .red : (colorScheme == .light ? .black : .gray))
                         Direction(transaction: $transaction, sourceName: sourceName, destName: destName, direction: direction)
                     }
                 }

@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct BalanceText: View {
+    
     @Binding var bucket: Bucket
     @Query<BucketBalanceRequest> var bal: BucketBalance
     
@@ -22,11 +23,12 @@ struct BalanceText: View {
 }
 
 struct CurrencyText: View {
+    @Environment(\.colorScheme) var colorScheme
     let balance: Int
     
     var body: some View {
         Text(balance.currencyFormat)
-            .foregroundColor(balance < 0 ? .red : .black)
+            .foregroundColor(balance < 0 ? .red : (colorScheme == .light ? .black : .gray))
     }
 }
 //

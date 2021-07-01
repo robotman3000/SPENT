@@ -34,6 +34,12 @@ struct ScheduleForm: View {
             })
         }
     }
+    
+    func loadState(){
+    }
+    func storeState() -> Bool {
+        return true
+    }
 }
 
 

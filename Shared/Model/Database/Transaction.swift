@@ -88,7 +88,7 @@ extension Transaction {
  
 // Status Enum
 extension Transaction {
-    enum StatusTypes: Int, Codable, CaseIterable, Identifiable {
+    enum StatusTypes: Int, Codable, CaseIterable, Identifiable, Stringable {
         case Void
         case Uninitiated
         case Scheduled
@@ -99,7 +99,7 @@ extension Transaction {
         
         var id: String { self.getStringName() }
         
-        func getStringName() -> String{
+        func getStringName() -> String {
             switch self {
             case .Void: return "Void"
             case .Uninitiated: return "Uninitiated"
@@ -118,12 +118,16 @@ extension Transaction.StatusTypes: DatabaseValueConvertible { }
 
 // Transaction Type Enum
 extension Transaction {
-    enum TransType: String, Codable, CaseIterable, Identifiable {
+    enum TransType: String, Codable, CaseIterable, Identifiable, Stringable {
         case Deposit
         case Withdrawal
         case Transfer
         
         var id: String { self.rawValue }
+        
+        func getStringName() -> String {
+            return self.rawValue
+        }
     }
     
     func getType(convertTransfer: Bool = false, bucket: Int64 = -1) -> Transaction.TransType {

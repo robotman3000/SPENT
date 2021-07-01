@@ -29,7 +29,6 @@
 		A20DAF62266FFA5000347205 /* BucketNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF61266FFA5000347205 /* BucketNavigation.swift */; };
 		A20DAF6B267019D200347205 /* MacSidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF6A267019D200347205 /* MacSidebar.swift */; };
 		A20DAF6D26701A4300347205 /* MacHome.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF6C26701A4300347205 /* MacHome.swift */; };
-		A20DAF6F2670233100347205 /* BaseForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF6E2670233100347205 /* BaseForm.swift */; };
 		A20DAF7B2671509B00347205 /* TransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7A2671509B00347205 /* TransactionForm.swift */; };
 		A20DAF7D2671802A00347205 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7C2671802A00347205 /* TransactionRow.swift */; };
 		A20DCD69264EBC260070EB07 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD68264EBC260070EB07 /* Transaction.swift */; };
@@ -74,6 +73,16 @@
 		A278085B268BC63900CEA560 /* TransactionTagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780859268BC63900CEA560 /* TransactionTagForm.swift */; };
 		A278085D268BC6FA00CEA560 /* TransactionTagLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A278085C268BC6FA00CEA560 /* TransactionTagLink.swift */; };
 		A278085E268BC6FA00CEA560 /* TransactionTagLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A278085C268BC6FA00CEA560 /* TransactionTagLink.swift */; };
+		A2780860268E2E7400CEA560 /* GroupTransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A278085F268E2E7400CEA560 /* GroupTransactionRow.swift */; };
+		A2780861268E2E7400CEA560 /* GroupTransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A278085F268E2E7400CEA560 /* GroupTransactionRow.swift */; };
+		A2780863268E4AF900CEA560 /* BucketPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780862268E4AF900CEA560 /* BucketPicker.swift */; };
+		A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780862268E4AF900CEA560 /* BucketPicker.swift */; };
+		A2780866268E55F600CEA560 /* EnumPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780865268E55F600CEA560 /* EnumPicker.swift */; };
+		A2780867268E55F600CEA560 /* EnumPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780865268E55F600CEA560 /* EnumPicker.swift */; };
+		A2780869268E588000CEA560 /* Stringable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780868268E588000CEA560 /* Stringable.swift */; };
+		A278086A268E588000CEA560 /* Stringable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780868268E588000CEA560 /* Stringable.swift */; };
+		A278086C268E668C00CEA560 /* SchedulePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A278086B268E668C00CEA560 /* SchedulePicker.swift */; };
+		A278086D268E668C00CEA560 /* SchedulePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A278086B268E668C00CEA560 /* SchedulePicker.swift */; };
 		A2A56710262740EC009C7E8C /* SPENTmacOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */; };
 		A2A56714262740ED009C7E8C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2A56713262740ED009C7E8C /* Assets.xcassets */; };
 		A2A56717262740ED009C7E8C /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2A56716262740ED009C7E8C /* Preview Assets.xcassets */; };
@@ -113,7 +122,6 @@
 		A20DAF61266FFA5000347205 /* BucketNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketNavigation.swift; sourceTree = "<group>"; };
 		A20DAF6A267019D200347205 /* MacSidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSidebar.swift; sourceTree = "<group>"; };
 		A20DAF6C26701A4300347205 /* MacHome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacHome.swift; sourceTree = "<group>"; };
-		A20DAF6E2670233100347205 /* BaseForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaseForm.swift; sourceTree = "<group>"; };
 		A20DAF7A2671509B00347205 /* TransactionForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionForm.swift; sourceTree = "<group>"; };
 		A20DAF7C2671802A00347205 /* TransactionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRow.swift; sourceTree = "<group>"; };
 		A20DCD68264EBC260070EB07 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
@@ -144,6 +152,11 @@
 		A2676C9E267E630B00548F06 /* ScheduleForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleForm.swift; sourceTree = "<group>"; };
 		A2780859268BC63900CEA560 /* TransactionTagForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTagForm.swift; sourceTree = "<group>"; };
 		A278085C268BC6FA00CEA560 /* TransactionTagLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTagLink.swift; sourceTree = "<group>"; };
+		A278085F268E2E7400CEA560 /* GroupTransactionRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupTransactionRow.swift; sourceTree = "<group>"; };
+		A2780862268E4AF900CEA560 /* BucketPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketPicker.swift; sourceTree = "<group>"; };
+		A2780865268E55F600CEA560 /* EnumPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnumPicker.swift; sourceTree = "<group>"; };
+		A2780868268E588000CEA560 /* Stringable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stringable.swift; sourceTree = "<group>"; };
+		A278086B268E668C00CEA560 /* SchedulePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulePicker.swift; sourceTree = "<group>"; };
 		A2A5670D262740EC009C7E8C /* SPENT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPENT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2A5670F262740EC009C7E8C /* SPENTmacOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTmacOS.swift; sourceTree = "<group>"; };
 		A2A56713262740ED009C7E8C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -238,10 +251,12 @@
 			children = (
 				A2487765265582A7002D7D9F /* TagForm.swift */,
 				A20DCD78264ED0620070EB07 /* BucketForm.swift */,
-				A20DAF6E2670233100347205 /* BaseForm.swift */,
 				A20DAF7A2671509B00347205 /* TransactionForm.swift */,
 				A2676C9E267E630B00548F06 /* ScheduleForm.swift */,
 				A2780859268BC63900CEA560 /* TransactionTagForm.swift */,
+				A2780862268E4AF900CEA560 /* BucketPicker.swift */,
+				A278086B268E668C00CEA560 /* SchedulePicker.swift */,
+				A2780865268E55F600CEA560 /* EnumPicker.swift */,
 			);
 			path = Forms;
 			sourceTree = "<group>";
@@ -284,6 +299,7 @@
 				A20DAF60266FF9D100347205 /* Navigation */,
 				A20DCD6F264ECFDD0070EB07 /* ListTransactionsView.swift */,
 				A20DAF7C2671802A00347205 /* TransactionRow.swift */,
+				A278085F268E2E7400CEA560 /* GroupTransactionRow.swift */,
 				A20DCD76264ED04A0070EB07 /* BucketRow.swift */,
 				A24033C12672898C00A2B5CE /* BalanceText.swift */,
 				A20DCD74264ED0270070EB07 /* BalanceTable.swift */,
@@ -300,6 +316,7 @@
 				A20DCD7A264ED0B80070EB07 /* View */,
 				A20DCD67264EBBFC0070EB07 /* Model */,
 				A2A5671D262741F4009C7E8C /* Control */,
+				A2780868268E588000CEA560 /* Stringable.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -533,6 +550,7 @@
 				A20DCD84264EEB510070EB07 /* Tag.swift in Sources */,
 				A20DCD6A264EBC260070EB07 /* Transaction.swift in Sources */,
 				A20DCD75264ED0270070EB07 /* BalanceTable.swift in Sources */,
+				A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */,
 				A20DCD77264ED04A0070EB07 /* BucketRow.swift in Sources */,
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
 				A2676C7C267D035300548F06 /* DatabaseManagerView.swift in Sources */,
@@ -547,26 +565,29 @@
 				A20B3C9D2655840600555CF1 /* TagForm.swift in Sources */,
 				A20DAF7B2671509B00347205 /* TransactionForm.swift in Sources */,
 				A20DCD79264ED0620070EB07 /* BucketForm.swift in Sources */,
+				A278086D268E668C00CEA560 /* SchedulePicker.swift in Sources */,
 				A228FC60264C57E700CD5BB6 /* AppDatabase.swift in Sources */,
 				A20781EE265E954C00DE372A /* BucketRequest.swift in Sources */,
 				A24CF68726814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */,
 				A2676C9D267E599400548F06 /* UIDatabaseConnector.swift in Sources */,
 				A206D787267C111F00CB094D /* TransactionRecipt.swift in Sources */,
 				A2676C82267D0ABD00548F06 /* TableRow.swift in Sources */,
+				A2780861268E2E7400CEA560 /* GroupTransactionRow.swift in Sources */,
 				A206D781267C10BA00CB094D /* Schedule.swift in Sources */,
 				A2676CA0267E630B00548F06 /* ScheduleForm.swift in Sources */,
 				A2676C91267E3D2700548F06 /* ScheduleRequest.swift in Sources */,
 				A2EE03EF268502FD0092F63E /* BucketBalanceViewModel.swift in Sources */,
 				A2676C97267E3EF300548F06 /* ScheduleTable.swift in Sources */,
+				A2780867268E55F600CEA560 /* EnumPicker.swift in Sources */,
 				A20DCD71264ECFDD0070EB07 /* ListTransactionsView.swift in Sources */,
 				A2676C94267E3E9C00548F06 /* BucketTable.swift in Sources */,
 				A228FC5A264C571800CD5BB6 /* Query.swift in Sources */,
 				A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */,
 				A2676C88267D279600548F06 /* TableTransactionsView.swift in Sources */,
+				A278086A268E588000CEA560 /* Stringable.swift in Sources */,
 				A2676C73267CD04300548F06 /* MacTransactionView.swift in Sources */,
 				A20DCD6D264EBC470070EB07 /* Bucket.swift in Sources */,
 				A2A56739262879BD009C7E8C /* Util.swift in Sources */,
-				A20DAF6F2670233100347205 /* BaseForm.swift in Sources */,
 				A20DAF6D26701A4300347205 /* MacHome.swift in Sources */,
 				A20DAF6B267019D200347205 /* MacSidebar.swift in Sources */,
 				A2A56710262740EC009C7E8C /* SPENTmacOS.swift in Sources */,
@@ -587,14 +608,17 @@
 				A2676C87267D279600548F06 /* TableTransactionsView.swift in Sources */,
 				A2EE03F42685125D0092F63E /* TransactionForm.swift in Sources */,
 				A2EE03F2268512590092F63E /* TagForm.swift in Sources */,
+				A2780866268E55F600CEA560 /* EnumPicker.swift in Sources */,
 				A206D78B267C47A400CB094D /* BalanceText.swift in Sources */,
 				A206D780267C10BA00CB094D /* Schedule.swift in Sources */,
 				A2EE03FA268518BF0092F63E /* iOSTransactionView.swift in Sources */,
+				A278086C268E668C00CEA560 /* SchedulePicker.swift in Sources */,
 				A206D78C267C4A2E00CB094D /* SPENTDatabaseDocument.swift in Sources */,
 				A2676C9C267E599400548F06 /* UIDatabaseConnector.swift in Sources */,
 				A2A56735262747A7009C7E8C /* SplashView.swift in Sources */,
 				A228FC5C264C574C00CD5BB6 /* TransactionRequest.swift in Sources */,
 				A20781F7266001CC00DE372A /* TransactionTags.swift in Sources */,
+				A2780860268E2E7400CEA560 /* GroupTransactionRow.swift in Sources */,
 				A2EE03FC268519CC0092F63E /* BucketBalanceViewModel.swift in Sources */,
 				A228FC5F264C57E700CD5BB6 /* AppDatabase.swift in Sources */,
 				A2EE03F02685122B0092F63E /* BucketNavigation.swift in Sources */,
@@ -608,10 +632,12 @@
 				A2EE03F5268513190092F63E /* ListTransactionsView.swift in Sources */,
 				A20B3CA026558BB400555CF1 /* TagRequest.swift in Sources */,
 				A20DCD6C264EBC470070EB07 /* Bucket.swift in Sources */,
+				A2780869268E588000CEA560 /* Stringable.swift in Sources */,
 				A2EE03FB268519C60092F63E /* TransactionViewModel.swift in Sources */,
 				A2676C96267E3EF300548F06 /* ScheduleTable.swift in Sources */,
 				A278085A268BC63900CEA560 /* TransactionTagForm.swift in Sources */,
 				A206D78A267C47A200CB094D /* BucketRow.swift in Sources */,
+				A2780863268E4AF900CEA560 /* BucketPicker.swift in Sources */,
 				A206D786267C111F00CB094D /* TransactionRecipt.swift in Sources */,
 				A2A56738262879BD009C7E8C /* Util.swift in Sources */,
 				A206D77D267BBF5C00CB094D /* BucketBalance.swift in Sources */,

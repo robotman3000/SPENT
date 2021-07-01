@@ -31,11 +31,11 @@ struct TagTable: View {
         }.sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
-                TagForm(title: "Create Tag", onSubmit: {data in
+                TagForm(onSubmit: {data in
                     store.updateTag(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
-                TagForm(title: "Edit Tag", tag: selected!, onSubmit: {data in
+                TagForm(tag: selected!, onSubmit: {data in
                     store.updateTag(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }

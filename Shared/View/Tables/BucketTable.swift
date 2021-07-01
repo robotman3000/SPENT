@@ -30,11 +30,11 @@ struct BucketTable: View {
         }.sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
-                BucketForm(title: "Create Bucket", onSubmit: {data in
+                BucketForm(onSubmit: {data in
                     store.updateBucket(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
-                BucketForm(title: "Edit Bucket", bucket: selected!, onSubmit: {data in
+                BucketForm(bucket: selected!, onSubmit: {data in
                     store.updateBucket(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }

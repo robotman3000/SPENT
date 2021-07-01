@@ -49,11 +49,11 @@ struct MacTransactionView: View {
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
-                TransactionForm(title: "Create Transaction", onSubmit: {data in
+                TransactionForm(onSubmit: {data in
                     store.updateTransaction(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
-                TransactionForm(title: "Create Transaction", transaction: selected.wrappedStruct!, onSubmit: {data in
+                TransactionForm(transaction: selected.wrappedStruct!, onSubmit: {data in
                     store.updateTransaction(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }

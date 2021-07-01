@@ -22,7 +22,7 @@ struct Bucket: Identifiable, Codable, Hashable {
 }
 
 extension Bucket {
-    static let parent = belongsTo(Bucket.self, key: "Parent")
+    static let parent = belongsTo(Bucket.self, using: ForeignKey(["Parent"]))
     var parent: QueryInterfaceRequest<Bucket> {
         request(for: Bucket.parent)
     }

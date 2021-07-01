@@ -28,9 +28,10 @@ struct SPENTiOSApp: App {
                 MainView().environmentObject(dbStore).environment(\.appDatabase, database)
             } else {
                 SplashView(showLoading: true).onAppear(){
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0) { // Change `2.0` to the desired number of seconds.
-                        print("Initializing State Controller")
-                        dbStore.load(database)
+                    print("Initializing State Controller")
+                    dbStore.load(database)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { // Change `2.0` to the desired number of seconds.
+                        
                         isActive = true
                     }
                 }
@@ -45,8 +46,9 @@ struct MainView: View {
     var body: some View {
         //DatabaseManagerView(onCancel: {})
         NavigationView {
+            //BucketNavigation()
             List {
-                //Section(header: Text("Accounts")) {
+                Section(header: Text("Accounts")) {
                     OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in
                         ZStack {
                             BucketRow(bucket: node.bucket).onAppear(perform: {
@@ -56,13 +58,13 @@ struct MainView: View {
                                 .buttonStyle(PlainButtonStyle()).frame(width:0).opacity(0)
                         }
                     }
-                //}
+                }
                 
-//                Section(header: Text("Settings")) {
-//                    Label("Account", systemImage: "person.crop.circle")
-//                    Label("Help", systemImage: "person.3")
-//                    Label("Logout", systemImage: "applelogo")
-//                }
+                Section(header: Text("Settings")) {
+                    Label("Account", systemImage: "person.crop.circle")
+                    Label("Help", systemImage: "person.3")
+                    Label("Logout", systemImage: "applelogo")
+                }
             }.listStyle(InsetGroupedListStyle()).navigationTitle("Accounts")
         }
     }

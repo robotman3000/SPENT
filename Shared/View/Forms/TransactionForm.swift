@@ -10,131 +10,142 @@ import SwiftUI
 import SwiftUI
 
 struct TransactionForm: View {
-    let title: String
+    @EnvironmentObject var dbStore: DatabaseStore
     @State var transaction: Transaction = Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
     @State var postDate: Date = Date()
     @State var payee: String = ""
     @State var transType: Transaction.TransType = .Deposit
-    @State var sourceIndex = 0
-    @State var destIndex = 0
+    @StateObject var selectedSource: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
+    @StateObject var selectedDest: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
+    //@State var amount: NSDecimalNumber = 0.0
     @State var amount: String = ""
-    @Query(BucketRequest()) var parentChoices: [Bucket]
+    @State var groupString: String = ""
     
+    var hiddenFormatter: NumberFormatter = NumberFormatter()
+    var formatter: NumberFormatter {
+        get {
+            //formatter.usesGroupingSeparator = true
+            hiddenFormatter.numberStyle = .currency
+            // localize to your grouping and decimal separator
+            hiddenFormatter.locale = Locale.current
+            //formatter.maximumFractionDigits = 2
+            return hiddenFormatter
+        }
+    }
     
     let onSubmit: (_ data: inout Transaction) -> Void
     let onCancel: () -> Void
     
     var body: some View {
-        VStack{
-            Form {
-                Picker(selection: $transaction.status, label: Text("Status")) {
-                    ForEach(Transaction.StatusTypes.allCases) { tStatus in
-                        Text(tStatus.getStringName()).tag(tStatus)
-                    }
-                }
-                
+        Form {
+            EnumPicker(label: "Status", selection: $transaction.status, enumCases: Transaction.StatusTypes.allCases)
+            
+            Section(){
                 DatePicker("Date", selection: $transaction.date, displayedComponents: [.date])
-                DatePicker("Posting Date", selection: $postDate, displayedComponents: [.date]).disabled(transaction.status.rawValue < Transaction.StatusTypes.Complete.rawValue)
-                
-                TextField("Amount", text: $amount)
-
-                Picker(selection: $transType, label: Text("Type")) {
-                    ForEach(Transaction.TransType.allCases) { tType in
-                        Text(tType.rawValue).tag(tType)
-                    }
+                if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
+                    DatePicker("Posting Date", selection: $postDate, displayedComponents: [.date])
                 }
-                
-                VStack() {
-                    switch transType {
-                    case .Deposit:
-                        Picker(selection: $destIndex, label: Text("To")) {
-                            ForEach(0 ..< parentChoices.count) {
-                                Text(self.parentChoices[$0].name)
-                            }
-                        }
-                    case .Withdrawal:
-                        Picker(selection: $sourceIndex, label: Text("From")) {
-                            ForEach(0 ..< parentChoices.count) {
-                                Text(self.parentChoices[$0].name)
-                            }
-                        }
-                    case .Transfer:
-                        Picker(selection: $sourceIndex, label: Text("From")) {
-                            ForEach(0 ..< parentChoices.count) {
-                                Text(self.parentChoices[$0].name)
-                            }
-                        }
-                        Picker(selection: $destIndex, label: Text("To")) {
-                            ForEach(0 ..< parentChoices.count) {
-                                Text(self.parentChoices[$0].name)
-                            }
-                        }
-                    }
-                }
-                
-                TextField("Payee", text: $payee)
-                TextField("Memo", text: $transaction.memo)
-
-                // tags
-                //TextField("Name", text: $tag.name)
-                //TextField("Memo", text: $tag.memo)
-            }//.navigationTitle(Text(title))
-            .onAppear {
-                if transaction.posted != nil {
-                    postDate = transaction.posted!
-                }
-                for (index, bucketChoice) in parentChoices.enumerated() {
-                    if bucketChoice.id == transaction.destID {
-                        destIndex = index
-                    }
-                    if bucketChoice.id == transaction.sourceID {
-                        sourceIndex = index
-                    }
-                }
-                
-                transType = transaction.getType()
-                
-                payee = transaction.payee ?? ""
-                
-                amount = "\(transaction.amount)"
             }
-            .toolbar(content: {
-                ToolbarItem(placement: .confirmationAction){
-                    Button("Done", action: {
-                        
-                        if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-                            transaction.posted = postDate
-                        }
-                        
-                        transaction.sourceID = parentChoices[sourceIndex].id
-                        transaction.destID = parentChoices[destIndex].id
-                        switch transType {
-                        case .Deposit:
-                            transaction.sourceID = nil
-                        case .Withdrawal:
-                            transaction.destID = nil
-                        case .Transfer:
-                            print("Make the compiler happy")
-                        }
-                        
-                        if payee.isEmpty {
-                            transaction.payee = nil
-                        } else {
-                            transaction.payee = payee
-                        }
-                        
-                        transaction.amount = Int(amount)!
-                        
+
+            //TextField("Amount", value: $amount, formatter: formatter)
+            TextField("Amount", text: $amount)
+
+            Section(header:
+                EnumPicker(label: "Type", selection: $transType, enumCases: Transaction.TransType.allCases)
+            ){
+                switch transType {
+                case .Deposit:
+                    BucketPicker(label: "To", selection: $selectedDest.wrappedStruct)
+                case .Withdrawal:
+                    BucketPicker(label: "From", selection: $selectedSource.wrappedStruct)
+                case .Transfer:
+                    BucketPicker(label: "From", selection: $selectedSource.wrappedStruct)
+                    BucketPicker(label: "To", selection: $selectedDest.wrappedStruct)
+                }
+            }
+            
+            Section(){
+                TextField("Payee", text: $payee)
+                TextEditor(text: $transaction.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+            }
+            
+            Section(){
+                Button("Generate ID"){
+                    groupString = UUID().uuidString
+                }
+                TextField("Group", text: $groupString)
+            }
+            
+        }.onAppear { loadState() }
+        .toolbar(content: {
+            ToolbarItem(placement: .confirmationAction){
+                Button("Done", action: {
+                    if storeState() {
                         onSubmit(&transaction)
-                    })
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: {
-                        onCancel()
-                    })
-                }
-            })
+                    } else {
+                        //TODO: Show an alert or some "Invalid Data" indicator
+                        print("Transaction storeState failed!")
+                    }
+                })
+            }
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel", action: {
+                    onCancel()
+                })
+            }
+        }).frame(minWidth: 250, minHeight: 350)
+    }
+    
+    func loadState(){
+        if transaction.posted != nil {
+            postDate = transaction.posted!
         }
+        
+        if transaction.sourceID != nil {
+            selectedSource.wrappedStruct = dbStore.database?.resolveOne(transaction.source)
+        }
+        
+        if transaction.destID != nil {
+            selectedDest.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
+        }
+        
+        transType = transaction.getType()
+        
+        payee = transaction.payee ?? ""
+        
+        groupString = transaction.group?.uuidString ?? ""
+        
+        amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
+    }
+    
+    func storeState() -> Bool {
+        if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
+            transaction.posted = postDate
+        }
+        
+        transaction.sourceID = selectedSource.wrappedStruct?.id
+        transaction.destID = selectedDest.wrappedStruct?.id
+        
+        switch transType {
+        case .Deposit:
+            transaction.sourceID = nil
+        case .Withdrawal:
+            transaction.destID = nil
+        case .Transfer:
+            print("Make the compiler happy")
+        }
+        
+        if payee.isEmpty {
+            transaction.payee = nil
+        } else {
+            transaction.payee = payee
+        }
+        
+        transaction.group = UUID(uuidString: groupString)
+        
+        transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
+        
+        return true
     }
 }
 

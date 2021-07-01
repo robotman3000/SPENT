@@ -19,6 +19,7 @@ struct BucketNavigation: View {
         #if os(macOS)
         BalanceTable(bucket: $selectedBucket)
         #endif
+        Text("IOS")
         let theList = List(selection: $selectedBucket) {
             Section(header: Text("Accounts")){
                 OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in
@@ -34,7 +35,7 @@ struct BucketNavigation: View {
                         }
                     }
                     #else
-                    NavigationLink(destination: ListTransactionsView()) {
+                    NavigationLink(destination: iOSTransactionView(bucket: node.bucket)) {
                         BucketRow(bucket: node.bucket).onAppear(perform: {
                             print("Row Appeared: \(node.bucket.name)")
                         })
@@ -44,7 +45,7 @@ struct BucketNavigation: View {
             }//.collapsible(false)
         }.listStyle(SidebarListStyle())
         .sheet(isPresented: $showingForm) {
-            BucketForm(title: "Edit Bucket", bucket: selectedBucket!, onSubmit: {data in
+            BucketForm(bucket: selectedBucket!, onSubmit: {data in
                 store.updateBucket(&data, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
             }, onCancel: dismissModal).padding()
         }

@@ -23,7 +23,13 @@ struct BucketRequest: Queryable {
     /// Selects every transaction in the database
     init(order: Ordering = .byTree){
         query = Bucket.all()
-        hash = genHash([1234567])
+        hash = genHash([1234567, order])
+        self.ordering = order
+    }
+    
+    init(order: Ordering = .byTree, rootNode: Bucket){
+        query = Bucket.all()
+        hash = genHash([order, rootNode])
         self.ordering = order
     }
     

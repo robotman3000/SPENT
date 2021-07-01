@@ -20,7 +20,7 @@ struct iOSTransactionView: View {
     }
     
     var body: some View {
-        ListTransactionsView(transactions: model.transactions, bucket: model.contextBucket).onAppear(perform: {
+        ListTransactionsView(transactions: model.transactions, transactionTags: model.tags, bucket: model.contextBucket).onAppear(perform: {
             print("mav view render")
             model.load(database!)
         })

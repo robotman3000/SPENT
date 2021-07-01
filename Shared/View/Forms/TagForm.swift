@@ -8,30 +8,30 @@
 import SwiftUI
 
 struct TagForm: View {
-    let title: String
     @State var tag: Tag = Tag(id: nil, name: "")
     
     let onSubmit: (_ data: inout Tag) -> Void
     let onCancel: () -> Void
     
     var body: some View {
-        VStack{
-            Form {
+        Form {
+            Section(){
                 TextField("Name", text: $tag.name)
-                TextField("Memo", text: $tag.memo)
-            }//.navigationTitle(Text(title))
-            .toolbar(content: {
-                ToolbarItem(placement: .confirmationAction){
-                    Button("Done", action: {
-                        onSubmit(&tag)
-                    })
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: {
-                        onCancel()
-                    })
-                }
-            })
+                TextEditor(text: $tag.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+            }
         }
+        .toolbar(content: {
+            ToolbarItem(placement: .confirmationAction){
+                Button("Done", action: {
+                    onSubmit(&tag)
+                })
+            }
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel", action: {
+                    onCancel()
+                })
+            }
+        })
+        .frame(minWidth: 300, minHeight: 200)
     }
 }

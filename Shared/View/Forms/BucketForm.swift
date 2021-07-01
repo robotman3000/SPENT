@@ -8,66 +8,82 @@
 import SwiftUI
 
 struct BucketForm: View {
-    let title: String
-    
+    @EnvironmentObject var dbStore: DatabaseStore
     @State var bucket: Bucket = Bucket(id: nil, name: "")
-    @State var selectedParentIndex = 0
     @State var isAccount = false
-    @Query(BucketRequest()) var parentChoices: [Bucket]
+    @State var hasBudget = false
+    @StateObject var selected: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
+    @StateObject var selectedSchedule: ObservableStructWrapper<Schedule> = ObservableStructWrapper<Schedule>()
     
     let onSubmit: (_ data: inout Bucket) -> Void
     let onCancel: () -> Void
     
     var body: some View {
-        VStack{
-            Form {
-                TextField("Name", text: $bucket.name)
-                
+        Form {
+            TextField("Name", text: $bucket.name)
+            
+            Section(){
                 Toggle("Is Account", isOn: $isAccount)
-                Picker(selection: $selectedParentIndex, label: Text("Parent")) {
-                    ForEach(0 ..< parentChoices.count) {
-                        Text(self.parentChoices[$0].name)
-                    }
-                }.disabled(isAccount)
-                
-                TextField("Memo", text: $bucket.memo)
-            }//.navigationTitle(Text(title))
-            .toolbar(content: {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: {
-                        onCancel()
-                    })
-                }
-                ToolbarItem(placement: .confirmationAction){
-                    Button("Done", action: {
-                        if isAccount {
-                            bucket.parentID = nil
-                            bucket.ancestorID = nil
-                        } else {
-                            bucket.parentID = parentChoices[selectedParentIndex].id
-                            //TODO: Ensure the ancestor is correct
-                        }
-                        onSubmit(&bucket)
-                    })
-                }
-            })
-        }.onAppear {
-            if bucket.parentID == nil {
-                isAccount = true
+                BucketPicker(label: "Parent", selection: $selected.wrappedStruct)
+                    .disabled(isAccount)
             }
             
-            var result = false
-            for (index, bucketChoice) in parentChoices.enumerated() {
-                if bucketChoice.id == bucket.parentID {
-                    selectedParentIndex = index
-                    result = true
-                    break
-                }
+            Section(){
+                Toggle("Enable Budget", isOn: $hasBudget)
+                SchedulePicker(label: "Budget", selection: $selectedSchedule.wrappedStruct)
+                    .disabled(!hasBudget)
             }
             
-            if !result && !isAccount {
-                print("Warning: No match was found for the bucket parent in the provided choices")
-            }
+            TextEditor(text: $bucket.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
         }
+        .toolbar(content: {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel", action: {
+                    onCancel()
+                })
+            }
+            ToolbarItem(placement: .confirmationAction){
+                Button("Done", action: {
+                    if storeState() {
+                        onSubmit(&bucket)
+                    } else {
+                        //TODO: Show an alert or some "Invalid Data" indicator
+                        print("Bucket storeState failed!")
+                    }
+                })
+            }
+        }).onAppear { loadState() }
+        .frame(minWidth: 300, minHeight: 200)
+    }
+    
+    func loadState(){
+        if bucket.parentID == nil {
+            isAccount = true
+        } else {
+            selected.wrappedStruct = dbStore.database?.resolveOne(bucket.parent)
+        }
+        
+        if bucket.budgetID == nil {
+            hasBudget = false
+        } else {
+            selectedSchedule.wrappedStruct = dbStore.database?.resolveOne(bucket.budget)
+        }
+    }
+    
+    func storeState() -> Bool {
+        if isAccount {
+            bucket.parentID = nil
+            bucket.ancestorID = nil
+        } else {
+            bucket.parentID = selected.wrappedStruct?.id
+            //TODO: Ensure the ancestor is correct
+        }
+        
+        if hasBudget {
+            bucket.budgetID = nil
+        } else {
+            bucket.budgetID = selectedSchedule.wrappedStruct?.id
+        }
+        return true
     }
 }

@@ -14,31 +14,27 @@ struct TransactionTagForm: View {
     @State var tags: Set<Tag>
     @Query(TagRequest()) var dbTags: [Tag]
     
-    
     let onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void
     let onCancel: () -> Void
     
     var body: some View {
-        VStack{
-            //Text(dbTags.debugDescription)
-            Form {
-                List(dbTags, id: \.self, selection: $tags) { tag in
-                    Text("\(tag.name)")
-                }
-            }//.navigationTitle(Text(title))
-            .toolbar(content: {
-                ToolbarItem(placement: .confirmationAction){
-                    Button("Done", action: {
-                        onSubmit(Array(tags), transaction)
-                    })
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: {
-                        onCancel()
-                    })
-                }
-            }).frame(minWidth: 300, minHeight: 300)
+        Form {
+            List(dbTags, id: \.self, selection: $tags) { tag in
+                Text("\(tag.name)")
+            }
         }
+        .toolbar(content: {
+            ToolbarItem(placement: .confirmationAction){
+                Button("Done", action: {
+                    onSubmit(Array(tags), transaction)
+                })
+            }
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel", action: {
+                    onCancel()
+                })
+            }
+        }).frame(minWidth: 300, minHeight: 300)
     }
 }
 

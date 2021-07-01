@@ -19,7 +19,6 @@ struct BucketNavigation: View {
         #if os(macOS)
         BalanceTable(bucket: $selectedBucket)
         #endif
-        Text("IOS")
         let theList = List(selection: $selectedBucket) {
             Section(header: Text("Accounts")){
                 OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in

@@ -8,18 +8,24 @@
 import SwiftUI
 
 struct TableTransactionsView: View {
-    @Environment(\.appDatabase) private var database: AppDatabase?
     
-    var transactions: [Transaction] = []
+    var transactions: [Transaction]
+    var bucket: Bucket
     @Binding var selection: Transaction?
-    var bucket: Bucket?
+    
+    @Environment(\.appDatabase) private var database: AppDatabase?
     
     var body: some View {
         VStack{
             Section(header: Header()){}
             if !transactions.isEmpty {
                 List(transactions, id:\.self, selection: $selection){ item in
-                    Row(transaction: item, bucket: bucket!).frame(height: 20)
+                    //TODO: Calculate this outside the view and pass in
+                    let sourceName = database!.getBucketFromID(item.sourceID)?.name ?? "NIL"
+                    let destName = database!.getBucketFromID(item.destID)?.name ?? "NIL"
+                    let direction = item.getType(convertTransfer: true, bucket: bucket.id!)
+                    
+                    Row(status: item.status, direction: direction, date: item.date, postDate: item.posted, sourceName: sourceName, destinationName: destName, amount: item.amount, payee: item.payee, memo: item.memo, group: item.group).frame(height: 20)
                 }.listStyle(PlainListStyle()).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             } else {
                 List{
@@ -64,52 +70,55 @@ struct TableTransactionsView: View {
     }
     
     struct Row: View {
-        
-        @Environment(\.appDatabase) private var database: AppDatabase?
-        @State var transaction: Transaction
-        @State var bucket: Bucket
+        let status: Transaction.StatusTypes
+        let direction: Transaction.TransType
+        let date: Date
+        let postDate: Date?
+        let sourceName: String
+        let destinationName: String
+        let amount: Int
+        let payee: String?
+        let memo: String
+        let group: UUID?
         
         var body: some View {
-            let sourceName = database!.getBucketFromID(transaction.sourceID)?.name ?? "NIL"
-            let destName = database!.getBucketFromID(transaction.destID)?.name ?? "NIL"
-            let direction = transaction.getType(convertTransfer: true, bucket: bucket.id!)
-            
             TableRow(content: [
                 AnyView(TableCell {
-                    Text(transaction.status.getStringName())
+                    Text(status.getStringName())
                 }),
                 AnyView(TableCell {
-                    Text(transaction.date.transactionFormat)
+                    Text(date.transactionFormat)
                 }),
                 AnyView(TableCell {
-                    Text(transaction.posted?.transactionFormat ?? "N/A")
+                    Text(postDate?.transactionFormat ?? "N/A")
                 }),
                 AnyView(TableCell {
-                    Text(transaction.amount.currencyFormat)
+                    Text(amount.currencyFormat)
                         .foregroundColor(direction == .Withdrawal ? .red : .gray)
                 }),
                 AnyView(TableCell {
                     Text(sourceName)
                 }),
                 AnyView(TableCell {
-                    Text(destName)
+                    Text(destinationName)
                 }),
                 AnyView(TableCell {
-                    Text(transaction.memo)
+                    Text(memo)
                 }),
                 AnyView(TableCell {
-                    Text(transaction.payee ?? "N/A")
+                    Text(payee ?? "N/A")
                 }),
                 AnyView(TableCell {
-                    Text(transaction.group?.uuidString ?? "N/A")
+                    Text(group?.uuidString ?? "N/A")
                 })
             ])
         }
     }
 }
 
-//struct TableTransactionsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        TableTransactionsView()
-//    }
-//}
+struct TableTransactionsView_Previews: PreviewProvider {
+    static var previews: some View {
+        let bucket1 = Bucket(id: 1, name: "Account 1", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
+        TableTransactionsView(transactions: [], bucket: bucket1, selection: Binding<Transaction?>(get: { return nil }, set: {_ in}))
+    }
+}

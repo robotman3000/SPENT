@@ -9,7 +9,7 @@ import Foundation
 
 struct BucketBalance {
     let posted: Int
-    let available: Int
+    var available: Int
     let postedInTree: Int
     let availableInTree: Int
 }

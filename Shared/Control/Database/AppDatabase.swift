@@ -46,17 +46,19 @@ struct AppDatabase {
         }
     }
     
-    init(path: URL) {
+    init(path: URL, trace: Bool = false) {
         do {
             let newURL = path.appendingPathComponent("db.sqlite")
             print("Using DB from path: \(newURL.absoluteString)")
             self.dbWriter = try DatabaseQueue(path: newURL.absoluteString)
-            try migrator.migrate(dbWriter)
-            try databaseReader.read { db in
-                db.trace(options: .statement) { event in
-                    print("SQL: \(event)")
+            if trace {
+                try databaseReader.read { db in
+                    db.trace(options: .statement) { event in
+                        print("SQL: \(event)")
+                    }
                 }
             }
+            try migrator.migrate(dbWriter)
         }
         catch {
 //             Replace this implementation with code to handle the error appropriately.
@@ -416,9 +418,9 @@ extension AppDatabase {
     func resolveOne<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> Type? {
         do {
             return try databaseReader.read { db in
-                db.trace(options: .statement) { event in
-                    print("SQL: \(event)")
-                }
+//                db.trace(options: .statement) { event in
+//                    print("SQL: \(event)")
+//                }
                 return try query.fetchOne(db)
             }
         } catch {

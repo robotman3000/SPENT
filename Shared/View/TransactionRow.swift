@@ -9,43 +9,43 @@ import SwiftUI
 
 struct TransactionRow: View {
     @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var store: DatabaseStore
-    @State var transaction: Transaction
-    @State var bucket: Bucket
-    @State var tags: [Tag]?
+    let status: Transaction.StatusTypes
+    let direction: Transaction.TransType
+    let date: Date
+    let sourceName: String
+    let destinationName: String
+    let amount: Int
+    let payee: String?
+    let memo: String
+    let tags: [Tag] = []
+    
 
-    struct TagBadge: View {
-        @State var tag: Tag
+    struct Badge: View {
+        let text: String
+        let color: Color
         
         var body: some View {
-            Text(tag.name).padding(5).background(Color.gray).cornerRadius(25)
+            Text(text).padding(5).background(color).cornerRadius(25)
         }
     }
     
     struct Direction: View {
-        @Binding var transaction: Transaction
         let sourceName: String
-        let destName: String
+        let destinationName: String
         let direction: Transaction.TransType
         
         var body: some View {
             HStack {
-//                Text(transaction.getType().rawValue)
-//                    .foregroundColor(.gray)
-//                    .font(.subheadline)
-//                    .fontWeight(.medium)
-                
-                if transaction.type == .Transfer {
-                    Text(direction == .Deposit ? sourceName : destName)
+                if direction == .Transfer {
+                    Text(direction == .Deposit ? sourceName : destinationName)
                         .foregroundColor(.gray)
                         .font(.subheadline)
                         .fontWeight(.medium)
                 }
                 
                 Image(systemName: direction == .Withdrawal ? "arrow.left" : "arrow.right")
-                //Image(systemName: "arrow.right")
                 
-                Text(direction == .Deposit ? destName : sourceName)
+                Text(direction == .Deposit ? destinationName : sourceName)
                     .foregroundColor(.gray)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -54,7 +54,7 @@ struct TransactionRow: View {
     }
     
     struct Status: View {
-        @Binding var status: Transaction.StatusTypes
+        let status: Transaction.StatusTypes
         
         var body: some View {
             ZStack(alignment: .center){
@@ -67,50 +67,48 @@ struct TransactionRow: View {
     }
     
     var body: some View {
-        let sourceName = store.getBucketByID(transaction.sourceID)?.name ?? ""
-        let destName = store.getBucketByID(transaction.destID)?.name ?? ""
-        let direction = transaction.getType(convertTransfer: true, bucket: bucket.id!)
-        
         HStack (alignment: .center){
-            Status(status: $transaction.status)
+            Status(status: status)
             VStack (alignment: .leading){
                 HStack {
                     VStack (alignment: .leading){
                         HStack {
-                            Text(transaction.payee ?? transaction.type.rawValue)
+                            Text(payee ?? direction.rawValue)
                                 .fontWeight(.bold)
                             HStack(){
-                                if tags != nil {
-                                    ForEach(tags!, id: \.self){ tag in
-                                        TagBadge(tag: tag)
-                                    }
-                                } else {
-                                    Text("NIL")
+                                ForEach(tags, id: \.self){ tag in
+                                    Badge(text: tag.name, color: .gray)
                                 }
                             }
                         }
-                        Text(transaction.date.transactionFormat)
+                        Text(date.transactionFormat)
                             .foregroundColor(.gray)
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
                     Spacer()
                     VStack (alignment: .trailing){
-                        Text(transaction.amount.currencyFormat)
+                        Text(amount.currencyFormat)
                             .fontWeight(.bold)
                             .font(.title2)
                             .foregroundColor(direction == .Withdrawal ? .red : (colorScheme == .light ? .black : .gray))
-                        Direction(transaction: $transaction, sourceName: sourceName, destName: destName, direction: direction)
+                        Direction(sourceName: sourceName,
+                                  destinationName: destinationName,
+                                  direction: direction)
                     }
                 }
-                Text((transaction.memo).trunc(length: 70))
+                Text(memo.trunc(length: 70))
             }
         }
     }
 }
 
-//struct TransactionRow_Previews: PreviewProvider {
-//    static var previews: some View {
-//        TransactionRow()
-//    }
-//}
+struct TransactionRow_Previews: PreviewProvider {
+    static var previews: some View {
+        let bucket1 = Bucket(id: 1, name: "Account 1", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
+        let bucket2 = Bucket(id: 1, name: "Account 2", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
+        
+        let t = Transaction.getRandomTransaction(withID: 1, withSource: bucket1.id, withDestination: bucket2.id, withGroup: nil)
+        TransactionRow(status: t.status, direction: t.type, date: t.date, sourceName: bucket1.name, destinationName: bucket2.name, amount: 5324, payee: nil, memo: "Some memo")
+    }
+}

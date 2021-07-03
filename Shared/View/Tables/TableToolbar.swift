@@ -52,8 +52,12 @@ enum ActiveAlert : String, Identifiable { // <--- note that it's now Identifiabl
     var id: String { return self.rawValue }
 }
 
-//struct TableToolbar_Previews: PreviewProvider {
-//    static var previews: some View {
-//        TableToolbar()
-//    }
-//}
+struct TableToolbar_Previews: PreviewProvider {
+    @State static var selected: String?
+    @State static var activeSheet : ActiveSheet?
+    @State static var activeAlert : ActiveAlert?
+    
+    static var previews: some View {
+        TableToolbar<String>(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
+    }
+}

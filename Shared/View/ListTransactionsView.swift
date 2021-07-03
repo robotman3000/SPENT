@@ -10,72 +10,50 @@ import GRDB
 
 struct ListTransactionsView: View {
     @EnvironmentObject var store: DatabaseStore
-    var transactions: [Transaction] = []
-    var transactionTags: [Transaction : [Tag]]
+    @Environment(\.appDatabase) private var database: AppDatabase?
+    
+    let transactions: [Transaction]
+    let bucketName: String
+    
     @State var editTags = false
-    #if os(macOS)
     @Binding var selection: Transaction?
-    #else
-    @State var selection: Transaction?
-    #endif
-    var bucket: Bucket?
     
     var body: some View {
-        var knownGroups: Set<UUID> = []
         List(selection: $selection){
             if !transactions.isEmpty {
                 ForEach(transactions, id:\.self ){ item in
-                    let syntaxHack: () -> UUID = {knownGroups.insert(item.group!); return item.group!}
-                    if item.group != nil && !knownGroups.contains(item.group!){
-                        Section(header: Text("Group Header")){
-                            GroupTransactionRow(syntaxHack(), bucket: bucket!)
-                        }.collapsible(true)
-                    } else if item.group == nil {
-                        TransactionRow(transaction: item, bucket: bucket!, tags: getTags(item)).frame(height: 55)
-                    }
+                    //TODO: Implement support for split transactions
+                    //TODO: Implement support for tags
+                    //TODO: Calculate this outside the view and pass in
+                    let sourceName = database!.getBucketFromID(item.sourceID)?.name ?? "NIL"
+                    let destName = database!.getBucketFromID(item.destID)?.name ?? "NIL"
+                    TransactionRow(status: item.status, direction: item.type, date: item.date, sourceName: sourceName, destinationName: destName, amount: item.amount, payee: item.payee, memo: item.memo).frame(height: 55)
                 }
             } else {
                 Text("No Transactions")
             }
-        }.navigationTitle(bucket?.name ?? "No Name")
+        }.navigationTitle(bucketName)
         .contextMenu(ContextMenu(menuItems: {
             Button("Edit Tags"){
-                editTags.toggle()
-            }
-            Button("Set Group ID"){
                 if selection != nil {
-                    selection!.group = UUID()
-                    store.updateTransaction(&selection!)
+                    editTags.toggle()
                 }
             }
-        })).sheet(isPresented: $editTags, content: {
-            if selection == nil {
-                EmptyView().onAppear(perform: {
-                    editTags = false
-                })
-            } else {
-                TransactionTagForm(transaction: selection!, tags: Set(transactionTags[selection!] ?? []), onSubmit: {tags, transaction in
-                    print(tags)
-                    if selection != nil {
-                        store.setTransactionTags(transaction: selection!, tags: tags)
-                    }
-                    editTags.toggle()
-                }, onCancel: {editTags.toggle()})
-            }
-        })
-    }
-    
-    func getTags(_ transaction: Transaction) -> [Tag]? {
-        var result = transactionTags[transaction]
-        if result == nil {
-            return nil
-        }
-        return result
+        }))
+        //.sheet(isPresented: $editTags, content: {
+//            TransactionTagForm(transaction: selection!, tags: Set(transactionTags[selection!] ?? []), onSubmit: {tags, transaction in
+//                print(tags)
+//                if selection != nil {
+//                    store.setTransactionTags(transaction: selection!, tags: tags)
+//                }
+//                editTags.toggle()
+//            }, onCancel: {editTags.toggle()})
+//        })
     }
 }
 
-//struct TransactionsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        TransactionsView()
-//    }
-//}
+struct ListTransactionsView_Previews: PreviewProvider {
+    static var previews: some View {
+        ListTransactionsView(transactions: [], bucketName: "A bucket", selection: Binding<Transaction?>(get: { return nil }, set: {_ in}))
+    }
+}

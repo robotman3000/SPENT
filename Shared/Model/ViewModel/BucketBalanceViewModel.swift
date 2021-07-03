@@ -13,7 +13,7 @@ import SwiftUI
 class BucketBalanceViewModel: ObservableObject {
     private var database: AppDatabase?
     @Published var balance: BucketBalance = BucketBalance(posted: 0, available: 0, postedInTree: 0, availableInTree: 0)
-    @Binding var bucket: Bucket {
+    @Published var bucket: Bucket? {
         didSet {
             print("bal model did set")
             self.transactionCancellable?.cancel()
@@ -23,9 +23,10 @@ class BucketBalanceViewModel: ObservableObject {
     private var query: BucketBalanceRequest
     private var transactionCancellable: AnyCancellable?
 
-    init(bucket: Binding<Bucket>){
-        self._bucket = bucket
-        self.query = BucketBalanceRequest(bucket.wrappedValue)
+    init(bucket: Bucket?){
+        print("Balance model init \(bucket?.name ?? "nil" )")
+        self.bucket = bucket
+        self.query = BucketBalanceRequest(bucket)
     }
     
     func load(_ db: AppDatabase){

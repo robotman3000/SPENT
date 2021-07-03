@@ -36,8 +36,8 @@ struct DatabaseManagerView: View {
     }
 }
 
-//struct DatabaseManagerView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        DatabaseManagerView()
-//    }
-//}
+struct DatabaseManagerView_Previews: PreviewProvider {
+    static var previews: some View {
+        DatabaseManagerView(onCancel: {})
+    }
+}

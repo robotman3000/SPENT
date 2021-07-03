@@ -36,13 +36,9 @@ struct TableCell<Content: View>: View {
         }.frame(maxWidth: .infinity)
     }
 }
-/*
- Text(bucket.name)
- Text("\(bucket.ancestorID ?? -1)")
- Text(bucket.memo)
- */
-//struct BucketTableRow_Previews: PreviewProvider {
-//    static var previews: some View {
-//        BucketTableRow()
-//    }
-//}
+
+struct TableRow_Previews: PreviewProvider {
+    static var previews: some View {
+        TableRow(content: [])
+    }
+}

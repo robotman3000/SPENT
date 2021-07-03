@@ -9,23 +9,23 @@ import SwiftUI
 import GRDB
 
 struct BalanceTable: View {
-    @Binding var bucket: Bucket?
-    @Query<BucketBalanceRequest> var bal: BucketBalance
     
-    init(bucket: Binding<Bucket?>){
-        _bucket = bucket
-        _bal = Query(BucketBalanceRequest(bucket.wrappedValue))
-    }
+    //let name: String
+    let posted: Int
+    let available: Int
+    let postedInTree: Int
+    let availableInTree: Int
     
     var body: some View {
         VStack (spacing: 15){
+            //Text(name)
             HStack (spacing: 15) {
-                BalanceView(text: "Posted", balance: bal.posted)
-                BalanceView(text: "Available", balance: bal.available)
+                BalanceView(text: "Posted", balance: posted)
+                BalanceView(text: "Available", balance: available)
             }
             HStack (spacing: 15) {
-                BalanceView(text: "Posted in Tree", balance: bal.postedInTree)
-                BalanceView(text: "Available in Tree", balance: bal.availableInTree)
+                BalanceView(text: "Posted in Tree", balance: postedInTree)
+                BalanceView(text: "Available in Tree", balance: availableInTree)
             }
         }
         //.background(Color.white)
@@ -42,9 +42,7 @@ struct BalanceTable: View {
                 HStack {
                     Image(systemName: "circle.fill")
                     Spacer()
-                    CurrencyText(balance: balance)
-                        .font(.headline)
-                        //.fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                    CurrencyText(amount: balance)
                 }
                 HStack {
                     Text(text)
@@ -63,8 +61,8 @@ struct BalanceTable: View {
     }
 }
 
-//struct BalanceTable_Previews: PreviewProvider {
-//    static var previews: some View {
-//        BalanceTable(bucket: Bucket(id: 10, name: "Test Bucket"))
-//    }
-//}
+struct BalanceTable_Previews: PreviewProvider {
+    static var previews: some View {
+        BalanceTable(posted: 10043, available: -3923, postedInTree: -38934, availableInTree: 20482)
+    }
+}

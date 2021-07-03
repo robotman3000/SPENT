@@ -9,11 +9,9 @@ import SwiftUI
 import GRDB
 
 struct MacTransactionView: View {
-    
-    @Environment(\.appDatabase) private var database: AppDatabase?
     @EnvironmentObject var store: DatabaseStore
-    @ObservedObject var model: TransactionViewModel
     @EnvironmentObject var appState: GlobalState
+    @ObservedObject var model: TransactionViewModel
     @StateObject var selected: ObservableStructWrapper<Transaction> = ObservableStructWrapper<Transaction>()
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
@@ -26,23 +24,14 @@ struct MacTransactionView: View {
         VStack {
             HStack {
                 TableToolbar(selected: $selected.wrappedStruct, activeSheet: $activeSheet, activeAlert: $activeAlert)
-                //FilterBar(query: $model.query)
-                Spacer()
-                Picker("View As", selection: $appState.selectedView) {
-                    ForEach(TransactionViewType.allCases) { type in
-                        Text(type.rawValue).tag(type)
-                    }
-                }
+                EnumPicker(label: "View As", selection: $appState.selectedView, enumCases: TransactionViewType.allCases)
+                Spacer(minLength: 10)
             }
-            Spacer()
             switch appState.selectedView {
             case .List: ListTransactionsView(transactions: model.transactions,
-                                             transactionTags: model.tags,
-                                             selection: $selected.wrappedStruct,
-                                             bucket: model.contextBucket).onAppear(perform: {print("list appear")})
+                                             bucketName: model.contextBucket.name, selection: $selected.wrappedStruct)
             case .Table: TableTransactionsView(transactions: model.transactions,
-                                               selection: $selected.wrappedStruct,
-                                               bucket: model.contextBucket).onAppear(perform: {print("table appear")})
+                                               bucket: model.contextBucket, selection: $selected.wrappedStruct)
             case .Calendar: Text("Calendar View")
             }
         }.navigationTitle(model.contextBucket.name)
@@ -85,7 +74,7 @@ struct MacTransactionView: View {
         }
         .onAppear(perform: {
             print("mav view render")
-            model.load(database!)
+            model.load(store.database!)
         })
     }
     
@@ -94,12 +83,16 @@ struct MacTransactionView: View {
     }
 }
 
-enum TransactionViewType: String, CaseIterable, Identifiable {
+enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
     case List
     case Table
     case Calendar
         
     var id: String { self.rawValue }
+    
+    func getStringName() -> String {
+        return self.id
+    }
 }
 
 //struct MacTransactionView_Previews: PreviewProvider {

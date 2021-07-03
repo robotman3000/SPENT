@@ -18,8 +18,11 @@ struct SPENTmacOS: App {
     var body: some Scene {
         WindowGroup {
             if isActive {
-                MainView()
-                    .environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)
+                NavigationView {
+                    MacSidebar()
+                        .frame(minWidth: 300)
+                        .navigationTitle("Accounts")
+                }.environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now()) {
@@ -248,23 +251,11 @@ struct SPENTmacOS: App {
     }
 }
 
-struct MainView: View {
-    @EnvironmentObject var store: DatabaseStore
-    
-    var body: some View {
-        NavigationView {
-            MacSidebar()
-                .frame(minWidth: 300)
-                .navigationTitle("Accounts")
-            MacHome()
-        }
-    }
-}
-
 struct SettingsView: View {
     private enum Tabs: Hashable {
         case general, buckets, schedules, tags
     }
+    
     var body: some View {
         TabView {
             GeneralSettingsView()

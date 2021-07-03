@@ -8,21 +8,29 @@
 import SwiftUI
 
 struct BucketRow: View {
-    @State var bucket: Bucket
+    
+    let name: String
+    let balance: Int
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4.0) {
             HStack {
-                Text(bucket.name)
+                Text(name)
                     .font(.headline)
                 Spacer()
-                BalanceText(bucket: $bucket)
+                CurrencyText(amount: balance)
                     .font(.headline)
                 
             }
-            //Text("Parent ID: \(bucket.parentID ?? -1)")
-            //Text("Memo: \(bucket.memo)")
+            //Text(model.bucket.memo)
         }
         .padding(.vertical, 5.0)
     }
 }
+
+struct BucketRow_Previews: PreviewProvider {
+    static var previews: some View {
+        BucketRow(name: "Test Bucket", balance: 24390)
+    }
+}
+

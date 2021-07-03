@@ -47,7 +47,7 @@ class TransactionViewModel: ObservableObject {
             .sink(
                 receiveCompletion: {_ in},
                 receiveValue: { [weak self] (links: [TransactionTagLink]) in
-                    print("Tag Values \(links)")
+                    //print("Tag Values \(links)")
                     for link in links {
                         self?.tags[link.transaction] = link.TagIDs
                     }

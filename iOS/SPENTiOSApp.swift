@@ -14,12 +14,7 @@ struct SPENTiOSApp: App {
     @StateObject var dbStore: DatabaseStore = DatabaseStore()
     
     init() {
-        do {
-            database = try AppDatabase(path: getDBURL())
-        } catch {
-            print(error)
-            database = AppDatabase()
-        }
+        database = AppDatabase(path: getDBURL())
     }
     
     var body: some Scene {
@@ -31,7 +26,6 @@ struct SPENTiOSApp: App {
                     print("Initializing State Controller")
                     dbStore.load(database)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { // Change `2.0` to the desired number of seconds.
-                        
                         isActive = true
                     }
                 }
@@ -42,44 +36,60 @@ struct SPENTiOSApp: App {
 
 struct MainView: View {
     @EnvironmentObject var store: DatabaseStore
+    @Environment(\.editMode) var editMode
+    @State var selectedBucket: Bucket?
+    @State private var showingAlert = false
+    @State private var showingForm = false
+    @State private var selectedView: Int? = -1
+    
+    init(){
+        let device = UIDevice.current
+        if device.model == "iPad" && device.orientation.isLandscape {
+            self.selectedView = 0
+        } else {
+            self.selectedView = -1
+        }
+    }
     
     var body: some View {
-        //DatabaseManagerView(onCancel: {})
         NavigationView {
-            //BucketNavigation()
-            List {
-                Section(header: Text("Accounts")) {
-                    OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in
-                        ZStack {
-                            BucketRow(bucket: node.bucket).onAppear(perform: {
-                                print("Row Appeared: \(node.bucket.name)")
-                            })
-                            NavigationLink(destination: iOSTransactionView(bucket: node.bucket)) {}
-                                .buttonStyle(PlainButtonStyle()).frame(width:0).opacity(0)
+            VStack{
+                List(selection: $selectedBucket) {
+                    NavigationLink(destination: Text("Summary"), tag: 0, selection: self.$selectedView) {
+                        Label("Summary", systemImage: "house")
+                    }
+                    NavigationLink(destination: Text("Schedule Management")) {
+                        Label("Schedules", systemImage: "calendar.badge.clock")
+                    }
+                    
+                    Section(header: Text("Accounts")){
+                        OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in
+                            ZStack {
+                                QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
+                                    BucketRow(name: node.bucket.name, balance: balance.availableInTree)
+                                }
+                                NavigationLink(destination: iOSTransactionListView(bucket: node.bucket)) {}
+                                    .buttonStyle(PlainButtonStyle()).frame(width:0).opacity(0)
+                            }
                         }
                     }
                 }
-                
-                Section(header: Text("Settings")) {
-                    Label("Account", systemImage: "person.crop.circle")
-                    Label("Help", systemImage: "person.3")
-                    Label("Logout", systemImage: "applelogo")
-                }
-            }.listStyle(InsetGroupedListStyle()).navigationTitle("Accounts")
-        }
+            }.listStyle(InsetGroupedListStyle())
+            .navigationTitle("Home")
+            .toolbar(content: {
+                EditButton()
+            })
+            Text("Summary 3253241")
+        }.phoneOnlyStackNavigationView()
     }
 }
 
-//struct TransactionList: View {
-//    @Query(TransactionRequest(true)) var transactions: [Transaction]
-//
-//    var body: some View {
-//        if !transactions.isEmpty {
-//            List(transactions){ transaction in
-//                TransactionRow(transaction: transaction)
-//            }
-//        } else {
-//            Text("No Transactions Found")
-//        }
-//    }
-//}
+extension View {
+    func phoneOnlyStackNavigationView() -> some View {
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            return AnyView(self.navigationViewStyle(StackNavigationViewStyle()))
+        } else {
+            return AnyView(self)
+        }
+    }
+}

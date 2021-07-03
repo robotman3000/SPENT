@@ -78,6 +78,7 @@
 		A26B732F2690AE710082A0F6 /* TransactionFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26B732D2690AE710082A0F6 /* TransactionFilter.swift */; };
 		A26B73342690BF2B0082A0F6 /* TransactionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26B73332690BF2B0082A0F6 /* TransactionData.swift */; };
 		A26B73352690BF2B0082A0F6 /* TransactionData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26B73332690BF2B0082A0F6 /* TransactionData.swift */; };
+		A26B73392690CBAC0082A0F6 /* TransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26B73382690CBAC0082A0F6 /* TransactionView.swift */; };
 		A278085A268BC63900CEA560 /* TransactionTagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780859268BC63900CEA560 /* TransactionTagForm.swift */; };
 		A278085B268BC63900CEA560 /* TransactionTagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780859268BC63900CEA560 /* TransactionTagForm.swift */; };
 		A2780863268E4AF900CEA560 /* BucketPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780862268E4AF900CEA560 /* BucketPicker.swift */; };
@@ -106,7 +107,7 @@
 		A2EE03F42685125D0092F63E /* TransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7A2671509B00347205 /* TransactionForm.swift */; };
 		A2EE03F7268515650092F63E /* BucketTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C92267E3E9C00548F06 /* BucketTable.swift */; };
 		A2EE03F8268515690092F63E /* TagTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C98267E3F6000548F06 /* TagTable.swift */; };
-		A2EE03FA268518BF0092F63E /* iOSTransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03F9268518BF0092F63E /* iOSTransactionView.swift */; };
+		A2EE03FA268518BF0092F63E /* iOSTransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03F9268518BF0092F63E /* iOSTransactionListView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -152,6 +153,7 @@
 		A26B732A2690A9650082A0F6 /* TransactionModelRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionModelRequest.swift; sourceTree = "<group>"; };
 		A26B732D2690AE710082A0F6 /* TransactionFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionFilter.swift; sourceTree = "<group>"; };
 		A26B73332690BF2B0082A0F6 /* TransactionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionData.swift; sourceTree = "<group>"; };
+		A26B73382690CBAC0082A0F6 /* TransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionView.swift; sourceTree = "<group>"; };
 		A2780859268BC63900CEA560 /* TransactionTagForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTagForm.swift; sourceTree = "<group>"; };
 		A2780862268E4AF900CEA560 /* BucketPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketPicker.swift; sourceTree = "<group>"; };
 		A2780865268E55F600CEA560 /* EnumPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnumPicker.swift; sourceTree = "<group>"; };
@@ -185,7 +187,7 @@
 		A2C4C0E32613E67A0048DB83 /* libOpenSSL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libOpenSSL.a; path = Lib/iOS/lib/libOpenSSL.a; sourceTree = "<group>"; };
 		A2C4C0E42613E67A0048DB83 /* libPython.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPython.a; path = Lib/iOS/lib/libPython.a; sourceTree = "<group>"; };
 		A2C4C0E52613E67A0048DB83 /* libxz.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libxz.a; path = Lib/iOS/lib/libxz.a; sourceTree = "<group>"; };
-		A2EE03F9268518BF0092F63E /* iOSTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSTransactionView.swift; sourceTree = "<group>"; };
+		A2EE03F9268518BF0092F63E /* iOSTransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSTransactionListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -387,7 +389,8 @@
 			isa = PBXGroup;
 			children = (
 				A2C4C0CD2613E61A0048DB83 /* SPENTiOSApp.swift */,
-				A2EE03F9268518BF0092F63E /* iOSTransactionView.swift */,
+				A2EE03F9268518BF0092F63E /* iOSTransactionListView.swift */,
+				A26B73382690CBAC0082A0F6 /* TransactionView.swift */,
 				A2C4C0D12613E61A0048DB83 /* Assets.xcassets */,
 				A2C4C0D62613E61A0048DB83 /* Info.plist */,
 				A22727DF2616341900814696 /* iOS.entitlements */,
@@ -594,6 +597,7 @@
 				A20DCD69264EBC260070EB07 /* Transaction.swift in Sources */,
 				A20781ED265E954C00DE372A /* BucketRequest.swift in Sources */,
 				A2EE03F8268515690092F63E /* TagTable.swift in Sources */,
+				A26B73392690CBAC0082A0F6 /* TransactionView.swift in Sources */,
 				A24CF68626814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */,
 				A2EE03F42685125D0092F63E /* TransactionForm.swift in Sources */,
 				A2EE03F2268512590092F63E /* TagForm.swift in Sources */,
@@ -601,7 +605,7 @@
 				A2780866268E55F600CEA560 /* EnumPicker.swift in Sources */,
 				A206D78B267C47A400CB094D /* CurrencyText.swift in Sources */,
 				A206D780267C10BA00CB094D /* Schedule.swift in Sources */,
-				A2EE03FA268518BF0092F63E /* iOSTransactionView.swift in Sources */,
+				A2EE03FA268518BF0092F63E /* iOSTransactionListView.swift in Sources */,
 				A278086C268E668C00CEA560 /* SchedulePicker.swift in Sources */,
 				A206D78C267C4A2E00CB094D /* SPENTDatabaseDocument.swift in Sources */,
 				A2676C9C267E599400548F06 /* UIDatabaseConnector.swift in Sources */,

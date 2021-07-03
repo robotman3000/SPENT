@@ -63,10 +63,3 @@ struct TransactionModelRequest: Queryable {
         //case byName
     }
 }
-
-struct TransactionData: FetchableRecord, Decodable, Hashable {
-    var tags: [Tag]
-    var source: Bucket?
-    var destination: Bucket?
-    var transaction: Transaction
-}

@@ -109,7 +109,7 @@ struct TransactionForm: View {
             selectedDest.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
         }
         
-        transType = transaction.getType()
+        transType = transaction.type
         
         payee = transaction.payee ?? ""
         

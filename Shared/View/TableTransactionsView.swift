@@ -9,23 +9,28 @@ import SwiftUI
 
 struct TableTransactionsView: View {
     
-    var transactions: [Transaction]
-    var bucket: Bucket
-    @Binding var selection: Transaction?
+    let transactions: [TransactionData]
+    let bucketName: String
+    let bucketID: Int64?
     
-    @Environment(\.appDatabase) private var database: AppDatabase?
+    @Binding var selection: TransactionData?
     
     var body: some View {
         VStack{
             Section(header: Header()){}
             if !transactions.isEmpty {
                 List(transactions, id:\.self, selection: $selection){ item in
-                    //TODO: Calculate this outside the view and pass in
-                    let sourceName = database!.getBucketFromID(item.sourceID)?.name ?? "NIL"
-                    let destName = database!.getBucketFromID(item.destID)?.name ?? "NIL"
-                    let direction = item.getType(convertTransfer: true, bucket: bucket.id!)
-                    
-                    Row(status: item.status, direction: direction, date: item.date, postDate: item.posted, sourceName: sourceName, destinationName: destName, amount: item.amount, payee: item.payee, memo: item.memo, group: item.group).frame(height: 20)
+                    Row(status: item.transaction.status,
+                    direction: item.transaction.type,
+                    date: item.transaction.date,
+                    postDate: item.transaction.posted,
+                    sourceName: item.source?.name ?? "",
+                    destinationName: item.destination?.name ?? "",
+                    amount: item.transaction.amount,
+                    payee: item.transaction.payee,
+                    memo: item.transaction.memo,
+                    group: item.transaction.group
+                    ).frame(height: 20)
                 }.listStyle(PlainListStyle()).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             } else {
                 List{
@@ -119,6 +124,6 @@ struct TableTransactionsView: View {
 struct TableTransactionsView_Previews: PreviewProvider {
     static var previews: some View {
         let bucket1 = Bucket(id: 1, name: "Account 1", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
-        TableTransactionsView(transactions: [], bucket: bucket1, selection: Binding<Transaction?>(get: { return nil }, set: {_ in}))
+        TableTransactionsView(transactions: [], bucketName: bucket1.name, bucketID: bucket1.id!, selection: Binding<TransactionData?>(get: { return nil }, set: {_ in}))
     }
 }

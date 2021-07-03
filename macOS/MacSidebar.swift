@@ -31,7 +31,7 @@ struct MacSidebar: View {
                 
                 Section(header: Text("Accounts")){
                     OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in
-                        NavigationLink(destination: MacTransactionView(contextBucket: node.bucket)) {
+                        NavigationLink(destination: MacTransactionView(selectedBucket: node.bucket)) {
                             QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
                                 BucketRow(name: node.bucket.name, balance: balance.availableInTree)
                             }

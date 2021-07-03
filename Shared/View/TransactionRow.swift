@@ -11,13 +11,14 @@ struct TransactionRow: View {
     @Environment(\.colorScheme) var colorScheme
     let status: Transaction.StatusTypes
     let direction: Transaction.TransType
+    let contextDirection: Transaction.TransType
     let date: Date
     let sourceName: String
     let destinationName: String
     let amount: Int
     let payee: String?
     let memo: String
-    let tags: [Tag] = []
+    let tags: [Tag]
     
 
     struct Badge: View {
@@ -33,19 +34,20 @@ struct TransactionRow: View {
         let sourceName: String
         let destinationName: String
         let direction: Transaction.TransType
+        let contextDirection: Transaction.TransType
         
         var body: some View {
             HStack {
                 if direction == .Transfer {
-                    Text(direction == .Deposit ? sourceName : destinationName)
+                    Text(contextDirection == .Deposit ? sourceName : destinationName)
                         .foregroundColor(.gray)
                         .font(.subheadline)
                         .fontWeight(.medium)
                 }
                 
-                Image(systemName: direction == .Withdrawal ? "arrow.left" : "arrow.right")
+                Image(systemName: contextDirection == .Withdrawal ? "arrow.left" : "arrow.right")
                 
-                Text(direction == .Deposit ? destinationName : sourceName)
+                Text(contextDirection == .Deposit ? destinationName : sourceName)
                     .foregroundColor(.gray)
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -94,7 +96,8 @@ struct TransactionRow: View {
                             .foregroundColor(direction == .Withdrawal ? .red : (colorScheme == .light ? .black : .gray))
                         Direction(sourceName: sourceName,
                                   destinationName: destinationName,
-                                  direction: direction)
+                                  direction: direction,
+                                  contextDirection: contextDirection)
                     }
                 }
                 Text(memo.trunc(length: 70))
@@ -109,6 +112,6 @@ struct TransactionRow_Previews: PreviewProvider {
         let bucket2 = Bucket(id: 1, name: "Account 2", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
         
         let t = Transaction.getRandomTransaction(withID: 1, withSource: bucket1.id, withDestination: bucket2.id, withGroup: nil)
-        TransactionRow(status: t.status, direction: t.type, date: t.date, sourceName: bucket1.name, destinationName: bucket2.name, amount: 5324, payee: nil, memo: "Some memo")
+        TransactionRow(status: t.status, direction: t.type, contextDirection: .Deposit, date: t.date, sourceName: bucket1.name, destinationName: bucket2.name, amount: 5324, payee: nil, memo: "Some memo", tags: [])
     }
 }

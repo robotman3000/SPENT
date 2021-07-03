@@ -130,8 +130,8 @@ extension Transaction {
         }
     }
     
-    func getType(convertTransfer: Bool = false, bucket: Int64 = -1) -> Transaction.TransType {
-        if sourceID != nil && destID != nil && convertTransfer {
+    func getType(convertTransfer: Bool = false, bucket: Int64?) -> Transaction.TransType {
+        if sourceID != nil && destID != nil && convertTransfer && bucket != nil {
             if sourceID == bucket {
                 return .Withdrawal
             }

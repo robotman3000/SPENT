@@ -24,7 +24,7 @@ struct MacTransactionView: View {
                 Spacer(minLength: 10)
             }
             
-            QueryWrapperView(source: TransactionModelRequest(TransactionFilter(includeTree: false, bucket: selectedBucket))){ model in
+            QueryWrapperView(source: TransactionModelRequest(TransactionFilter(includeTree: (selectedBucket.ancestorID == nil), bucket: selectedBucket))){ model in
                 switch appState.selectedView {
                 case .List: ListTransactionsView(transactions: model,
                                                  bucketName: selectedBucket.name,

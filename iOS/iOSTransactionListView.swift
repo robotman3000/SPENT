@@ -13,7 +13,7 @@ struct iOSTransactionListView: View {
     @State var selection: TransactionData?
     
     var body: some View {
-        QueryWrapperView(source: TransactionModelRequest(TransactionFilter(includeTree: false, bucket: bucket))){ model in
+        QueryWrapperView(source: TransactionModelRequest(TransactionFilter(includeTree: (bucket.ancestorID == nil), bucket: bucket))){ model in
             List(selection: $selection){
                 QueryWrapperView(source: BucketBalanceRequest(bucket)) { balance in
                     BalanceTable(/*name: selectedBucket?.name ?? "None",*/

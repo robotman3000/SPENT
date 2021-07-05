@@ -14,6 +14,9 @@ struct TransactionFilter {
     let bucket: Bucket
     
     func generateQuery() -> QueryInterfaceRequest<Transaction> {
+        if includeTree {
+            //bucket.tree
+        }
         return Transaction.filter(sql: "SourceBucket == ? OR DestBucket == ?", arguments: [bucket.id, bucket.id])
     }
 }

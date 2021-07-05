@@ -71,6 +71,7 @@ struct MacTransactionView: View {
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
                         store.deleteTransaction(selected.wrappedStruct!.transaction.id!)
+                        selected.wrappedStruct = nil
                     })
                 )
             }

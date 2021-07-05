@@ -38,20 +38,19 @@ struct BalanceTable: View {
         let balance: Int
         
         var body: some View {
-            VStack {
-                HStack {
-                    Image(systemName: "circle.fill")
-                    Spacer()
-                    CurrencyText(amount: balance)
-                }
-                HStack {
+            VStack (alignment: .leading){
+                HStack(){
                     Text(text)
                         .font(.caption)
-                        .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                        .fontWeight(.bold)
                         .foregroundColor(.gray)
                     Spacer()
                 }
-            }
+                HStack(){
+                    Spacer()
+                    CurrencyText(amount: balance).frame(alignment: .trailing)
+                }
+            }.frame(width: 100, height: 30, alignment: .center)
             .padding()
             .background(Color.black.opacity(0.1))
             //.border(Color.black)

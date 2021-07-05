@@ -70,8 +70,10 @@ struct MacTransactionView: View {
                     message: Text("Are you sure you want to delete this?"),
                     primaryButton: .cancel(),
                     secondaryButton: .destructive(Text("Confirm"), action: {
-                        store.deleteTransaction(selected.wrappedStruct!.transaction.id!)
-                        selected.wrappedStruct = nil
+                        if let sel = selected.wrappedStruct {
+                            store.deleteTransaction(sel.transaction.id!)
+                            selected.wrappedStruct = nil
+                        }
                     })
                 )
             }

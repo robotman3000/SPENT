@@ -121,89 +121,33 @@ struct AppDatabase {
 //            
             // Create a table
             // See https://github.com/groue/GRDB.swift#create-tables
-            try db.create(table: "Buckets") { t in
-                t.autoIncrementedPrimaryKey("id")
-                t.column("Name", .text).notNull().unique()
-                t.column("Parent", .integer).references("Buckets")
-                t.column("Ancestor", .integer).references("Buckets")
-            }
-            
-            try db.create(table: "Transactions") { t in
-                t.autoIncrementedPrimaryKey("id")
-                t.column("Status", .integer).notNull()
-                t.column("TransDate", .date).notNull()
-                t.column("PostDate", .date)
-                t.column("Amount", .double).notNull().check {
-                    // While things won't break with negative values, we don't allow them in the DB because it would start to get confusing to the end user
-                    // I.E Negatives don't really make sense here
-                    $0 >= 0
-                }
-                t.column("SourceBucket", .integer).notNull().references("Buckets")
-                t.column("DestBucket", .integer).notNull().references("Buckets")
-                t.column("Memo", .text)
-                t.column("Payee", .text)
-            }
-            
             try db.create(table: "Tags") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("Name", .text).notNull().unique()
+                t.column("Memo", .text).notNull().defaults(to: "")
             }
             
-            try db.create(table: "TransactionTags") { t in
+            try db.create(table: "Schedules") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("TransactionID", .integer).notNull().references("Transactions")
-                t.column("TagID", .integer).notNull().references("Tags")
-                t.uniqueKey(["TransactionID", "TagID"])
+                t.column("Name", .text).notNull()
+                t.column("Type", .integer).notNull()
+                t.column("Rule", .integer).notNull()
+                t.column("CustomRule", .blob)
+                t.column("MarkerID", .integer).notNull().references("Tags") // onDelete: Default
+                t.column("Memo", .text).notNull().defaults(to: "")
+                //t.column("LastRun", .date)
             }
             
-            try db.execute(sql: "INSERT INTO Buckets VALUES (-1, \'ROOT\', NULL, NULL)")
-        }
-        
-        migrator.registerMigration("v1.1") { db in
-            // Change Transaction.Amount to an integer
-            
-            /*
-             ALTER TABLE Transactions
-             ADD COLUMN IntAmount INTEGER NOT NULL DEFAULT 0;
-             UPDATE Transactions
-             SET IntAmount = round(Amount*100)
-             */
-            
-            try db.alter(table: "Transactions") { t in
-                t.add(column: "IntAmount", .integer).notNull().defaults(to: 0)
-            }
-            try db.execute(sql: "UPDATE Transactions SET IntAmount = round(Amount*100)")
-            
-            // Now we drop the old column
-            try db.create(table: "TransactionsNew") { t in
+            try db.create(table: "Buckets") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("Status", .integer).notNull()
-                t.column("TransDate", .date).notNull()
-                t.column("PostDate", .date)
-                t.column("IntAmount", .integer).notNull().check {
-                    // While things won't break with negative values, we don't allow them in the DB because it would start to get confusing to the end user
-                    // I.E Negatives don't really make sense here
-                    $0 >= 0
-                }
-                t.column("SourceBucket", .integer).notNull().references("Buckets")
-                t.column("DestBucket", .integer).notNull().references("Buckets")
-                t.column("Memo", .text)
-                t.column("Payee", .text)
+                t.column("Name", .text).notNull().unique()
+                t.column("Parent", .integer).references("Buckets", onDelete: .cascade)
+                t.column("Ancestor", .integer).references("Buckets", onDelete: .cascade)
+                t.column("BudgetID", .text).references("Schedules") // onDelete: Default
+                t.column("Memo", .text).notNull().defaults(to: "")
             }
-            try db.execute(sql: "INSERT INTO TransactionsNew SELECT id, Status, TransDate, PostDate, IntAmount, SourceBucket, DestBucket, Memo, Payee FROM Transactions")
             
-            try db.drop(table: "Transactions")
-            try db.alter(table: "TransactionsNew") { t in
-                t.rename(column: "IntAmount", to: "Amount")
-            }
-            try db.rename(table: "TransactionsNew", to: "Transactions")
-        }
-        
-        migrator.registerMigration("v1.2") { db in
-            // *** Eliminate the "Root" bucket ***
-            
-            // Allow a null transaction source and destination and disable nulls in the memo
-            try db.create(table: "TransactionsNew") { t in
+            try db.create(table: "Transactions") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("Status", .integer).notNull()
                 t.column("TransDate", .date).notNull()
@@ -213,72 +157,24 @@ struct AppDatabase {
                     // I.E Negatives don't really make sense here
                     $0 >= 0
                 }
-                t.column("SourceBucket", .integer).references("Buckets")
-                t.column("DestBucket", .integer).references("Buckets")
+                //TODO: Eventually this will have to set the source or dest to the ancestor account if a bucket is deleted
+                // and delete the transaction if the ancestor account is being deleted
+                t.column("SourceBucket", .integer).references("Buckets")//, onDelete: .cascade)
+                t.column("DestBucket", .integer).references("Buckets")//, onDelete: .cascade)
                 t.column("Memo", .text).notNull().defaults(to: "")
                 t.column("Payee", .text)
+                t.column("Group", .text)
             }
             
-            // Eliminate all null memos
-            try db.execute(sql: "UPDATE Transactions SET Memo = IfNull(Memo,'')")
-            
-            try db.execute(sql: "INSERT INTO TransactionsNew SELECT * FROM Transactions")
-            
-            try db.drop(table: "Transactions")
-            try db.rename(table: "TransactionsNew", to: "Transactions")
-            
-            // Change all -1's in the source and destination to be null
-            try db.execute(sql: "UPDATE Transactions SET SourceBucket = NULL WHERE SourceBucket = -1")
-            try db.execute(sql: "UPDATE Transactions SET DestBucket = NULL WHERE DestBucket = -1")
-            
-            // Nix the -1 values and the root bucket in the buckets table
-            try db.execute(sql: "UPDATE Buckets SET Parent = NULL WHERE Parent = -1")
-            try db.execute(sql: "UPDATE Buckets SET Ancestor = NULL WHERE Ancestor = -1")
-            try db.execute(sql: "DELETE FROM Buckets WHERE id = -1")
-            
-            
-            // *** Database support for split/grouped tansactions ***
-            
-            // Alter Transactions table to add the Group ID
-            try db.alter(table: "Transactions") { t in
-                t.add(column: "Group", .text)
-            }
-            
-            // *** Additional storage colums for the user ***
-            
-            // Alter Buckets table to add Memo
-            try db.alter(table: "Buckets") { t in
-                t.add(column: "Memo", .text).notNull().defaults(to: "")
-            }
-            
-            // Alter Tag to add Memo
-            try db.alter(table: "Tags") { t in
-                t.add(column: "Memo", .text).notNull().defaults(to: "")
-            }
-        }
-        
-        migrator.registerMigration("v2") { db in
-            // Create schedules table
-            
-            print("v2 Schema Migration")
-//            db.trace(options: .statement) { event in
-//                print("SQL: \(event)")
-//            }
-            
-            try db.create(table: "Schedules") { t in
+            try db.create(table: "TransactionTags") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("Name", .text).notNull()
-                t.column("Type", .integer).notNull()
-                t.column("Rule", .integer).notNull()
-                t.column("CustomRule", .blob)
-                t.column("MarkerID", .integer).notNull().references("Tags")
-                t.column("Memo", .text)
-                //t.column("LastRun", .date)
-            }
-            
-            // Add budget schedule column to buckets, allow null
-            try db.alter(table: "Buckets") { t in
-                t.add(column: "BudgetID", .text).references("Schedules")
+                t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .cascade)
+                
+                // It should not be possible to delete a tag assigned to a transaction by cascade because
+                // the schedules table depends on the presence of tags it has assigned.
+                // TODO: Use program logic to determin if a tag can be deleted
+                t.column("TagID", .integer).notNull().references("Tags")
+                t.uniqueKey(["TransactionID", "TagID"])
             }
             
             // Create recipts table
@@ -290,11 +186,11 @@ struct AppDatabase {
             // Create recipts assignments
             try db.create(table: "TransactionRecipts") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("TransactionID", .integer).notNull()
-                t.column("ReciptID", .integer).notNull()
+                t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .cascade)
+                t.column("ReciptID", .integer).notNull().references("Recipts", onDelete: .cascade)
             }
         }
-        
+
         // Migrations for future application versions will be inserted here:
         // migrator.registerMigration(...) { db in
         //     ...

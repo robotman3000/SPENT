@@ -94,7 +94,7 @@ struct TagTable: View {
                     Text(tag.name)
                 }),
                 AnyView(TableCell {
-                    Text(tag.memo)
+                    Text(tag.memo.trunc(length: 10))
                 })
             ])
         }

@@ -105,7 +105,7 @@ struct BucketTable: View {
                     Text(store.getBucketByID(bucket.ancestorID)?.name ?? "")
                 }),
                 AnyView(TableCell {
-                    Text(bucket.memo)
+                    Text(bucket.memo.trunc(length: 10))
                 }),
                 AnyView(TableCell {
                     Text("\(bucket.budgetID ?? -1)")

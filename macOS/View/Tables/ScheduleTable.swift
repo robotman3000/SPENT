@@ -114,7 +114,7 @@ struct ScheduleTable: View {
                     Text("\(schedule.markerID)")
                 }),
                 AnyView(TableCell {
-                    Text(schedule.memo ?? "N/A")
+                    Text(schedule.memo?.trunc(length: 10) ?? "N/A")
                 })
             ])
         }

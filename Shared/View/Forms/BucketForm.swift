@@ -76,7 +76,11 @@ struct BucketForm: View {
             bucket.ancestorID = nil
         } else {
             bucket.parentID = selected.wrappedStruct?.id
-            //TODO: Ensure the ancestor is correct
+            if let ancestor = selected.wrappedStruct?.ancestorID {
+                bucket.ancestorID = ancestor
+            } else {
+                bucket.ancestorID = bucket.parentID
+            }
         }
         
         if hasBudget {

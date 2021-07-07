@@ -20,6 +20,7 @@ func getDocumentsDirectory() -> URL {
     return documentsDirectory
 }
 
+/// This returns the default database path
 func getDBURL() -> URL {
     // Pick a folder for storing the SQLite database, as well as
     // the various temporary files created during normal database

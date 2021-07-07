@@ -28,7 +28,30 @@ struct SPENTmacOS: App {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now()) {
                         print("Initializing State Controller")
-                        showWelcomeSheet.toggle()
+                        if UserDefaults.standard.bool(forKey: PreferenceKeys.autoloadDB.rawValue) {
+                            if let dbBookmark = UserDefaults.standard.data(forKey: PreferenceKeys.databaseBookmark.rawValue) {
+                                var isStale = false
+                                if let dbURL = getURLByBookmark(dbBookmark, isStale: &isStale) {
+                                    if dbURL.startAccessingSecurityScopedResource() {
+                                        defer { dbURL.stopAccessingSecurityScopedResource() }
+                                        let database = AppDatabase(path: dbURL)
+                                        dbStore.load(database)
+                                        isActive = true
+                                    } else {
+                                        print("Security failed")
+                                    }
+                                } else {
+                                    print("Bookmark -> URL failed")
+                                }
+                            } else {
+                                print("Bookmark Failed")
+                            }
+                        }
+                        
+                        if !isActive {
+                            // Something went wrong opening the prefered db
+                            showWelcomeSheet.toggle()
+                        }
                     }
                 }
                 .sheet(isPresented: $showWelcomeSheet, content: {
@@ -291,20 +314,70 @@ struct SettingsView: View {
 }
 
 struct GeneralSettingsView: View {
-    //@AppStorage("showPreview") private var showPreview = true
-    //@AppStorage("fontSize") private var fontSize = 12.0
+    @AppStorage(PreferenceKeys.autoloadDB.rawValue) private var autoloadDB = false
 
+    @State var showError = false
     var body: some View {
-//        Form {
-//            Toggle("Show Previews", isOn: $showPreview)
-//            Slider(value: $fontSize, in: 9...96) {
-//                Text("Font Size (\(fontSize, specifier: "%.0f") pts)")
-//            }
-//        }
-        Text("Nothing to see here!")
+        Form {
+            Toggle("Load DB on start", isOn: $autoloadDB)
+            Section {
+                Text("Selected Database:")
+                if let data = UserDefaults.standard.data(forKey: PreferenceKeys.databaseBookmark.rawValue) {
+                    var isStale = false
+                    if let url = getURLByBookmark(data, isStale: &isStale) {
+                        Text(url.absoluteString)
+                    }
+                }
+                Button("Change DB") {
+                    let panel = NSOpenPanel()
+                    panel.allowsMultipleSelection = false
+                    panel.canChooseDirectories = false
+                    panel.canChooseFiles = true
+                    panel.allowedContentTypes = [.spentDatabase]
+                    if panel.runModal() == .OK {
+                        let selectedFile = panel.url?.absoluteURL
+                        if let file = selectedFile {
+                            if file.startAccessingSecurityScopedResource() {
+                                defer { file.stopAccessingSecurityScopedResource() }
+                                do {
+                                    let bookmarkData = try file.bookmarkData(options: URL.BookmarkCreationOptions.withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                                    UserDefaults.standard.setValue(bookmarkData, forKey: PreferenceKeys.databaseBookmark.rawValue)
+                                } catch {
+                                    print(error)
+                                    showError.toggle()
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }.alert(isPresented: $showError){
+            Alert(
+                title: Text("Error"),
+                message: Text("Failed to update database path"),
+                dismissButton: .default(Text("OK")) {
+                    showError.toggle()
+                }
+            )
+        }
         .padding(20)
-        .frame(width: 350, height: 100)
     }
+}
+
+func getURLByBookmark(_ data: Data, isStale: inout Bool) -> URL? {
+    do {
+        return try URL(resolvingBookmarkData: data,
+                  options: URL.BookmarkResolutionOptions.withSecurityScope,
+                  relativeTo: nil, bookmarkDataIsStale: &isStale)
+    } catch {
+        print(error)
+    }
+    return nil
+}
+
+enum PreferenceKeys: String {
+    case autoloadDB
+    case databaseBookmark
 }
 
 class GlobalState: ObservableObject {

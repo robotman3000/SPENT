@@ -33,7 +33,9 @@ struct BucketBalanceRequest: Queryable {
                 
                 // Posted
                 if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: [bucket!], statusTypes: Transaction.StatusTypes.allCases.filter({status in
-                    status.rawValue > Transaction.StatusTypes.Submitted.rawValue
+                    status.rawValue == Transaction.StatusTypes.Posting.rawValue
+                        || status.rawValue == Transaction.StatusTypes.Complete.rawValue
+                        || status.rawValue == Transaction.StatusTypes.Reconciled.rawValue
                 })), arguments: []) {
                     pb = row["Amount"]
                 }
@@ -41,13 +43,16 @@ struct BucketBalanceRequest: Queryable {
                 // Available
                 if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: [bucket!], statusTypes: Transaction.StatusTypes.allCases.filter({status in
                     status.rawValue != Transaction.StatusTypes.Void.rawValue
+                    && status.rawValue != Transaction.StatusTypes.Scheduled.rawValue // Treat scheduled like void until the feature is ready
                 })), arguments: []) {
                     ab = row["Amount"]
                 }
                 
                 // Posted Tree
                 if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: getTreeAtBucket(bucket!, db: db), statusTypes: Transaction.StatusTypes.allCases.filter({status in
-                    status.rawValue > Transaction.StatusTypes.Submitted.rawValue
+                    status.rawValue == Transaction.StatusTypes.Posting.rawValue
+                        || status.rawValue == Transaction.StatusTypes.Complete.rawValue
+                        || status.rawValue == Transaction.StatusTypes.Reconciled.rawValue
                 })), arguments: []) {
                     ptb = row["Amount"]
                 }
@@ -55,6 +60,7 @@ struct BucketBalanceRequest: Queryable {
                 // Available Tree
                 if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: getTreeAtBucket(bucket!, db: db), statusTypes: Transaction.StatusTypes.allCases.filter({status in
                     status.rawValue != Transaction.StatusTypes.Void.rawValue
+                    && status.rawValue != Transaction.StatusTypes.Scheduled.rawValue // Treat scheduled like void until the feature is ready
                 })), arguments: []) {
                     atb = row["Amount"]
                 }

@@ -164,4 +164,28 @@ extension DerivableRequest where RowDecoder == Transaction {
     func withTag(tag: Int64) -> Self {
         filter(sql: "id in (SELECT TransactionID from TransactionTags WHERE TagID == ?)", arguments: [tag])
     }
+    
+    func orderedByDate() -> Self {
+        order(Transaction.Columns.transdate.desc)
+    }
+    
+    func orderedByPayee() -> Self {
+        order(Transaction.Columns.payee.desc)
+    }
+    
+    func orderedByMemo() -> Self {
+        order(Transaction.Columns.memo.desc)
+    }
+    
+    func orderedBySource() -> Self {
+        order(Transaction.Columns.sourcebucket.desc)
+    }
+    
+    func orderedByDestination() -> Self {
+        order(Transaction.Columns.destbucket.desc)
+    }
+    
+    func orderedByStatus() -> Self {
+        order(Transaction.Columns.status.desc)
+    }
 }

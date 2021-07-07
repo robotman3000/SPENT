@@ -21,10 +21,15 @@ struct TransactionModelRequest: Queryable {
     private let filter: TransactionFilter
     //var ordering: Ordering = .none
     
+    let order: Ordering
+    let orderDirection: OrderDirection
+    
     /// Selects every transaction in the database if includeAll is true
-    init(_ withFilter: TransactionFilter){
+    init(_ withFilter: TransactionFilter, order: Ordering, direction: OrderDirection){
         self.filter = withFilter
-        hash = genHash([1234567, withFilter.bucket, withFilter.includeTree])
+        self.order = order
+        self.orderDirection = direction
+        hash = genHash([1234567, withFilter.bucket, withFilter.includeTree, order, direction])
     }
 //
 //    init(_ groupID: UUID){
@@ -45,21 +50,64 @@ struct TransactionModelRequest: Queryable {
 //    }
     
     func fetchValue(_ db: Database) throws -> [TransactionData] {
-        let transactionQuery = try filter.generateQuery(db)
+        var query = try filter.generateQuery(db)
             .including(all: Transaction.tags.forKey("tags"))
             .including(optional: Transaction.source.forKey("source"))
             .including(optional: Transaction.destination.forKey("destination"))
         
+        switch(order){
+        case .byDate: query = query.orderedByDate()
+        case .byPayee: query = query.orderedByPayee()
+        case .byMemo: query = query.orderedByMemo()
+        case .bySource: query = query.orderedBySource()
+        case .byDestination: query = query.orderedByDestination()
+        case .byStatus: query = query.orderedByStatus()
+        }
+        
         //let result = try Row.fetchAll(db, transactionQuery)
         //print(result[0].debugDescription)
-        let result = try TransactionData.fetchAll(db, transactionQuery)
+        let result = try TransactionData.fetchAll(db, query)
+        if orderDirection == .ascending {
+            return result.reversed()
+        }
         return result
         //print(result[0])
         //return []
     }
 
-    enum Ordering {
-        case none
-        //case byName
+    enum Ordering: Int, Identifiable, CaseIterable, Stringable {
+        case byDate
+        case byPayee
+        case byMemo
+        case bySource
+        case byDestination
+        case byStatus
+        
+        var id: Int { self.rawValue }
+        
+        func getStringName() -> String {
+            switch self {
+            case .byDate: return "Date"
+            case .byPayee: return "Payee"
+            case .byMemo: return "Memo"
+            case .bySource: return "Source"
+            case .byDestination: return "Destination"
+            case .byStatus: return "Status"
+            }
+        }
+    }
+
+    enum OrderDirection: String, Identifiable, CaseIterable, Stringable {
+        case ascending
+        case descending
+        
+        var id: String { self.rawValue }
+        
+        func getStringName() -> String {
+            switch self {
+            case .ascending: return "Ascending"
+            case .descending: return "Descending"
+            }
+        }
     }
 }

@@ -21,11 +21,19 @@ struct MacTransactionView: View {
             HStack {
                 TableToolbar(selected: $selected.wrappedStruct, activeSheet: $activeSheet, activeAlert: $activeAlert)
                 EnumPicker(label: "View As", selection: $appState.selectedView, enumCases: TransactionViewType.allCases)
+                Spacer()
                 Toggle(isOn: $appState.includeTree, label: { Text("Show All Transactions") })
-                Spacer(minLength: 10)
+                Spacer()
+                EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionModelRequest.Ordering.allCases)
+                EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionModelRequest.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
+                Spacer(minLength: 15)
             }
             
-            QueryWrapperView(source: TransactionModelRequest(TransactionFilter(includeTree: appState.includeTree, bucket: selectedBucket))){ model in
+            QueryWrapperView(source: TransactionModelRequest(
+                                TransactionFilter(includeTree: appState.includeTree,
+                                                  bucket: selectedBucket),
+                                                  order: appState.sorting,
+                                                  direction: appState.sortDirection)){ model in
                 switch appState.selectedView {
                 case .List: ListTransactionsView(transactions: model,
                                                  bucketName: selectedBucket.name,

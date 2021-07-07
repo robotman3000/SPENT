@@ -33,7 +33,7 @@ struct MacSidebar: View {
                     OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in
                         NavigationLink(destination: MacTransactionView(selectedBucket: node.bucket)) {
                             QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
-                                BucketRow(name: node.bucket.name, balance: balance.availableInTree)
+                                BucketRow(name: node.bucket.name, balance: balance.postedInTree)
                             }
                         }
                         .contextMenu {

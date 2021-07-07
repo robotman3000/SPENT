@@ -37,6 +37,9 @@ struct MacTransactionView: View {
                                                    selection: $selected.wrappedStruct)
                 case .Calendar: Text("Calendar View")
                 }
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(model.count) transactions")
+                }.frame(height: 30)
             }
         }.navigationTitle(selectedBucket.name)
         .sheet(item: $activeSheet) { sheet in

@@ -253,6 +253,8 @@ struct SPENTmacOS: App {
 }
 
 struct SettingsView: View {
+    @EnvironmentObject var dbStore: DatabaseStore
+    
     private enum Tabs: Hashable {
         case general, buckets, schedules, tags
     }
@@ -265,21 +267,23 @@ struct SettingsView: View {
                 }
                 .tag(Tabs.general)
             
-            BucketTable()
-                .tabItem {
-                    Label("Accounts", systemImage: "folder")
-                }.tag(Tabs.buckets)
+            if dbStore.database != nil {
+                BucketTable()
+                    .tabItem {
+                        Label("Accounts", systemImage: "folder")
+                    }.tag(Tabs.buckets)
+             
+                ScheduleTable()
+                    .tabItem {
+                        Label("Schedules", systemImage: "calendar.badge.clock")
+                    }.tag(Tabs.schedules)
          
-            ScheduleTable()
-                .tabItem {
-                    Label("Schedules", systemImage: "calendar.badge.clock")
-                }.tag(Tabs.schedules)
-     
-            TagTable()
-                .tabItem {
-                    Label("Tags", systemImage: "tag")
-                }.tag(Tabs.tags)
-                
+                TagTable()
+                    .tabItem {
+                        Label("Tags", systemImage: "tag")
+                    }.tag(Tabs.tags)
+                    
+            }
         }
         .padding(20)
         .frame(width: 600, height: 400)

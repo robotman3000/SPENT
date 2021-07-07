@@ -45,7 +45,7 @@ struct TransactionModelRequest: Queryable {
 //    }
     
     func fetchValue(_ db: Database) throws -> [TransactionData] {
-        let transactionQuery = filter.generateQuery()
+        let transactionQuery = try filter.generateQuery(db)
             .including(all: Transaction.tags.forKey("tags"))
             .including(optional: Transaction.source.forKey("source"))
             .including(optional: Transaction.destination.forKey("destination"))

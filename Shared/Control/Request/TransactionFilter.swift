@@ -13,10 +13,21 @@ struct TransactionFilter {
     let includeTree: Bool
     let bucket: Bucket
     
-    func generateQuery() -> QueryInterfaceRequest<Transaction> {
+    func generateQuery(_ db: Database) throws -> QueryInterfaceRequest<Transaction> {
+        var buckets = [bucket]
         if includeTree {
-            //bucket.tree
+            let result = try bucket.tree.fetchAll(db)
+            buckets.append(contentsOf: result)
         }
-        return Transaction.filter(sql: "SourceBucket == ? OR DestBucket == ?", arguments: [bucket.id, bucket.id])
+        
+        var bucketIDs: [Int64] = []
+        for bucket in buckets {
+            if bucket.id != nil {
+                bucketIDs.append(bucket.id!)
+            }
+        }
+        let bucketStr: String = bucketIDs.map({ val in return "\(val)" }).joined(separator: ", ")
+
+        return Transaction.filter(sql: "SourceBucket in (\(bucketStr)) OR DestBucket in (\(bucketStr))")
     }
 }

@@ -305,5 +305,6 @@ struct GeneralSettingsView: View {
 
 class GlobalState: ObservableObject {
     @Published var selectedView = TransactionViewType.Table
+    @Published var includeTree: Bool = true
     @Published var contextBucket: Bucket?
 }

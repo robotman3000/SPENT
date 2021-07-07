@@ -7,6 +7,7 @@
 
 import SwiftUI
 import GRDB
+import Foundation
 
 @main
 struct SPENTmacOS: App {
@@ -182,7 +183,7 @@ struct SPENTmacOS: App {
                                 let status: Int = row["Status"]
                                 let date: String = row["TransDate"]
                                 let postDate: String? = row["PostDate"]
-                                let amount: Double = row["Amount"]
+                                let amount: String = row["Amount"]
                                 var source: Int64? = row["SourceBucket"]
                                 var destination: Int64? = row["DestBucket"]
                                 let memo: String = row["Memo"] ?? ""
@@ -192,7 +193,7 @@ struct SPENTmacOS: App {
                                 let newStatus = statusMap[status] ?? .Void
                                 
                                 // Convert the amount from a floating point to an int
-                                let newAmount = Int(amount * 1000.00) / 10
+                                let newAmount = Int(round(Double(amount)! * 100))
                                 
                                 let newDate = dateFormatter.date(from:date)!
                                 let newPDate = dateFormatter.date(from:postDate ?? "")

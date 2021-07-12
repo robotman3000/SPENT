@@ -17,6 +17,9 @@ struct MacSidebar: View {
     
     var body: some View {
         VStack {
+            Text("SPENT Git Version:")
+            let version: String = Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH").debugDescription
+            Text(version)
             QueryWrapperView(source: BucketBalanceRequest(selectedBucket)) { balance in
                 BalanceTable(/*name: selectedBucket?.name ?? "None",*/
                              posted: balance.posted,

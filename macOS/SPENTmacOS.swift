@@ -26,8 +26,9 @@ struct SPENTmacOS: App {
                 }.environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now()) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                         print("Initializing State Controller")
+                        print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") ?? "(NIL)")")
                         if UserDefaults.standard.bool(forKey: PreferenceKeys.autoloadDB.rawValue) {
                             if let dbBookmark = UserDefaults.standard.data(forKey: PreferenceKeys.databaseBookmark.rawValue) {
                                 var isStale = false

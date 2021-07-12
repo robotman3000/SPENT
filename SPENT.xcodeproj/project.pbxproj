@@ -449,6 +449,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A2A5671C262740ED009C7E8C /* Build configuration list for PBXNativeTarget "macOS" */;
 			buildPhases = (
+				A2DA8F3C269BE32C00DD77D1 /* ShellScript */,
 				A2A56709262740EC009C7E8C /* Sources */,
 				A2A5670A262740EC009C7E8C /* Frameworks */,
 				A2A5670B262740EC009C7E8C /* Resources */,
@@ -545,6 +546,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		A2DA8F3C269BE32C00DD77D1 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nCOMMIT_HASH=`git rev-parse --short HEAD`\n/usr/libexec/PlistBuddy -c \"Set :GIT_COMMIT_HASH $COMMIT_HASH\" \"${INFOPLIST_FILE}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A2A56709262740EC009C7E8C /* Sources */ = {

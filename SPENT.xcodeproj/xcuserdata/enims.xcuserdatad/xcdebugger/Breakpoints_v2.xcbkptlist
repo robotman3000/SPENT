@@ -820,8 +820,8 @@
             filePath = "macOS/SPENTmacOS.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "221"
-            endingLineNumber = "221"
+            startingLineNumber = "222"
+            endingLineNumber = "222"
             landmarkName = "importSPENTLegacy()"
             landmarkType = "7">
          </BreakpointContent>

@@ -8,7 +8,13 @@
 import Foundation
 import GRDB
 
-struct TransactionData: FetchableRecord, Decodable, Hashable {
+struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
+    var id: Int64 {
+        get {
+            transaction.id!
+        }
+    }
+    
     var tags: [Tag]
     var source: Bucket?
     var destination: Bucket?

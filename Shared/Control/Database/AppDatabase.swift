@@ -279,6 +279,12 @@ extension AppDatabase {
         }
     }
     
+    func deleteBuckets(ids: [Int64]) throws {
+        try dbWriter.write { db in
+            _ = try Bucket.deleteAll(db, ids: ids)
+        }
+    }
+    
     func saveSchedule(_ schedule: inout Schedule) throws {
         try dbWriter.write { db in
             try schedule.save(db)

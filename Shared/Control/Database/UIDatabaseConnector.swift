@@ -131,6 +131,15 @@ extension DatabaseStore {
         }
     }
     
+    func deleteBuckets(_ ids: [Int64], onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
+        do {
+            try database!.deleteBuckets(ids: ids)
+            onComplete()
+        } catch {
+            onError(error)
+        }
+    }
+    
     func getBucketByID(_ id: Int64?) -> Bucket? {
         if id != nil, let ind = bucketIDMap[id!] {
             return buckets.getByIndex(ind)

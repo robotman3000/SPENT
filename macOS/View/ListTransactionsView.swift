@@ -17,6 +17,7 @@ struct ListTransactionsView: View {
     
     @State var editTags = false
     @Binding var selection: TransactionData?
+    @State var contextSelection: TransactionData?
     
     var body: some View {
         List(selection: $selection){
@@ -36,9 +37,7 @@ struct ListTransactionsView: View {
                         .frame(height: 55)
                         .contextMenu(ContextMenu(menuItems: {
                             Button("Edit Tags"){
-                                if selection != nil {
-                                    editTags.toggle()
-                                }
+                                contextSelection = item
                             }
                         }))
                 }
@@ -46,15 +45,15 @@ struct ListTransactionsView: View {
                 Text("No Transactions")
             }
         }.navigationTitle(bucketName)
-        .sheet(isPresented: $editTags, content: {
-            TransactionTagForm(transaction: selection!.transaction, tags: Set(selection!.tags), onSubmit: {tags, transaction in
+        .sheet(item: $contextSelection) { item in
+            TransactionTagForm(transaction: item.transaction, tags: Set(item.tags), onSubmit: {tags, transaction in
                 print(tags)
                 if selection != nil {
-                    store.setTransactionTags(transaction: selection!.transaction, tags: tags)
+                    store.setTransactionTags(transaction: item.transaction, tags: tags)
                 }
-                editTags.toggle()
-            }, onCancel: {editTags.toggle()})
-        })
+                contextSelection = nil
+            }, onCancel: { contextSelection = nil })
+        }
     }
 }
 

@@ -10,10 +10,10 @@ import SwiftUI
 struct MacSidebar: View {
     
     @EnvironmentObject var store: DatabaseStore
-    @State var selectedBucket: Bucket?
     @State private var showingAlert = false
-    @State private var showingForm = false
     @State private var selectedView: Int? = 0
+    @State var selectedBucket: Bucket?
+    @State var contextSelectedBucket: Bucket?
     
     var body: some View {
         VStack {
@@ -38,15 +38,15 @@ struct MacSidebar: View {
                         }
                         .contextMenu {
                             Button("Edit") {
-                                showingForm.toggle()
+                                contextSelectedBucket = node.bucket
                             }
                         }
                     }
                 }.collapsible(false)
             }.listStyle(SidebarListStyle())
         }
-        .sheet(isPresented: $showingForm) {
-            BucketForm(bucket: selectedBucket!, onSubmit: {data in
+        .sheet(item: $contextSelectedBucket) { bucket in
+            BucketForm(bucket: bucket, onSubmit: {data in
                 store.updateBucket(&data, onComplete: dismissModal, onError: { _ in showingAlert.toggle() })
             }, onCancel: dismissModal).padding()
         }
@@ -70,7 +70,7 @@ struct MacSidebar: View {
     }
     
     func dismissModal(){
-        showingForm = false
+        contextSelectedBucket = nil
         showingAlert = false
     }
     

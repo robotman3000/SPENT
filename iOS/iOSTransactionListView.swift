@@ -11,9 +11,14 @@ import SwiftUI
 struct iOSTransactionListView: View {
     let bucket: Bucket
     @State var selection: TransactionData?
+    @EnvironmentObject var appState: GlobalState
     
     var body: some View {
-        QueryWrapperView(source: TransactionModelRequest(TransactionFilter(includeTree: (bucket.ancestorID == nil), bucket: bucket))){ model in
+        QueryWrapperView(source: TransactionModelRequest(
+                            TransactionFilter(includeTree: appState.includeTree,
+                                              bucket: bucket),
+                                              order: appState.sorting,
+                                              direction: appState.sortDirection)){ model in
             List(selection: $selection){
                 QueryWrapperView(source: BucketBalanceRequest(bucket)) { balance in
                     BalanceTable(/*name: selectedBucket?.name ?? "None",*/
@@ -26,7 +31,17 @@ struct iOSTransactionListView: View {
                 if !model.isEmpty {
                     ForEach(model, id:\.self ){ item in
                         //TODO: Implement support for split transactions
-                        NavigationLink(destination: TransactionView(data: item)){
+                        NavigationLink(destination: TransactionView(status: item.transaction.status,
+                                                                    direction: item.transaction.type,
+                                                                    contextDirection: item.transaction.getType(convertTransfer: true, bucket: bucket.id!),
+                                                                    date: item.transaction.date,
+                                                                    posted: item.transaction.posted,
+                                                                    sourceName: item.source?.name ?? "",
+                                                                    destinationName: item.destination?.name ?? "",
+                                                                    amount: item.transaction.amount,
+                                                                    payee: item.transaction.payee,
+                                                                    memo: item.transaction.memo,
+                                                                    tags: item.tags)){
                             TransactionRow(status: item.transaction.status,
                                            direction: item.transaction.type,
                                            contextDirection: item.transaction.getType(convertTransfer: true, bucket: bucket.id),

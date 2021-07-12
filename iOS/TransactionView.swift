@@ -8,34 +8,73 @@
 import SwiftUI
 
 struct TransactionView: View {
+    @Environment(\.editMode) var editMode
     @Environment(\.colorScheme) var colorScheme
-    let data: TransactionData
+    let status: Transaction.StatusTypes
+    let direction: Transaction.TransType
+    let contextDirection: Transaction.TransType
+    let date: Date
+    let posted: Date?
+    let sourceName: String
+    let destinationName: String
+    let amount: Int
+    let payee: String?
+    let memo: String
+    let tags: [Tag]
+    @State var dataValue: String = ""
     
     var body: some View {
         List{
-            Section(header: Text("Status")){
-                Text(data.transaction.status.getStringName())
+            Section(){
+                HStack{
+                    Text("Status")
+                    Spacer()
+                    Text(status.getStringName())
+                }
                 HStack {
-                    Text("Amount: ")
-                    Text(data.transaction.amount.currencyFormat)
-                    .foregroundColor(data.transaction.type == .Withdrawal ? .red : (colorScheme == .light ? .black : .gray))
+                    Text("Amount")
+                    Spacer()
+                    Text(amount.currencyFormat)
+                    .foregroundColor(contextDirection == .Withdrawal ? .red : (colorScheme == .light ? .black : .gray))
                 }
             }
             
-            Section(header: Text("Date")){
-                Text(data.transaction.date.transactionFormat)
-                Text("Posted: \(data.transaction.posted?.transactionFormat ?? "")")
+            Section(){
+                HStack{
+                    Text("Date")
+                    Spacer()
+                    Text(date.transactionFormat)
+                }
+                if let postedDate = posted {
+                    HStack{
+                        Text("Posted")
+                        Spacer()
+                        Text(postedDate.transactionFormat)
+                    }
+                }
             }
             
-            Section(header: Text("Notes")){
-                Text("Payee: \(data.transaction.payee ?? "")")
-                Text(data.transaction.memo)
+            Section(){
+                if let thePayee = payee {
+                    HStack{
+                        Text("Payee")
+                        Spacer()
+                        Text(thePayee)
+                    }
+                }
+                HStack {
+                    if self.editMode!.wrappedValue == .active {
+                        TextField("Memo", text: $dataValue)
+                    } else {
+                        Text(memo)
+                    }
+                }
             }
             
-            if !data.tags.isEmpty {
+            if !tags.isEmpty {
                 Section(header: Text("Tags")){
                     HStack(){
-                        ForEach(data.tags, id: \.self){ tag in
+                        ForEach(tags, id: \.self){ tag in
                             TransactionRow.Badge(text: tag.name, color: .gray)
                         }
                     }
@@ -44,7 +83,7 @@ struct TransactionView: View {
         }.listStyle(GroupedListStyle())
         .toolbar(content: {
             EditButton()
-        }).navigationTitle(data.transaction.type.getStringName())
+        }).navigationTitle(direction.getStringName())
     }
 }
 
@@ -54,6 +93,6 @@ struct TransactionView_Previews: PreviewProvider {
         let bucket2 = Bucket(id: 1, name: "Account 2", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
 
         let t = Transaction.getRandomTransaction(withID: 1, withSource: bucket1.id, withDestination: bucket2.id, withGroup: nil)
-        TransactionView(data: TransactionData(tags: [], source: bucket1, destination: bucket2, transaction: t))
+        TransactionView(status: t.status, direction: t.type, contextDirection: .Withdrawal, date: t.date, posted: t.date, sourceName: bucket1.name, destinationName: bucket2.name, amount: 5324, payee: "The Bank", memo: "Some memo", tags: [])
     }
 }

@@ -510,8 +510,8 @@
             filePath = "macOS/View/MacTransactionView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "31"
-            endingLineNumber = "31"
+            startingLineNumber = "40"
+            endingLineNumber = "40"
             landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
@@ -526,8 +526,8 @@
             filePath = "macOS/View/MacTransactionView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "41"
-            endingLineNumber = "41"
+            startingLineNumber = "53"
+            endingLineNumber = "53"
             landmarkName = "body"
             landmarkType = "24">
             <Locations>
@@ -574,8 +574,8 @@
             filePath = "macOS/View/MacTransactionView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "45"
-            endingLineNumber = "45"
+            startingLineNumber = "57"
+            endingLineNumber = "57"
             landmarkName = "body"
             landmarkType = "24">
             <Locations>
@@ -820,8 +820,8 @@
             filePath = "macOS/SPENTmacOS.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "197"
-            endingLineNumber = "197"
+            startingLineNumber = "221"
+            endingLineNumber = "221"
             landmarkName = "importSPENTLegacy()"
             landmarkType = "7">
          </BreakpointContent>
@@ -910,7 +910,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "28277F39-4028-44AA-B1FD-FD224CAE5E97"
-            shouldBeEnabled = "No"
+            shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Shared/View/Forms/BucketPicker.swift"
@@ -934,7 +934,7 @@
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "17"
                   endingLineNumber = "17"
-                  offsetFromSymbolStart = "1431">
+                  offsetFromSymbolStart = "1440">
                </Location>
                <Location
                   uuid = "28277F39-4028-44AA-B1FD-FD224CAE5E97 - 518e2bf8524a4dff"
@@ -1059,8 +1059,8 @@
             filePath = "Shared/Control/Request/TransactionModelRequest.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "58"
-            endingLineNumber = "58"
+            startingLineNumber = "75"
+            endingLineNumber = "75"
             landmarkName = "fetchValue(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -1075,9 +1075,25 @@
             filePath = "Shared/Control/Request/TransactionModelRequest.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "48"
-            endingLineNumber = "48"
+            startingLineNumber = "53"
+            endingLineNumber = "53"
             landmarkName = "fetchValue(_:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "0CD894CC-4EA4-443D-B08D-2B17E8C97A37"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Shared/Control/Request/BucketBalanceRequest.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "80"
+            endingLineNumber = "80"
+            landmarkName = "getTreeAtBucket(_:db:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

@@ -379,11 +379,3 @@ enum PreferenceKeys: String {
     case autoloadDB
     case databaseBookmark
 }
-
-class GlobalState: ObservableObject {
-    @Published var selectedView = TransactionViewType.Table
-    @Published var includeTree: Bool = true
-    @Published var sorting = TransactionModelRequest.Ordering.byDate
-    @Published var sortDirection = TransactionModelRequest.OrderDirection.descending
-    @Published var contextBucket: Bucket?
-}

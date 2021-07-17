@@ -20,18 +20,23 @@ struct TableTransactionsView: View {
             Section(header: Header()){}
             if !transactions.isEmpty {
                 List(transactions, id:\.self, selection: $selection){ item in
-                    Row(status: item.transaction.status,
-                    direction: item.transaction.type,
-                    date: item.transaction.date,
-                    postDate: item.transaction.posted,
-                    sourceName: item.source?.name ?? "",
-                    destinationName: item.destination?.name ?? "",
-                    amount: item.transaction.amount,
-                    payee: item.transaction.payee,
-                    memo: item.transaction.memo,
-                    group: item.transaction.group
-                    ).frame(height: 20)
-                }.listStyle(PlainListStyle()).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    VStack(spacing: 0){
+                        Spacer(minLength: 5)
+                            Row(status: item.transaction.status,
+                            direction: item.transaction.type,
+                            date: item.transaction.date,
+                            postDate: item.transaction.posted,
+                            sourceName: item.source?.name ?? "",
+                            destinationName: item.destination?.name ?? "",
+                            amount: item.transaction.amount,
+                            payee: item.transaction.payee,
+                            memo: item.transaction.memo,
+                            group: item.transaction.group
+                            )
+                        Spacer(minLength: 5)
+                        Divider()
+                    }.frame(height: 20).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
+                }.listStyle(PlainListStyle())
             } else {
                 List{
                     Text("No Transactions")

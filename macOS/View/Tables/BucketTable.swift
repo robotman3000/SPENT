@@ -10,6 +10,7 @@ import SwiftUI
 struct BucketTable: View {
     
     @EnvironmentObject var store: DatabaseStore
+    var buckets: [Bucket]
     @State var selected: Bucket?
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
@@ -24,7 +25,7 @@ struct BucketTable: View {
                     }
                     Header()
                 }){}
-            List(store.buckets, id: \.self, selection: $selected){ bucket in
+            List(buckets, id: \.self, selection: $selected){ bucket in
                 Row(bucket: bucket).tag(bucket)
             }
         }.sheet(item: $activeSheet) { sheet in

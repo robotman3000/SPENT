@@ -46,7 +46,7 @@ struct ListTransactionsView: View {
             }
         }.navigationTitle(bucketName)
         .sheet(item: $contextSelection) { item in
-            TransactionTagForm(transaction: item.transaction, tags: Set(item.tags), onSubmit: {tags, transaction in
+            TransactionTagForm(transaction: item.transaction, tags: Set(item.tags), tagChoices: store.tags, onSubmit: {tags, transaction in
                 print(tags)
                 if selection != nil {
                     store.setTransactionTags(transaction: item.transaction, tags: tags)

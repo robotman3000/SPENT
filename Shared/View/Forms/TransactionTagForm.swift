@@ -12,14 +12,14 @@ import SwiftUI
 struct TransactionTagForm: View {
     @State var transaction: Transaction
     @State var tags: Set<Tag>
-    @Query(TagRequest()) var dbTags: [Tag]
+    var tagChoices: [Tag]
     
     let onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void
     let onCancel: () -> Void
     
     var body: some View {
         Form {
-            List(dbTags, id: \.self, selection: $tags) { tag in
+            List(tagChoices, id: \.self, selection: $tags) { tag in
                 Text("\(tag.name)")
             }
         }

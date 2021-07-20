@@ -24,13 +24,13 @@ struct BucketForm: View {
             
             Section(){
                 Toggle("Is Account", isOn: $isAccount)
-                BucketPicker(label: "Parent", selection: $selected.wrappedStruct)
+                BucketPicker(label: "Parent", selection: $selected.wrappedStruct, choices: dbStore.buckets)
                     .disabled(isAccount)
             }
             
             Section(){
                 Toggle("Enable Budget", isOn: $hasBudget)
-                SchedulePicker(label: "Budget", selection: $selectedSchedule.wrappedStruct)
+                SchedulePicker(label: "Budget", selection: $selectedSchedule.wrappedStruct, choices: dbStore.schedules)
                     .disabled(!hasBudget)
             }
             

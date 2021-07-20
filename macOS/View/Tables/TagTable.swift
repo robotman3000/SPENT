@@ -10,7 +10,7 @@ import SwiftUI
 struct TagTable: View {
     
     @EnvironmentObject var store: DatabaseStore
-    @Query(TagRequest(order: .none)) var tags: [Tag]
+    var tags: [Tag]
     @State var selected: Tag?
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil

@@ -11,11 +11,11 @@ struct BucketPicker: View {
 
     var label: String = ""
     @Binding var selection: Bucket?
-    @Query(BucketRequest()) var bucketChoices: [Bucket]
+    var choices: [Bucket]
     
     var body: some View {
         Picker(selection: $selection, label: Text(label)) {
-            ForEach(bucketChoices, id: \.id) { bucket in
+            ForEach(choices, id: \.id) { bucket in
                 Text(bucket.name).tag(bucket as Bucket?)
             }
         }

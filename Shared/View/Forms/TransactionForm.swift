@@ -53,14 +53,11 @@ struct TransactionForm: View {
             Section(header:
                 EnumPicker(label: "Type", selection: $transType, enumCases: Transaction.TransType.allCases)
             ){
-                switch transType {
-                case .Deposit:
-                    BucketPicker(label: "To", selection: $selectedDest.wrappedStruct)
-                case .Withdrawal:
-                    BucketPicker(label: "From", selection: $selectedSource.wrappedStruct)
-                case .Transfer:
-                    BucketPicker(label: "From", selection: $selectedSource.wrappedStruct)
-                    BucketPicker(label: "To", selection: $selectedDest.wrappedStruct)
+                if transType == .Withdrawal || transType == .Transfer {
+                    BucketPicker(label: "From", selection: $selectedSource.wrappedStruct, choices: dbStore.buckets)
+                }
+                if transType == .Deposit || transType == .Transfer {
+                    BucketPicker(label: "To", selection: $selectedDest.wrappedStruct, choices: dbStore.buckets)
                 }
             }
             

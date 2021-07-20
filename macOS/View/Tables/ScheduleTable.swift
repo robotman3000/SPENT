@@ -10,7 +10,7 @@ import SwiftUI
 struct ScheduleTable: View {
 
     @EnvironmentObject var store: DatabaseStore
-    @Query(ScheduleRequest(order: .none)) var schedules: [Schedule]
+    var schedules: [Schedule]
     @State var selected: Schedule?
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil

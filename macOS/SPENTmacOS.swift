@@ -292,17 +292,17 @@ struct SettingsView: View {
                 .tag(Tabs.general)
             
             if dbStore.database != nil {
-                BucketTable()
+                BucketTable(buckets: dbStore.buckets)
                     .tabItem {
                         Label("Accounts", systemImage: "folder")
                     }.tag(Tabs.buckets)
              
-                ScheduleTable()
+                ScheduleTable(schedules: dbStore.schedules)
                     .tabItem {
                         Label("Schedules", systemImage: "calendar.badge.clock")
                     }.tag(Tabs.schedules)
          
-                TagTable()
+                TagTable(tags: dbStore.tags)
                     .tabItem {
                         Label("Tags", systemImage: "tag")
                     }.tag(Tabs.tags)

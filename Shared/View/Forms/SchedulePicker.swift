@@ -10,11 +10,11 @@ import SwiftUI
 struct SchedulePicker: View {
     var label: String = ""
     @Binding var selection: Schedule?
-    @Query(ScheduleRequest()) var scheduleChoices: [Schedule]
+    var choices: [Schedule]
     
     var body: some View {
         Picker(selection: $selection, label: Text(label)) {
-            ForEach(scheduleChoices, id: \.id) { schedule in
+            ForEach(choices, id: \.id) { schedule in
                 Text(schedule.name).tag(schedule as Schedule?)
             }
         }

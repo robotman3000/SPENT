@@ -909,54 +909,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "28277F39-4028-44AA-B1FD-FD224CAE5E97"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Shared/View/Forms/BucketPicker.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "17"
-            endingLineNumber = "17"
-            landmarkName = "body"
-            landmarkType = "24">
-            <Locations>
-               <Location
-                  uuid = "28277F39-4028-44AA-B1FD-FD224CAE5E97 - 63b817384de0c61f"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "SPENT.BucketPicker.body.getter : some"
-                  moduleName = "SPENT"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/enims/Application%20Data/Xcode/SPENT-Git/Shared/View/Forms/BucketPicker.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "17"
-                  endingLineNumber = "17"
-                  offsetFromSymbolStart = "1440">
-               </Location>
-               <Location
-                  uuid = "28277F39-4028-44AA-B1FD-FD224CAE5E97 - 518e2bf8524a4dff"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "closure #1 () -&gt; SwiftUI.ForEach&lt;Swift.Array&lt;SPENT.Bucket&gt;, Swift.Optional&lt;Swift.Int64&gt;, &lt;&lt;opaque return type of SwiftUI.View.tag&lt;&#x3c4;_0_0 where &#x3c4;_1_0: Swift.Hashable&gt;(&#x3c4;_1_0) -&gt; some&gt;&gt;.0&gt; in SPENT.BucketPicker.body.getter : some"
-                  moduleName = "SPENT"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/enims/Application%20Data/Xcode/SPENT-Git/Shared/View/Forms/BucketPicker.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "18"
-                  endingLineNumber = "18"
-                  offsetFromSymbolStart = "128">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "973777D3-38F5-46E6-8DE5-D7F0A6CC39D9"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
@@ -964,8 +916,8 @@
             filePath = "Shared/View/Forms/TransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "118"
-            endingLineNumber = "118"
+            startingLineNumber = "115"
+            endingLineNumber = "115"
             landmarkName = "loadState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -980,8 +932,8 @@
             filePath = "Shared/View/Forms/TransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "146"
-            endingLineNumber = "146"
+            startingLineNumber = "143"
+            endingLineNumber = "143"
             landmarkName = "storeState()"
             landmarkType = "7">
          </BreakpointContent>

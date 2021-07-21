@@ -13,6 +13,7 @@ import Foundation
 struct SPENTmacOS: App {
     @State var isActive: Bool = false
     @State var showWelcomeSheet: Bool = false
+    @State var isDBSwitch: Bool = false
     @StateObject var globalState: GlobalState = GlobalState()
     @StateObject var dbStore: DatabaseStore = DatabaseStore()
     
@@ -29,7 +30,7 @@ struct SPENTmacOS: App {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                         print("Initializing State Controller")
                         print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") ?? "(NIL)")")
-                        if UserDefaults.standard.bool(forKey: PreferenceKeys.autoloadDB.rawValue) {
+                        if !isDBSwitch && UserDefaults.standard.bool(forKey: PreferenceKeys.autoloadDB.rawValue) {
                             if let dbBookmark = UserDefaults.standard.data(forKey: PreferenceKeys.databaseBookmark.rawValue) {
                                 var isStale = false
                                 if let dbURL = getURLByBookmark(dbBookmark, isStale: &isStale) {
@@ -111,6 +112,11 @@ struct SPENTmacOS: App {
             }
         }.commands {
             CommandGroup(after: .newItem) {
+                Button("Change Database") {
+                    isDBSwitch = true
+                    isActive = false
+                }
+                
                 Menu("Import") {
                     Button("SPENT Dev Legacy") {
                         DispatchQueue.main.async {

@@ -32,11 +32,11 @@ struct ScheduleTable: View {
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
-                ScheduleForm(title: "Create Schedule", onSubmit: {data in
+                ScheduleForm(title: "Create Schedule", markerChoices: store.tags, onSubmit: {data in
                     store.updateSchedule(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
-                ScheduleForm(title: "Edit Schedule", schedule: selected!, onSubmit: {data in
+                ScheduleForm(title: "Edit Schedule", schedule: selected!, markerChoices: store.tags, onSubmit: {data in
                     store.updateSchedule(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }
@@ -114,7 +114,7 @@ struct ScheduleTable: View {
                     Text("\(schedule.markerID)")
                 }),
                 AnyView(TableCell {
-                    Text(schedule.memo?.trunc(length: 10) ?? "N/A")
+                    Text(schedule.memo.trunc(length: 10))
                 })
             ], showDivider: false)
         }

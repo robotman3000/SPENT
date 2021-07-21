@@ -26,6 +26,19 @@ struct MacTransactionView: View {
                 Spacer()
                 EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionModelRequest.Ordering.allCases)
                 EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionModelRequest.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
+                Button(action: {
+                    let yearsToAdd = 1
+                    let currentDate = Date()
+
+                    var dateComponent = DateComponents()
+                    dateComponent.year = yearsToAdd
+
+                    let futureDate = Calendar.current.date(byAdding: dateComponent, to: currentDate)
+                    let result = ScheduleRenderer.render(appDB: store.database!, schedule: store.schedules.first!, from: currentDate, to: futureDate!)
+                    print(result)
+                }){
+                    Text("Ref Recurring")
+                }
                 Spacer(minLength: 15)
             }
             

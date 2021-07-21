@@ -15,7 +15,7 @@ struct Schedule: Identifiable, Codable, Hashable {
     var rule: ScheduleRule
     var customRule: String? // TODO: Change this to the correct type
     var markerID: Int64
-    var memo: String?
+    var memo: String
     
     private enum CodingKeys: String, CodingKey {
         case id, name = "Name", scheduleType = "Type", rule = "Rule", customRule = "CustomRule", markerID = "MarkerID", memo = "Memo"
@@ -45,14 +45,14 @@ extension Schedule: FetchableRecord, MutablePersistableRecord {
 
 extension Schedule {
     static let marker = belongsTo(Tag.self, using: ForeignKey(["MarkerID"]))
-    var source: QueryInterfaceRequest<Tag> {
+    var marker: QueryInterfaceRequest<Tag> {
         request(for: Schedule.marker)
     }
 }
  
 // Status Enum
 extension Schedule {
-    enum ScheduleType: Int, Codable, CaseIterable, Identifiable {
+    enum ScheduleType: Int, Codable, CaseIterable, Identifiable, Stringable {
         case OneTime
         case Recurring
         
@@ -70,7 +70,7 @@ extension Schedule.ScheduleType: DatabaseValueConvertible { }
 
 // Transaction Type Enum
 extension Schedule {
-    enum ScheduleRule: Int, Codable, CaseIterable, Identifiable {
+    enum ScheduleRule: Int, Codable, CaseIterable, Identifiable, Stringable {
         /// Always triggers
         case Anytime
         
@@ -91,4 +91,5 @@ extension Schedule {
         }
     }
 }
+
 extension Schedule.ScheduleRule: DatabaseValueConvertible { }

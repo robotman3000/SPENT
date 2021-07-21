@@ -14,10 +14,14 @@ struct EnumPicker<Type: Identifiable & Hashable & Stringable>: View {
     let enumCases: [Type]
     
     var body: some View {
-        Picker(selection: $selection, label: Text(label)) {
-            ForEach(enumCases) { tStatus in
-                Text(tStatus.getStringName()).tag(tStatus)
+        if !enumCases.isEmpty {
+            Picker(selection: $selection, label: Text(label)) {
+                ForEach(enumCases) { tStatus in
+                    Text(tStatus.getStringName()).tag(tStatus)
+                }
             }
+        } else {
+            Text("No Options")
         }
     }
 }

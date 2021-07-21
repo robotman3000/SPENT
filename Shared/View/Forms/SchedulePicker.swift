@@ -13,10 +13,14 @@ struct SchedulePicker: View {
     var choices: [Schedule]
     
     var body: some View {
-        Picker(selection: $selection, label: Text(label)) {
-            ForEach(choices, id: \.id) { schedule in
-                Text(schedule.name).tag(schedule as Schedule?)
+        if !choices.isEmpty {
+            Picker(selection: $selection, label: Text(label)) {
+                ForEach(choices, id: \.id) { schedule in
+                    Text(schedule.name).tag(schedule as Schedule?)
+                }
             }
+        } else {
+            Text("No Options")
         }
     }
 }

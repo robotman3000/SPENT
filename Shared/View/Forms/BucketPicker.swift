@@ -14,10 +14,14 @@ struct BucketPicker: View {
     var choices: [Bucket]
     
     var body: some View {
-        Picker(selection: $selection, label: Text(label)) {
-            ForEach(choices, id: \.id) { bucket in
-                Text(bucket.name).tag(bucket as Bucket?)
+        if !choices.isEmpty {
+            Picker(selection: $selection, label: Text(label)) {
+                ForEach(choices, id: \.id) { bucket in
+                    Text(bucket.name).tag(bucket as Bucket?)
+                }
             }
+        } else {
+            Text("No Options")
         }
     }
 }

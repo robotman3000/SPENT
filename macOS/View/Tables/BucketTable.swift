@@ -84,7 +84,7 @@ struct BucketTable: View {
                 AnyView(TableCell {
                     Text("Budget")
                 })
-            ])
+            ], showDivider: false)
         }
     }
     
@@ -111,7 +111,7 @@ struct BucketTable: View {
                 AnyView(TableCell {
                     Text("\(bucket.budgetID ?? -1)")
                 })
-            ])
+            ], showDivider: false)
         }
     }
     

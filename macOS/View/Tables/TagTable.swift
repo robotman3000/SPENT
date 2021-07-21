@@ -79,7 +79,7 @@ struct TagTable: View {
                 AnyView(TableCell {
                     Text("Memo")
                 })
-            ])
+            ], showDivider: false)
         }
     }
     
@@ -96,7 +96,7 @@ struct TagTable: View {
                 AnyView(TableCell {
                     Text(tag.memo.trunc(length: 10))
                 })
-            ])
+            ], showDivider: false)
         }
     }
 }

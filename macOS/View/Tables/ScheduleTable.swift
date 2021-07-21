@@ -90,7 +90,7 @@ struct ScheduleTable: View {
                 AnyView(TableCell {
                     Text("Memo")
                 })
-            ])
+            ], showDivider: false)
         }
     }
     
@@ -116,7 +116,7 @@ struct ScheduleTable: View {
                 AnyView(TableCell {
                     Text(schedule.memo?.trunc(length: 10) ?? "N/A")
                 })
-            ])
+            ], showDivider: false)
         }
     }
 }

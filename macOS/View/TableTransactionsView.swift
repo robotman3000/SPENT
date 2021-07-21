@@ -21,7 +21,6 @@ struct TableTransactionsView: View {
             if !transactions.isEmpty {
                 List(transactions, id:\.self, selection: $selection){ item in
                     VStack(spacing: 0){
-                        Spacer(minLength: 5)
                             Row(status: item.transaction.status,
                             direction: item.transaction.type,
                             date: item.transaction.date,
@@ -33,8 +32,6 @@ struct TableTransactionsView: View {
                             memo: item.transaction.memo,
                             group: item.transaction.group
                             )
-                        Spacer(minLength: 5)
-                        Divider()
                     }.frame(height: 20).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
                 }.listStyle(PlainListStyle())
             } else {
@@ -75,7 +72,7 @@ struct TableTransactionsView: View {
                 AnyView(TableCell {
                     Text("Group ID")
                 })
-            ])
+            ], showDivider: false)
         }
     }
     

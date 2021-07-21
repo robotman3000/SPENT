@@ -10,15 +10,24 @@ import SwiftUI
 struct TableRow: View {
     
     let content: [AnyView]
-        
-    init(content: [AnyView]) {
+    let showDivider: Bool
+    
+    init(content: [AnyView], showDivider: Bool = true) {
         self.content = content
+        self.showDivider = showDivider
     }
     var body: some View {
+        if showDivider {
+            Spacer(minLength: 5)
+        }
         HStack(alignment: .center) {
             ForEach(self.content.indices){ item in
                 content[item]
             }
+        }
+        if showDivider {
+            Spacer(minLength: 5)
+            Divider()
         }
     }
 }

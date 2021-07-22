@@ -1,23 +1,20 @@
 //
-//  TransactionForm.swift
+//  TransferForm.swift
 //  macOS
 //
-//  Created by Eric Nims on 6/9/21.
+//  Created by Eric Nims on 7/22/21.
 //
 
 import SwiftUI
 
-struct TransactionForm: View {
+struct TransferForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
     @State var transaction: Transaction = Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
     let currentBucket: Bucket
-    @State var bucketChoices: [Bucket] = []
+    
     @State var postDate: Date = Date()
-    @State var payee: String = ""
-    @State var transType: Transaction.TransType = .Withdrawal
     @StateObject var selectedSource: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
     @StateObject var selectedDest: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
-    //@State var amount: NSDecimalNumber = 0.0
     @State var amount: String = ""
     @State var groupString: String = ""
     
@@ -53,19 +50,10 @@ struct TransactionForm: View {
                 TextField("Amount", text: $amount)
             }
 
-            Section(header:
-                        EnumPicker(label: "Type", selection: $transType, enumCases: [.Deposit, .Withdrawal])
-            ){
-                if transType == .Withdrawal {
-                    BucketPicker(label: "From", selection: $selectedSource.wrappedStruct, choices: bucketChoices)
-                }
-                if transType == .Deposit {
-                    BucketPicker(label: "To", selection: $selectedDest.wrappedStruct, choices: bucketChoices)
-                }
-            }
+            BucketPicker(label: "From", selection: $selectedSource.wrappedStruct, choices: dbStore.buckets)
+            BucketPicker(label: "To", selection: $selectedDest.wrappedStruct, choices: dbStore.buckets)
             
             Section(){
-                TextField("Payee", text: $payee)
                 TextEditor(text: $transaction.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
             
@@ -84,7 +72,7 @@ struct TransactionForm: View {
                         onSubmit(&transaction)
                     } else {
                         //TODO: Show an alert or some "Invalid Data" indicator
-                        print("Transaction storeState failed!")
+                        print("Transfer storeState failed!")
                     }
                 })
             }
@@ -93,7 +81,7 @@ struct TransactionForm: View {
                     onCancel()
                 })
             }
-        }).frame(minWidth: 250, minHeight: 350)
+        }).frame(minWidth: 250, minHeight: 325)
     }
     
     func loadState(){
@@ -103,8 +91,6 @@ struct TransactionForm: View {
             //selectedDest.wrappedStruct = currentBucket
         } else {
             // We have an existing transaction
-            transType = transaction.type
-            payee = transaction.payee ?? ""
             groupString = transaction.group?.uuidString ?? ""
             amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
             
@@ -120,13 +106,6 @@ struct TransactionForm: View {
                 selectedDest.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
             }
         }
-        
-        if currentBucket.ancestorID == nil {
-            bucketChoices.append(currentBucket)
-        }
-        
-        bucketChoices.append(contentsOf: dbStore.database?.resolve(currentBucket.tree) ?? [])
-        
     }
     
     func storeState() -> Bool {
@@ -137,31 +116,10 @@ struct TransactionForm: View {
         transaction.sourceID = selectedSource.wrappedStruct?.id
         transaction.destID = selectedDest.wrappedStruct?.id
         
-        switch transType {
-        case .Deposit:
-            transaction.sourceID = nil
-        case .Withdrawal:
-            transaction.destID = nil
-        case .Transfer:
-            print("Make the compiler happy")
-        }
-        
-        if payee.isEmpty {
-            transaction.payee = nil
-        } else {
-            transaction.payee = payee
-        }
-        
+        transaction.payee = nil // Transfers don't need payees
         transaction.group = UUID(uuidString: groupString)
-        
         transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
         
         return true
     }
 }
-
-//struct TransactionForm_Previews: PreviewProvider {
-//    static var previews: some View {
-//        TransactionForm()
-//    }
-//}

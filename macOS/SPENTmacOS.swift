@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 import GRDB
 import Foundation
 
@@ -16,15 +17,17 @@ struct SPENTmacOS: App {
     @State var isDBSwitch: Bool = false
     @StateObject var globalState: GlobalState = GlobalState()
     @StateObject var dbStore: DatabaseStore = DatabaseStore()
+    @StateObject var context: SheetContext = SheetContext()
+    @StateObject var aContext: AlertContext = AlertContext()
     
     var body: some Scene {
         WindowGroup {
             if isActive {
                 NavigationView {
-                    MacSidebar(bucketTree: dbStore.bucketTree, schedules: dbStore.schedules, tags: dbStore.tags)
+                    MacSidebar(bucketTree: $dbStore.bucketTree, schedules: dbStore.schedules, tags: dbStore.tags)
                         .frame(minWidth: 300)
                         .navigationTitle("Accounts")
-                }.environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)
+                }.environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!).sheet(context: context).alert(context: aContext)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now()) {
@@ -115,12 +118,9 @@ struct SPENTmacOS: App {
                 
                 Section{
                     Button("New Account") {
-                    }
-                    
-                    Button("New Transaction") {
-                    }
-                    
-                    Button("New Transfer") {
+                        context.present(UIForms.account(context: context, account: nil, onSubmit: {data in
+                            dbStore.updateBucket(&data, onComplete: { context.dismiss() })
+                        }))
                     }
                 }
                 
@@ -137,13 +137,15 @@ struct SPENTmacOS: App {
                             }
                         }
                         Button("CSV File") {
-                            DispatchQueue.main.async {}
+                            aContext.present(UIAlerts.notImplemented)
+                            //DispatchQueue.main.async {}
                         }
                     }
                     
                     Menu("Export As") {
                         Button("CSV File") {
-                            DispatchQueue.main.async {}
+                            aContext.present(UIAlerts.notImplemented)
+                            //DispatchQueue.main.async {}
                         }
                     }
                 }

@@ -51,7 +51,9 @@ struct BucketForm: View {
     }
     
     func loadState(){
-        selected.wrappedStruct = dbStore.database?.resolveOne(bucket.parent)
+        if bucket.parentID != nil {
+            selected.wrappedStruct = dbStore.database?.resolveOne(bucket.parent)
+        }
         
         if bucket.budgetID == nil {
             hasBudget = false

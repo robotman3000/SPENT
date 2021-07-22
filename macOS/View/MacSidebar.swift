@@ -6,14 +6,19 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct MacSidebar: View {
     
-    let bucketTree: [BucketNode]
+    @Binding var bucketTree: [BucketNode]
     let schedules: [Schedule]
     let tags: [Tag]
     @State private var selectedView: Int? = 0
     @State var selectedBucket: Bucket?
+    
+    @EnvironmentObject private var store: DatabaseStore
+    @StateObject private var context = SheetContext()
+    @StateObject private var aContext = AlertContext()
     
     var body: some View {
         VStack {
@@ -46,17 +51,19 @@ struct MacSidebar: View {
                                 BucketRow(name: node.bucket.name, balance: balance.postedInTree)
                             }
                         }.contextMenu {
-                            AccountContextMenu()
+                            AccountContextMenu(context: context, aContext: aContext, contextAccount: node.bucket)
                         }
                     }
                 }.collapsible(false)
             }.listStyle(SidebarListStyle())
             .contextMenu{
                 Button("New Account"){
-                    
+                    context.present(UIForms.account(context: context, account: nil, onSubmit: {data in
+                        store.updateBucket(&data, onComplete: { context.dismiss() })
+                    }))
                 }
             }
-        }
+        }.sheet(context: context).alert(context: aContext)
         .toolbar(){
             ToolbarItem(placement: .navigation) {
                 Button(action: toggleSidebar, label: {
@@ -72,39 +79,70 @@ struct MacSidebar: View {
 }
 
 struct AccountContextMenu: View {
+    @ObservedObject var context: SheetContext
+    @ObservedObject var aContext: AlertContext
+    @State var contextAccount: Bucket
+    @EnvironmentObject private var store: DatabaseStore
+    
     var body: some View {
         Button("New Account"){
-            
-        }
-
-        Button("Edit Account"){
-            
+            context.present(UIForms.account(context: context, account: nil, onSubmit: {data in
+                store.updateBucket(&data, onComplete: { context.dismiss() })
+            }))
         }
         
-        Button("Delete Account"){
+        if(contextAccount.ancestorID == nil){
+            Button("Edit Account"){
+                context.present(UIForms.account(context: context, account: contextAccount, onSubmit: {data in
+                    store.updateBucket(&data, onComplete: { context.dismiss() })
+                }))
+            }
             
-        }
-
-        Divider()
-        
-        Button("Add Bucket"){
+            Button("Delete Account"){
+                aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
+                    store.deleteBucket(contextAccount.id!)
+                }))
+            }
             
+            Divider()
+            
+            Button("Add Bucket"){
+                context.present(UIForms.accountBucket(context: context, contextAccount: contextAccount, onSubmit: {data in
+                    store.updateBucket(&data, onComplete: { context.dismiss() })
+                }))
+            }
+        } else {
+            Button("Edit Bucket"){
+                context.present(UIForms.bucket(context: context, bucket: contextAccount, onSubmit: {data in
+                    store.updateBucket(&data, onComplete: { context.dismiss() })
+                }))
+            }
+            
+            Button("Delete Bucket"){
+                aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
+                    store.deleteBucket(contextAccount.id!)
+                }))
+            }
         }
     
         Divider()
         
         Button("Add Transaction"){
-            
+            context.present(UIForms.transaction(context: context, transaction: nil, contextBucket: contextAccount, onSubmit: {data in
+                store.updateTransaction(&data, onComplete: { context.dismiss() })
+            }))
         }
         
-        Button("Make Transfer"){
-            
+        Button("Add Transfer"){
+            context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: contextAccount, onSubmit: {data in
+                store.updateTransaction(&data, onComplete: { context.dismiss() })
+            }))
         }
     }
 }
 
-struct MacSidebar_Previews: PreviewProvider {
-    static var previews: some View {
-        MacSidebar(bucketTree: [], schedules: [], tags: [], selectedBucket: nil)
-    }
-}
+//struct MacSidebar_Previews: PreviewProvider {
+//    static var previews: some View {
+//        MacSidebar(bucketTree: [], schedules: [], tags: [], selectedBucket: nil)
+//    }
+//}

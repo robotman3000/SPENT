@@ -12,6 +12,10 @@ import SwiftUI
 /// This wraps the struct of Type in an observable class so that we can know when the struct is changed or becomes nil
 class ObservableStructWrapper<Type>: ObservableObject {
     @Published var wrappedStruct: Type?
+    
+    init(wrappedStruct: Type? = nil) {
+        self.wrappedStruct = wrappedStruct
+    }
 }
 
 func getDocumentsDirectory() -> URL {

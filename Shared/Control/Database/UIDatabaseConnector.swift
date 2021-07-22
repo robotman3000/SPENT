@@ -97,14 +97,18 @@ extension DatabaseStore {
     }
 
     func deleteTransaction(_ id: Int64, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
+        deleteTransactions([id], onComplete: onComplete, onError: onError)
+    }
+
+    func deleteTransactions(_ ids: [Int64], onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
         do {
-            try database!.deleteTransactions(ids: [id])
+            try database!.deleteTransactions(ids: ids)
             onComplete()
         } catch {
             onError(error)
         }
     }
-
+    
     func getEmptyTransaction() -> Binding<Transaction> {
         return Binding<Transaction>(
             get: {

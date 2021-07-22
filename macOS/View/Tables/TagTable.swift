@@ -6,15 +6,17 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct TagTable: View {
     
     @EnvironmentObject var store: DatabaseStore
+    @StateObject private var context = SheetContext()
+    @StateObject private var aContext = AlertContext()
+    
     var tags: [Tag]
     @State var selected: Tag?
-    @State var activeSheet : ActiveSheet? = nil
-    @State var activeAlert : ActiveAlert? = nil
-    
+
     var body: some View {
         VStack{
             Section(header:
@@ -23,18 +25,24 @@ struct TagTable: View {
                         TableToolbar(onClick: { action in
                             switch action {
                             case .new:
-                                activeSheet = .new
+                                context.present(UIForms.tag(context: context, tag: nil, onSubmit: {data in
+                                    store.updateTag(&data, onComplete: { context.dismiss() })
+                                }))
                             case .edit:
                                 if selected != nil {
-                                    activeSheet = .edit
+                                    context.present(UIForms.tag(context: context, tag: selected!, onSubmit: {data in
+                                        store.updateTag(&data, onComplete: { context.dismiss() })
+                                    }))
                                 } else {
-                                    activeAlert = .selectSomething
+                                    aContext.present(UIAlerts.message(message: "Select a tag first"))
                                 }
                             case .delete:
                                 if selected != nil {
-                                    activeAlert = .confirmDelete
+                                    aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
+                                        store.deleteTag(selected!.id!)
+                                    }))
                                 } else {
-                                    activeAlert = .selectSomething
+                                    aContext.present(UIAlerts.message(message: "Select a tag first"))
                                 }
                             }
                         })
@@ -45,46 +53,7 @@ struct TagTable: View {
             List(tags, id: \.self, selection: $selected){ tag in
                 Row(tag: tag).tag(tag)
             }
-        }.sheet(item: $activeSheet) { sheet in
-            switch sheet {
-            case .new:
-                TagForm(onSubmit: {data in
-                    store.updateTag(&data, onComplete: dismissModal)
-                }, onCancel: dismissModal).padding()
-            case .edit:
-                TagForm(tag: selected!, onSubmit: {data in
-                    store.updateTag(&data, onComplete: dismissModal)
-                }, onCancel: dismissModal).padding()
-            }
-        }.alert(item: $activeAlert) { alert in
-            switch alert {
-            case .deleteFail:
-                return Alert(
-                    title: Text("Database Error"),
-                    message: Text("Failed to delete tag"),
-                    dismissButton: .default(Text("OK"))
-                )
-            case .selectSomething:
-                return Alert(
-                    title: Text("Alert"),
-                    message: Text("Select a tag first"),
-                    dismissButton: .default(Text("OK"))
-                )
-            case .confirmDelete:
-                return Alert(
-                    title: Text("Confirm Delete"),
-                    message: Text("Are you sure you want to delete this?"),
-                    primaryButton: .cancel(),
-                    secondaryButton: .destructive(Text("Confirm"), action: {
-                        store.deleteTag(selected!.id!)
-                    })
-                )
-            }
-        }
-    }
-    
-    func dismissModal(){
-        activeSheet = nil
+        }.sheet(context: context).alert(context: aContext)
     }
     
     struct Header: View {

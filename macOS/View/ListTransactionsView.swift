@@ -6,18 +6,19 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 import GRDB
 
 struct ListTransactionsView: View {
     @EnvironmentObject var store: DatabaseStore
 
     let transactions: [TransactionData]
-    let bucketName: String
-    let bucketID: Int64?
+    let bucket: Bucket
     
-    @State var editTags = false
-    @Binding var selection: TransactionData?
-    @State var contextSelection: TransactionData?
+    @Binding var selection: Set<TransactionData>
+    @ObservedObject var context: SheetContext
+    @ObservedObject var aContext: AlertContext
+    
     
     var body: some View {
         List(selection: $selection){
@@ -26,7 +27,7 @@ struct ListTransactionsView: View {
                     //TODO: Implement support for split transactions
                     TransactionRow(status: item.transaction.status,
                                    direction: item.transaction.type,
-                                   contextDirection: item.transaction.getType(convertTransfer: true, bucket: bucketID),
+                                   contextDirection: item.transaction.getType(convertTransfer: true, bucket: bucket.id!),
                                    date: item.transaction.date,
                                    sourceName: item.source?.name ?? "",
                                    destinationName: item.destination?.name ?? "",
@@ -35,29 +36,19 @@ struct ListTransactionsView: View {
                                    memo: item.transaction.memo,
                                    tags: item.tags)
                         .frame(height: 55)
-                        .contextMenu(ContextMenu(menuItems: {
-                            Button("Edit Tags"){
-                                contextSelection = item
-                            }
-                        }))
+                        .contextMenu{
+                            TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: [item])
+                        }
                 }
             } else {
                 Text("No Transactions")
             }
-        }.sheet(item: $contextSelection) { item in
-            TransactionTagForm(transaction: item.transaction, tags: Set(item.tags), tagChoices: store.tags, onSubmit: {tags, transaction in
-                print(tags)
-                if selection != nil {
-                    store.setTransactionTags(transaction: item.transaction, tags: tags)
-                }
-                contextSelection = nil
-            }, onCancel: { contextSelection = nil })
         }
     }
 }
-
-struct ListTransactionsView_Previews: PreviewProvider {
-    static var previews: some View {
-        ListTransactionsView(transactions: [], bucketName: "A bucket", bucketID: nil, selection: Binding<TransactionData?>(get: { return nil }, set: {_ in}))
-    }
-}
+//
+//struct ListTransactionsView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        ListTransactionsView(transactions: [], bucketName: "A bucket", bucketID: nil, selection: Binding<TransactionData?>(get: { return nil }, set: {_ in}))
+//    }
+//}

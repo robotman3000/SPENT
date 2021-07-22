@@ -6,14 +6,16 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct ScheduleTable: View {
 
     @EnvironmentObject var store: DatabaseStore
+    @StateObject private var context = SheetContext()
+    @StateObject private var aContext = AlertContext()
+    
     var schedules: [Schedule]
     @State var selected: Schedule?
-    @State var activeSheet : ActiveSheet? = nil
-    @State var activeAlert : ActiveAlert? = nil
     
     var body: some View {
         VStack{
@@ -23,18 +25,24 @@ struct ScheduleTable: View {
                         TableToolbar(onClick: { action in
                             switch action {
                             case .new:
-                                activeSheet = .new
+                                context.present(UIForms.schedule(context: context, schedule: nil, onSubmit: {data in
+                                    store.updateSchedule(&data, onComplete: { context.dismiss() })
+                                }))
                             case .edit:
                                 if selected != nil {
-                                    activeSheet = .edit
+                                    context.present(UIForms.schedule(context: context, schedule: selected!, onSubmit: {data in
+                                        store.updateSchedule(&data, onComplete: { context.dismiss() })
+                                    }))
                                 } else {
-                                    activeAlert = .selectSomething
+                                    aContext.present(UIAlerts.message(message: "Select a tag first"))
                                 }
                             case .delete:
                                 if selected != nil {
-                                    activeAlert = .confirmDelete
+                                    aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
+                                        store.deleteSchedule(selected!.id!)
+                                    }))
                                 } else {
-                                    activeAlert = .selectSomething
+                                    aContext.present(UIAlerts.message(message: "Select a tag first"))
                                 }
                             }
                         })
@@ -45,48 +53,7 @@ struct ScheduleTable: View {
             List(schedules, id: \.self, selection: $selected){ schedule in
                 Row(schedule: schedule).tag(schedule)
             }
-        }
-        .sheet(item: $activeSheet) { sheet in
-            switch sheet {
-            case .new:
-                ScheduleForm(title: "Create Schedule", markerChoices: store.tags, onSubmit: {data in
-                    store.updateSchedule(&data, onComplete: dismissModal)
-                }, onCancel: dismissModal).padding()
-            case .edit:
-                ScheduleForm(title: "Edit Schedule", schedule: selected!, markerChoices: store.tags, onSubmit: {data in
-                    store.updateSchedule(&data, onComplete: dismissModal)
-                }, onCancel: dismissModal).padding()
-            }
-        }
-        .alert(item: $activeAlert) { alert in
-            switch alert {
-            case .deleteFail:
-                return Alert(
-                    title: Text("Database Error"),
-                    message: Text("Failed to delete schedule"),
-                    dismissButton: .default(Text("OK"))
-                )
-            case .selectSomething:
-                return Alert(
-                    title: Text("Alert"),
-                    message: Text("Select a schedule first"),
-                    dismissButton: .default(Text("OK"))
-                )
-            case .confirmDelete:
-                return Alert(
-                    title: Text("Confirm Delete"),
-                    message: Text("Are you sure you want to delete this?"),
-                    primaryButton: .cancel(),
-                    secondaryButton: .destructive(Text("Confirm"), action: {
-                        store.deleteSchedule(selected!.id!)
-                    })
-                )
-            }
-        }
-    }
-    
-    func dismissModal(){
-        activeSheet = nil
+        }.sheet(context: context).alert(context: aContext)
     }
     
     struct Header: View {

@@ -6,14 +6,15 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct TableTransactionsView: View {
-    
     let transactions: [TransactionData]
-    let bucketName: String
-    let bucketID: Int64?
+    let bucket: Bucket
     
-    @Binding var selection: TransactionData?
+    @Binding var selection: Set<TransactionData>
+    @ObservedObject var context: SheetContext
+    @ObservedObject var aContext: AlertContext
     
     var body: some View {
         VStack{
@@ -34,28 +35,7 @@ struct TableTransactionsView: View {
                             )
                     }.frame(height: 20).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
                     .contextMenu{
-                        Section {
-                            Button("Edit Transaction") {
-                            }
-                            
-                            Button("Add Document") {
-                            }
-                            
-                            Button("Assign Tags") {
-                            }
-                        }
-                        
-                        Section{
-                            Button("Mark As Reconciled"){
-                                
-                            }
-                            Menu("Mark As"){
-                                Text("TODO: Picker with options")
-                            }
-                        }
-                        
-                        Button("Delete Selected") {
-                        }
+                        TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: [item])
                     }
                 }.listStyle(PlainListStyle())
             } else {
@@ -146,10 +126,10 @@ struct TableTransactionsView: View {
         }
     }
 }
-
-struct TableTransactionsView_Previews: PreviewProvider {
-    static var previews: some View {
-        let bucket1 = Bucket(id: 1, name: "Account 1", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
-        TableTransactionsView(transactions: [], bucketName: bucket1.name, bucketID: bucket1.id!, selection: Binding<TransactionData?>(get: { return nil }, set: {_ in}))
-    }
-}
+//
+//struct TableTransactionsView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        let bucket1 = Bucket(id: 1, name: "Account 1", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
+//        TableTransactionsView(transactions: [], bucketName: bucket1.name, bucketID: bucket1.id!, selection: Binding<TransactionData?>(get: { return nil }, set: {_ in}))
+//    }
+//}

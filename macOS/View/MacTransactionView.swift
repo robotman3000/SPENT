@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 import GRDB
 
 struct MacTransactionView: View {
@@ -13,14 +14,13 @@ struct MacTransactionView: View {
     
     
     @EnvironmentObject var store: DatabaseStore
-    @StateObject var selected: ObservableStructWrapper<TransactionData> = ObservableStructWrapper<TransactionData>()
-    @State var activeSheet : ActiveSheet? = nil
-    @State var activeAlert : ActiveAlert? = nil
+    @State var selected: Set<TransactionData> = Set<TransactionData>()
     let selectedBucket: Bucket
     @State var editTags = false
     @State var contextSelection: TransactionData?
     
-    @State var isPopoverPresented: Bool = false
+    @StateObject private var context = SheetContext()
+    @StateObject private var aContext = AlertContext()
     
     var body: some View {
         VStack {
@@ -51,26 +51,45 @@ struct MacTransactionView: View {
                                                   order: appState.sorting,
                                                   direction: appState.sortDirection)){ model in
                 
-                if appState.selectedView == .List {
-                    ListTransactionsView(transactions: model,
-                                         bucketName: selectedBucket.name,
-                                         bucketID: selectedBucket.id!,
-                                         selection: $selected.wrappedStruct)
+                VStack{
+                    if appState.selectedView == .List {
+                        ListTransactionsView(transactions: model,
+                                             bucket: selectedBucket,
+                                             selection: $selected,
+                                             context: context,
+                                             aContext: aContext)
+                    }
+                    
+                    if appState.selectedView == .Table {
+                        TableTransactionsView(transactions: model,
+                                              bucket: selectedBucket,
+                                              selection: $selected,
+                                              context: context,
+                                              aContext: aContext)
+                    }
+                }.contextMenu {
+                    Button("Add Transaction") {
+                        context.present(UIForms.transaction(context: context, transaction: nil, contextBucket: selectedBucket, onSubmit: {data in
+                            store.updateTransaction(&data, onComplete: { context.dismiss() })
+                        }))
+                    }
+                    
+                    Button("Add Transfer"){
+                        context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: selectedBucket, onSubmit: {data in
+                            store.updateTransaction(&data, onComplete: { context.dismiss() })
+                        }))
+                    }
                 }
-                
-                if appState.selectedView == .Table {
-                    TableTransactionsView(transactions: model,
-                                          bucketName: selectedBucket.name,
-                                          bucketID: selectedBucket.id!,
-                                          selection: $selected.wrappedStruct)
-                }
-                
 //                if appState.selectedView == .Calendar {
 //
 //                }
                 
                 HStack(alignment: .firstTextBaseline) {
-                    Button(action: { }) {
+                    Button(action: {
+                        context.present(UIForms.transaction(context: context, transaction: nil, contextBucket: selectedBucket, onSubmit: {data in
+                            store.updateTransaction(&data, onComplete: { context.dismiss() })
+                        }))
+                    }) {
                         Image(systemName: "plus")
                     }
                     Spacer()
@@ -83,64 +102,77 @@ struct MacTransactionView: View {
                     }.pickerStyle(SegmentedPickerStyle()).frame(width: 160)
                 }.padding().frame(height: 30)
             }
-        }.navigationTitle(selectedBucket.name)
-        .sheet(item: $activeSheet) { sheet in
-            switch sheet {
-            case .new:
-                TransactionForm(currentBucket: selectedBucket, onSubmit: {data in
-                    store.updateTransaction(&data, onComplete: dismissModal)
-                }, onCancel: dismissModal).padding()
-            case .edit:
-                TransactionForm(transaction: selected.wrappedStruct!.transaction, currentBucket: selectedBucket, onSubmit: {data in
-                    store.updateTransaction(&data, onComplete: dismissModal)
-                }, onCancel: dismissModal).padding()
-            }
-        }
-        .alert(item: $activeAlert) { alert in
-            switch alert {
-            case .deleteFail:
-                return Alert(
-                    title: Text("Database Error"),
-                    message: Text("Failed to delete transaction"),
-                    dismissButton: .default(Text("OK"))
-                )
-            case .selectSomething:
-                return Alert(
-                    title: Text("Alert"),
-                    message: Text("Select a transaction first"),
-                    dismissButton: .default(Text("OK"))
-                )
-            case .confirmDelete:
-                return Alert(
-                    title: Text("Confirm Delete"),
-                    message: Text("Are you sure you want to delete this?"),
-                    primaryButton: .cancel(),
-                    secondaryButton: .destructive(Text("Confirm"), action: {
-                        if let sel = selected.wrappedStruct {
-                            store.deleteTransaction(sel.transaction.id!)
-                            selected.wrappedStruct = nil
-                        }
-                    })
-                )
-            }
-        }
-    }
-    
-    func dismissModal(){
-        activeSheet = nil
+        }.navigationTitle(selectedBucket.name).sheet(context: context).alert(context: aContext)
     }
 }
 
-enum ActiveSheet: String, Identifiable {
-    case new, edit
+struct TransactionContextMenu: View {
+    @ObservedObject var context: SheetContext
+    @ObservedObject var aContext: AlertContext
+    @EnvironmentObject var store: DatabaseStore
     
-    var id: String { return self.rawValue }
-}
-
-enum ActiveAlert : String, Identifiable { // <--- note that it's now Identifiable
-    case deleteFail, selectSomething, confirmDelete
+    let contextBucket: Bucket
+    let transactions: Set<TransactionData>
     
-    var id: String { return self.rawValue }
+    var body: some View {
+        Section{
+            Button("Add Transaction") {
+                context.present(UIForms.transaction(context: context, transaction: nil, contextBucket: contextBucket, onSubmit: {data in
+                    store.updateTransaction(&data, onComplete: { context.dismiss() })
+                }))
+            }
+            
+            Button("Add Transfer"){
+                context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: contextBucket, onSubmit: {data in
+                    store.updateTransaction(&data, onComplete: { context.dismiss() })
+                }))
+            }
+        }
+        Section {
+            Button("Edit Transactions") { // No support for batch editing... yet
+                if let t = transactions.first {
+                    context.present(UIForms.transaction(context: context, transaction: t.transaction, contextBucket: contextBucket, onSubmit: {data in
+                        store.updateTransaction(&data, onComplete: { context.dismiss() })
+                    }))
+                }
+            }
+            
+            Button("Add Document") {
+                aContext.present(UIAlerts.notImplemented)
+            }
+            
+            Button("Set Tags") {// No support for batch editing... yet
+                if let item = transactions.first {
+                    context.present(
+                        UIForms.transactionTags(
+                            context: context,
+                            transaction: item.transaction,
+                            currentTags: Set(item.tags),
+                            onSubmit: {tags, transaction in
+                                print(tags)
+                                store.setTransactionTags(transaction: item.transaction, tags: tags, onComplete: { context.dismiss() })
+                            }
+                        )
+                    )
+                }
+            }
+        }
+        
+        Section{
+            Button("Mark As Reconciled"){
+                aContext.present(UIAlerts.notImplemented)
+            }
+            Menu("Mark As"){
+                Text("Not Implemented")
+            }
+        }
+        
+        Button("Delete Selected") {
+            aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
+                store.deleteTransactions(transactions.map({t in t.transaction.id!}))
+            }))
+        }
+    }
 }
 
 enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
@@ -165,8 +197,6 @@ enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
         }
     }
 }
-
-
 
 //struct MacTransactionView_Previews: PreviewProvider {
 //    static var previews: some View {

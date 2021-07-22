@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-import SwiftUI
-
 struct AccountForm: View {
     @State var bucket: Bucket = Bucket(id: nil, name: "")
     
@@ -38,7 +36,7 @@ struct AccountForm: View {
                 })
             }
         }).onAppear { loadState() }
-        .frame(minWidth: 300, minHeight: 200)
+        //.frame(minWidth: 300, minHeight: 200)
     }
     
     func loadState(){}

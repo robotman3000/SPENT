@@ -9,6 +9,15 @@
           "revision": "31e2b01c10243399882eaf8cc6b5c974af93d21e",
           "version": "5.7.4"
         }
+      },
+      {
+        "package": "SwiftUIKit",
+        "repositoryURL": "https://github.com/danielsaidi/SwiftUIKit.git",
+        "state": {
+          "branch": null,
+          "revision": "9164c502a8c9f3017bd96db929e065cb88c79d76",
+          "version": "1.4.0"
+        }
       }
     ]
   },

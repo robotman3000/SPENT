@@ -10,16 +10,16 @@ import SwiftUI
 import SwiftUI
 
 struct TransactionTagForm: View {
+    @EnvironmentObject var dbStore: DatabaseStore
     @State var transaction: Transaction
     @State var tags: Set<Tag>
-    var tagChoices: [Tag]
     
     let onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void
     let onCancel: () -> Void
     
     var body: some View {
         Form {
-            List(tagChoices, id: \.self, selection: $tags) { tag in
+            List(dbStore.tags, id: \.self, selection: $tags) { tag in
                 Text("\(tag.name)")
             }
         }

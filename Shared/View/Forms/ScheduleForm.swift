@@ -9,10 +9,9 @@ import SwiftUI
 
 struct ScheduleForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
-    let title: String
     @State var schedule: Schedule = Schedule(id: nil, name: "", scheduleType: .OneTime, rule: .Never, markerID: -1, memo: "")
     @StateObject var marker: ObservableStructWrapper<Tag> = ObservableStructWrapper<Tag>()
-    let markerChoices: [Tag]
+
     /*
      var name: String
      var scheduleType: ScheduleType
@@ -34,7 +33,7 @@ struct ScheduleForm: View {
                 // TODO: Add support for custom rules
                 
                 Text(marker.wrappedStruct?.name ?? "N/A")
-                TagPicker(label: "Marker", selection: $marker.wrappedStruct, choices: markerChoices)
+                TagPicker(label: "Marker", selection: $marker.wrappedStruct, choices: dbStore.tags)
                 
                 TextEditor(text: $schedule.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }//.navigationTitle(Text(title))
@@ -61,7 +60,7 @@ struct ScheduleForm: View {
     func loadState(){
         if schedule.markerID == -1 {
             // TODO: This will crash if there are no tags defined
-            self.marker.wrappedStruct = self.markerChoices.first!
+            self.marker.wrappedStruct = dbStore.tags.first!
         } else {
             self.marker.wrappedStruct = dbStore.database?.resolveOne(schedule.marker)
         }

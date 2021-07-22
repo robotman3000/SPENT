@@ -33,6 +33,30 @@ struct TableTransactionsView: View {
                             group: item.transaction.group
                             )
                     }.frame(height: 20).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
+                    .contextMenu{
+                        Section {
+                            Button("Edit Transaction") {
+                            }
+                            
+                            Button("Add Document") {
+                            }
+                            
+                            Button("Assign Tags") {
+                            }
+                        }
+                        
+                        Section{
+                            Button("Mark As Reconciled"){
+                                
+                            }
+                            Menu("Mark As"){
+                                Text("TODO: Picker with options")
+                            }
+                        }
+                        
+                        Button("Delete Selected") {
+                        }
+                    }
                 }.listStyle(PlainListStyle())
             } else {
                 List{

@@ -112,23 +112,37 @@ struct SPENTmacOS: App {
             }
         }.commands {
             CommandGroup(after: .newItem) {
+                
+                Section{
+                    Button("New Account") {
+                    }
+                    
+                    Button("New Transaction") {
+                    }
+                    
+                    Button("New Transfer") {
+                    }
+                }
+                
                 Button("Change Database") {
                     isDBSwitch = true
                     isActive = false
                 }
                 
-                Menu("Import") {
-                    Button("SPENT Dev Legacy") {
-                        DispatchQueue.main.async {
-                            importSPENTLegacy()
+                Section{
+                    Menu("Import") {
+                        Button("SPENT Dev Legacy") {
+                            DispatchQueue.main.async {
+                                importSPENTLegacy()
+                            }
                         }
                     }
-                }
-                
-                Menu("Export As") {
-//                    Button("Transaction") { activeSheet = .transaction }
-//                    Button("Bucket") { activeSheet = .bucket }
-//                    Button("Tag") { activeSheet = .tag }
+                    
+                    Menu("Export As") {
+    //                    Button("Transaction") { activeSheet = .transaction }
+    //                    Button("Bucket") { activeSheet = .bucket }
+    //                    Button("Tag") { activeSheet = .tag }
+                    }
                 }
             }
         }

@@ -20,29 +20,11 @@ struct MacTransactionView: View {
     @State var editTags = false
     @State var contextSelection: TransactionData?
     
+    @State var isPopoverPresented: Bool = false
+    
     var body: some View {
         VStack {
             HStack {
-                TableToolbar(onClick: { action in
-                    switch action {
-                    case .new:
-                        activeSheet = .new
-                    case .edit:
-                        if selected.wrappedStruct != nil {
-                            activeSheet = .edit
-                        } else {
-                            activeAlert = .selectSomething
-                        }
-                    case .delete:
-                        if selected.wrappedStruct != nil {
-                            activeAlert = .confirmDelete
-                        } else {
-                            activeAlert = .selectSomething
-                        }
-                    }
-                })
-                
-                Spacer()
                 Toggle(isOn: $appState.includeTree, label: { Text("Show All Transactions") })
                 Spacer()
                 EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionModelRequest.Ordering.allCases)
@@ -61,7 +43,7 @@ struct MacTransactionView: View {
 //                    Text("Ref Recurring")
 //                }
                 Spacer(minLength: 15)
-            }
+            }.padding()
             
             QueryWrapperView(source: TransactionModelRequest(
                                 TransactionFilter(includeTree: appState.includeTree,
@@ -88,6 +70,9 @@ struct MacTransactionView: View {
 //                }
                 
                 HStack(alignment: .firstTextBaseline) {
+                    Button(action: { }) {
+                        Image(systemName: "plus")
+                    }
                     Spacer()
                     Text("\(model.count) transactions")
                     Spacer()
@@ -96,7 +81,7 @@ struct MacTransactionView: View {
                             Image(systemName: tStatus.getIconName()).tag(tStatus)
                         }
                     }.pickerStyle(SegmentedPickerStyle()).frame(width: 160)
-                }.frame(height: 30)
+                }.padding().frame(height: 30)
             }
         }.navigationTitle(selectedBucket.name)
         .sheet(item: $activeSheet) { sheet in

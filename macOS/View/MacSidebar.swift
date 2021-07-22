@@ -34,10 +34,17 @@ struct MacSidebar: View {
                             QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
                                 BucketRow(name: node.bucket.name, balance: balance.postedInTree)
                             }
+                        }.contextMenu {
+                            AccountContextMenu()
                         }
                     }
                 }.collapsible(false)
             }.listStyle(SidebarListStyle())
+            .contextMenu{
+                Button("New Account"){
+                    
+                }
+            }
         }
         .toolbar(){
             ToolbarItem(placement: .navigation) {
@@ -50,6 +57,38 @@ struct MacSidebar: View {
     
     private func toggleSidebar() {
         NSApp.keyWindow?.firstResponder?.tryToPerform(#selector(NSSplitViewController.toggleSidebar(_:)), with: nil)
+    }
+}
+
+struct AccountContextMenu: View {
+    var body: some View {
+        Button("New Account"){
+            
+        }
+
+        Button("Edit Account"){
+            
+        }
+        
+        Button("Delete Account"){
+            
+        }
+
+        Divider()
+        
+        Button("Add Bucket"){
+            
+        }
+    
+        Divider()
+        
+        Button("Add Transaction"){
+            
+        }
+        
+        Button("Make Transfer"){
+            
+        }
     }
 }
 

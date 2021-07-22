@@ -21,13 +21,13 @@ struct SPENTmacOS: App {
         WindowGroup {
             if isActive {
                 NavigationView {
-                    MacSidebar(bucketTree: dbStore.bucketTree)
+                    MacSidebar(bucketTree: dbStore.bucketTree, schedules: dbStore.schedules, tags: dbStore.tags)
                         .frame(minWidth: 300)
                         .navigationTitle("Accounts")
                 }.environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    DispatchQueue.main.asyncAfter(deadline: .now()) {
                         print("Initializing State Controller")
                         print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") ?? "(NIL)")")
                         if !isDBSwitch && UserDefaults.standard.bool(forKey: PreferenceKeys.autoloadDB.rawValue) {
@@ -136,12 +136,15 @@ struct SPENTmacOS: App {
                                 importSPENTLegacy()
                             }
                         }
+                        Button("CSV File") {
+                            DispatchQueue.main.async {}
+                        }
                     }
                     
                     Menu("Export As") {
-    //                    Button("Transaction") { activeSheet = .transaction }
-    //                    Button("Bucket") { activeSheet = .bucket }
-    //                    Button("Tag") { activeSheet = .tag }
+                        Button("CSV File") {
+                            DispatchQueue.main.async {}
+                        }
                     }
                 }
             }
@@ -310,24 +313,6 @@ struct SettingsView: View {
                     Label("General", systemImage: "gear")
                 }
                 .tag(Tabs.general)
-            
-            if dbStore.database != nil {
-                BucketTable(buckets: dbStore.buckets)
-                    .tabItem {
-                        Label("Accounts", systemImage: "folder")
-                    }.tag(Tabs.buckets)
-             
-                ScheduleTable(schedules: dbStore.schedules)
-                    .tabItem {
-                        Label("Schedules", systemImage: "calendar.badge.clock")
-                    }.tag(Tabs.schedules)
-         
-                TagTable(tags: dbStore.tags)
-                    .tabItem {
-                        Label("Tags", systemImage: "tag")
-                    }.tag(Tabs.tags)
-                    
-            }
         }
         .padding(20)
         .frame(width: 600, height: 400)

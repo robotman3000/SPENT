@@ -146,7 +146,7 @@ enum ActiveAlert : String, Identifiable { // <--- note that it's now Identifiabl
 enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
     case List
     case Table
-    case Calendar
+    //case Calendar
         
     var id: String { self.rawValue }
     
@@ -160,8 +160,8 @@ enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
             return "list.bullet"
         case .Table:
             return "tablecells"
-        case .Calendar:
-            return "calendar"
+        //case .Calendar:
+        //    return "calendar"
         }
     }
 }

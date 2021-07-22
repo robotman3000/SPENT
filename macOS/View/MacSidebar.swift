@@ -10,6 +10,8 @@ import SwiftUI
 struct MacSidebar: View {
     
     let bucketTree: [BucketNode]
+    let schedules: [Schedule]
+    let tags: [Tag]
     @State private var selectedView: Int? = 0
     @State var selectedBucket: Bucket?
     
@@ -26,6 +28,15 @@ struct MacSidebar: View {
             List(selection: $selectedBucket) {
                 NavigationLink(destination: MacHome(), tag: 0, selection: $selectedView) {
                     Label("Summary", systemImage: "house")
+                }
+                
+                NavigationLink(destination: TagTable(tags: tags)) {
+                    Label("Tags", systemImage: "tag")
+                }
+                
+                //TODO: Design and implement a proper schedule manager
+                NavigationLink(destination: ScheduleTable(schedules: schedules)) {
+                    Label("Schedules", systemImage: "calendar.badge.clock")
                 }
                 
                 Section(header: Text("Accounts")){
@@ -94,6 +105,6 @@ struct AccountContextMenu: View {
 
 struct MacSidebar_Previews: PreviewProvider {
     static var previews: some View {
-        MacSidebar(bucketTree: [], selectedBucket: nil)
+        MacSidebar(bucketTree: [], schedules: [], tags: [], selectedBucket: nil)
     }
 }

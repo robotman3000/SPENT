@@ -20,13 +20,16 @@ class DatabaseStore: ObservableObject {
     @Published var buckets: [Bucket] = [] {
         didSet {
             bucketTree = getBucketTree(treeList: buckets)
-            print(bucketTree)
         }
     }
     @Published var bucketTree: [BucketNode] = []
     private var bucketIDMap: [Int64:Int] = [:]
     private let bucketObserver: ValueObservation<ValueReducers.Fetch<[Bucket]>>
     private var bucketCancellable: AnyCancellable?
+    
+    @Published var accounts: [Bucket] = []
+    private let accountObserver: ValueObservation<ValueReducers.Fetch<[Bucket]>>
+    private var accountCancellable: AnyCancellable?
     
     @Published var tags: [Tag] = []
     private let tagObserver: ValueObservation<ValueReducers.Fetch<[Tag]>>
@@ -38,6 +41,7 @@ class DatabaseStore: ObservableObject {
     
     init(){
         bucketObserver = ValueObservation.tracking(Bucket.fetchAll)
+        accountObserver = ValueObservation.tracking(Bucket.all().filterAccounts().fetchAll)
         tagObserver = ValueObservation.tracking(Tag.fetchAll)
         scheduleObserver = ValueObservation.tracking(Schedule.fetchAll)
     }
@@ -54,6 +58,13 @@ class DatabaseStore: ObservableObject {
             receiveCompletion: {_ in},
             receiveValue: { [weak self] (buckets: [Bucket]) in
                 self?.buckets = buckets
+            }
+        )
+
+        accountCancellable = accountObserver.publisher(in: database!.databaseReader).sink(
+            receiveCompletion: {_ in},
+            receiveValue: { [weak self] (accounts: [Bucket]) in
+                self?.accounts = accounts
             }
         )
         

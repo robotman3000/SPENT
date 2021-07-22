@@ -110,6 +110,10 @@ extension DerivableRequest where RowDecoder == Bucket {
         return order(ancestor.asc, parent.asc)
     }
     
+    func filterAccounts() -> Self {
+        filter(Bucket.Columns.ancestor == nil)
+    }
+    
     func filter(ancestor: Int64) -> Self {
         filter(Bucket.Columns.ancestor == ancestor)
     }

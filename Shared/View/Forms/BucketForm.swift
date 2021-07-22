@@ -10,7 +10,6 @@ import SwiftUI
 struct BucketForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
     @State var bucket: Bucket = Bucket(id: nil, name: "")
-    @State var isAccount = false
     @State var hasBudget = false
     @StateObject var selected: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
     @StateObject var selectedSchedule: ObservableStructWrapper<Schedule> = ObservableStructWrapper<Schedule>()
@@ -21,12 +20,7 @@ struct BucketForm: View {
     var body: some View {
         Form {
             TextField("Name", text: $bucket.name)
-            
-            Section(){
-                Toggle("Is Account", isOn: $isAccount)
-                BucketPicker(label: "Parent", selection: $selected.wrappedStruct, choices: dbStore.buckets)
-                    .disabled(isAccount)
-            }
+            BucketPicker(label: "Account", selection: $selected.wrappedStruct, choices: dbStore.accounts)
             
             Section(){
                 Toggle("Enable Budget", isOn: $hasBudget)
@@ -57,11 +51,7 @@ struct BucketForm: View {
     }
     
     func loadState(){
-        if bucket.parentID == nil {
-            isAccount = true
-        } else {
-            selected.wrappedStruct = dbStore.database?.resolveOne(bucket.parent)
-        }
+        selected.wrappedStruct = dbStore.database?.resolveOne(bucket.parent)
         
         if bucket.budgetID == nil {
             hasBudget = false
@@ -71,16 +61,11 @@ struct BucketForm: View {
     }
     
     func storeState() -> Bool {
-        if isAccount {
-            bucket.parentID = nil
-            bucket.ancestorID = nil
+        bucket.parentID = selected.wrappedStruct?.id
+        if let ancestor = selected.wrappedStruct?.ancestorID {
+            bucket.ancestorID = ancestor
         } else {
-            bucket.parentID = selected.wrappedStruct?.id
-            if let ancestor = selected.wrappedStruct?.ancestorID {
-                bucket.ancestorID = ancestor
-            } else {
-                bucket.ancestorID = bucket.parentID
-            }
+            bucket.ancestorID = bucket.parentID
         }
         
         if hasBudget {

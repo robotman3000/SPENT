@@ -7,6 +7,10 @@
 
 import Foundation
 
+class PreviewData {
+    static var dbStore: DatabaseStore = DatabaseStore().preview()
+}
+
 extension Transaction {
     private static let preview_payees = ["Sporting Goods", "Online Market", "Online Auctions"]
     private static let preview_memos = ["Spending", "A little something", ""]

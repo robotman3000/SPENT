@@ -44,8 +44,7 @@ struct ListTransactionsView: View {
             } else {
                 Text("No Transactions")
             }
-        }.navigationTitle(bucketName)
-        .sheet(item: $contextSelection) { item in
+        }.sheet(item: $contextSelection) { item in
             TransactionTagForm(transaction: item.transaction, tags: Set(item.tags), tagChoices: store.tags, onSubmit: {tags, transaction in
                 print(tags)
                 if selection != nil {

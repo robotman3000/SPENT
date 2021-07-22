@@ -21,7 +21,7 @@ struct SPENTmacOS: App {
         WindowGroup {
             if isActive {
                 NavigationView {
-                    MacSidebar()
+                    MacSidebar(bucketTree: dbStore.bucketTree)
                         .frame(minWidth: 300)
                         .navigationTitle("Accounts")
                 }.environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!)

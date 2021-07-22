@@ -25,7 +25,8 @@ protocol Queryable: Equatable {
 @propertyWrapper
 struct Query<Query: Queryable>: DynamicProperty {
     /// The database reader that makes it possible to observe the database
-    @Environment(\.appDatabase?.databaseReader) private var databaseReader: DatabaseReader?
+    @EnvironmentObject private var appStore: DatabaseStore
+    //@Environment(\.appDatabase?.databaseReader) private var databaseReader: DatabaseReader?
     @StateObject private var core = Core()
 
     private var baseQuery: Query
@@ -67,12 +68,14 @@ struct Query<Query: Queryable>: DynamicProperty {
     
     func update() {
         //print("Update....")
-        guard let databaseReader = databaseReader else {
-            fatalError("Attempting to use @Query without any database in the environment")
+        if !(ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1") {
+            guard let databaseReader = appStore.database?.databaseReader else {
+                fatalError("Attempting to use @Query without any database in the environment")
+            }
+            // Feed core with necessary information, and make sure tracking has started
+            if core.usesBaseQuery { core.query = baseQuery }
+            core.startTrackingIfNecessary(in: databaseReader)
         }
-        // Feed core with necessary information, and make sure tracking has started
-        if core.usesBaseQuery { core.query = baseQuery }
-        core.startTrackingIfNecessary(in: databaseReader)
     }
     
     private class Core: ObservableObject {

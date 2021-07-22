@@ -20,7 +20,24 @@ struct ScheduleTable: View {
             Section(header:
                 VStack {
                     HStack {
-                        TableToolbar(selected: $selected, activeSheet: $activeSheet, activeAlert: $activeAlert)
+                        TableToolbar(onClick: { action in
+                            switch action {
+                            case .new:
+                                activeSheet = .new
+                            case .edit:
+                                if selected != nil {
+                                    activeSheet = .edit
+                                } else {
+                                    activeAlert = .selectSomething
+                                }
+                            case .delete:
+                                if selected != nil {
+                                    activeAlert = .confirmDelete
+                                } else {
+                                    activeAlert = .selectSomething
+                                }
+                            }
+                        })
                         Spacer()
                     }
                     Header()

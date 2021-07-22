@@ -42,6 +42,11 @@ class DatabaseStore: ObservableObject {
         scheduleObserver = ValueObservation.tracking(Schedule.fetchAll)
     }
     
+    func preview() -> Self {
+        buckets.append(Bucket(id: 1, name: "Demo Account", parentID: nil, ancestorID: nil, memo: "The Demo Memo", budgetID: nil))
+        return self
+    }
+    
     func load(_ db: AppDatabase){
         self.database = db
         

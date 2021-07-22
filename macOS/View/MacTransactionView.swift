@@ -9,36 +9,57 @@ import SwiftUI
 import GRDB
 
 struct MacTransactionView: View {
-    @EnvironmentObject var store: DatabaseStore
     @EnvironmentObject var appState: GlobalState
+    
+    
+    @EnvironmentObject var store: DatabaseStore
     @StateObject var selected: ObservableStructWrapper<TransactionData> = ObservableStructWrapper<TransactionData>()
     @State var activeSheet : ActiveSheet? = nil
     @State var activeAlert : ActiveAlert? = nil
     let selectedBucket: Bucket
+    @State var editTags = false
+    @State var contextSelection: TransactionData?
     
     var body: some View {
         VStack {
             HStack {
-                TableToolbar(selected: $selected.wrappedStruct, activeSheet: $activeSheet, activeAlert: $activeAlert)
-                EnumPicker(label: "View As", selection: $appState.selectedView, enumCases: TransactionViewType.allCases)
+                TableToolbar(onClick: { action in
+                    switch action {
+                    case .new:
+                        activeSheet = .new
+                    case .edit:
+                        if selected.wrappedStruct != nil {
+                            activeSheet = .edit
+                        } else {
+                            activeAlert = .selectSomething
+                        }
+                    case .delete:
+                        if selected.wrappedStruct != nil {
+                            activeAlert = .confirmDelete
+                        } else {
+                            activeAlert = .selectSomething
+                        }
+                    }
+                })
+                
                 Spacer()
                 Toggle(isOn: $appState.includeTree, label: { Text("Show All Transactions") })
                 Spacer()
                 EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionModelRequest.Ordering.allCases)
                 EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionModelRequest.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
-                Button(action: {
-                    let yearsToAdd = 1
-                    let currentDate = Date()
-
-                    var dateComponent = DateComponents()
-                    dateComponent.year = yearsToAdd
-
-                    let futureDate = Calendar.current.date(byAdding: dateComponent, to: currentDate)
-                    let result = ScheduleRenderer.render(appDB: store.database!, schedule: store.schedules.first!, from: currentDate, to: futureDate!)
-                    print(result)
-                }){
-                    Text("Ref Recurring")
-                }
+//                Button(action: {
+//                    let yearsToAdd = 1
+//                    let currentDate = Date()
+//
+//                    var dateComponent = DateComponents()
+//                    dateComponent.year = yearsToAdd
+//
+//                    let futureDate = Calendar.current.date(byAdding: dateComponent, to: currentDate)
+//                    let result = ScheduleRenderer.render(appDB: store.database!, schedule: store.schedules.first!, from: currentDate, to: futureDate!)
+//                    print(result)
+//                }){
+//                    Text("Ref Recurring")
+//                }
                 Spacer(minLength: 15)
             }
             
@@ -47,19 +68,30 @@ struct MacTransactionView: View {
                                                   bucket: selectedBucket),
                                                   order: appState.sorting,
                                                   direction: appState.sortDirection)){ model in
-                switch appState.selectedView {
-                case .List: ListTransactionsView(transactions: model,
-                                                 bucketName: selectedBucket.name,
-                                                 bucketID: selectedBucket.id!,
-                                                 selection: $selected.wrappedStruct)
-                case .Table: TableTransactionsView(transactions: model,
-                                                   bucketName: selectedBucket.name,
-                                                   bucketID: selectedBucket.id!,
-                                                   selection: $selected.wrappedStruct)
-                case .Calendar: Text("Calendar View")
+                
+                if appState.selectedView == .List {
+                    ListTransactionsView(transactions: model,
+                                         bucketName: selectedBucket.name,
+                                         bucketID: selectedBucket.id!,
+                                         selection: $selected.wrappedStruct)
                 }
+                
+                if appState.selectedView == .Table {
+                    TableTransactionsView(transactions: model,
+                                          bucketName: selectedBucket.name,
+                                          bucketID: selectedBucket.id!,
+                                          selection: $selected.wrappedStruct)
+                }
+                
                 HStack(alignment: .firstTextBaseline) {
+                    Spacer()
                     Text("\(model.count) transactions")
+                    Spacer()
+                    Picker(selection: $appState.selectedView, label: Text("")) {
+                        ForEach(TransactionViewType.allCases) { tStatus in
+                            Image(systemName: tStatus.getIconName()).tag(tStatus)
+                        }
+                    }.pickerStyle(SegmentedPickerStyle()).frame(width: 160)
                 }.frame(height: 30)
             }
         }.navigationTitle(selectedBucket.name)
@@ -110,6 +142,18 @@ struct MacTransactionView: View {
     }
 }
 
+enum ActiveSheet: String, Identifiable {
+    case new, edit
+    
+    var id: String { return self.rawValue }
+}
+
+enum ActiveAlert : String, Identifiable { // <--- note that it's now Identifiable
+    case deleteFail, selectSomething, confirmDelete
+    
+    var id: String { return self.rawValue }
+}
+
 enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
     case List
     case Table
@@ -119,6 +163,17 @@ enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
     
     func getStringName() -> String {
         return self.id
+    }
+    
+    func getIconName() -> String {
+        switch self {
+        case .List:
+            return "list.bullet"
+        case .Table:
+            return "tablecells"
+        case .Calendar:
+            return "calendar"
+        }
     }
 }
 

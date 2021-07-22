@@ -83,6 +83,10 @@ struct MacTransactionView: View {
                                           selection: $selected.wrappedStruct)
                 }
                 
+//                if appState.selectedView == .Calendar {
+//
+//                }
+                
                 HStack(alignment: .firstTextBaseline) {
                     Spacer()
                     Text("\(model.count) transactions")
@@ -98,11 +102,11 @@ struct MacTransactionView: View {
         .sheet(item: $activeSheet) { sheet in
             switch sheet {
             case .new:
-                TransactionForm(onSubmit: {data in
+                TransactionForm(currentBucket: selectedBucket, onSubmit: {data in
                     store.updateTransaction(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             case .edit:
-                TransactionForm(transaction: selected.wrappedStruct!.transaction, onSubmit: {data in
+                TransactionForm(transaction: selected.wrappedStruct!.transaction, currentBucket: selectedBucket, onSubmit: {data in
                     store.updateTransaction(&data, onComplete: dismissModal)
                 }, onCancel: dismissModal).padding()
             }
@@ -176,6 +180,8 @@ enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
         }
     }
 }
+
+
 
 //struct MacTransactionView_Previews: PreviewProvider {
 //    static var previews: some View {

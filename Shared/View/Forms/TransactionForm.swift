@@ -12,9 +12,11 @@ import SwiftUI
 struct TransactionForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
     @State var transaction: Transaction = Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
+    let currentBucket: Bucket
+    
     @State var postDate: Date = Date()
     @State var payee: String = ""
-    @State var transType: Transaction.TransType = .Deposit
+    @State var transType: Transaction.TransType = .Withdrawal
     @StateObject var selectedSource: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
     @StateObject var selectedDest: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
     //@State var amount: NSDecimalNumber = 0.0
@@ -48,7 +50,10 @@ struct TransactionForm: View {
             }
 
             //TextField("Amount", value: $amount, formatter: formatter)
-            TextField("Amount", text: $amount)
+            HStack{
+                Text("$") // TODO: Localize this text
+                TextField("Amount", text: $amount)
+            }
 
             Section(header:
                 EnumPicker(label: "Type", selection: $transType, enumCases: Transaction.TransType.allCases)
@@ -94,25 +99,29 @@ struct TransactionForm: View {
     }
     
     func loadState(){
-        if transaction.posted != nil {
-            postDate = transaction.posted!
+        // If we have a new transaction
+        if transaction.id == nil {
+            selectedSource.wrappedStruct = currentBucket
+            //selectedDest.wrappedStruct = currentBucket
+        } else {
+            // We have an existing transaction
+            transType = transaction.type
+            payee = transaction.payee ?? ""
+            groupString = transaction.group?.uuidString ?? ""
+            amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
+            
+            if transaction.posted != nil {
+                postDate = transaction.posted!
+            }
+            
+            if transaction.sourceID != nil {
+                selectedSource.wrappedStruct = dbStore.database?.resolveOne(transaction.source)
+            }
+            
+            if transaction.destID != nil {
+                selectedDest.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
+            }
         }
-        
-        if transaction.sourceID != nil {
-            selectedSource.wrappedStruct = dbStore.database?.resolveOne(transaction.source)
-        }
-        
-        if transaction.destID != nil {
-            selectedDest.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
-        }
-        
-        transType = transaction.type
-        
-        payee = transaction.payee ?? ""
-        
-        groupString = transaction.group?.uuidString ?? ""
-        
-        amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
     }
     
     func storeState() -> Bool {

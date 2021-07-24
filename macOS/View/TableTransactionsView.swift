@@ -15,28 +15,43 @@ struct TableTransactionsView: View {
     @Binding var selection: Set<TransactionData>
     @ObservedObject var context: SheetContext
     @ObservedObject var aContext: AlertContext
+    @EnvironmentObject var store: DatabaseStore
+    @EnvironmentObject var appState: GlobalState
     
     var body: some View {
         VStack{
-            //Section(header: Header()){}
+            Section(header: Header()){}
             if !transactions.isEmpty {
                 List(transactions, id:\.self, selection: $selection){ item in
                     VStack(spacing: 0){
-                            Row(status: item.transaction.status,
-                            direction: item.transaction.type,
-                            cdirection: item.transaction.getType(convertTransfer: true, bucket: bucket.id),
-                            date: item.transaction.date,
-                            postDate: item.transaction.posted,
-                            sourceName: item.source?.name ?? "",
-                            destinationName: item.destination?.name ?? "",
-                            amount: item.transaction.amount,
-                            payee: item.transaction.payee,
-                            memo: item.transaction.memo,
-                            group: item.transaction.group
-                            )
-                    }.frame(height: 20).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
+                        Row(status: item.transaction.status,
+                        direction: item.transaction.type,
+                        cdirection: item.transaction.getType(convertTransfer: true, bucket: bucket.id),
+                        date: item.transaction.date,
+                        postDate: item.transaction.posted,
+                        sourceName: item.source?.name ?? "",
+                        destinationName: item.destination?.name ?? "",
+                        amount: item.transaction.amount,
+                        payee: item.transaction.payee,
+                        memo: item.transaction.memo,
+                        group: item.transaction.group,
+                        tags: item.tags,
+                        showTags: $appState.showTags)
+                    }.frame(height: (appState.showTags ? 60 : 20)).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
+//                    .contentShape(Rectangle())
+//                    .gesture(TapGesture(count: 1).onEnded { _ in
+//                        if item.transaction.type == .Transfer {
+//                            context.present(UIForms.transfer(context: context, transaction: item.transaction, contextBucket: bucket, onSubmit: {data in
+//                                store.updateTransaction(&data, onComplete: { context.dismiss() })
+//                            }))
+//                        } else {
+//                            context.present(UIForms.transaction(context: context, transaction: item.transaction, contextBucket: bucket, onSubmit: {data in
+//                                store.updateTransaction(&data, onComplete: { context.dismiss() })
+//                            }))
+//                        }
+//                    })
                     .contextMenu{
-                        TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: [item])
+                        TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: selection.contains(item) ? selection : [item])
                     }
                 }.listStyle(PlainListStyle())
             } else {
@@ -93,6 +108,9 @@ struct TableTransactionsView: View {
         let payee: String?
         let memo: String
         let group: UUID?
+        let tags: [Tag]
+        
+        @Binding var showTags: Bool
         
         var body: some View {
             VStack (alignment: .leading){
@@ -101,8 +119,15 @@ struct TableTransactionsView: View {
                     Text(payee ?? direction.getStringName()).frame(maxWidth: .infinity)
                     Text(postDate?.transactionFormat ?? date.transactionFormat).frame(maxWidth: .infinity)
                     TransactionRow.Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection).frame(maxWidth: .infinity)
-                    Text(amount.currencyFormat).foregroundColor(direction == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
+                    Text(amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
                     Text(memo).frame(maxWidth: .infinity)
+                }
+                if showTags {
+                    HStack{
+                        ForEach(tags, id: \.self){ tag in
+                            TransactionRow.Badge(text: tag.name, color: .gray)
+                        }
+                    }
                 }
                 Spacer(minLength: 5)
                 Divider()

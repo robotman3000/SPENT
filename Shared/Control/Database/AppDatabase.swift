@@ -174,7 +174,7 @@ struct AppDatabase {
                 // the schedules table depends on the presence of tags it has assigned.
                 // TODO: Use program logic to determin if a tag can be deleted
                 t.column("TagID", .integer).notNull().references("Tags")
-                t.uniqueKey(["TransactionID", "TagID"])
+                t.uniqueKey(["TransactionID", "TagID"], onConflict: .replace)
             }
             
             // Create recipts table
@@ -264,6 +264,19 @@ extension AppDatabase {
                 var tTag = TransactionTag(id: nil, transactionID: transaction.id!, tagID: tag.id!)
                 try tTag.save(db)
             })
+        }
+    }
+    
+    func setTransactionsTags(transactions: [Transaction], tags: [Tag]) throws {
+        try dbWriter.write { db in
+            //TODO: This can be made faster
+            for transaction in transactions {
+                try TransactionTag.filter(TransactionTag.Columns.transactionID == transaction.id!).deleteAll(db)
+                try tags.forEach({ tag in
+                    var tTag = TransactionTag(id: nil, transactionID: transaction.id!, tagID: tag.id!)
+                    try tTag.save(db)
+                })
+            }
         }
     }
     

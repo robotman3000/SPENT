@@ -42,7 +42,7 @@ struct TransactionRow: View {
                     Text(contextDirection == .Deposit ? sourceName : destinationName)
                         .foregroundColor(.gray)
                         .font(.subheadline)
-                        .fontWeight(.medium)
+                        .fontWeight(.medium) 
                 }
                 
                 Image(systemName: contextDirection == .Withdrawal ? "arrow.left" : "arrow.right")

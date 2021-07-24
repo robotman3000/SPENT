@@ -128,6 +128,15 @@ extension DatabaseStore {
             onError(error)
         }
     }
+    
+    func setTransactionsTags(transactions: [Transaction], tags: [Tag], onComplete: () -> Void = {}, onError: (Error) -> Void = printError) {
+        do {
+            try database!.setTransactionsTags(transactions: transactions, tags: tags)
+            onComplete()
+        } catch {
+            onError(error)
+        }
+    }
 }
 
 // Buckets

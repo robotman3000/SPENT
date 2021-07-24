@@ -26,6 +26,7 @@ struct MacTransactionView: View {
         VStack {
             HStack {
                 Toggle(isOn: $appState.includeTree, label: { Text("Show All Transactions") })
+                Toggle(isOn: $appState.showTags, label: { Text("Show Tags") })
                 Spacer()
                 EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionModelRequest.Ordering.allCases)
                 EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionModelRequest.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
@@ -52,13 +53,13 @@ struct MacTransactionView: View {
                                                   direction: appState.sortDirection)){ model in
                 
                 VStack{
-                    if appState.selectedView == .List {
-                        ListTransactionsView(transactions: model,
-                                             bucket: selectedBucket,
-                                             selection: $selected,
-                                             context: context,
-                                             aContext: aContext)
-                    }
+//                    if appState.selectedView == .List {
+//                        ListTransactionsView(transactions: model,
+//                                             bucket: selectedBucket,
+//                                             selection: $selected,
+//                                             context: context,
+//                                             aContext: aContext)
+//                    }
                     
                     if appState.selectedView == .Table {
                         TableTransactionsView(transactions: model,
@@ -95,11 +96,11 @@ struct MacTransactionView: View {
                     Spacer()
                     Text("\(model.count) transactions")
                     Spacer()
-                    Picker(selection: $appState.selectedView, label: Text("")) {
-                        ForEach(TransactionViewType.allCases) { tStatus in
-                            Image(systemName: tStatus.getIconName()).tag(tStatus)
-                        }
-                    }.pickerStyle(SegmentedPickerStyle()).frame(width: 160)
+//                    Picker(selection: $appState.selectedView, label: Text("")) {
+//                        ForEach(TransactionViewType.allCases) { tStatus in
+//                            Image(systemName: tStatus.getIconName()).tag(tStatus)
+//                        }
+//                    }.pickerStyle(SegmentedPickerStyle()).frame(width: 160)
                 }.padding().frame(height: 30)
             }
         }.navigationTitle(selectedBucket.name).sheet(context: context).alert(context: aContext)
@@ -129,32 +130,40 @@ struct TransactionContextMenu: View {
             }
         }
         Section {
-            Button("Edit Transactions") { // No support for batch editing... yet
-                if let t = transactions.first {
-                    context.present(UIForms.transaction(context: context, transaction: t.transaction, contextBucket: contextBucket, onSubmit: {data in
-                        store.updateTransaction(&data, onComplete: { context.dismiss() })
-                    }))
+            if let t = transactions.first { // No support for batch editing... yet
+                if transactions.count == 1 {
+                    if t.transaction.type == .Transfer {
+                        Button("Edit Transfer") {
+                            context.present(UIForms.transfer(context: context, transaction: t.transaction, contextBucket: contextBucket, onSubmit: {data in
+                                store.updateTransaction(&data, onComplete: { context.dismiss() })
+                            }))
+                        }
+                    } else {
+                        Button("Edit Transaction") {
+                            context.present(UIForms.transaction(context: context, transaction: t.transaction, contextBucket: contextBucket, onSubmit: {data in
+                                store.updateTransaction(&data, onComplete: { context.dismiss() })
+                            }))
+                        }
+                    }
+                    
+                    Button("Add Document") {
+                        aContext.present(UIAlerts.notImplemented)
+                    }
                 }
             }
-            
-            Button("Add Document") {
-                aContext.present(UIAlerts.notImplemented)
-            }
-            
-            Button("Set Tags") {// No support for batch editing... yet
-                if let item = transactions.first {
-                    context.present(
-                        UIForms.transactionTags(
-                            context: context,
-                            transaction: item.transaction,
-                            currentTags: Set(item.tags),
-                            onSubmit: {tags, transaction in
-                                print(tags)
-                                store.setTransactionTags(transaction: item.transaction, tags: tags, onComplete: { context.dismiss() })
-                            }
-                        )
+        
+            Button("Set Tags") {
+                context.present(
+                    UIForms.transactionTags(
+                        context: context,
+                        transaction: transactions.first!.transaction,
+                        currentTags: transactions.count == 1 ? Set(transactions.first!.tags) : Set(),
+                        onSubmit: {tags, transaction in
+                            print(tags)
+                            store.setTransactionsTags(transactions: transactions.map({ t in t.transaction }), tags: tags, onComplete: { context.dismiss() })
+                        }
                     )
-                }
+                )
             }
         }
         

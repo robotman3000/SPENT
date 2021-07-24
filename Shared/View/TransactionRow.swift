@@ -70,7 +70,8 @@ struct TransactionRow: View {
     
     var body: some View {
         HStack (alignment: .center){
-            Status(status: status)
+            status.getIconView().frame(width: 40, height: 40)
+            //Status(status: status)
             VStack (alignment: .leading){
                 HStack {
                     VStack (alignment: .leading){

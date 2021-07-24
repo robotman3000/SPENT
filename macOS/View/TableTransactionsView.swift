@@ -18,12 +18,13 @@ struct TableTransactionsView: View {
     
     var body: some View {
         VStack{
-            Section(header: Header()){}
+            //Section(header: Header()){}
             if !transactions.isEmpty {
                 List(transactions, id:\.self, selection: $selection){ item in
                     VStack(spacing: 0){
                             Row(status: item.transaction.status,
                             direction: item.transaction.type,
+                            cdirection: item.transaction.getType(convertTransfer: true, bucket: bucket.id),
                             date: item.transaction.date,
                             postDate: item.transaction.posted,
                             sourceName: item.source?.name ?? "",
@@ -83,6 +84,7 @@ struct TableTransactionsView: View {
     struct Row: View {
         let status: Transaction.StatusTypes
         let direction: Transaction.TransType
+        let cdirection: Transaction.TransType
         let date: Date
         let postDate: Date?
         let sourceName: String
@@ -93,36 +95,48 @@ struct TableTransactionsView: View {
         let group: UUID?
         
         var body: some View {
-            TableRow(content: [
-                AnyView(TableCell {
-                    Text(status.getStringName())
-                }),
-                AnyView(TableCell {
-                    Text(date.transactionFormat)
-                }),
-                AnyView(TableCell {
-                    Text(postDate?.transactionFormat ?? "N/A")
-                }),
-                AnyView(TableCell {
-                    Text(amount.currencyFormat)
-                        .foregroundColor(direction == .Withdrawal ? .red : .gray)
-                }),
-                AnyView(TableCell {
-                    Text(sourceName)
-                }),
-                AnyView(TableCell {
-                    Text(destinationName)
-                }),
-                AnyView(TableCell {
-                    Text(memo)
-                }),
-                AnyView(TableCell {
-                    Text(payee ?? "N/A")
-                }),
-                AnyView(TableCell {
-                    Text(group?.uuidString ?? "N/A")
-                })
-            ])
+            VStack (alignment: .leading){
+                HStack(alignment: .center){
+                    status.getIconView().frame(width: 20, height: 20)
+                    Text(payee ?? direction.getStringName()).frame(maxWidth: .infinity)
+                    Text(postDate?.transactionFormat ?? date.transactionFormat).frame(maxWidth: .infinity)
+                    TransactionRow.Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection).frame(maxWidth: .infinity)
+                    Text(amount.currencyFormat).foregroundColor(direction == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
+                    Text(memo).frame(maxWidth: .infinity)
+                }
+                Spacer(minLength: 5)
+                Divider()
+            }
+//            TableRow(content: [
+//                AnyView(TableCell {
+//                    Text(status.getStringName())
+//                }),
+//                AnyView(TableCell {
+//                    Text(date.transactionFormat)
+//                }),
+//                AnyView(TableCell {
+//                    Text(postDate?.transactionFormat ?? "N/A")
+//                }),
+//                AnyView(TableCell {
+//                    Text(amount.currencyFormat)
+//                        .foregroundColor(direction == .Withdrawal ? .red : .gray)
+//                }),
+//                AnyView(TableCell {
+//                    Text(sourceName)
+//                }),
+//                AnyView(TableCell {
+//                    Text(destinationName)
+//                }),
+//                AnyView(TableCell {
+//                    Text(memo)
+//                }),
+//                AnyView(TableCell {
+//                    Text(payee ?? "N/A")
+//                }),
+//                AnyView(TableCell {
+//                    Text(group?.uuidString ?? "N/A")
+//                })
+//            ])
         }
     }
 }

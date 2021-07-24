@@ -45,6 +45,8 @@
 		A217EA9D26A9C1C2004388FF /* UIForms.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EA9C26A9C1C2004388FF /* UIForms.swift */; };
 		A217EAA126A9CD57004388FF /* UIAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA026A9CD57004388FF /* UIAlerts.swift */; };
 		A217EAA326A9D7A0004388FF /* TransferForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA226A9D7A0004388FF /* TransferForm.swift */; };
+		A217EAA726AB3B21004388FF /* TransactionTable.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A217EAA626AB3B21004388FF /* TransactionTable.storyboard */; };
+		A217EAA926AB3D4E004388FF /* TransactionTableController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA826AB3D4E004388FF /* TransactionTableController.swift */; };
 		A228202B267B9518006C38AC /* SPENTDatabaseDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */; };
 		A228FC59264C571800CD5BB6 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC58264C571800CD5BB6 /* Query.swift */; };
 		A228FC5A264C571800CD5BB6 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC58264C571800CD5BB6 /* Query.swift */; };
@@ -145,6 +147,8 @@
 		A217EA9C26A9C1C2004388FF /* UIForms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIForms.swift; sourceTree = "<group>"; };
 		A217EAA026A9CD57004388FF /* UIAlerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIAlerts.swift; sourceTree = "<group>"; };
 		A217EAA226A9D7A0004388FF /* TransferForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferForm.swift; sourceTree = "<group>"; };
+		A217EAA626AB3B21004388FF /* TransactionTable.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = TransactionTable.storyboard; sourceTree = "<group>"; };
+		A217EAA826AB3D4E004388FF /* TransactionTableController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTableController.swift; sourceTree = "<group>"; };
 		A22727DF2616341900814696 /* iOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = iOS.entitlements; sourceTree = "<group>"; };
 		A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTDatabaseDocument.swift; sourceTree = "<group>"; };
 		A228FC58264C571800CD5BB6 /* Query.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
@@ -180,14 +184,6 @@
 		A2A56716262740ED009C7E8C /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A2A56718262740ED009C7E8C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2A56719262740ED009C7E8C /* macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = macOS.entitlements; sourceTree = "<group>"; };
-		A2A5672326274444009C7E8C /* Python3.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Python3.framework; path = Library/Frameworks/Python3.framework; sourceTree = DEVELOPER_DIR; };
-		A2A567252627450B009C7E8C /* libPython.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPython.a; path = Lib/macOS/lib/libPython.a; sourceTree = "<group>"; };
-		A2A567262627450B009C7E8C /* libxz.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libxz.a; path = Lib/macOS/lib/libxz.a; sourceTree = "<group>"; };
-		A2A567272627450B009C7E8C /* libbzip2.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libbzip2.a; path = Lib/macOS/lib/libbzip2.a; sourceTree = "<group>"; };
-		A2A567282627450B009C7E8C /* libOpenSSL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libOpenSSL.a; path = Lib/macOS/lib/libOpenSSL.a; sourceTree = "<group>"; };
-		A2A5672E26274577009C7E8C /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk/usr/lib/libsqlite3.tbd; sourceTree = DEVELOPER_DIR; };
-		A2A5673026274584009C7E8C /* libz.1.2.8.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.1.2.8.tbd; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk/usr/lib/libz.1.2.8.tbd; sourceTree = DEVELOPER_DIR; };
-		A2A56732262745A3009C7E8C /* libffi.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libffi.tbd; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.3.sdk/usr/lib/libffi.tbd; sourceTree = DEVELOPER_DIR; };
 		A2A56734262747A7009C7E8C /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		A2A56737262879BD009C7E8C /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
 		A2C4C0CA2613E61A0048DB83 /* SPENT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPENT.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -195,13 +191,6 @@
 		A2C4C0D12613E61A0048DB83 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2C4C0D42613E61A0048DB83 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		A2C4C0D62613E61A0048DB83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A2C4C0DD2613E6660048DB83 /* libz.1.2.8.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.1.2.8.tbd; path = usr/lib/libz.1.2.8.tbd; sourceTree = SDKROOT; };
-		A2C4C0DF2613E66D0048DB83 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
-		A2C4C0E12613E67A0048DB83 /* libbzip2.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libbzip2.a; path = Lib/iOS/lib/libbzip2.a; sourceTree = "<group>"; };
-		A2C4C0E22613E67A0048DB83 /* libFFI.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libFFI.a; path = Lib/iOS/lib/libFFI.a; sourceTree = "<group>"; };
-		A2C4C0E32613E67A0048DB83 /* libOpenSSL.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libOpenSSL.a; path = Lib/iOS/lib/libOpenSSL.a; sourceTree = "<group>"; };
-		A2C4C0E42613E67A0048DB83 /* libPython.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libPython.a; path = Lib/iOS/lib/libPython.a; sourceTree = "<group>"; };
-		A2C4C0E52613E67A0048DB83 /* libxz.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libxz.a; path = Lib/iOS/lib/libxz.a; sourceTree = "<group>"; };
 		A2CE549426A87F1E00DB9955 /* TagPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagPicker.swift; sourceTree = "<group>"; };
 		A2CE549726A881E700DB9955 /* ScheduleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleManager.swift; sourceTree = "<group>"; };
 		A2EC30A0269743DC00781EC8 /* GlobalState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalState.swift; sourceTree = "<group>"; };
@@ -358,6 +347,8 @@
 				A24CF688268262ED0037BBEF /* Tables */,
 				A217EA9C26A9C1C2004388FF /* UIForms.swift */,
 				A217EAA026A9CD57004388FF /* UIAlerts.swift */,
+				A217EAA626AB3B21004388FF /* TransactionTable.storyboard */,
+				A217EAA826AB3D4E004388FF /* TransactionTableController.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -441,21 +432,6 @@
 		A2C4C0DC2613E6660048DB83 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				A2A56732262745A3009C7E8C /* libffi.tbd */,
-				A2A5673026274584009C7E8C /* libz.1.2.8.tbd */,
-				A2A5672E26274577009C7E8C /* libsqlite3.tbd */,
-				A2A567272627450B009C7E8C /* libbzip2.a */,
-				A2A567282627450B009C7E8C /* libOpenSSL.a */,
-				A2A567252627450B009C7E8C /* libPython.a */,
-				A2A567262627450B009C7E8C /* libxz.a */,
-				A2A5672326274444009C7E8C /* Python3.framework */,
-				A2C4C0E12613E67A0048DB83 /* libbzip2.a */,
-				A2C4C0E22613E67A0048DB83 /* libFFI.a */,
-				A2C4C0E32613E67A0048DB83 /* libOpenSSL.a */,
-				A2C4C0E42613E67A0048DB83 /* libPython.a */,
-				A2C4C0E52613E67A0048DB83 /* libxz.a */,
-				A2C4C0DF2613E66D0048DB83 /* libsqlite3.tbd */,
-				A2C4C0DD2613E6660048DB83 /* libz.1.2.8.tbd */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -552,6 +528,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A2A56717262740ED009C7E8C /* Preview Assets.xcassets in Resources */,
+				A217EAA726AB3B21004388FF /* TransactionTable.storyboard in Resources */,
 				A2A56714262740ED009C7E8C /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -637,6 +614,7 @@
 				A217EA9D26A9C1C2004388FF /* UIForms.swift in Sources */,
 				A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */,
 				A2676C88267D279600548F06 /* TableTransactionsView.swift in Sources */,
+				A217EAA926AB3D4E004388FF /* TransactionTableController.swift in Sources */,
 				A278086A268E588000CEA560 /* Stringable.swift in Sources */,
 				A2676C73267CD04300548F06 /* MacTransactionView.swift in Sources */,
 				A26B732F2690AE710082A0F6 /* TransactionFilter.swift in Sources */,
@@ -822,6 +800,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -879,6 +858,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 14.5;
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;

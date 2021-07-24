@@ -7,6 +7,7 @@
 
 import Foundation
 import GRDB
+import SwiftUI
 
 struct Transaction: Identifiable, Codable, Hashable {
     var id: Int64?
@@ -109,6 +110,31 @@ extension Transaction {
             case .Complete: return "Complete"
             case .Reconciled: return "Reconciled"
             }
+        }
+        
+        func getIconView() -> some View {
+            VStack (alignment: .center){
+                switch self {
+                case .Void:
+                    Circle().fill(Color.white).overlay(Circle().stroke(Color.black, lineWidth: 4))
+                case .Uninitiated:
+                    Circle().fill(Color.black)
+                case .Scheduled:
+                    Circle().fill(Color.blue)
+                case .Submitted:
+                    Circle().fill(Color.pink)
+                case .Posting:
+                    Circle().fill(Color.red)
+                case .Complete:
+                    ZStack{
+                        Circle().fill(Color.white)
+                        Circle().stroke(Color.green, lineWidth: 4)
+                        
+                    }
+                case .Reconciled:
+                    Circle().fill(Color.green)
+                }
+            }.help(Text(getStringName()))
         }
     }
 }

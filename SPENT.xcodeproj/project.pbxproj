@@ -45,8 +45,6 @@
 		A217EA9D26A9C1C2004388FF /* UIForms.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EA9C26A9C1C2004388FF /* UIForms.swift */; };
 		A217EAA126A9CD57004388FF /* UIAlerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA026A9CD57004388FF /* UIAlerts.swift */; };
 		A217EAA326A9D7A0004388FF /* TransferForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA226A9D7A0004388FF /* TransferForm.swift */; };
-		A217EAA726AB3B21004388FF /* TransactionTable.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A217EAA626AB3B21004388FF /* TransactionTable.storyboard */; };
-		A217EAA926AB3D4E004388FF /* TransactionTableController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA826AB3D4E004388FF /* TransactionTableController.swift */; };
 		A228202B267B9518006C38AC /* SPENTDatabaseDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */; };
 		A228FC59264C571800CD5BB6 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC58264C571800CD5BB6 /* Query.swift */; };
 		A228FC5A264C571800CD5BB6 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC58264C571800CD5BB6 /* Query.swift */; };
@@ -147,8 +145,6 @@
 		A217EA9C26A9C1C2004388FF /* UIForms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIForms.swift; sourceTree = "<group>"; };
 		A217EAA026A9CD57004388FF /* UIAlerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIAlerts.swift; sourceTree = "<group>"; };
 		A217EAA226A9D7A0004388FF /* TransferForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferForm.swift; sourceTree = "<group>"; };
-		A217EAA626AB3B21004388FF /* TransactionTable.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = TransactionTable.storyboard; sourceTree = "<group>"; };
-		A217EAA826AB3D4E004388FF /* TransactionTableController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTableController.swift; sourceTree = "<group>"; };
 		A22727DF2616341900814696 /* iOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = iOS.entitlements; sourceTree = "<group>"; };
 		A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTDatabaseDocument.swift; sourceTree = "<group>"; };
 		A228FC58264C571800CD5BB6 /* Query.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
@@ -347,8 +343,6 @@
 				A24CF688268262ED0037BBEF /* Tables */,
 				A217EA9C26A9C1C2004388FF /* UIForms.swift */,
 				A217EAA026A9CD57004388FF /* UIAlerts.swift */,
-				A217EAA626AB3B21004388FF /* TransactionTable.storyboard */,
-				A217EAA826AB3D4E004388FF /* TransactionTableController.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";
@@ -528,7 +522,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A2A56717262740ED009C7E8C /* Preview Assets.xcassets in Resources */,
-				A217EAA726AB3B21004388FF /* TransactionTable.storyboard in Resources */,
 				A2A56714262740ED009C7E8C /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -614,7 +607,6 @@
 				A217EA9D26A9C1C2004388FF /* UIForms.swift in Sources */,
 				A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */,
 				A2676C88267D279600548F06 /* TableTransactionsView.swift in Sources */,
-				A217EAA926AB3D4E004388FF /* TransactionTableController.swift in Sources */,
 				A278086A268E588000CEA560 /* Stringable.swift in Sources */,
 				A2676C73267CD04300548F06 /* MacTransactionView.swift in Sources */,
 				A26B732F2690AE710082A0F6 /* TransactionFilter.swift in Sources */,

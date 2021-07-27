@@ -45,14 +45,18 @@ struct MacSidebar: View {
                 }
                 
                 Section(header: Text("Accounts")){
-                    OutlineGroup(bucketTree, id: \.bucket, children: \.children) { node in
-                        NavigationLink(destination: MacTransactionView(selectedBucket: node.bucket)) {
-                            QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
-                                BucketRow(name: node.bucket.name, balance: balance.postedInTree)
+                    if !store.accounts.isEmpty {
+                        OutlineGroup(bucketTree, id: \.bucket, children: \.children) { node in
+                            NavigationLink(destination: MacTransactionView(selectedBucket: node.bucket)) {
+                                QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
+                                    BucketRow(name: node.bucket.name, balance: balance.postedInTree)
+                                }
+                            }.contextMenu {
+                                AccountContextMenu(context: context, aContext: aContext, contextAccount: node.bucket)
                             }
-                        }.contextMenu {
-                            AccountContextMenu(context: context, aContext: aContext, contextAccount: node.bucket)
                         }
+                    } else {
+                        Text("No Accounts")
                     }
                 }.collapsible(false)
             }.listStyle(SidebarListStyle())

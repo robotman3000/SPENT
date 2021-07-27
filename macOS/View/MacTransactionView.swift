@@ -181,6 +181,12 @@ struct TransactionContextMenu: View {
                 store.deleteTransactions(transactions.map({t in t.transaction.id!}))
             }))
         }
+        
+        Section{
+            Button("Debug Info") {
+                aContext.present(UIAlerts.message(message: transactions.debugDescription))
+            }
+        }
     }
 }
 

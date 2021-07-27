@@ -113,6 +113,14 @@ struct TransferForm: View {
             transaction.posted = postDate
         }
         
+        if selectedSource.wrappedStruct?.id == selectedDest.wrappedStruct?.id {
+            return false
+        }
+        
+        if selectedSource.wrappedStruct?.id == nil || selectedDest.wrappedStruct?.id == nil {
+            return false
+        }
+        
         transaction.sourceID = selectedSource.wrappedStruct?.id
         transaction.destID = selectedDest.wrappedStruct?.id
         

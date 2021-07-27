@@ -16,7 +16,6 @@ struct TransactionForm: View {
     @State var payee: String = ""
     @State var transType: Transaction.TransType = .Withdrawal
     @StateObject var selectedSource: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
-    @StateObject var selectedDest: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
     //@State var amount: NSDecimalNumber = 0.0
     @State var amount: String = ""
     @State var groupString: String = ""
@@ -56,11 +55,13 @@ struct TransactionForm: View {
             Section(header:
                         EnumPicker(label: "Type", selection: $transType, enumCases: [.Deposit, .Withdrawal])
             ){
-                if transType == .Withdrawal {
-                    BucketPicker(label: "From", selection: $selectedSource.wrappedStruct, choices: bucketChoices)
-                }
-                if transType == .Deposit {
-                    BucketPicker(label: "To", selection: $selectedDest.wrappedStruct, choices: bucketChoices)
+                if transType == .Transfer {
+                    // This is for use with batch editing once the feature is implemented
+                    Text("Alert! Transaction Form was opened using a transfer!")
+                    //BucketPicker(label: "From", selection: $selectedSource.wrappedStruct, choices: bucketChoices)
+                    //BucketPicker(label: "To", selection: $selectedDest.wrappedStruct, choices: bucketChoices)
+                } else {
+                    BucketPicker(label: transType == .Withdrawal ? "From" : "To", selection: $selectedSource.wrappedStruct, choices: bucketChoices)
                 }
             }
             
@@ -117,7 +118,7 @@ struct TransactionForm: View {
             }
             
             if transaction.destID != nil {
-                selectedDest.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
+                selectedSource.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
             }
         }
         
@@ -134,13 +135,15 @@ struct TransactionForm: View {
             transaction.posted = postDate
         }
         
-        transaction.sourceID = selectedSource.wrappedStruct?.id
-        transaction.destID = selectedDest.wrappedStruct?.id
+        
+        
         
         switch transType {
         case .Deposit:
             transaction.sourceID = nil
+            transaction.destID = selectedSource.wrappedStruct?.id
         case .Withdrawal:
+            transaction.sourceID = selectedSource.wrappedStruct?.id
             transaction.destID = nil
         case .Transfer:
             print("Make the compiler happy")

@@ -20,7 +20,7 @@ struct TableTransactionsView: View {
     
     var body: some View {
         VStack{
-            Section(header: Header()){}
+            //Section(header: Header()){}
             if !transactions.isEmpty {
                 List(transactions, id:\.self, selection: $selection){ item in
                     VStack(spacing: 0){
@@ -120,7 +120,7 @@ struct TableTransactionsView: View {
                     Text(postDate?.transactionFormat ?? date.transactionFormat).frame(maxWidth: .infinity)
                     TransactionRow.Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection).frame(maxWidth: .infinity)
                     Text(amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
-                    Text(memo).frame(maxWidth: .infinity)
+                    Text(memo).frame(maxWidth: .infinity).help(memo)
                 }
                 if showTags {
                     HStack{

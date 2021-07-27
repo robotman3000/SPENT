@@ -772,8 +772,8 @@
             filePath = "Shared/View/Forms/TransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "157"
-            endingLineNumber = "157"
+            startingLineNumber = "160"
+            endingLineNumber = "160"
             landmarkName = "storeState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -995,8 +995,8 @@
             filePath = "Shared/View/Forms/TransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "123"
-            endingLineNumber = "123"
+            startingLineNumber = "124"
+            endingLineNumber = "124"
             landmarkName = "loadState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -1047,6 +1047,54 @@
             endingLineNumber = "21"
             landmarkName = "viewDidLoad()"
             landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "7E9638EA-7D77-4DC7-AAB4-906D1302303C"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/MacTransactionView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "133"
+            endingLineNumber = "133"
+            landmarkName = "body"
+            landmarkType = "24">
+            <Locations>
+               <Location
+                  uuid = "7E9638EA-7D77-4DC7-AAB4-906D1302303C - 8dcf31f71623d81e"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #2 () -&gt; SwiftUI.TupleView&lt;(Swift.Optional&lt;Swift.Optional&lt;SwiftUI.TupleView&lt;(SwiftUI._ConditionalContent&lt;SwiftUI.Button&lt;SwiftUI.Text&gt;, SwiftUI.Button&lt;SwiftUI.Text&gt;&gt;, SwiftUI.Button&lt;SwiftUI.Text&gt;)&gt;&gt;&gt;, SwiftUI.Button&lt;SwiftUI.Text&gt;)&gt; in SPENT.TransactionContextMenu.body.getter : some"
+                  moduleName = "SPENT"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/enims/Application%20Data/Xcode/SPENT-Git/macOS/View/MacTransactionView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "133"
+                  endingLineNumber = "133"
+                  offsetFromSymbolStart = "880">
+               </Location>
+               <Location
+                  uuid = "7E9638EA-7D77-4DC7-AAB4-906D1302303C - 8dcf31f71623d81e"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "closure #2 () -&gt; SwiftUI.TupleView&lt;(Swift.Optional&lt;Swift.Optional&lt;SwiftUI.TupleView&lt;(SwiftUI._ConditionalContent&lt;SwiftUI.Button&lt;SwiftUI.Text&gt;, SwiftUI.Button&lt;SwiftUI.Text&gt;&gt;, SwiftUI.Button&lt;SwiftUI.Text&gt;)&gt;&gt;&gt;, SwiftUI.Button&lt;SwiftUI.Text&gt;)&gt; in SPENT.TransactionContextMenu.body.getter : some"
+                  moduleName = "SPENT"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/enims/Application%20Data/Xcode/SPENT-Git/macOS/View/MacTransactionView.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "133"
+                  endingLineNumber = "133"
+                  offsetFromSymbolStart = "4543">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

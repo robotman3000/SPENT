@@ -85,8 +85,8 @@
 		A26B73392690CBAC0082A0F6 /* TransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26B73382690CBAC0082A0F6 /* TransactionView.swift */; };
 		A278085A268BC63900CEA560 /* TransactionTagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780859268BC63900CEA560 /* TransactionTagForm.swift */; };
 		A278085B268BC63900CEA560 /* TransactionTagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780859268BC63900CEA560 /* TransactionTagForm.swift */; };
-		A2780863268E4AF900CEA560 /* BuckerPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780862268E4AF900CEA560 /* BuckerPicker.swift */; };
-		A2780864268E4AF900CEA560 /* BuckerPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780862268E4AF900CEA560 /* BuckerPicker.swift */; };
+		A2780863268E4AF900CEA560 /* BucketPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780862268E4AF900CEA560 /* BucketPicker.swift */; };
+		A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780862268E4AF900CEA560 /* BucketPicker.swift */; };
 		A2780866268E55F600CEA560 /* EnumPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780865268E55F600CEA560 /* EnumPicker.swift */; };
 		A2780867268E55F600CEA560 /* EnumPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780865268E55F600CEA560 /* EnumPicker.swift */; };
 		A2780869268E588000CEA560 /* Stringable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780868268E588000CEA560 /* Stringable.swift */; };
@@ -170,7 +170,7 @@
 		A26B73332690BF2B0082A0F6 /* TransactionData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionData.swift; sourceTree = "<group>"; };
 		A26B73382690CBAC0082A0F6 /* TransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionView.swift; sourceTree = "<group>"; };
 		A2780859268BC63900CEA560 /* TransactionTagForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTagForm.swift; sourceTree = "<group>"; };
-		A2780862268E4AF900CEA560 /* BuckerPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuckerPicker.swift; sourceTree = "<group>"; };
+		A2780862268E4AF900CEA560 /* BucketPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketPicker.swift; sourceTree = "<group>"; };
 		A2780865268E55F600CEA560 /* EnumPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnumPicker.swift; sourceTree = "<group>"; };
 		A2780868268E588000CEA560 /* Stringable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stringable.swift; sourceTree = "<group>"; };
 		A278086B268E668C00CEA560 /* SchedulePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulePicker.swift; sourceTree = "<group>"; };
@@ -265,7 +265,7 @@
 				A217EAA226A9D7A0004388FF /* TransferForm.swift */,
 				A2676C9E267E630B00548F06 /* ScheduleForm.swift */,
 				A2780859268BC63900CEA560 /* TransactionTagForm.swift */,
-				A2780862268E4AF900CEA560 /* BuckerPicker.swift */,
+				A2780862268E4AF900CEA560 /* BucketPicker.swift */,
 				A278086B268E668C00CEA560 /* SchedulePicker.swift */,
 				A2780865268E55F600CEA560 /* EnumPicker.swift */,
 				A2CE549426A87F1E00DB9955 /* TagPicker.swift */,
@@ -572,7 +572,7 @@
 				A2EC30A2269743DC00781EC8 /* GlobalState.swift in Sources */,
 				A20DCD75264ED0270070EB07 /* BalanceTable.swift in Sources */,
 				A2CE549626A87F1E00DB9955 /* TagPicker.swift in Sources */,
-				A2780864268E4AF900CEA560 /* BuckerPicker.swift in Sources */,
+				A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */,
 				A20DCD77264ED04A0070EB07 /* BucketRow.swift in Sources */,
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
 				A2CE549926A881E700DB9955 /* ScheduleManager.swift in Sources */,
@@ -661,7 +661,7 @@
 				A2EC30A42697544800781EC8 /* AccountNavigation.swift in Sources */,
 				A278085A268BC63900CEA560 /* TransactionTagForm.swift in Sources */,
 				A206D78A267C47A200CB094D /* BucketRow.swift in Sources */,
-				A2780863268E4AF900CEA560 /* BuckerPicker.swift in Sources */,
+				A2780863268E4AF900CEA560 /* BucketPicker.swift in Sources */,
 				A2EC30A1269743DC00781EC8 /* GlobalState.swift in Sources */,
 				A206D786267C111F00CB094D /* TransactionRecipt.swift in Sources */,
 				A2EC30A9269758AB00781EC8 /* EditAccountListView.swift in Sources */,

@@ -597,8 +597,8 @@
             filePath = "Shared/View/Forms/TransactionTagForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "23"
-            endingLineNumber = "23"
+            startingLineNumber = "24"
+            endingLineNumber = "24"
             landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
@@ -613,8 +613,8 @@
             filePath = "Shared/View/Forms/TransactionTagForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "22"
-            endingLineNumber = "22"
+            startingLineNumber = "23"
+            endingLineNumber = "23"
             landmarkName = "body"
             landmarkType = "24">
             <Locations>
@@ -676,8 +676,8 @@
             filePath = "Shared/View/Forms/TransactionTagForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "24"
-            endingLineNumber = "24"
+            startingLineNumber = "25"
+            endingLineNumber = "25"
             landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
@@ -772,8 +772,8 @@
             filePath = "Shared/View/Forms/TransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "160"
-            endingLineNumber = "160"
+            startingLineNumber = "165"
+            endingLineNumber = "165"
             landmarkName = "storeState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -899,8 +899,8 @@
             filePath = "Shared/View/Forms/ScheduleForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "65"
-            endingLineNumber = "65"
+            startingLineNumber = "67"
+            endingLineNumber = "67"
             landmarkName = "loadState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -915,8 +915,8 @@
             filePath = "Shared/View/Forms/ScheduleForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "63"
-            endingLineNumber = "63"
+            startingLineNumber = "65"
+            endingLineNumber = "65"
             landmarkName = "loadState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -931,8 +931,8 @@
             filePath = "Shared/View/Forms/ScheduleForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "70"
-            endingLineNumber = "70"
+            startingLineNumber = "72"
+            endingLineNumber = "72"
             landmarkName = "storeState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -979,8 +979,8 @@
             filePath = "Shared/View/Forms/BucketForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "54"
-            endingLineNumber = "54"
+            startingLineNumber = "56"
+            endingLineNumber = "56"
             landmarkName = "loadState()"
             landmarkType = "7">
          </BreakpointContent>

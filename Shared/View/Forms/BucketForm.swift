@@ -10,9 +10,11 @@ import SwiftUI
 struct BucketForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
     @State var bucket: Bucket = Bucket(id: nil, name: "")
-    @State var hasBudget = false
-    @StateObject var selected: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
-    @StateObject var selectedSchedule: ObservableStructWrapper<Schedule> = ObservableStructWrapper<Schedule>()
+    @State fileprivate var hasBudget = false
+    @State var selected: Bucket?
+    @State fileprivate var selectedSchedule: Schedule?
+    let accountChoices: [Bucket]
+    let scheduleChoices: [Schedule]
     
     let onSubmit: (_ data: inout Bucket) -> Void
     let onCancel: () -> Void
@@ -20,11 +22,11 @@ struct BucketForm: View {
     var body: some View {
         Form {
             TextField("Name", text: $bucket.name)
-            BucketPicker(label: "Account", selection: $selected.wrappedStruct, choices: dbStore.accounts)
+            BucketPicker(label: "Account", selection: $selected, choices: accountChoices)
             
             Section(){
                 Toggle("Enable Budget", isOn: $hasBudget)
-                SchedulePicker(label: "Budget", selection: $selectedSchedule.wrappedStruct, choices: dbStore.schedules)
+                SchedulePicker(label: "Budget", selection: $selectedSchedule, choices: scheduleChoices)
                     .disabled(!hasBudget)
             }
             
@@ -52,19 +54,19 @@ struct BucketForm: View {
     
     func loadState(){
         if bucket.parentID != nil {
-            selected.wrappedStruct = dbStore.database?.resolveOne(bucket.parent)
+            selected = dbStore.database?.resolveOne(bucket.parent)
         }
         
         if bucket.budgetID == nil {
             hasBudget = false
         } else {
-            selectedSchedule.wrappedStruct = dbStore.database?.resolveOne(bucket.budget)
+            selectedSchedule = dbStore.database?.resolveOne(bucket.budget)
         }
     }
     
     func storeState() -> Bool {
-        bucket.parentID = selected.wrappedStruct?.id
-        if let ancestor = selected.wrappedStruct?.ancestorID {
+        bucket.parentID = selected?.id
+        if let ancestor = selected?.ancestorID {
             bucket.ancestorID = ancestor
         } else {
             bucket.ancestorID = bucket.parentID
@@ -73,7 +75,7 @@ struct BucketForm: View {
         if hasBudget {
             bucket.budgetID = nil
         } else {
-            bucket.budgetID = selectedSchedule.wrappedStruct?.id
+            bucket.budgetID = selectedSchedule?.id
         }
         return true
     }

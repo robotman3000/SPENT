@@ -10,15 +10,15 @@ import SwiftUI
 struct TransactionForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
     @State var transaction: Transaction = Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
-    let currentBucket: Bucket
+    let currentBucket: Bucket?
     @State var bucketChoices: [Bucket] = []
-    @State var postDate: Date = Date()
-    @State var payee: String = ""
-    @State var transType: Transaction.TransType = .Withdrawal
-    @StateObject var selectedSource: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
+    @State fileprivate var postDate: Date = Date()
+    @State fileprivate var payee: String = ""
+    @State fileprivate var transType: Transaction.TransType = .Withdrawal
+    @State fileprivate var selectedSource: Bucket?
     //@State var amount: NSDecimalNumber = 0.0
-    @State var amount: String = ""
-    @State var groupString: String = ""
+    @State fileprivate var amount: String = ""
+    @State fileprivate var groupString: String = ""
     
     var hiddenFormatter: NumberFormatter = NumberFormatter()
     var formatter: NumberFormatter {
@@ -53,7 +53,7 @@ struct TransactionForm: View {
             }
 
             Section(header:
-                        EnumPicker(label: "Type", selection: $transType, enumCases: [.Deposit, .Withdrawal])
+                        EnumPicker(label: "Type", selection: $transType, enumCases: [.Deposit, .Withdrawal]).pickerStyle(SegmentedPickerStyle())
             ){
                 if transType == .Transfer {
                     // This is for use with batch editing once the feature is implemented
@@ -61,7 +61,7 @@ struct TransactionForm: View {
                     //BucketPicker(label: "From", selection: $selectedSource.wrappedStruct, choices: bucketChoices)
                     //BucketPicker(label: "To", selection: $selectedDest.wrappedStruct, choices: bucketChoices)
                 } else {
-                    BucketPicker(label: transType == .Withdrawal ? "From" : "To", selection: $selectedSource.wrappedStruct, choices: bucketChoices)
+                    BucketPicker(label: transType == .Withdrawal ? "From" : "To", selection: $selectedSource, choices: bucketChoices)
                 }
             }
             
@@ -100,7 +100,7 @@ struct TransactionForm: View {
     func loadState(){
         // If we have a new transaction
         if transaction.id == nil {
-            selectedSource.wrappedStruct = currentBucket
+            selectedSource = currentBucket
             //selectedDest.wrappedStruct = currentBucket
         } else {
             // We have an existing transaction
@@ -114,19 +114,24 @@ struct TransactionForm: View {
             }
             
             if transaction.sourceID != nil {
-                selectedSource.wrappedStruct = dbStore.database?.resolveOne(transaction.source)
+                selectedSource = dbStore.database?.resolveOne(transaction.source)
             }
             
             if transaction.destID != nil {
-                selectedSource.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
+                selectedSource = dbStore.database?.resolveOne(transaction.destination)
             }
         }
         
-        if currentBucket.ancestorID == nil {
-            bucketChoices.append(currentBucket)
+        if bucketChoices.isEmpty {
+            // If we weren't provided a list of choices
+            if let currentB = currentBucket {
+                if currentB.ancestorID == nil {
+                    bucketChoices.append(currentB)
+                }
+                
+                bucketChoices.append(contentsOf: dbStore.database?.resolve(currentB.tree) ?? [])
+            }
         }
-        
-        bucketChoices.append(contentsOf: dbStore.database?.resolve(currentBucket.tree) ?? [])
         
     }
     
@@ -141,9 +146,9 @@ struct TransactionForm: View {
         switch transType {
         case .Deposit:
             transaction.sourceID = nil
-            transaction.destID = selectedSource.wrappedStruct?.id
+            transaction.destID = selectedSource?.id
         case .Withdrawal:
-            transaction.sourceID = selectedSource.wrappedStruct?.id
+            transaction.sourceID = selectedSource?.id
             transaction.destID = nil
         case .Transfer:
             print("Make the compiler happy")

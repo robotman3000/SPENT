@@ -10,7 +10,9 @@ import SwiftUI
 struct ScheduleForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
     @State var schedule: Schedule = Schedule(id: nil, name: "", scheduleType: .OneTime, rule: .Never, markerID: -1, memo: "")
-    @StateObject var marker: ObservableStructWrapper<Tag> = ObservableStructWrapper<Tag>()
+    @State fileprivate var marker: Tag?
+    
+    let markerChoices: [Tag]
 
     /*
      var name: String
@@ -32,8 +34,8 @@ struct ScheduleForm: View {
                 EnumPicker(label: "Rule", selection: $schedule.rule, enumCases: Schedule.ScheduleRule.allCases)
                 // TODO: Add support for custom rules
                 
-                Text(marker.wrappedStruct?.name ?? "N/A")
-                TagPicker(label: "Marker", selection: $marker.wrappedStruct, choices: dbStore.tags)
+                Text(marker?.name ?? "N/A")
+                TagPicker(label: "Marker", selection: $marker, choices: markerChoices)
                 
                 TextEditor(text: $schedule.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }//.navigationTitle(Text(title))
@@ -60,14 +62,14 @@ struct ScheduleForm: View {
     func loadState(){
         if schedule.markerID == -1 {
             // TODO: This will crash if there are no tags defined
-            self.marker.wrappedStruct = dbStore.tags.first!
+            self.marker = markerChoices.first!
         } else {
-            self.marker.wrappedStruct = dbStore.database?.resolveOne(schedule.marker)
+            self.marker = dbStore.database?.resolveOne(schedule.marker)
         }
     }
     
     func storeState() -> Bool {
-        schedule.markerID = self.marker.wrappedStruct!.id!
+        schedule.markerID = self.marker!.id!
         
         return true
     }

@@ -76,7 +76,7 @@ struct MacTransactionView: View {
                     }
                     
                     Button("Add Transfer"){
-                        context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: selectedBucket, onSubmit: {data in
+                        context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: selectedBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: {data in
                             store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                         }))
                     }
@@ -124,7 +124,7 @@ struct TransactionContextMenu: View {
             }
             
             Button("Add Transfer"){
-                context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: contextBucket, onSubmit: {data in
+                context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: contextBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: {data in
                     store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                 }))
             }
@@ -134,7 +134,7 @@ struct TransactionContextMenu: View {
                 if transactions.count == 1 {
                     if t.transaction.type == .Transfer {
                         Button("Edit Transfer") {
-                            context.present(UIForms.transfer(context: context, transaction: t.transaction, contextBucket: contextBucket, onSubmit: {data in
+                            context.present(UIForms.transfer(context: context, transaction: t.transaction, contextBucket: contextBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: {data in
                                 store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                             }))
                         }
@@ -158,6 +158,7 @@ struct TransactionContextMenu: View {
                         context: context,
                         transaction: transactions.first!.transaction,
                         currentTags: transactions.count == 1 ? Set(transactions.first!.tags) : Set(),
+                        tagChoices: store.tags,
                         onSubmit: {tags, transaction in
                             print(tags)
                             store.setTransactionsTags(transactions: transactions.map({ t in t.transaction }), tags: tags, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})

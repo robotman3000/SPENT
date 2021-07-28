@@ -10,15 +10,17 @@ import SwiftUIKit
 
 struct TransferForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
-    @StateObject var aContext = AlertContext()
+    @StateObject fileprivate var aContext = AlertContext()
     @State var transaction: Transaction = Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
-    let currentBucket: Bucket
+    let currentBucket: Bucket?
+    @State var sourceChoices: [Bucket]
+    @State var destinationChoices: [Bucket]
     
-    @State var postDate: Date = Date()
-    @StateObject var selectedSource: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
-    @StateObject var selectedDest: ObservableStructWrapper<Bucket> = ObservableStructWrapper<Bucket>()
-    @State var amount: String = ""
-    @State var groupString: String = ""
+    @State fileprivate var postDate: Date = Date()
+    @State fileprivate var selectedSource: Bucket?
+    @State fileprivate var selectedDest: Bucket?
+    @State fileprivate var amount: String = ""
+    @State fileprivate var groupString: String = ""
     
     var hiddenFormatter: NumberFormatter = NumberFormatter()
     var formatter: NumberFormatter {
@@ -52,8 +54,8 @@ struct TransferForm: View {
                 TextField("Amount", text: $amount)
             }
 
-            BucketPicker(label: "From", selection: $selectedSource.wrappedStruct, choices: dbStore.buckets)
-            BucketPicker(label: "To", selection: $selectedDest.wrappedStruct, choices: dbStore.buckets)
+            BucketPicker(label: "From", selection: $selectedSource, choices: sourceChoices)
+            BucketPicker(label: "To", selection: $selectedDest, choices: destinationChoices)
             
             Section(){
                 TextEditor(text: $transaction.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
@@ -89,8 +91,8 @@ struct TransferForm: View {
     func loadState(){
         // If we have a new transaction
         if transaction.id == nil {
-            selectedSource.wrappedStruct = currentBucket
-            //selectedDest.wrappedStruct = currentBucket
+            selectedSource = currentBucket
+            //selectedDest = currentBucket
         } else {
             // We have an existing transaction
             groupString = transaction.group?.uuidString ?? ""
@@ -101,11 +103,33 @@ struct TransferForm: View {
             }
             
             if transaction.sourceID != nil {
-                selectedSource.wrappedStruct = dbStore.database?.resolveOne(transaction.source)
+                selectedSource = dbStore.database?.resolveOne(transaction.source)
             }
             
             if transaction.destID != nil {
-                selectedDest.wrappedStruct = dbStore.database?.resolveOne(transaction.destination)
+                selectedDest = dbStore.database?.resolveOne(transaction.destination)
+            }
+        }
+        
+        if sourceChoices.isEmpty {
+            // If we weren't provided a list of choices
+            if let currentB = currentBucket {
+                if currentB.ancestorID == nil {
+                    sourceChoices.append(currentB)
+                }
+                
+                sourceChoices.append(contentsOf: dbStore.database?.resolve(currentB.tree) ?? [])
+            }
+        }
+        
+        if destinationChoices.isEmpty {
+            // If we weren't provided a list of choices
+            if let currentB = currentBucket {
+                if currentB.ancestorID == nil {
+                    destinationChoices.append(currentB)
+                }
+                
+                destinationChoices.append(contentsOf: dbStore.database?.resolve(currentB.tree) ?? [])
             }
         }
     }
@@ -115,16 +139,16 @@ struct TransferForm: View {
             transaction.posted = postDate
         }
         
-        if selectedSource.wrappedStruct?.id == selectedDest.wrappedStruct?.id {
+        if selectedSource?.id == selectedDest?.id {
             return false
         }
         
-        if selectedSource.wrappedStruct?.id == nil || selectedDest.wrappedStruct?.id == nil {
+        if selectedSource?.id == nil || selectedDest?.id == nil {
             return false
         }
         
-        transaction.sourceID = selectedSource.wrappedStruct?.id
-        transaction.destID = selectedDest.wrappedStruct?.id
+        transaction.sourceID = selectedSource?.id
+        transaction.destID = selectedDest?.id
         
         transaction.payee = nil // Transfers don't need payees
         transaction.group = UUID(uuidString: groupString)

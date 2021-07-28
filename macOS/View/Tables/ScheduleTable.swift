@@ -25,12 +25,12 @@ struct ScheduleTable: View {
                         TableToolbar(onClick: { action in
                             switch action {
                             case .new:
-                                context.present(UIForms.schedule(context: context, schedule: nil, onSubmit: {data in
+                                context.present(UIForms.schedule(context: context, schedule: nil, markerChoices: store.tags, onSubmit: {data in
                                     store.updateSchedule(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                                 }))
                             case .edit:
                                 if selected != nil {
-                                    context.present(UIForms.schedule(context: context, schedule: selected!, onSubmit: {data in
+                                    context.present(UIForms.schedule(context: context, schedule: selected!, markerChoices: store.tags, onSubmit: {data in
                                         store.updateSchedule(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                                     }))
                                 } else {

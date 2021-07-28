@@ -112,13 +112,13 @@ struct AccountContextMenu: View {
             Divider()
             
             Button("Add Bucket"){
-                context.present(UIForms.accountBucket(context: context, contextAccount: contextAccount, onSubmit: {data in
+                context.present(UIForms.accountBucket(context: context, contextAccount: contextAccount, parentChoices: store.accounts, budgetChoices: store.schedules, onSubmit: {data in
                     store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                 }))
             }
         } else {
             Button("Edit Bucket"){
-                context.present(UIForms.bucket(context: context, bucket: contextAccount, onSubmit: {data in
+                context.present(UIForms.bucket(context: context, bucket: contextAccount, parentChoices: store.accounts, budgetChoices: store.schedules, onSubmit: {data in
                     store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                 }))
             }
@@ -139,7 +139,7 @@ struct AccountContextMenu: View {
         }
         
         Button("Add Transfer"){
-            context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: contextAccount, onSubmit: {data in
+            context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: contextAccount, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: {data in
                 store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
             }))
         }

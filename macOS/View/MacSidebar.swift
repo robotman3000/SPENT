@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftUIKit
+import Foundation
 
 struct MacSidebar: View {
     
@@ -63,7 +64,7 @@ struct MacSidebar: View {
             .contextMenu{
                 Button("New Account"){
                     context.present(UIForms.account(context: context, account: nil, onSubmit: {data in
-                        store.updateBucket(&data, onComplete: { context.dismiss() })
+                        store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                     }))
                 }
             }
@@ -91,20 +92,20 @@ struct AccountContextMenu: View {
     var body: some View {
         Button("New Account"){
             context.present(UIForms.account(context: context, account: nil, onSubmit: {data in
-                store.updateBucket(&data, onComplete: { context.dismiss() })
+                store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
             }))
         }
         
         if(contextAccount.ancestorID == nil){
             Button("Edit Account"){
                 context.present(UIForms.account(context: context, account: contextAccount, onSubmit: {data in
-                    store.updateBucket(&data, onComplete: { context.dismiss() })
+                    store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                 }))
             }
             
             Button("Delete Account"){
-                aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
-                    store.deleteBucket(contextAccount.id!)
+                context.present(UIForms.confirmDelete(context: context, message: "", onConfirm: {
+                    store.deleteBucket(contextAccount.id!, onError: {error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription )) })
                 }))
             }
             
@@ -112,19 +113,19 @@ struct AccountContextMenu: View {
             
             Button("Add Bucket"){
                 context.present(UIForms.accountBucket(context: context, contextAccount: contextAccount, onSubmit: {data in
-                    store.updateBucket(&data, onComplete: { context.dismiss() })
+                    store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                 }))
             }
         } else {
             Button("Edit Bucket"){
                 context.present(UIForms.bucket(context: context, bucket: contextAccount, onSubmit: {data in
-                    store.updateBucket(&data, onComplete: { context.dismiss() })
+                    store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                 }))
             }
             
             Button("Delete Bucket"){
-                aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
-                    store.deleteBucket(contextAccount.id!)
+                context.present(UIForms.confirmDelete(context: context, message: "", onConfirm: {
+                    store.deleteBucket(contextAccount.id!, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                 }))
             }
         }
@@ -133,13 +134,13 @@ struct AccountContextMenu: View {
         
         Button("Add Transaction"){
             context.present(UIForms.transaction(context: context, transaction: nil, contextBucket: contextAccount, onSubmit: {data in
-                store.updateTransaction(&data, onComplete: { context.dismiss() })
+                store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
             }))
         }
         
         Button("Add Transfer"){
             context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: contextAccount, onSubmit: {data in
-                store.updateTransaction(&data, onComplete: { context.dismiss() })
+                store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
             }))
         }
     }

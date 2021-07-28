@@ -9,7 +9,6 @@ import SwiftUI
 import SwiftUIKit
 
 enum UIAlerts: AlertProvider {
-    case confirmDelete(message: String, onConfirm: () -> Void)
     case databaseError(message: String)
     case message(message: String)
     case notImplemented
@@ -17,14 +16,8 @@ enum UIAlerts: AlertProvider {
     
     var alert: Alert {
         switch self {
-        case .confirmDelete(message: _, onConfirm: let onConfirm):
-            return Alert(
-                title: Text("Confirm Delete"),
-                message: Text("Are you sure you want to delete this?"),
-                primaryButton: .cancel(),
-                secondaryButton: .destructive(Text("Confirm"), action: onConfirm)
-            )
         case .databaseError(message: let message):
+            print("Database Error: \(message)")
             return Alert(
                 title: Text("Database Error"),
                 message: Text(message),

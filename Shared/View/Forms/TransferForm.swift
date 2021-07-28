@@ -6,9 +6,11 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct TransferForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
+    @StateObject var aContext = AlertContext()
     @State var transaction: Transaction = Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
     let currentBucket: Bucket
     
@@ -71,7 +73,7 @@ struct TransferForm: View {
                     if storeState() {
                         onSubmit(&transaction)
                     } else {
-                        //TODO: Show an alert or some "Invalid Data" indicator
+                        aContext.present(UIAlerts.message(message: "Form validation failed"))
                         print("Transfer storeState failed!")
                     }
                 })
@@ -81,7 +83,7 @@ struct TransferForm: View {
                     onCancel()
                 })
             }
-        }).frame(minWidth: 250, minHeight: 325)
+        }).frame(minWidth: 250, minHeight: 325).alert(context: aContext)
     }
     
     func loadState(){

@@ -26,20 +26,20 @@ struct ScheduleTable: View {
                             switch action {
                             case .new:
                                 context.present(UIForms.schedule(context: context, schedule: nil, onSubmit: {data in
-                                    store.updateSchedule(&data, onComplete: { context.dismiss() })
+                                    store.updateSchedule(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                                 }))
                             case .edit:
                                 if selected != nil {
                                     context.present(UIForms.schedule(context: context, schedule: selected!, onSubmit: {data in
-                                        store.updateSchedule(&data, onComplete: { context.dismiss() })
+                                        store.updateSchedule(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                                     }))
                                 } else {
                                     aContext.present(UIAlerts.message(message: "Select a tag first"))
                                 }
                             case .delete:
                                 if selected != nil {
-                                    aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
-                                        store.deleteSchedule(selected!.id!)
+                                    context.present(UIForms.confirmDelete(context: context, message: "", onConfirm: {
+                                        store.deleteSchedule(selected!.id!, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                                     }))
                                 } else {
                                     aContext.present(UIAlerts.message(message: "Select a tag first"))

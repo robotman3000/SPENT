@@ -119,7 +119,7 @@ struct SPENTmacOS: App {
                 Section{
                     Button("New Account") {
                         context.present(UIForms.account(context: context, account: nil, onSubmit: {data in
-                            dbStore.updateBucket(&data, onComplete: { context.dismiss() })
+                            dbStore.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                         }))
                     }
                 }

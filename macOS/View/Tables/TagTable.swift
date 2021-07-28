@@ -26,20 +26,20 @@ struct TagTable: View {
                             switch action {
                             case .new:
                                 context.present(UIForms.tag(context: context, tag: nil, onSubmit: {data in
-                                    store.updateTag(&data, onComplete: { context.dismiss() })
+                                    store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                                 }))
                             case .edit:
                                 if selected != nil {
                                     context.present(UIForms.tag(context: context, tag: selected!, onSubmit: {data in
-                                        store.updateTag(&data, onComplete: { context.dismiss() })
+                                        store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                                     }))
                                 } else {
                                     aContext.present(UIAlerts.message(message: "Select a tag first"))
                                 }
                             case .delete:
                                 if selected != nil {
-                                    aContext.present(UIAlerts.confirmDelete(message: "", onConfirm: {
-                                        store.deleteTag(selected!.id!)
+                                    context.present(UIForms.confirmDelete(context: context, message: "", onConfirm: {
+                                        store.deleteTag(selected!.id!, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                                     }))
                                 } else {
                                     aContext.present(UIAlerts.message(message: "Select a tag first"))

@@ -18,6 +18,8 @@ enum UIForms: SheetProvider {
     case schedule(context: SheetContext, schedule: Schedule?, onSubmit: (_ data: inout Schedule) -> Void)
     case transactionTags(context: SheetContext, transaction: Transaction, currentTags: Set<Tag>, onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void)
 
+    case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
+    
     var sheet: AnyView {
         switch self {
         case .account(context: let context, account: let account, onSubmit: let handleSubmit):
@@ -60,6 +62,18 @@ enum UIForms: SheetProvider {
             }
         case .transactionTags(context: let context, transaction: let transaction, currentTags: let currentTags, onSubmit: let handleSubmit):
             return TransactionTagForm(transaction: transaction, tags: currentTags, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+        case .confirmDelete(context: let context, message: let message, onConfirm: let onConfirm):
+            return VStack{
+                Text("Are you sure you want to delete this?")
+            }.toolbar(content: {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: { context.dismiss() })
+                }
+                ToolbarItem(placement: .destructiveAction){
+                    Button("Confirm", action: { context.dismiss(); onConfirm() })
+                }
+            }).padding().any()
         }
+
     }
 }

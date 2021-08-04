@@ -145,8 +145,12 @@ struct AccountContextMenu: View {
         }
         
         Button("Add Split"){
-            aContext.present(UIAlerts.notImplemented)
+            context.present(UIForms.splitTransaction(context: context, splitMembers: [], contextBucket: contextAccount, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: splitSubmit))
         }
+    }
+    
+    func splitSubmit(transactions: inout [Transaction]) {
+        store.updateTransactions(&transactions, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
     }
 }
 

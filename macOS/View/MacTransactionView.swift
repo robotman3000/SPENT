@@ -80,6 +80,10 @@ struct MacTransactionView: View {
                             store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
                         }))
                     }
+                    
+                    Button("Add Split"){
+                        context.present(UIForms.splitTransaction(context: context, splitMembers: [], contextBucket: selectedBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: splitSubmit))
+                    }
                 }
 //                if appState.selectedView == .Calendar {
 //
@@ -105,6 +109,11 @@ struct MacTransactionView: View {
             }
         }.navigationTitle(selectedBucket.name).sheet(context: context).alert(context: aContext)
     }
+    
+    func splitSubmit(transactions: inout [Transaction]) {
+        print("Update SPlit")
+        store.updateTransactions(&transactions, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
+    }
 }
 
 struct TransactionContextMenu: View {
@@ -129,7 +138,7 @@ struct TransactionContextMenu: View {
                 }))
             }
 
-            Button("Add Split Transaction"){
+            Button("Add Split"){
                 context.present(UIForms.splitTransaction(context: context, splitMembers: [], contextBucket: contextBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: splitSubmit))
             }
         }

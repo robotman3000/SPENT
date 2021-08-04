@@ -39,11 +39,11 @@ enum UIForms: SheetProvider {
             }
             return TransactionForm(transaction: transaction!, selectedBucket: bucket, bucketChoices: bucketChoices, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
             
-        case .transfer(context: let context, transaction: var transaction, contextBucket: _, sourceChoices: let sourceChoices, destChoices: let destChoices, onSubmit: let handleSubmit):
+        case .transfer(context: let context, transaction: var transaction, contextBucket: let contextBucket, sourceChoices: let sourceChoices, destChoices: let destChoices, onSubmit: let handleSubmit):
             if transaction == nil {
                 transaction = Transaction.newTransaction()
             }
-            return TransferForm(transaction: transaction!, sourceChoices: sourceChoices, destinationChoices: destChoices, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            return TransferForm(transaction: transaction!, sourceChoices: sourceChoices, destinationChoices: destChoices, selectedSource: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
             
         case .tag(context: let context, tag: var tag, onSubmit: let handleSubmit):
             if tag == nil {
@@ -60,7 +60,7 @@ enum UIForms: SheetProvider {
         case .transactionTags(context: let context, transaction: let transaction, tagChoices: let tagChoices, onSubmit: let handleSubmit):
             return TransactionTagForm(transaction: transaction, tagChoices: tagChoices, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
             
-        case .splitTransaction(context: let context, splitMembers: let members, contextBucket: _, sourceChoices: let sourceChoices, destChoices: let destChoices, onSubmit: let handleSubmit):
+        case .splitTransaction(context: let context, splitMembers: let members, contextBucket: let contextBucket, sourceChoices: let sourceChoices, destChoices: let destChoices, onSubmit: let handleSubmit):
             var head: Transaction?
             var newMembers: [Transaction] = []
             
@@ -77,7 +77,7 @@ enum UIForms: SheetProvider {
                 head = Transaction.newSplitTransaction()
             }
             
-            return SplitTransactionForm(head: head!, bucketChoices: sourceChoices, splitMembers: newMembers, sourceChoices: sourceChoices, destinationChoices: destChoices, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            return SplitTransactionForm(head: head!, bucketChoices: sourceChoices, splitMembers: newMembers, sourceChoices: sourceChoices, destinationChoices: destChoices, selectedBucket: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
             
         case .confirmDelete(context: let context, message: _, onConfirm: let onConfirm):
             return VStack{

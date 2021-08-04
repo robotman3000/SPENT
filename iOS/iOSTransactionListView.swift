@@ -10,6 +10,7 @@ import SwiftUI
 
 struct iOSTransactionListView: View {
     let bucket: Bucket
+    @State var showingEditor: Bool = false
     @State var selection: TransactionData?
     @EnvironmentObject var appState: GlobalState
     
@@ -59,6 +60,17 @@ struct iOSTransactionListView: View {
                     Text("No Transactions")
                 }
             }.navigationTitle(bucket.name)
+            .toolbar(content: {
+                ToolbarItem(placement: .primaryAction){
+                    Menu {
+                        Button(action: {//TODO: Show form}) {
+                            Label("Edit Account", systemImage: "gear")
+                        }
+                    } label: { Label("Menu", systemImage: "ellipsis.circle") }
+                }
+            }).sheet(isPresented: $showingEditor){
+                Text("")
+            }
         }
     }
 }

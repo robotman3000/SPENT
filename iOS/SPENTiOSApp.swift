@@ -47,7 +47,7 @@ struct SPENTiOSApp: App {
 
 struct MainView: View {
     @EnvironmentObject var store: DatabaseStore
-    @State var selectedBuckets: Set<Bucket> = Set()
+    @State var selectedBucket: Bucket?
     @State private var showingForm = false
     @State private var selectedView: Int? = -1
     @State var editMode: EditMode = .inactive
@@ -64,7 +64,7 @@ struct MainView: View {
     private var editButton: some View {
             Button(action: {
                 self.editMode.toggle()
-                self.selectedBuckets = Set<Bucket>()
+                self.selectedBucket = nil
             }) {
                 Text(self.editMode.title)
             }
@@ -73,7 +73,7 @@ struct MainView: View {
     var body: some View {
         NavigationView {
             VStack{
-                List(selection: $selectedBuckets) {
+                List(selection: $selectedBucket) {
                     NavigationLink(destination: Text("Summary"), tag: 0, selection: self.$selectedView) {
                         Label("Summary", systemImage: "house")
                     }
@@ -92,27 +92,26 @@ struct MainView: View {
                             }
                         }
                     }
-                }.environment(\.editMode, self.$editMode)
+                }//.environment(\.editMode, self.$editMode).deleteDisabled(false)
                 if editMode == .active {
                     HStack(alignment: .top){
-                        Button("Delete Selected"){
-                            store.deleteBuckets(Array(selectedBuckets.map({bucket in bucket.id!})), onComplete: {
-                                print("done")
-                            }, onError: {error in print(error)})
-                        }.disabled(selectedBuckets.isEmpty)
+//                        Button("Delete Selected"){
+//                            store.deleteBucket(selectedBucket?.id, onComplete: {
+//                                print("done")
+//                            }, onError: {error in print(error)})
+//                        }.disabled(selectedBuckets.isEmpty)
                     }.frame(height: 30)
                 }
             }.listStyle(InsetGroupedListStyle())
             .sheet(isPresented: $showingForm){
-                BucketForm(onSubmit: {data in
-                    store.updateBucket(&data, onComplete: dismissModal)
-                }, onCancel: dismissModal)
+                NavigationView{
+                    BucketForm(onSubmit: {data in
+                        store.updateBucket(&data, onComplete: dismissModal)
+                    }, onCancel: dismissModal).navigationTitle("New Account")
+                }
             }
             .navigationTitle("Home")
             .toolbar(content: {
-                ToolbarItem(placement: .primaryAction){
-                    editButton
-                }
                 ToolbarItem(placement: .navigationBarLeading){
                     if editMode == .active {
                         Button("New Account"){

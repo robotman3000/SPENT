@@ -772,8 +772,8 @@
             filePath = "Shared/View/Forms/TransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "120"
-            endingLineNumber = "120"
+            startingLineNumber = "126"
+            endingLineNumber = "126"
             landmarkName = "storeState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -979,8 +979,8 @@
             filePath = "Shared/View/Forms/BucketForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "61"
-            endingLineNumber = "61"
+            startingLineNumber = "63"
+            endingLineNumber = "63"
             landmarkName = "loadState()"
             landmarkType = "7">
          </BreakpointContent>
@@ -1123,8 +1123,8 @@
             filePath = "Shared/View/Forms/SplitMemberForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "64"
-            endingLineNumber = "64"
+            startingLineNumber = "63"
+            endingLineNumber = "63"
             landmarkName = "loadState()"
             landmarkType = "7">
          </BreakpointContent>

@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct AccountForm: View {
+    @StateObject fileprivate var aContext: AlertContext = AlertContext()
     @State var account: Bucket
     
     let onSubmit: (_ data: inout Bucket) -> Void
@@ -30,18 +32,22 @@ struct AccountForm: View {
                     if storeState() {
                         onSubmit(&account)
                     } else {
-                        //TODO: Show an alert or some "Invalid Data" indicator
-                        print("Account storeState failed!")
+                        aContext.present(UIAlerts.message(message: "Invalid input"))
                     }
                 })
             }
         }).onAppear { loadState() }
         //.frame(minWidth: 300, minHeight: 200)
+        .alert(context: aContext)
     }
     
     func loadState(){}
     
     func storeState() -> Bool {
+        if account.name.isEmpty {
+            return false
+        }
+        
         account.parentID = nil
         account.ancestorID = nil
         account.budgetID = nil

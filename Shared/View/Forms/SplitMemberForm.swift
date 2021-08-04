@@ -44,11 +44,10 @@ struct SplitMemberForm: View {
                     })
                     Spacer()
                     Button("Done", action: {
+                        // No error message here b/c this form is displayed as a popover in the program
+                        // An alert doesn't make sense
                         if storeState() {
                             onSubmit(&transaction)
-                        } else {
-                            //TODO: Show an alert or some "Invalid Data" indicator
-                            print("Split storeState failed!")
                         }
                     })
                 }
@@ -70,6 +69,10 @@ struct SplitMemberForm: View {
     }
     
     func storeState() -> Bool {
+        if amount.isEmpty || bucket == nil {
+            return false
+        }
+        
         transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
         
         if splitDirection == .Deposit {

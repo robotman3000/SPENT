@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct TransactionForm: View {
+    @StateObject fileprivate var aContext: AlertContext = AlertContext()
     @EnvironmentObject fileprivate var dbStore: DatabaseStore
     @State var transaction: Transaction
     
@@ -57,8 +59,7 @@ struct TransactionForm: View {
                     if storeState() {
                         onSubmit(&transaction)
                     } else {
-                        //TODO: Show an alert or some "Invalid Data" indicator
-                        print("Transaction storeState failed!")
+                        aContext.present(UIAlerts.message(message: "Invalid Input"))
                     }
                 })
             }
@@ -68,6 +69,7 @@ struct TransactionForm: View {
                 })
             }
         }).frame(minWidth: 250, minHeight: 350)
+        .alert(context: aContext)
     }
     
     func loadState(){
@@ -94,6 +96,10 @@ struct TransactionForm: View {
     }
     
     func storeState() -> Bool {
+        if amount.isEmpty || selectedBucket == nil {
+            return false
+        }
+        
         if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
             transaction.posted = postDate
         }

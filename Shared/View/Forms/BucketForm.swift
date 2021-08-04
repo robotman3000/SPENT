@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct BucketForm: View {
+    @StateObject fileprivate var aContext: AlertContext = AlertContext()
     @EnvironmentObject fileprivate var dbStore: DatabaseStore
     @State var bucket: Bucket
     
@@ -30,7 +32,7 @@ struct BucketForm: View {
             BucketPicker(label: "Account", selection: $parent, choices: parentChoices).disabled(bucket.id != nil)
             
             Section(){
-                Toggle("Enable Budget", isOn: $hasBudget)
+                Toggle("Enable Budget", isOn: $hasBudget).disabled(budgetChoices.isEmpty)
                 SchedulePicker(label: "Budget", selection: $budget, choices: budgetChoices)
                     .disabled(!hasBudget)
             }
@@ -48,13 +50,13 @@ struct BucketForm: View {
                     if storeState() {
                         onSubmit(&bucket)
                     } else {
-                        //TODO: Show an alert or some "Invalid Data" indicator
-                        print("Bucket storeState failed!")
+                        aContext.present(UIAlerts.message(message: "Invalid input"))
                     }
                 })
             }
         }).onAppear { loadState() }
         .frame(minWidth: 300, minHeight: 200)
+        .alert(context: aContext)
     }
     
     func loadState(){
@@ -70,6 +72,14 @@ struct BucketForm: View {
     }
     
     func storeState() -> Bool {
+        if bucket.name.isEmpty || parent == nil {
+            return false
+        }
+        
+        if hasBudget && budget == nil {
+            return false
+        }
+        
         bucket.parentID = parent?.id
         if let ancestor = parent?.ancestorID {
             bucket.ancestorID = ancestor

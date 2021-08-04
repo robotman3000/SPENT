@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct TagForm: View {
+    @StateObject fileprivate var aContext: AlertContext = AlertContext()
     @State var tag: Tag
     
     let onSubmit: (_ data: inout Tag) -> Void
@@ -23,7 +25,11 @@ struct TagForm: View {
         .toolbar(content: {
             ToolbarItem(placement: .confirmationAction){
                 Button("Done", action: {
-                    onSubmit(&tag)
+                    if storeState() {
+                        onSubmit(&tag)
+                    } else {
+                        aContext.present(UIAlerts.message(message: "Invalid input"))
+                    }
                 })
             }
             ToolbarItem(placement: .cancellationAction) {
@@ -33,5 +39,14 @@ struct TagForm: View {
             }
         })
         .frame(minWidth: 300, minHeight: 200)
+        .alert(context: aContext)
+    }
+    
+    func storeState() -> Bool {
+        if tag.name.isEmpty {
+            return false
+        }
+        
+        return true
     }
 }

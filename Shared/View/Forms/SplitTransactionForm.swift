@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftUIKit
 
 struct SplitTransactionForm: View {
+    @StateObject fileprivate var aContext: AlertContext = AlertContext()
     @EnvironmentObject fileprivate var dbStore: DatabaseStore
     @State var head: Transaction
     
@@ -58,8 +59,7 @@ struct SplitTransactionForm: View {
                         
                         onSubmit(&newSplit)
                     } else {
-                        //TODO: Show an alert or some "Invalid Data" indicator
-                        print("Transaction storeState failed!")
+                        aContext.present(UIAlerts.message(message: "Invalid Input"))
                     }
                 })
             }
@@ -69,6 +69,7 @@ struct SplitTransactionForm: View {
                 })
             }
         }).frame(minWidth: 250, minHeight: 350)
+        .alert(context: aContext)
     }
     
     func loadState(){
@@ -85,6 +86,11 @@ struct SplitTransactionForm: View {
     }
     
     func storeState() -> Bool {
+        if selectedBucket == nil || splitMembers.isEmpty {
+            return false
+        }
+        
+        
         if payee.isEmpty {
             head.payee = nil
         } else {

@@ -53,8 +53,7 @@ struct TransferForm: View {
                     if storeState() {
                         onSubmit(&transaction)
                     } else {
-                        aContext.present(UIAlerts.message(message: "Form validation failed"))
-                        print("Transfer storeState failed!")
+                        aContext.present(UIAlerts.message(message: "Invalid Input"))
                     }
                 })
             }
@@ -87,16 +86,20 @@ struct TransferForm: View {
     }
     
     func storeState() -> Bool {
-        if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            transaction.posted = postDate
-        }
-        
         if selectedSource?.id == selectedDest?.id {
             return false
         }
         
         if selectedSource?.id == nil || selectedDest?.id == nil {
             return false
+        }
+        
+        if amount.isEmpty {
+            return false
+        }
+        
+        if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
+            transaction.posted = postDate
         }
         
         transaction.sourceID = selectedSource?.id

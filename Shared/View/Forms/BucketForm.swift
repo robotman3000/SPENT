@@ -24,7 +24,10 @@ struct BucketForm: View {
     var body: some View {
         Form {
             TextField("Name", text: $bucket.name)
-            BucketPicker(label: "Account", selection: $parent, choices: parentChoices)
+            
+            // Disable changing the bucket parent after creation
+            // TODO: Make this possible in the future
+            BucketPicker(label: "Account", selection: $parent, choices: parentChoices).disabled(bucket.id != nil)
             
             Section(){
                 Toggle("Enable Budget", isOn: $hasBudget)

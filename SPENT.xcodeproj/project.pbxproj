@@ -120,6 +120,10 @@
 		A2EE03F42685125D0092F63E /* TransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7A2671509B00347205 /* TransactionForm.swift */; };
 		A2EE03F8268515690092F63E /* TagTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C98267E3F6000548F06 /* TagTable.swift */; };
 		A2EE03FA268518BF0092F63E /* iOSTransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03F9268518BF0092F63E /* iOSTransactionListView.swift */; };
+		A2F18BCD26B2DF82009BA9F4 /* SplitTransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */; };
+		A2F18BCE26B2DF82009BA9F4 /* SplitTransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */; };
+		A2F18BD026B2E312009BA9F4 /* TransactionSplitTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCF26B2E312009BA9F4 /* TransactionSplitTable.swift */; };
+		A2F18BD226B496E1009BA9F4 /* SplitMemberForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -194,6 +198,9 @@
 		A2EC30A62697571C00781EC8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A2EC30A8269758AB00781EC8 /* EditAccountListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditAccountListView.swift; sourceTree = "<group>"; };
 		A2EE03F9268518BF0092F63E /* iOSTransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSTransactionListView.swift; sourceTree = "<group>"; };
+		A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionForm.swift; sourceTree = "<group>"; };
+		A2F18BCF26B2E312009BA9F4 /* TransactionSplitTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionSplitTable.swift; sourceTree = "<group>"; };
+		A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitMemberForm.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -265,10 +272,8 @@
 				A217EAA226A9D7A0004388FF /* TransferForm.swift */,
 				A2676C9E267E630B00548F06 /* ScheduleForm.swift */,
 				A2780859268BC63900CEA560 /* TransactionTagForm.swift */,
-				A2780862268E4AF900CEA560 /* BucketPicker.swift */,
-				A278086B268E668C00CEA560 /* SchedulePicker.swift */,
-				A2780865268E55F600CEA560 /* EnumPicker.swift */,
-				A2CE549426A87F1E00DB9955 /* TagPicker.swift */,
+				A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */,
+				A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */,
 			);
 			path = Forms;
 			sourceTree = "<group>";
@@ -289,6 +294,10 @@
 			isa = PBXGroup;
 			children = (
 				A20781FD266168C600DE372A /* Forms */,
+				A2CE549426A87F1E00DB9955 /* TagPicker.swift */,
+				A278086B268E668C00CEA560 /* SchedulePicker.swift */,
+				A2780865268E55F600CEA560 /* EnumPicker.swift */,
+				A2780862268E4AF900CEA560 /* BucketPicker.swift */,
 				A2676C80267D0ABD00548F06 /* TableRow.swift */,
 				A26B732126909A850082A0F6 /* QueryWrapperView.swift */,
 				A20DAF7C2671802A00347205 /* TransactionRow.swift */,
@@ -318,6 +327,7 @@
 				A2676C8C267E367900548F06 /* TableToolbar.swift */,
 				A2676C95267E3EF300548F06 /* ScheduleTable.swift */,
 				A2676C98267E3F6000548F06 /* TagTable.swift */,
+				A2F18BCF26B2E312009BA9F4 /* TransactionSplitTable.swift */,
 			);
 			path = Tables;
 			sourceTree = "<group>";
@@ -573,13 +583,16 @@
 				A20DCD75264ED0270070EB07 /* BalanceTable.swift in Sources */,
 				A2CE549626A87F1E00DB9955 /* TagPicker.swift in Sources */,
 				A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */,
+				A2F18BCE26B2DF82009BA9F4 /* SplitTransactionForm.swift in Sources */,
 				A20DCD77264ED04A0070EB07 /* BucketRow.swift in Sources */,
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
 				A2CE549926A881E700DB9955 /* ScheduleManager.swift in Sources */,
 				A2676C9A267E3F6000548F06 /* TagTable.swift in Sources */,
 				A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */,
+				A2F18BD026B2E312009BA9F4 /* TransactionSplitTable.swift in Sources */,
 				A20781F8266001CC00DE372A /* TransactionTags.swift in Sources */,
 				A228FC5D264C574C00CD5BB6 /* TransactionRequest.swift in Sources */,
+				A2F18BD226B496E1009BA9F4 /* SplitMemberForm.swift in Sources */,
 				A20DAF7D2671802A00347205 /* TransactionRow.swift in Sources */,
 				A206D784267C110600CB094D /* Recipt.swift in Sources */,
 				A20B3C9D2655840600555CF1 /* TagForm.swift in Sources */,
@@ -655,6 +668,7 @@
 				A20B3CA026558BB400555CF1 /* TagRequest.swift in Sources */,
 				A20DCD6C264EBC470070EB07 /* Bucket.swift in Sources */,
 				A2780869268E588000CEA560 /* Stringable.swift in Sources */,
+				A2F18BCD26B2DF82009BA9F4 /* SplitTransactionForm.swift in Sources */,
 				A2676C96267E3EF300548F06 /* ScheduleTable.swift in Sources */,
 				A26B732226909A850082A0F6 /* QueryWrapperView.swift in Sources */,
 				A26B73252690A6FF0082A0F6 /* BucketNode.swift in Sources */,

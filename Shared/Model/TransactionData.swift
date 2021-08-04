@@ -19,4 +19,5 @@ struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
     var source: Bucket?
     var destination: Bucket?
     var transaction: Transaction
+    var splitMembers: [Transaction]
 }

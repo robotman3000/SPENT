@@ -46,7 +46,7 @@ struct AppDatabase {
         }
     }
     
-    init(path: URL, trace: Bool = false) {
+    init(path: URL, trace: Bool = true) {
         do {
             let newURL = path.appendingPathComponent("db.sqlite")
             print("Using DB from path: \(newURL.absoluteString)")
@@ -222,12 +222,23 @@ extension AppDatabase {
     
     /// Saves (inserts or updates) a transaction. When the method returns, the
     /// transaction is present in the database, and its id is not nil.
-    func saveTransaction(_ player: inout Transaction) throws {
+    func saveTransaction(_ transaction: inout Transaction) throws {
 //        if player.name.isEmpty {
 //            throw ValidationError.missingName
 //        }
         try dbWriter.write { db in
-            try player.save(db)
+            try transaction.save(db)
+        }
+    }
+    
+    func saveTransactions(_ transactions: inout [Transaction]) throws {
+//        if player.name.isEmpty {
+//            throw ValidationError.missingName
+//        }
+        try dbWriter.write { db in
+            for var t in transactions {
+                try t.save(db)
+            }
         }
     }
     

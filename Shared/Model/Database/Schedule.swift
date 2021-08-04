@@ -93,3 +93,9 @@ extension Schedule {
 }
 
 extension Schedule.ScheduleRule: DatabaseValueConvertible { }
+
+extension Schedule {
+    static func newSchedule() -> Schedule {
+        return Schedule(id: nil, name: "", scheduleType: .Recurring, rule: .Never, customRule: "", markerID: -1, memo: "")
+    }
+}

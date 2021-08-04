@@ -36,6 +36,8 @@ struct TableTransactionsView: View {
                         memo: item.transaction.memo,
                         group: item.transaction.group,
                         tags: item.tags,
+                        splits: item.splitMembers,
+                        cBucket: bucket,
                         showTags: $appState.showTags)
                     }.frame(height: (appState.showTags ? 60 : 20)).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
 //                    .contentShape(Rectangle())
@@ -109,17 +111,29 @@ struct TableTransactionsView: View {
         let memo: String
         let group: UUID?
         let tags: [Tag]
+        let splits: [Transaction]
+        let cBucket: Bucket
         
         @Binding var showTags: Bool
         
         var body: some View {
             VStack (alignment: .leading){
                 HStack(alignment: .center){
+                    //TODO: This should be split into two views
                     status.getIconView().frame(width: 20, height: 20)
                     Text(payee ?? direction.getStringName()).frame(maxWidth: .infinity)
                     Text(postDate?.transactionFormat ?? date.transactionFormat).frame(maxWidth: .infinity)
-                    TransactionRow.Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection).frame(maxWidth: .infinity)
-                    Text(amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
+                    if group == nil {
+                        TransactionRow.Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection).frame(maxWidth: .infinity)
+                        Text(amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
+                    } else {
+                        Text("Split \(Transaction.getSplitDirection(members: splits).getStringName())")
+                        if let trans = Transaction.getSplitMember(splits, bucket: cBucket) {
+                            Text("(\(trans.amount.currencyFormat))").foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
+                        }
+                        
+                        Text(Transaction.amountSum(splits).currencyFormat).foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
+                    }
                     Text(memo).frame(maxWidth: .infinity).help(memo)
                 }
                 if showTags {

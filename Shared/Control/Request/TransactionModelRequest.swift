@@ -54,6 +54,7 @@ struct TransactionModelRequest: Queryable {
             .including(all: Transaction.tags.forKey("tags"))
             .including(optional: Transaction.source.forKey("source"))
             .including(optional: Transaction.destination.forKey("destination"))
+            .including(all: Transaction.splitMembers.forKey("splitMembers"))
         
         switch(order){
         case .byDate: query = query.orderedByDate()

@@ -9,30 +9,17 @@ import SwiftUI
 import SwiftUIKit
 
 struct TransferForm: View {
-    @EnvironmentObject var dbStore: DatabaseStore
+    @EnvironmentObject fileprivate var dbStore: DatabaseStore
     @StateObject fileprivate var aContext = AlertContext()
-    @State var transaction: Transaction = Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
-    let currentBucket: Bucket?
+    @State var transaction: Transaction
+    
     @State var sourceChoices: [Bucket]
     @State var destinationChoices: [Bucket]
     
     @State fileprivate var postDate: Date = Date()
-    @State fileprivate var selectedSource: Bucket?
-    @State fileprivate var selectedDest: Bucket?
+    @State var selectedSource: Bucket?
+    @State var selectedDest: Bucket?
     @State fileprivate var amount: String = ""
-    @State fileprivate var groupString: String = ""
-    
-    var hiddenFormatter: NumberFormatter = NumberFormatter()
-    var formatter: NumberFormatter {
-        get {
-            //formatter.usesGroupingSeparator = true
-            hiddenFormatter.numberStyle = .currency
-            // localize to your grouping and decimal separator
-            hiddenFormatter.locale = Locale.current
-            //formatter.maximumFractionDigits = 2
-            return hiddenFormatter
-        }
-    }
     
     let onSubmit: (_ data: inout Transaction) -> Void
     let onCancel: () -> Void
@@ -47,8 +34,7 @@ struct TransferForm: View {
                     DatePicker("Posting Date", selection: $postDate, displayedComponents: [.date])
                 }
             }
-
-            //TextField("Amount", value: $amount, formatter: formatter)
+            
             HStack{
                 Text("$") // TODO: Localize this text
                 TextField("Amount", text: $amount)
@@ -60,14 +46,6 @@ struct TransferForm: View {
             Section(){
                 TextEditor(text: $transaction.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
-            
-            Section(){
-                Button("Generate ID"){
-                    groupString = UUID().uuidString
-                }
-                TextField("Group", text: $groupString)
-            }
-            
         }.onAppear { loadState() }
         .toolbar(content: {
             ToolbarItem(placement: .confirmationAction){
@@ -90,12 +68,8 @@ struct TransferForm: View {
     
     func loadState(){
         // If we have a new transaction
-        if transaction.id == nil {
-            selectedSource = currentBucket
-            //selectedDest = currentBucket
-        } else {
+        if transaction.id != nil {
             // We have an existing transaction
-            groupString = transaction.group?.uuidString ?? ""
             amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
             
             if transaction.posted != nil {
@@ -108,28 +82,6 @@ struct TransferForm: View {
             
             if transaction.destID != nil {
                 selectedDest = dbStore.database?.resolveOne(transaction.destination)
-            }
-        }
-        
-        if sourceChoices.isEmpty {
-            // If we weren't provided a list of choices
-            if let currentB = currentBucket {
-                if currentB.ancestorID == nil {
-                    sourceChoices.append(currentB)
-                }
-                
-                sourceChoices.append(contentsOf: dbStore.database?.resolve(currentB.tree) ?? [])
-            }
-        }
-        
-        if destinationChoices.isEmpty {
-            // If we weren't provided a list of choices
-            if let currentB = currentBucket {
-                if currentB.ancestorID == nil {
-                    destinationChoices.append(currentB)
-                }
-                
-                destinationChoices.append(contentsOf: dbStore.database?.resolve(currentB.tree) ?? [])
             }
         }
     }
@@ -151,7 +103,6 @@ struct TransferForm: View {
         transaction.destID = selectedDest?.id
         
         transaction.payee = nil // Transfers don't need payees
-        transaction.group = UUID(uuidString: groupString)
         transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
         
         return true

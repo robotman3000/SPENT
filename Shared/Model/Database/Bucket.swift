@@ -122,3 +122,10 @@ extension DerivableRequest where RowDecoder == Bucket {
         filter(Bucket.Columns.parent == parent)
     }
 }
+
+// Utility Functions
+extension Bucket {
+    static func newBucket() -> Bucket {
+        return Bucket(id: nil, name: "", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
+    }
+}

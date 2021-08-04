@@ -42,3 +42,9 @@ extension Tag: FetchableRecord, MutablePersistableRecord {
         static let memo = Column(CodingKeys.memo)
     }
 }
+
+extension Tag {
+    static func newTag() -> Tag {
+        return Tag(id: nil, name: "", memo: "")
+    }
+}

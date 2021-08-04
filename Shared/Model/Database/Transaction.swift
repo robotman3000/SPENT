@@ -25,6 +25,10 @@ struct Transaction: Identifiable, Codable, Hashable {
     
     var type: TransType {
         get {
+            if sourceID == nil && destID == nil {
+                return .Split
+            }
+            
             if sourceID != nil {
                 if destID != nil {
                     return .Transfer
@@ -84,6 +88,11 @@ extension Transaction {
     static let tags = hasMany(Tag.self, through: hasMany(TransactionTag.self, key: "TransactionID"), using: TransactionTag.tag)
     var tags: QueryInterfaceRequest<Tag> {
         request(for: Transaction.tags)
+    }
+    
+    static let splitMembers = hasMany(Transaction.self, using: ForeignKey(["Group"], to: ["Group"]))
+    var splitMembers: QueryInterfaceRequest<Transaction> {
+        request(for: Transaction.splitMembers)
     }
 }
  
@@ -148,8 +157,16 @@ extension Transaction {
         case Deposit
         case Withdrawal
         case Transfer
+        case Split
         
         var id: String { self.rawValue }
+        
+        var opposite: Self {
+            if self == .Transfer || self == .Split {
+                return self
+            }
+            return self == .Deposit ? .Withdrawal : .Deposit
+        }
         
         func getStringName() -> String {
             return self.rawValue
@@ -157,6 +174,10 @@ extension Transaction {
     }
     
     func getType(convertTransfer: Bool = false, bucket: Int64?) -> Transaction.TransType {
+        if sourceID == nil && destID == nil {
+            return .Split
+        }
+        
         if sourceID != nil && destID != nil && convertTransfer && bucket != nil {
             if sourceID == bucket {
                 return .Withdrawal
@@ -213,5 +234,58 @@ extension DerivableRequest where RowDecoder == Transaction {
     
     func orderedByStatus() -> Self {
         order(Transaction.Columns.status.desc)
+    }
+}
+
+// Utility Functions
+extension Transaction {
+    static func newTransaction() -> Transaction {
+        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: nil)
+    }
+    
+    static func newSplitTransaction() -> Transaction {
+        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: UUID())
+    }
+    
+    static func newSplitMember(head: Transaction) -> Transaction {
+        return Transaction(id: nil, status: head.status, date: head.date, posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: head.group)
+    }
+    
+    static func getSplitDirection(members: [Transaction]) -> TransType {
+        // TODO: look into a more efficent process
+        
+        var sources = Set<Int64?>()
+        var dests = Set<Int64?>()
+        
+        for member in members {
+            sources.insert(member.sourceID)
+            dests.insert(member.destID)
+        }
+        
+        return dests.count >= sources.count ? .Deposit : .Withdrawal
+    }
+    
+    static func amountSum(_ data: [Transaction]) -> Int {
+        //TODO: This function needs to handle deposites and withdrawals correctly
+        var amount = 0
+        
+        for t in data {
+            amount += t.amount
+        }
+        
+        return amount
+    }
+    
+    static func getSplitMember(_ data: [Transaction], bucket: Bucket) -> Transaction? {
+        for t in data {
+            // Eliminate the optional value
+            if let bID = bucket.id {
+                // and thereby cause nil sources or dests to be ignored
+                if t.sourceID == bID || t.destID == bID {
+                    return t
+                }
+            }
+        }
+        return nil
     }
 }

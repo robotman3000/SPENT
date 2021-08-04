@@ -8,16 +8,16 @@
 import SwiftUI
 
 struct AccountForm: View {
-    @State var bucket: Bucket = Bucket(id: nil, name: "")
+    @State var account: Bucket
     
     let onSubmit: (_ data: inout Bucket) -> Void
     let onCancel: () -> Void
     
     var body: some View {
         Form {
-            TextField("Name", text: $bucket.name)
+            TextField("Name", text: $account.name)
             
-            TextEditor(text: $bucket.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+            TextEditor(text: $account.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
         }
         .toolbar(content: {
             ToolbarItem(placement: .cancellationAction) {
@@ -28,7 +28,7 @@ struct AccountForm: View {
             ToolbarItem(placement: .confirmationAction){
                 Button("Done", action: {
                     if storeState() {
-                        onSubmit(&bucket)
+                        onSubmit(&account)
                     } else {
                         //TODO: Show an alert or some "Invalid Data" indicator
                         print("Account storeState failed!")
@@ -42,16 +42,16 @@ struct AccountForm: View {
     func loadState(){}
     
     func storeState() -> Bool {
-        bucket.parentID = nil
-        bucket.ancestorID = nil
-        bucket.budgetID = nil
+        account.parentID = nil
+        account.ancestorID = nil
+        account.budgetID = nil
         return true
     }
 }
 
 
-struct AccountForm_Previews: PreviewProvider {
-    static var previews: some View {
-        AccountForm(onSubmit: {_ in}, onCancel: {})
-    }
-}
+//struct AccountForm_Previews: PreviewProvider {
+//    static var previews: some View {
+//        AccountForm(onSubmit: {_ in}, onCancel: {})
+//    }
+//}

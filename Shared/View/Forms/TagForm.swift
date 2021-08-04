@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct TagForm: View {
-    @State var tag: Tag = Tag(id: nil, name: "")
+    @State var tag: Tag
     
     let onSubmit: (_ data: inout Tag) -> Void
     let onCancel: () -> Void

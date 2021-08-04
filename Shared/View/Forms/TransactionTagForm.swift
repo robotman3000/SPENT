@@ -11,7 +11,7 @@ import SwiftUI
 
 struct TransactionTagForm: View {
     @State var transaction: Transaction
-    @State var tags: Set<Tag>
+    @State fileprivate var tags: Set<Tag> = Set<Tag>()
     
     let tagChoices: [Tag]
     

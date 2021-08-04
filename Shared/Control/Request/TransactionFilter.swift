@@ -28,6 +28,31 @@ struct TransactionFilter {
         }
         let bucketStr: String = bucketIDs.map({ val in return "\(val)" }).joined(separator: ", ")
 
-        return Transaction.filter(sql: "SourceBucket in (\(bucketStr)) OR DestBucket in (\(bucketStr))")
+        return Transaction.filter(sql: """
+            
+            (
+                (
+                    SourceBucket IN (\(bucketStr)) OR DestBucket IN (\(bucketStr))
+                ) AND (
+                    \"Group\" IS NULL
+                )
+            ) OR (
+                (
+                    "Group" IN (
+                        SELECT "Group" FROM Transactions
+                        WHERE
+                            (
+                                SourceBucket IN (\(bucketStr)) OR DestBucket IN (\(bucketStr))
+                            ) AND (
+                                \"Group\" IS NOT NULL
+                            )
+                        GROUP BY "Group"
+                    )
+                ) AND (
+                    SourceBucket IS NULL AND DestBucket IS NULL
+                )
+            )
+            
+            """)
     }
 }

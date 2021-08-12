@@ -122,8 +122,8 @@ struct TableTransactionsView: View {
                     //TODO: This should be split into two views
                     Spacer(minLength: 2)
                     status.getIconView().frame(width: 16, height: 16)
-                    Text(payee ?? direction.getStringName()).frame(maxWidth: .infinity)
                     Text(postDate?.transactionFormat ?? date.transactionFormat).frame(maxWidth: .infinity)
+                    
                     if group == nil {
                         TransactionRow.Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection).frame(maxWidth: .infinity)
                         Text(amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
@@ -135,6 +135,9 @@ struct TableTransactionsView: View {
                         
                         Text(Transaction.amountSum(splits).currencyFormat).foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
                     }
+                    
+                    Text(payee ?? direction.getStringName()).frame(maxWidth: .infinity)
+                    
                     Text(memo).frame(maxWidth: .infinity).help(memo)
                 }
                 if showTags {

@@ -1107,8 +1107,8 @@
             filePath = "Shared/Model/Database/Transaction.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "265"
-            endingLineNumber = "265"
+            startingLineNumber = "277"
+            endingLineNumber = "277"
             landmarkName = "getSplitDirection(members:)"
             landmarkType = "7">
          </BreakpointContent>

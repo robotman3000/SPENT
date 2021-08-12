@@ -20,4 +20,8 @@ struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
     var destination: Bucket?
     var transaction: Transaction
     var splitMembers: [Transaction]
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(transaction)
+    }
 }

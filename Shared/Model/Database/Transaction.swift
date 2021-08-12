@@ -44,6 +44,18 @@ struct Transaction: Identifiable, Codable, Hashable {
         case id, status = "Status", date = "TransDate", posted = "PostDate", amount = "Amount", sourceID = "SourceBucket", destID = "DestBucket", memo = "Memo", payee = "Payee", group = "Group"
     }
     
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(status)
+        hasher.combine(date)
+        hasher.combine(posted)
+        hasher.combine(amount)
+        hasher.combine(sourceID)
+        hasher.combine(destID)
+        hasher.combine(memo)
+        hasher.combine(payee)
+    }
+    
 //    var amount: Double {
 //        get { Decimal(raw_amount) / 100 }
 //        set { raw_amount = newValue * 100.00 }

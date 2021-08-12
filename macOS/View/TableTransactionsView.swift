@@ -120,7 +120,8 @@ struct TableTransactionsView: View {
             VStack (alignment: .leading){
                 HStack(alignment: .center){
                     //TODO: This should be split into two views
-                    status.getIconView().frame(width: 20, height: 20)
+                    Spacer(minLength: 2)
+                    status.getIconView().frame(width: 16, height: 16)
                     Text(payee ?? direction.getStringName()).frame(maxWidth: .infinity)
                     Text(postDate?.transactionFormat ?? date.transactionFormat).frame(maxWidth: .infinity)
                     if group == nil {

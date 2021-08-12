@@ -137,7 +137,7 @@ extension Transaction {
             VStack (alignment: .center){
                 switch self {
                 case .Void:
-                    Circle().fill(Color.white).overlay(Circle().stroke(Color.black, lineWidth: 4))
+                    Circle().fill(Color.black).overlay(Text("X").fontWeight(.bold).foregroundColor(.white))
                 case .Uninitiated:
                     Circle().fill(Color.black)
                 case .Scheduled:
@@ -150,7 +150,6 @@ extension Transaction {
                     ZStack{
                         Circle().fill(Color.white)
                         Circle().stroke(Color.green, lineWidth: 4)
-                        
                     }
                 case .Reconciled:
                     Circle().fill(Color.green)

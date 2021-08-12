@@ -37,7 +37,7 @@ struct ListTransactionsView: View {
                                    tags: item.tags)
                         .frame(height: 55)
                         .contextMenu{
-                            TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: [item])
+                            TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: [item], onFormDismiss: {})
                         }
                 }
             } else {

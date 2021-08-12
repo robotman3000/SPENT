@@ -19,6 +19,7 @@ struct TableTransactionsView: View {
     @EnvironmentObject var appState: GlobalState
     
     var body: some View {
+        Text(selection.description)
         VStack{
             //Section(header: Header()){}
             if !transactions.isEmpty {
@@ -52,8 +53,11 @@ struct TableTransactionsView: View {
 //                            }))
 //                        }
 //                    })
-                    .contextMenu{
-                        TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: selection.contains(item) ? selection : [item])
+                    .contextMenu {
+                        //TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: selection.contains(item) ? selection : [item])
+                        TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: selection.contains(item) ? selection : [item], onFormDismiss: {
+                            selection.removeAll()
+                        })
                     }
                 }.listStyle(PlainListStyle())
             } else {

@@ -189,11 +189,23 @@ struct TransactionContextMenu: View {
         
 
         Section{
-            Button("Mark As Reconciled"){
-                aContext.present(UIAlerts.notImplemented)
+            Button("Close Selected"){
+                markSelectionAs(newStatus: .Reconciled, filter: [.Void])
+                onFormDismiss()
             }
             Menu("Mark As"){
-                Text("Not Implemented")
+                Button("Void"){
+                    markSelectionAs(newStatus: .Void)
+                    onFormDismiss()
+                }
+                Button("Complete"){
+                    markSelectionAs(newStatus: .Complete)
+                    onFormDismiss()
+                }
+                Button("Reconciled"){
+                    markSelectionAs(newStatus: .Reconciled)
+                    onFormDismiss()
+                }
             }
         }
 
@@ -213,6 +225,18 @@ struct TransactionContextMenu: View {
     func splitSubmit(transactions: inout [Transaction]) {
         print("Update SPlit")
         store.updateTransactions(&transactions, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
+    }
+    
+    func markSelectionAs(newStatus: Transaction.StatusTypes, filter: [Transaction.StatusTypes] = []){
+        var transactionsUpdated: [Transaction] = []
+        for t in transactions {
+            if filter.isEmpty || !filter.contains(t.transaction.status) {
+                var tr = t.transaction
+                tr.status = newStatus
+                transactionsUpdated.append(tr)
+            }
+        }
+        store.updateTransactions(&transactionsUpdated, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
     }
 }
 

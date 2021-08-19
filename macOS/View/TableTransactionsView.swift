@@ -19,7 +19,6 @@ struct TableTransactionsView: View {
     @EnvironmentObject var appState: GlobalState
     
     var body: some View {
-        Text(selection.description)
         VStack{
             //Section(header: Header()){}
             if !transactions.isEmpty {

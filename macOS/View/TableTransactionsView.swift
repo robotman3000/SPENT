@@ -39,7 +39,7 @@ struct TableTransactionsView: View {
                         splits: item.splitMembers,
                         cBucket: bucket,
                         showTags: $appState.showTags)
-                    }.frame(height: (appState.showTags ? 60 : 20)).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
+                    }.frame(height: (appState.showTags ? 64 : 32)).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
 //                    .contentShape(Rectangle())
 //                    .gesture(TapGesture(count: 1).onEnded { _ in
 //                        if item.transaction.type == .Transfer {
@@ -67,40 +67,6 @@ struct TableTransactionsView: View {
         }
     }
     
-    struct Header: View {
-        var body: some View {
-            TableRow(content: [
-                AnyView(TableCell {
-                    Text("Staus")
-                }),
-                AnyView(TableCell {
-                    Text("Date")
-                }),
-                AnyView(TableCell {
-                    Text("Post Date")
-                }),
-                AnyView(TableCell {
-                    Text("Amount")
-                }),
-                AnyView(TableCell {
-                    Text("Source Bucket")
-                }),
-                AnyView(TableCell {
-                    Text("Dest Bucket")
-                }),
-                AnyView(TableCell {
-                    Text("Memo")
-                }),
-                AnyView(TableCell {
-                    Text("Payee")
-                }),
-                AnyView(TableCell {
-                    Text("Group ID")
-                })
-            ], showDivider: false)
-        }
-    }
-    
     struct Row: View {
         let status: Transaction.StatusTypes
         let direction: Transaction.TransType
@@ -125,21 +91,29 @@ struct TableTransactionsView: View {
                     //TODO: This should be split into two views
                     Spacer(minLength: 2)
                     status.getIconView().frame(width: 16, height: 16)
-                    Text(postDate?.transactionFormat ?? date.transactionFormat).frame(maxWidth: .infinity)
                     
-                    if group == nil {
-                        TransactionRow.Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection).frame(maxWidth: .infinity)
-                        Text(amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
-                    } else {
-                        Text("Split \(Transaction.getSplitDirection(members: splits).getStringName())")
-                        if let trans = Transaction.getSplitMember(splits, bucket: cBucket) {
-                            Text("(\(trans.amount.currencyFormat))").foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
+                    VStack{
+                        Text(payee ?? direction.getStringName())
+                        Text(postDate?.transactionFormat ?? date.transactionFormat)
+                    }.width(150)
+                    
+                    Spacer()
+                    VStack{
+                        if group == nil {
+                            Text(amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray)
+                            TransactionRow.Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection)
+                        } else {
+                            Text("Split \(Transaction.getSplitDirection(members: splits).getStringName())")
+                            HStack{
+                                if let trans = Transaction.getSplitMember(splits, bucket: cBucket) {
+                                    Text("(\(trans.amount.currencyFormat))").foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray)
+                                }
+                                Text(Transaction.amountSum(splits).currencyFormat).foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray)
+                            }
                         }
-                        
-                        Text(Transaction.amountSum(splits).currencyFormat).foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray).frame(maxWidth: .infinity)
-                    }
+                    }.width(200)
                     
-                    Text(payee ?? direction.getStringName()).frame(maxWidth: .infinity)
+                    
                     
                     Text(memo).frame(maxWidth: .infinity).help(memo)
                 }
@@ -153,36 +127,6 @@ struct TableTransactionsView: View {
                 Spacer(minLength: 5)
                 Divider()
             }
-//            TableRow(content: [
-//                AnyView(TableCell {
-//                    Text(status.getStringName())
-//                }),
-//                AnyView(TableCell {
-//                    Text(date.transactionFormat)
-//                }),
-//                AnyView(TableCell {
-//                    Text(postDate?.transactionFormat ?? "N/A")
-//                }),
-//                AnyView(TableCell {
-//                    Text(amount.currencyFormat)
-//                        .foregroundColor(direction == .Withdrawal ? .red : .gray)
-//                }),
-//                AnyView(TableCell {
-//                    Text(sourceName)
-//                }),
-//                AnyView(TableCell {
-//                    Text(destinationName)
-//                }),
-//                AnyView(TableCell {
-//                    Text(memo)
-//                }),
-//                AnyView(TableCell {
-//                    Text(payee ?? "N/A")
-//                }),
-//                AnyView(TableCell {
-//                    Text(group?.uuidString ?? "N/A")
-//                })
-//            ])
         }
     }
 }

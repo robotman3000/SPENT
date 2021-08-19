@@ -158,7 +158,7 @@ extension Transaction {
 //                    }
                     Circle().fill(Color.green)
                 case .Reconciled:
-                    EmptyView()
+                    Circle().fill(Color.clear)
                 }
             }.help(Text(getStringName()))
         }
@@ -287,6 +287,9 @@ extension Transaction {
         var amount = 0
         
         for t in data {
+            if t.sourceID == nil && t.destID == nil {
+                continue // Skip the head's amount
+            }
             amount += t.amount
         }
         

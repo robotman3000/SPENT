@@ -28,9 +28,9 @@ struct TransactionRow: View {
         var body: some View {
             Text(text).fontWeight(.bold).frame(minWidth: 50)
                 .font(.caption)
-                .padding(5)
+                .padding(3)
                 .background(color)
-                .cornerRadius(25)
+                .cornerRadius(50)
         }
     }
     

@@ -33,12 +33,11 @@ struct TransactionSplitTable: View {
                         }
                         Spacer()
                     }
-                    Header()
                 }){}
             
             
             List(splits, id: \.self, selection: $selected){ split in
-                Row(bucketName: store.getBucketByID(splitDirection == .Deposit ? split.destID : split.sourceID)?.name ?? "Error", amount: split.amount, memo: split.memo).tag(split)
+                Row(bucketName: store.getBucketByID(splitDirection == .Deposit ? split.destID : split.sourceID)?.name ?? "Error", amount: split.amount, memo: split.memo).tag(split).height(32)
             }
         }.popover(item: $selected) { transaction in
             SplitMemberForm(transaction: transaction,
@@ -79,47 +78,33 @@ struct TransactionSplitTable: View {
         }.sheet(context: context).alert(context: aContext)
     }
     
-    struct Header: View {
-        var body: some View {
-            TableRow(content: [
-                AnyView(TableCell {
-                    Text("Bucket")
-                }),
-                AnyView(TableCell {
-                    Text("Amount")
-                }),
-                AnyView(TableCell {
-                    Text("Memo")
-                })
-            ], showDivider: false)
-        }
-    }
-    
     struct Row: View {
-        
-        //TODO: This should really be a binding
         let bucketName: String
         let amount: Int
         let memo: String
         
         var body: some View {
-            TableRow(content: [
-                AnyView(TableCell {
-                    Text(bucketName)
-                }),
-                AnyView(TableCell {
-                    Text(amount.currencyFormat)
-                }),
-                AnyView(TableCell {
-                    Text(memo.trunc(length: 10)).help(memo)
-                })
-            ], showDivider: false)
+            HStack(alignment: .center){
+                VStack (alignment: .leading) {
+                    HStack{
+                        Text(bucketName)
+                        Spacer()
+                    }
+                    HStack{
+                        Text(amount.currencyFormat).bold()
+                        Spacer()
+                    }
+                }.frame(width: 150)
+                Text(memo).help(memo)
+                Spacer()
+            }
         }
     }
 }
 
-//struct TransactionSplitTable_Previews: PreviewProvider {
-//    static var previews: some View {
-//        TransactionSplitTable()
-//    }
-//}
+struct TransactionSplitTable_Previews: PreviewProvider {
+    static var previews: some View {
+        //TransactionSplitTable()
+        TransactionSplitTable.Row(bucketName: "Preview Bucket", amount: 3756, memo: "Some relevant memo goes here")
+    }
+}

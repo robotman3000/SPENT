@@ -146,13 +146,19 @@ extension Transaction {
                     Circle().fill(Color.pink)
                 case .Posting:
                     Circle().fill(Color.red)
-                case .Complete:
-                    ZStack{
-                        Circle().fill(Color.white)
-                        Circle().stroke(Color.green, lineWidth: 4)
+                    HStack (spacing: 1){
+                        Circle().fill(Color.red)
+                        Circle().fill(Color.red)
+                        
                     }
-                case .Reconciled:
+                case .Complete:
+//                    ZStack{
+//                        Circle().fill(Color.white)
+//                        Circle().stroke(Color.green, lineWidth: 4)
+//                    }
                     Circle().fill(Color.green)
+                case .Reconciled:
+                    EmptyView()
                 }
             }.help(Text(getStringName()))
         }

@@ -26,7 +26,11 @@ struct TransactionRow: View {
         let color: Color
         
         var body: some View {
-            Text(text).padding(5).background(color).cornerRadius(25)
+            Text(text).fontWeight(.bold).frame(minWidth: 50)
+                .font(.caption)
+                .padding(5)
+                .background(color)
+                .cornerRadius(25)
         }
     }
     
@@ -114,5 +118,7 @@ struct TransactionRow_Previews: PreviewProvider {
         
         let t = Transaction.getRandomTransaction(withID: 1, withSource: bucket1.id, withDestination: bucket2.id, withGroup: nil)
         TransactionRow(status: t.status, direction: t.type, contextDirection: .Deposit, date: t.date, sourceName: bucket1.name, destinationName: bucket2.name, amount: 5324, payee: nil, memo: "Some memo", tags: [])
+        
+        TransactionRow.Badge(text: "Test", color: .gray)
     }
 }

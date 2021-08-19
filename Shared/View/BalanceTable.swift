@@ -10,22 +10,41 @@ import GRDB
 
 struct BalanceTable: View {
     
-    //let name: String
+    let name: String
     let posted: Int
     let available: Int
     let postedInTree: Int
     let availableInTree: Int
+    var isNIL: Bool = false
     
     var body: some View {
         VStack (spacing: 15){
-            //Text(name)
-            HStack (spacing: 15) {
-                BalanceView(text: "Posted", balance: posted)
-                BalanceView(text: "Available", balance: available)
-            }
-            HStack (spacing: 15) {
-                BalanceView(text: "Posted in Tree", balance: postedInTree)
-                BalanceView(text: "Available in Tree", balance: availableInTree)
+            if isNIL {
+                //TODO: Remove the duplication of code
+                HStack{
+                    Text("No account selected")
+                }
+                HStack (spacing: 15) {
+                    BalanceView(text: "Posted", balance: nil)
+                    BalanceView(text: "Available", balance: nil)
+                }
+                HStack (spacing: 15) {
+                    BalanceView(text: "Posted in Tree", balance: nil)
+                    BalanceView(text: "Available in Tree", balance: nil)
+                }
+            } else {
+                HStack (spacing: 3){
+                    Text("Balance of")
+                    Text(name).fontWeight(.bold)
+                }
+                HStack (spacing: 15) {
+                    BalanceView(text: "Posted", balance: posted)
+                    BalanceView(text: "Available", balance: available)
+                }
+                HStack (spacing: 15) {
+                    BalanceView(text: "Posted in Tree", balance: postedInTree)
+                    BalanceView(text: "Available in Tree", balance: availableInTree)
+                }
             }
         }
         //.background(Color.white)
@@ -35,7 +54,7 @@ struct BalanceTable: View {
     struct BalanceView: View {
         
         let text: String
-        let balance: Int
+        let balance: Int?
         
         var body: some View {
             VStack (alignment: .leading){
@@ -62,6 +81,6 @@ struct BalanceTable: View {
 
 struct BalanceTable_Previews: PreviewProvider {
     static var previews: some View {
-        BalanceTable(posted: 10043, available: -3923, postedInTree: -38934, availableInTree: 20482)
+        BalanceTable(name: "Preview Test", posted: 10043, available: -3923, postedInTree: -38934, availableInTree: 20482)
     }
 }

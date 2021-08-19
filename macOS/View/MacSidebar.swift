@@ -26,10 +26,12 @@ struct MacSidebar: View {
             let version: String = (Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as! String?) ?? "(NIL)"
             Text("SPENT Git Version: \(version)")
             QueryWrapperView(source: BucketBalanceRequest(selectedBucket)) { balance in
-                BalanceTable(posted: balance.posted,
+                BalanceTable(name: selectedBucket?.name ?? "NIL",
+                             posted: balance.posted,
                              available: balance.available,
                              postedInTree: balance.postedInTree,
-                             availableInTree: balance.availableInTree)
+                             availableInTree: balance.availableInTree,
+                             isNIL: selectedBucket == nil)
             }
             List(selection: $selectedBucket) {
                 NavigationLink(destination: MacHome(), tag: 0, selection: $selectedView) {

@@ -23,6 +23,21 @@ struct SplitTransactionForm: View {
     @State fileprivate var payee: String = ""
     @State var initType: Transaction.TransType = .Deposit
     @State var transType: Transaction.TransType = .Deposit
+    @State fileprivate var amount: String = "0"
+    var splitAmount: Int {
+        get {
+            var amnt = 0
+            for m in splitMembers {
+                amnt += m.amount
+            }
+            return amnt
+        }
+    }
+    var headAmount: Int {
+        get {
+            return NSDecimalNumber(string: amount.isEmpty ? "0" : amount).multiplying(by: 100).intValue
+        }
+    }
     
     let onSubmit: (_ data: inout [Transaction]) -> Void
     let onCancel: () -> Void
@@ -36,11 +51,20 @@ struct SplitTransactionForm: View {
             }
             
             Section(header: EnumPicker(label: "Type", selection: $transType, enumCases: [.Deposit, .Withdrawal]).pickerStyle(SegmentedPickerStyle())){
-
                 BucketPicker(label: transType == .Deposit ? "From" : "To", selection: $selectedBucket, choices: bucketChoices)
             }
             
-            TransactionSplitTable(head: head, splits: $splitMembers, splitDirection: initType)
+            Section(){
+                HStack{
+                    Text("$") // TODO: Localize this text
+                    TextField("Amount", text: $amount)
+                }
+                Text("\((headAmount - splitAmount).currencyFormat) remaining")
+            }
+            
+            Section(){
+                TransactionSplitTable(head: head, splits: $splitMembers, splitDirection: initType).labelStyle(DefaultLabelStyle())
+            }
             
             Section(){
                 TextField("Payee", text: $payee)
@@ -79,6 +103,8 @@ struct SplitTransactionForm: View {
         initType = Transaction.getSplitDirection(members: splitMembers)
         transType = initType
         
+        amount = NSDecimalNumber(value: head.amount).dividing(by: 100).stringValue
+        
         if let member = splitMembers.first {
             let query = transType.opposite == .Deposit ? member.destination : member.source
             selectedBucket = dbStore.database?.resolveOne(query)
@@ -86,7 +112,7 @@ struct SplitTransactionForm: View {
     }
     
     func storeState() -> Bool {
-        if selectedBucket == nil || splitMembers.isEmpty {
+        if amount.isEmpty || selectedBucket == nil || splitMembers.isEmpty {
             return false
         }
         
@@ -97,11 +123,12 @@ struct SplitTransactionForm: View {
             head.payee = payee
         }
         
-        // The split head must be inert
+        // The split head must be inert except for the amount
+        // which is used to calculcate the max split amount
         head.posted = nil
         head.sourceID = nil
         head.destID = nil
-        head.amount = 0
+        head.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
         
         print(splitMembers)
         for index in splitMembers.indices {

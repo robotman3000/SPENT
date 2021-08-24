@@ -11,8 +11,6 @@ import GRDB
 
 struct MacTransactionView: View {
     @EnvironmentObject var appState: GlobalState
-    
-    
     @EnvironmentObject var store: DatabaseStore
     @State var selected: Set<TransactionData> = Set<TransactionData>()
     let selectedBucket: Bucket
@@ -30,19 +28,6 @@ struct MacTransactionView: View {
                 Spacer()
                 EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionModelRequest.Ordering.allCases)
                 EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionModelRequest.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
-//                Button(action: {
-//                    let yearsToAdd = 1
-//                    let currentDate = Date()
-//
-//                    var dateComponent = DateComponents()
-//                    dateComponent.year = yearsToAdd
-//
-//                    let futureDate = Calendar.current.date(byAdding: dateComponent, to: currentDate)
-//                    let result = ScheduleRenderer.render(appDB: store.database!, schedule: store.schedules.first!, from: currentDate, to: futureDate!)
-//                    print(result)
-//                }){
-//                    Text("Ref Recurring")
-//                }
                 Spacer(minLength: 15)
             }.padding()
             
@@ -53,41 +38,14 @@ struct MacTransactionView: View {
                                                   direction: appState.sortDirection)){ model in
                 
                 VStack{
-//                    if appState.selectedView == .List {
-//                        ListTransactionsView(transactions: model,
-//                                             bucket: selectedBucket,
-//                                             selection: $selected,
-//                                             context: context,
-//                                             aContext: aContext)
-//                    }
-                    
-                    if appState.selectedView == .Table {
-                        TableTransactionsView(transactions: model,
-                                              bucket: selectedBucket,
-                                              selection: $selected,
-                                              context: context,
-                                              aContext: aContext)
-                    }
+                    TransactionTableView(transactions: model,
+                                          bucket: selectedBucket,
+                                          selection: $selected,
+                                          context: context,
+                                          aContext: aContext)
                 }.contextMenu {
-                    Button("Add Transaction") {
-                        context.present(UIForms.transaction(context: context, transaction: nil, contextBucket: selectedBucket, bucketChoices: store.buckets, onSubmit: {data in
-                            store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-                        }))
-                    }
-                    
-                    Button("Add Transfer"){
-                        context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: selectedBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: {data in
-                            store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-                        }))
-                    }
-                    
-                    Button("Add Split"){
-                        context.present(UIForms.splitTransaction(context: context, splitMembers: [], contextBucket: selectedBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: splitSubmit))
-                    }
+                    _NewTransactionContextButtons(context: context, aContext: aContext, contextBucket: selectedBucket, onFormDismiss: { context.dismiss() })
                 }
-//                if appState.selectedView == .Calendar {
-//
-//                }
                 
                 HStack(alignment: .firstTextBaseline) {
                     Button(action: {
@@ -100,166 +58,9 @@ struct MacTransactionView: View {
                     Spacer()
                     Text("\(model.count) transactions")
                     Spacer()
-//                    Picker(selection: $appState.selectedView, label: Text("")) {
-//                        ForEach(TransactionViewType.allCases) { tStatus in
-//                            Image(systemName: tStatus.getIconName()).tag(tStatus)
-//                        }
-//                    }.pickerStyle(SegmentedPickerStyle()).frame(width: 160)
                 }.padding().frame(height: 30)
             }
         }.navigationTitle(selectedBucket.name).sheet(context: context).alert(context: aContext)
-    }
-    
-    func splitSubmit(transactions: inout [Transaction]) {
-        print("Update SPlit")
-        store.updateTransactions(&transactions, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-    }
-}
-
-struct TransactionContextMenu: View {
-    @ObservedObject var context: SheetContext
-    @ObservedObject var aContext: AlertContext
-    @EnvironmentObject var store: DatabaseStore
-    
-    let contextBucket: Bucket
-    let transactions: Set<TransactionData>
-    
-    let onFormDismiss: () -> Void
-    
-    var body: some View {
-        Section{
-            Button("Add Transaction") {
-                context.present(UIForms.transaction(context: context, transaction: nil, contextBucket: contextBucket, bucketChoices: store.buckets, onSubmit: {data in
-                    store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-                }))
-            }
-
-            Button("Add Transfer"){
-                context.present(UIForms.transfer(context: context, transaction: nil, contextBucket: contextBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: {data in
-                    store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-                }))
-            }
-
-            Button("Add Split"){
-                context.present(UIForms.splitTransaction(context: context, splitMembers: [], contextBucket: contextBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: splitSubmit))
-            }
-        }
-        
-        Section {
-            if let t = transactions.first { // No support for batch editing... yet
-                if transactions.count == 1 {
-                    if t.transaction.type == .Transfer {
-                        Button("Edit Transfer") {
-                            context.present(UIForms.transfer(context: context, transaction: t.transaction, contextBucket: contextBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: {data in
-                                store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-                            }))
-                        }
-                    } else if t.transaction.type == .Split {
-                        Button("Edit Split"){
-                            context.present(UIForms.splitTransaction(context: context, splitMembers: t.splitMembers, contextBucket: contextBucket, sourceChoices: store.buckets, destChoices: store.buckets, onSubmit: splitSubmit))
-                        }
-                    } else {
-                        Button("Edit Transaction") {
-                            context.present(UIForms.transaction(context: context, transaction: t.transaction, contextBucket: contextBucket, bucketChoices: store.buckets, onSubmit: {data in
-                                store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-                            }))
-                        }
-                    }
-
-                    Button("Add Document") {
-                        aContext.present(UIAlerts.notImplemented)
-                    }
-                }
-            }
-
-            Button("Set Tags") {
-                context.present(
-                    UIForms.transactionTags(
-                        context: context,
-                        transaction: transactions.first!.transaction,
-                        tagChoices: store.tags,
-                        onSubmit: {tags, transaction in
-                            print(tags)
-                            store.setTransactionsTags(transactions: transactions.map({ t in t.transaction }), tags: tags, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-                        }
-                    )
-                )
-            }
-        }
-        
-
-        Section{
-            Button("Close Selected"){
-                markSelectionAs(newStatus: .Reconciled, filter: [.Void])
-                onFormDismiss()
-            }
-            Menu("Mark As"){
-                Button("Void"){
-                    markSelectionAs(newStatus: .Void)
-                    onFormDismiss()
-                }
-                Button("Complete"){
-                    markSelectionAs(newStatus: .Complete)
-                    onFormDismiss()
-                }
-                Button("Reconciled"){
-                    markSelectionAs(newStatus: .Reconciled)
-                    onFormDismiss()
-                }
-            }
-        }
-
-        Button("Delete Selected") {
-            context.present(UIForms.confirmDelete(context: context, message: "", onConfirm: {
-                store.deleteTransactions(transactions.map({t in t.transaction.id!}), onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-            }))
-        }
-
-        Section{
-            Button("Debug Info") {
-                aContext.present(UIAlerts.message(message: transactions.debugDescription))
-            }
-        }
-    }
-    
-    func splitSubmit(transactions: inout [Transaction]) {
-        print("Update SPlit")
-        store.updateTransactions(&transactions, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-    }
-    
-    func markSelectionAs(newStatus: Transaction.StatusTypes, filter: [Transaction.StatusTypes] = []){
-        var transactionsUpdated: [Transaction] = []
-        for t in transactions {
-            if filter.isEmpty || !filter.contains(t.transaction.status) {
-                var tr = t.transaction
-                tr.status = newStatus
-                transactionsUpdated.append(tr)
-            }
-        }
-        store.updateTransactions(&transactionsUpdated, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
-    }
-}
-
-enum TransactionViewType: String, CaseIterable, Identifiable, Stringable {
-    case List
-    case Table
-    //case Calendar
-        
-    var id: String { self.rawValue }
-    
-    func getStringName() -> String {
-        return self.id
-    }
-    
-    func getIconName() -> String {
-        switch self {
-        case .List:
-            return "list.bullet"
-        case .Table:
-            return "tablecells"
-        //case .Calendar:
-        //    return "calendar"
-        }
     }
 }
 

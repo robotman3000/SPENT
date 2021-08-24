@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftUIKit
 
-struct TableTransactionsView: View {
+struct TransactionTableView: View {
     let transactions: [TransactionData]
     let bucket: Bucket
     
@@ -39,21 +39,8 @@ struct TableTransactionsView: View {
                         splits: item.splitMembers,
                         cBucket: bucket,
                         showTags: $appState.showTags)
-                    }.frame(height: (appState.showTags ? 64 : 32)).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))//.background(Color.black)
-//                    .contentShape(Rectangle())
-//                    .gesture(TapGesture(count: 1).onEnded { _ in
-//                        if item.transaction.type == .Transfer {
-//                            context.present(UIForms.transfer(context: context, transaction: item.transaction, contextBucket: bucket, onSubmit: {data in
-//                                store.updateTransaction(&data, onComplete: { context.dismiss() })
-//                            }))
-//                        } else {
-//                            context.present(UIForms.transaction(context: context, transaction: item.transaction, contextBucket: bucket, onSubmit: {data in
-//                                store.updateTransaction(&data, onComplete: { context.dismiss() })
-//                            }))
-//                        }
-//                    })
+                    }.frame(height: (appState.showTags ? 64 : 32)).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .contextMenu {
-                        //TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: selection.contains(item) ? selection : [item])
                         TransactionContextMenu(context: context, aContext: aContext, contextBucket: bucket, transactions: selection.contains(item) ? selection : [item], onFormDismiss: {
                             selection.removeAll()
                         })

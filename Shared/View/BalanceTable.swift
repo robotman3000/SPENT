@@ -9,7 +9,7 @@ import SwiftUI
 import GRDB
 
 struct BalanceTable: View {
-    
+    //TODO: Make this hide the account name if on mobile
     let name: String
     let posted: Int
     let available: Int

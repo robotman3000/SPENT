@@ -8,9 +8,6 @@
 import Foundation
 
 class GlobalState: ObservableObject {
-    #if os(macOS)
-    @Published var selectedView = TransactionViewType.Table
-    #endif
     @Published var includeTree: Bool = true
     @Published var showTags: Bool = false
     @Published var sorting = TransactionModelRequest.Ordering.byDate

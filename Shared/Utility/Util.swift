@@ -8,6 +8,47 @@
 import Foundation
 import GRDB
 import SwiftUI
+import UniformTypeIdentifiers
+
+func openFile(allowedTypes: [UTType], onConfirm: (URL) -> Void, onCancel: () -> Void){
+    let panel = NSOpenPanel()
+    panel.allowsMultipleSelection = false
+    panel.canChooseDirectories = false
+    panel.canChooseFiles = true
+    panel.allowedContentTypes = allowedTypes
+    
+    if panel.runModal() == .OK {
+        if let selectedFile = panel.url?.absoluteURL {
+            onConfirm(selectedFile)
+        }
+    } else {
+        onCancel()
+    }
+}
+
+func saveFile(allowedTypes: [UTType], onConfirm: (URL) -> Void, onCancel: () -> Void){
+    let panel = NSSavePanel()
+    panel.allowedContentTypes = allowedTypes
+    
+    if panel.runModal() == .OK {
+        if let selectedFile = panel.url?.absoluteURL {
+            onConfirm(selectedFile)
+        }
+    } else {
+        onCancel()
+    }
+}
+
+func getURLByBookmark(_ data: Data, isStale: inout Bool) -> URL? {
+    do {
+        return try URL(resolvingBookmarkData: data,
+                  options: URL.BookmarkResolutionOptions.withSecurityScope,
+                  relativeTo: nil, bookmarkDataIsStale: &isStale)
+    } catch {
+        print(error)
+    }
+    return nil
+}
 
 /// This wraps the struct of Type in an observable class so that we can know when the struct is changed or becomes nil
 class ObservableStructWrapper<Type>: ObservableObject {

@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftUIKit
 
-struct TransactionSplitTable: View {
+struct SplitTransactionMemberTable: View {
     
     @EnvironmentObject fileprivate var store: DatabaseStore
     @StateObject private var context = SheetContext()
@@ -105,6 +105,6 @@ struct TransactionSplitTable: View {
 struct TransactionSplitTable_Previews: PreviewProvider {
     static var previews: some View {
         //TransactionSplitTable()
-        TransactionSplitTable.Row(bucketName: "Preview Bucket", amount: 3756, memo: "Some relevant memo goes here")
+        SplitTransactionMemberTable.Row(bucketName: "Preview Bucket", amount: 3756, memo: "Some relevant memo goes here")
     }
 }

@@ -63,7 +63,7 @@ struct SplitTransactionForm: View {
             }
             
             Section(){
-                TransactionSplitTable(head: head, splits: $splitMembers, splitDirection: initType).labelStyle(DefaultLabelStyle())
+                SplitTransactionMemberTable(head: head, splits: $splitMembers, splitDirection: initType).labelStyle(DefaultLabelStyle())
             }
             
             Section(){

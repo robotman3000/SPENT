@@ -22,7 +22,7 @@ struct iOSTransactionListView: View {
                                               direction: appState.sortDirection)){ model in
             List(selection: $selection){
                 QueryWrapperView(source: BucketBalanceRequest(bucket)) { balance in
-                    BalanceTable(/*name: selectedBucket?.name ?? "None",*/
+                    BalanceTable(name: bucket.name,
                                  posted: balance.posted,
                                  available: balance.available,
                                  postedInTree: balance.postedInTree,
@@ -59,11 +59,12 @@ struct iOSTransactionListView: View {
                 } else {
                     Text("No Transactions")
                 }
-            }.navigationTitle(bucket.name)
+            }
+            .navigationTitle(bucket.name)
             .toolbar(content: {
                 ToolbarItem(placement: .primaryAction){
                     Menu {
-                        Button(action: {//TODO: Show form}) {
+                        Button(action: {}) {//TODO: Show form
                             Label("Edit Account", systemImage: "gear")
                         }
                     } label: { Label("Menu", systemImage: "ellipsis.circle") }

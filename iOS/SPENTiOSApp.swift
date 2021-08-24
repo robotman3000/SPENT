@@ -105,9 +105,9 @@ struct MainView: View {
             }.listStyle(InsetGroupedListStyle())
             .sheet(isPresented: $showingForm){
                 NavigationView{
-                    BucketForm(onSubmit: {data in
-                        store.updateBucket(&data, onComplete: dismissModal)
-                    }, onCancel: dismissModal).navigationTitle("New Account")
+//                    BucketForm(onSubmit: {data in
+//                        store.updateBucket(&data, onComplete: dismissModal)
+//                    }, onCancel: dismissModal).navigationTitle("New Account")
                 }
             }
             .navigationTitle("Home")

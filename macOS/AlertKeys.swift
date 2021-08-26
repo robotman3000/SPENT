@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftUIKit
 
-enum UIAlerts: AlertProvider {
+enum AlertKeys: AlertProvider {
     case databaseError(message: String)
     case message(message: String)
     case notImplemented

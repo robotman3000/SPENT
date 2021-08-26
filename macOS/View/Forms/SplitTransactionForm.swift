@@ -63,7 +63,7 @@ struct SplitTransactionForm: View {
             }
             
             Section(){
-                SplitTransactionMemberTable(head: head, splits: $splitMembers, splitDirection: initType).labelStyle(DefaultLabelStyle())
+                SplitTransactionMemberList(head: head, splits: $splitMembers, splitDirection: initType).labelStyle(DefaultLabelStyle())
             }
             
             Section(){
@@ -83,7 +83,7 @@ struct SplitTransactionForm: View {
                         
                         onSubmit(&newSplit)
                     } else {
-                        aContext.present(UIAlerts.message(message: "Invalid Input"))
+                        aContext.present(AlertKeys.message(message: "Invalid Input"))
                     }
                 })
             }

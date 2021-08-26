@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+// TODO: This needs to be removed and dependant code refactored
 struct TableToolbar: View {
     let onClick: (_ action: ToolbarAction) -> Void
     

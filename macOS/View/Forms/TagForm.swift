@@ -28,7 +28,7 @@ struct TagForm: View {
                     if storeState() {
                         onSubmit(&tag)
                     } else {
-                        aContext.present(UIAlerts.message(message: "Invalid input"))
+                        aContext.present(AlertKeys.message(message: "Invalid input"))
                     }
                 })
             }

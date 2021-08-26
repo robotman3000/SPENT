@@ -59,7 +59,7 @@ struct TransactionForm: View {
                     if storeState() {
                         onSubmit(&transaction)
                     } else {
-                        aContext.present(UIAlerts.message(message: "Invalid Input"))
+                        aContext.present(AlertKeys.message(message: "Invalid Input"))
                     }
                 })
             }

@@ -50,7 +50,7 @@ struct BucketForm: View {
                     if storeState() {
                         onSubmit(&bucket)
                     } else {
-                        aContext.present(UIAlerts.message(message: "Invalid input"))
+                        aContext.present(AlertKeys.message(message: "Invalid input"))
                     }
                 })
             }

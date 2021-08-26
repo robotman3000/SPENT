@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftUIKit
 
-enum UIForms: SheetProvider {
+enum FormKeys: SheetProvider {
     case account(context: SheetContext, account: Bucket?, onSubmit: (_ data: inout Bucket) -> Void)
     case bucket(context: SheetContext, bucket: Bucket?, parent: Bucket?, parentChoices: [Bucket], budgetChoices: [Schedule], onSubmit: (_ data: inout Bucket) -> Void)
     case transaction(context: SheetContext, transaction: Transaction?, contextBucket: Bucket, bucketChoices: [Bucket], onSubmit: (_ data: inout Transaction) -> Void)

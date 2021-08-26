@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftUIKit
 import GRDB
 
-struct MacTransactionView: View {
+struct TransactionListView: View {
     @EnvironmentObject var appState: GlobalState
     @EnvironmentObject var store: DatabaseStore
     @State var selected: Set<TransactionData> = Set<TransactionData>()
@@ -38,19 +38,44 @@ struct MacTransactionView: View {
                                                   direction: appState.sortDirection)){ model in
                 
                 VStack{
-                    TransactionTableView(transactions: model,
-                                          bucket: selectedBucket,
-                                          selection: $selected,
-                                          context: context,
-                                          aContext: aContext)
+                    if !model.isEmpty {
+                        List(model, id:\.self, selection: $contextSelection){ item in
+                            VStack(spacing: 0){
+                                TransactionRow(status: item.transaction.status,
+                                direction: item.transaction.type,
+                                cdirection: item.transaction.getType(convertTransfer: true, bucket: selectedBucket.id),
+                                date: item.transaction.date,
+                                postDate: item.transaction.posted,
+                                sourceName: item.source?.name ?? "",
+                                destinationName: item.destination?.name ?? "",
+                                amount: item.transaction.amount,
+                                payee: item.transaction.payee,
+                                memo: item.transaction.memo,
+                                group: item.transaction.group,
+                                tags: item.tags,
+                                splits: item.splitMembers,
+                                cBucket: selectedBucket,
+                                showTags: $appState.showTags)
+                            }.frame(height: (appState.showTags ? 64 : 32)).listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .contextMenu {
+                                TransactionContextMenu(context: context, aContext: aContext, contextBucket: selectedBucket, transactions: selected.contains(item) ? selected : [item], onFormDismiss: {
+                                    selected.removeAll()
+                                })
+                            }
+                        }.listStyle(PlainListStyle())
+                    } else {
+                        List{
+                            Text("No Transactions")
+                        }
+                    }
                 }.contextMenu {
                     _NewTransactionContextButtons(context: context, aContext: aContext, contextBucket: selectedBucket, onFormDismiss: { context.dismiss() })
                 }
                 
                 HStack(alignment: .firstTextBaseline) {
                     Button(action: {
-                        context.present(UIForms.transaction(context: context, transaction: nil, contextBucket: selectedBucket, bucketChoices: store.buckets, onSubmit: {data in
-                            store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(UIAlerts.databaseError(message: error.localizedDescription ))})
+                        context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: selectedBucket, bucketChoices: store.buckets, onSubmit: {data in
+                            store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
                         }))
                     }) {
                         Image(systemName: "plus")

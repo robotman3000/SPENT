@@ -32,7 +32,7 @@ struct AccountForm: View {
                     if storeState() {
                         onSubmit(&account)
                     } else {
-                        aContext.present(UIAlerts.message(message: "Invalid input"))
+                        aContext.present(AlertKeys.message(message: "Invalid input"))
                     }
                 })
             }

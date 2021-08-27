@@ -18,6 +18,7 @@ enum FormKeys: SheetProvider {
     case transactionTags(context: SheetContext, transaction: Transaction, tagChoices: [Tag], onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void)
     case splitTransaction(context: SheetContext, splitMembers: [Transaction], contextBucket: Bucket, sourceChoices: [Bucket], destChoices: [Bucket], onSubmit: (_ data: inout [Transaction]) -> Void)
     case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
+    case confirmAction(context: SheetContext, message: String, onConfirm: () -> Void, onCancel: () -> Void)
     
     var sheet: AnyView {
         switch self {
@@ -85,6 +86,18 @@ enum FormKeys: SheetProvider {
             }.toolbar(content: {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel", action: { context.dismiss() })
+                }
+                ToolbarItem(placement: .destructiveAction){
+                    Button("Confirm", action: { context.dismiss(); onConfirm() })
+                }
+            }).padding().any()
+        
+        case .confirmAction(context: let context, message: let message, onConfirm: let onConfirm, onCancel: let onCancel):
+            return VStack{
+                Text(message)
+            }.toolbar(content: {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: { context.dismiss(); onCancel() })
                 }
                 ToolbarItem(placement: .destructiveAction){
                     Button("Confirm", action: { context.dismiss(); onConfirm() })

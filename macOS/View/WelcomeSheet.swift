@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 
 struct WelcomeSheet: View {
     @Binding var showWelcomeSheet: Bool
-    let loadDatabase: (_ path: URL) -> Void
+    let loadDatabase: (_ path: URL, _ isNew: Bool) -> Void
     
     var body: some View {
         VStack {
@@ -26,7 +26,7 @@ struct WelcomeSheet: View {
                             }
                         }
                         defer { url.stopAccessingSecurityScopedResource() }
-                        loadDatabase(url)
+                        loadDatabase(url, true)
                     }
                 }, onCancel: {
                     showWelcomeSheet.toggle()
@@ -37,7 +37,7 @@ struct WelcomeSheet: View {
                 openFile(allowedTypes: [.spentDatabase], onConfirm: { selectedFile in
                     if selectedFile.startAccessingSecurityScopedResource() {
                         defer { selectedFile.stopAccessingSecurityScopedResource() }
-                        loadDatabase(selectedFile)
+                        loadDatabase(selectedFile, false)
                     }
                 }, onCancel: {
                     showWelcomeSheet.toggle()
@@ -52,6 +52,6 @@ struct WelcomeSheet: View {
 
 struct WelcomeSheet_Previews: PreviewProvider {
     static var previews: some View {
-        WelcomeSheet(showWelcomeSheet: .constant(true), loadDatabase: {_ in})
+        WelcomeSheet(showWelcomeSheet: .constant(true), loadDatabase: {_,_  in})
     }
 }

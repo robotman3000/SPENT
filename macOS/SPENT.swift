@@ -28,19 +28,25 @@ struct SPENT: App {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now()) {
                         print("Initializing State Controller")
-                        print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") ?? "(NIL)")")
+                        print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)")")
                         print("App Name: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") ?? "(NIL)")")
                         print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
-                        loadDBBookmark()
+                        
+                        if let dbURL = loadDBBookmark() {
+                            setupDBInstance(url: dbURL)
+                        }
+                        
+                        if !isActive {
+                            // Something went wrong opening the prefered db
+                            showWelcomeSheet.toggle()
+                        }
                     }
                 }
                 .sheet(isPresented: $showWelcomeSheet, content: {
-                    WelcomeSheet(showWelcomeSheet: $showWelcomeSheet, loadDatabase: {url in
-                         let database = AppDatabase(path: url)
-                         dbStore.load(database)
-                        isActive.toggle()
+                    WelcomeSheet(showWelcomeSheet: $showWelcomeSheet, loadDatabase: {url,isNew  in
+                        setupDBInstance(url: url, skipHashCheck: isNew)
                     })
-                })
+                }).sheet(context: context)
             }
         }.commands {
             CommandGroup(replacing: .newItem){
@@ -113,19 +119,12 @@ struct SPENT: App {
     
     }
     
-    func loadDBBookmark(){
+    func loadDBBookmark() -> URL? {
         if !isDBSwitch && UserDefaults.standard.bool(forKey: PreferenceKeys.autoloadDB.rawValue) {
             if let dbBookmark = UserDefaults.standard.data(forKey: PreferenceKeys.databaseBookmark.rawValue) {
                 var isStale = false
                 if let dbURL = getURLByBookmark(dbBookmark, isStale: &isStale) {
-                    if dbURL.startAccessingSecurityScopedResource() {
-                        defer { dbURL.stopAccessingSecurityScopedResource() }
-                        let database = AppDatabase(path: dbURL)
-                        dbStore.load(database)
-                        isActive = true
-                    } else {
-                        print("Security failed")
-                    }
+                    return dbURL
                 } else {
                     print("Bookmark -> URL failed")
                 }
@@ -133,10 +132,81 @@ struct SPENT: App {
                 print("Bookmark Failed")
             }
         }
-        
-        if !isActive {
-            // Something went wrong opening the prefered db
-            showWelcomeSheet.toggle()
+        return nil
+    }
+    
+    func loadDB(url: URL) -> AppDatabase? {
+        if url.startAccessingSecurityScopedResource() {
+            defer { url.stopAccessingSecurityScopedResource() }
+            let database = AppDatabase(path: url)
+            
+            return database
+        } else {
+            print("Security failed")
+        }
+        return nil
+    }
+    
+    func setupDBInstance(url: URL, skipHashCheck: Bool = false){
+        if let appDB = loadDB(url: url) {
+            if checkDBCommit(database: appDB) {
+                dbStore.load(appDB)
+                isActive = true
+            } else {
+                let gitCommit: String = Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)"
+                
+                if !skipHashCheck {
+                    let upgradeMessage = "The current git hash is \(gitCommit), the hash in the database doesn't match. Load Anyway?"
+                    context.present(FormKeys.confirmAction(context: context, message: upgradeMessage, onConfirm: {
+                        setDBCommit(database: appDB, commit: gitCommit)
+                        dbStore.load(appDB)
+                        isActive = true
+                    }, onCancel: {
+                        isActive = false
+                        showWelcomeSheet = true
+                    }))
+                } else {
+                    // Assume the answer was yes
+                    setDBCommit(database: appDB, commit: gitCommit)
+                    dbStore.load(appDB)
+                    isActive = true
+                }
+            }
+        }
+    }
+    
+    func checkDBCommit(database: AppDatabase) -> Bool {
+        do {
+            // Check the saved commit hash against ours before handing the raw db to the db store
+            let config = try database.databaseReader.read { db in
+                try AppConfiguration.fetch(db)
+            }
+            print("DB Version: \(AppDatabase.DB_VERSION), Loaded Version: \(config.dbVersion)")
+            if config.commitHash == Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "1234567890" {
+                print("Hash matched")
+                return true
+            }
+        } catch {
+            print(error)
+        }
+        print("Hash didn't match")
+        return false
+    }
+    
+    func setDBCommit(database: AppDatabase, commit: String){
+        do {
+            try database.getWriter().write { db in
+                var config = try AppConfiguration.fetch(db)
+                
+                // Update some config values
+                try config.updateChanges(db) {
+                    $0.commitHash = commit
+                    $0.dbVersion = AppDatabase.DB_VERSION
+                }
+            }
+        } catch {
+            print("Failed to update database commit hash")
+            print(error)
         }
     }
 }

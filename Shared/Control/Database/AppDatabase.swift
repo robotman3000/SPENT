@@ -27,6 +27,9 @@ extension EnvironmentValues {
 /// It applies the pratices recommended at
 /// https://github.com/groue/GRDB.swift/blob/master/Documentation/GoodPracticesForDesigningRecordTypes.md
 struct AppDatabase {
+    
+    static var DB_VERSION: Int64 = 1
+    
     init(){
         do {
             print("Using Memory DB")
@@ -191,6 +194,25 @@ struct AppDatabase {
             }
         }
 
+        migrator.registerMigration("DB-Versioning"){ db in
+            try db.create(table: "appConfiguration") { t in
+                // Single row guarantee
+                t.column("id", .integer)
+                    // Have inserts replace the existing row
+                    .primaryKey(onConflict: .replace)
+                    // Make sure the id column is always 1
+                    .check { $0 == 1 }
+                
+                // The configuration colums
+                
+                // This column is used to protect the saved databases from being used with a
+                // commit other than the one they were created with.
+                // Remove this once the first non beta build is released and use
+                // schema migrations instead.
+                t.column("commitHash", .text).notNull()
+                t.column("dbVersion", .integer).notNull()
+            }
+        }
         // Migrations for future application versions will be inserted here:
         // migrator.registerMigration(...) { db in
         //     ...

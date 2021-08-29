@@ -22,8 +22,6 @@ struct MainView: View {
     var body: some View {
         NavigationView {
             VStack {
-                let version: String = (Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as! String?) ?? "(NIL)"
-                Text("SPENT Git Version: \(version)")
                 QueryWrapperView(source: BucketBalanceRequest(selectedBucket)) { balance in
                     BalanceTable(name: selectedBucket?.name ?? "NIL",
                                  posted: balance.posted,

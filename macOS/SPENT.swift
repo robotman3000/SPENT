@@ -19,6 +19,7 @@ struct SPENT: App {
     @StateObject var dbStore: DatabaseStore = DatabaseStore()
     @StateObject var context: SheetContext = SheetContext()
     @StateObject var aContext: AlertContext = AlertContext()
+    private let MAX_RECENTS = 7
     
     var body: some Scene {
         WindowGroup {
@@ -43,7 +44,36 @@ struct SPENT: App {
                     }
                 }
                 .sheet(isPresented: $showWelcomeSheet, content: {
-                    WelcomeSheet(showWelcomeSheet: $showWelcomeSheet, loadDatabase: {url,isNew  in
+                    let recents = getRecents()
+                    WelcomeSheet(showWelcomeSheet: $showWelcomeSheet, recentFiles: recents, loadDatabase: {url,isNew  in
+                        // Store this as the recent db
+                        do {
+                            
+                            var dontAddRecent: Bool = false
+                            for i in recents {
+                                if i.path.absoluteString == url.absoluteString {
+                                    dontAddRecent = true
+                                    break
+                                }
+                            }
+                            
+                            if !dontAddRecent {
+                                let bookmarkData = try url.bookmarkData(options: URL.BookmarkCreationOptions.withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                                if var dbBookmarks = UserDefaults.standard.array(forKey: PreferenceKeys.databaseBookmark.rawValue) as? [Data] {
+                                    dbBookmarks.append(bookmarkData)
+                                    if dbBookmarks.count > MAX_RECENTS {
+                                        dbBookmarks.removeFirst()
+                                    }
+                                    UserDefaults.standard.set(dbBookmarks, forKey: PreferenceKeys.databaseBookmark.rawValue)
+                                } else {
+                                    UserDefaults.standard.set([bookmarkData], forKey: PreferenceKeys.databaseBookmark.rawValue)
+                                }
+                            }
+                        } catch {
+                            print("Failed to save db bookmark")
+                            print(error)
+                        }
+                        
                         setupDBInstance(url: url, skipHashCheck: isNew)
                     })
                 }).sheet(context: context)
@@ -208,5 +238,23 @@ struct SPENT: App {
             print("Failed to update database commit hash")
             print(error)
         }
+    }
+    
+    func getRecents() -> [DBFileBookmark] {
+        var bookmarks: [DBFileBookmark] = []
+        if let dbBookmarks = UserDefaults.standard.array(forKey: PreferenceKeys.databaseBookmark.rawValue) as? [Data] {
+            for bookmData in dbBookmarks {
+                var isStale = false
+                if let url = getURLByBookmark(bookmData, isStale: &isStale) {
+                    let bookmark = DBFileBookmark(shortName: url.pathComponents.last ?? url.absoluteString, path: url)
+                    bookmarks.append(bookmark)
+                } else {
+                    print("Recent Bookmark -> URL failed")
+                }
+            }
+        } else {
+            print("Recent Bookmark Failed")
+        }
+        return bookmarks
     }
 }

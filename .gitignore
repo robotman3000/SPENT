@@ -2,6 +2,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/macos,swift,objective-c,git,xcode
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,swift,objective-c,git,xcode
 
+# Extra Xcode files
+Breakpoints_v2.xcbkptlist
+UserInterfaceState.xcuserstate
+
 ### Git ###
 # Created by git for backups. To disable backups in Git:
 # $ git config --global mergetool.keepBackup false

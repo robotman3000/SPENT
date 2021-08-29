@@ -15,7 +15,6 @@ struct TransactionListView: View {
     @State var selected: Set<TransactionData> = Set<TransactionData>()
     let selectedBucket: Bucket
     @State var editTags = false
-    @State var contextSelection: TransactionData?
     
     @StateObject private var context = SheetContext()
     @StateObject private var aContext = AlertContext()
@@ -39,7 +38,7 @@ struct TransactionListView: View {
                 
                 VStack{
                     if !model.isEmpty {
-                        List(model, id:\.self, selection: $contextSelection){ item in
+                        List(model, id:\.self, selection: $selected){ item in
                             VStack(spacing: 0){
                                 TransactionRow(status: item.transaction.status,
                                 direction: item.transaction.type,

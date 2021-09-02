@@ -52,6 +52,9 @@ class DatabaseStore: ObservableObject {
     }
     
     func load(_ db: AppDatabase){
+        if self.database != nil {
+            self.database?.endSecureScope()
+        }
         self.database = db
         
         bucketCancellable = bucketObserver.publisher(in: database!.databaseReader).sink(

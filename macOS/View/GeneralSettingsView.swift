@@ -32,7 +32,9 @@ struct GeneralSettingsView: View {
                         let selectedFile = panel.url?.absoluteURL
                         if let file = selectedFile {
                             if file.startAccessingSecurityScopedResource() {
-                                defer { file.stopAccessingSecurityScopedResource() }
+                                defer {
+                                    print("2: Ending secure db session")
+                                    file.stopAccessingSecurityScopedResource() }
                                 do {
                                     let bookmarkData = try file.bookmarkData(options: URL.BookmarkCreationOptions.withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
                                     UserDefaults.standard.setValue(bookmarkData, forKey: PreferenceKeys.databaseBookmark.rawValue)

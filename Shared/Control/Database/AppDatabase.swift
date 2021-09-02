@@ -29,6 +29,30 @@ extension EnvironmentValues {
 struct AppDatabase {
     
     static var DB_VERSION: Int64 = 1
+    var bundlePath: URL?
+    
+//    func beginSecureScope() -> Bool {
+//        print("startAccessingSecurityScopedResource")
+//        if let url = bundlePath {
+//            if url.startAccessingSecurityScopedResource() {
+//                print("OK")
+//                return true
+//            }
+//        } else {
+//            print("FAIL")
+//        }
+//        return false
+//    }
+//
+    func endSecureScope(){
+        print("stopAccessingSecurityScopedResource")
+        if let url = bundlePath {
+            url.stopAccessingSecurityScopedResource()
+            print("OK")
+        } else {
+            print("FAIL")
+        }
+    }
     
     init(){
         do {
@@ -49,8 +73,9 @@ struct AppDatabase {
         }
     }
     
-    init(path: URL, trace: Bool = true) {
+    init(path: URL, trace: Bool = false) {
         do {
+            self.bundlePath = path
             let newURL = path.appendingPathComponent("db.sqlite")
             print("Using DB from path: \(newURL.absoluteString)")
             self.dbWriter = try DatabaseQueue(path: newURL.absoluteString)

@@ -34,21 +34,25 @@ struct SPENT: App {
                         print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
                         
                         if let dbURL = loadDBBookmark() {
-                            setupDBInstance(url: dbURL)
+                            //if dbURL.startAccessingSecurityScopedResource() {
+                            //    defer { print("A: Security end"); dbURL.stopAccessingSecurityScopedResource() }
+                                setupDBInstance(url: dbURL)
+                            //}
                         }
                         
                         if !isActive {
                             // Something went wrong opening the prefered db
-                            showWelcomeSheet.toggle()
+                            showWelcomeSheet = true
                         }
                     }
                 }
                 .sheet(isPresented: $showWelcomeSheet, content: {
                     let recents = getRecents()
                     WelcomeSheet(showWelcomeSheet: $showWelcomeSheet, recentFiles: recents, loadDatabase: {url,isNew  in
+                        setupDBInstance(url: url, skipHashCheck: isNew)
+                        
                         // Store this as the recent db
                         do {
-                            
                             var dontAddRecent: Bool = false
                             for i in recents {
                                 if i.path.absoluteString == url.absoluteString {
@@ -73,8 +77,7 @@ struct SPENT: App {
                             print("Failed to save db bookmark")
                             print(error)
                         }
-                        
-                        setupDBInstance(url: url, skipHashCheck: isNew)
+                    
                     })
                 }).sheet(context: context)
             }
@@ -95,8 +98,8 @@ struct SPENT: App {
                 
                 Button("Change Database") {
                     isDBSwitch = true
-                    isActive.toggle()
-                    showWelcomeSheet = true
+                    isActive = false
+                    //showWelcomeSheet = true
                 }
             }
             
@@ -116,9 +119,9 @@ struct SPENT: App {
                         DispatchQueue.main.async {
                             // allowedTypes = SPENTLegacyImportAgent.importTypes
                             openFile(allowedTypes: [], onConfirm: { selectedFile in
-                                if selectedFile.startAccessingSecurityScopedResource() {
+                                //if selectedFile.startAccessingSecurityScopedResource() {
                                     SPENTLegacyImportAgent.importSPENTLegacy(url: selectedFile, dbStore: dbStore)
-                                }
+                                //}
                             }, onCancel: {})
                         }
                     }
@@ -165,20 +168,11 @@ struct SPENT: App {
         return nil
     }
     
-    func loadDB(url: URL) -> AppDatabase? {
-        if url.startAccessingSecurityScopedResource() {
-            defer { url.stopAccessingSecurityScopedResource() }
-            let database = AppDatabase(path: url)
-            
-            return database
-        } else {
-            print("Security failed")
-        }
-        return nil
-    }
-    
     func setupDBInstance(url: URL, skipHashCheck: Bool = false){
-        if let appDB = loadDB(url: url) {
+        print("startAccessingSecurityScopedResource")
+        if url.startAccessingSecurityScopedResource(){
+            print("OK")
+            let appDB = AppDatabase(path: url)
             if checkDBCommit(database: appDB) {
                 dbStore.load(appDB)
                 isActive = true
@@ -202,6 +196,8 @@ struct SPENT: App {
                     isActive = true
                 }
             }
+        } else {
+            print("FAIL")
         }
     }
     
@@ -211,8 +207,10 @@ struct SPENT: App {
             let config = try database.databaseReader.read { db in
                 try AppConfiguration.fetch(db)
             }
+            let currentHash = Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "1234567890"
             print("DB Version: \(AppDatabase.DB_VERSION), Loaded Version: \(config.dbVersion)")
-            if config.commitHash == Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "1234567890" {
+            print("\(config.commitHash) vs. \(currentHash)")
+            if config.commitHash == currentHash {
                 print("Hash matched")
                 return true
             }

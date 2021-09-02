@@ -53,6 +53,9 @@ struct WelcomeSheet: View {
         showWelcomeSheet.toggle()
         saveFile(allowedTypes: [.spentDatabase], onConfirm: {url in
             if url.startAccessingSecurityScopedResource() {
+                defer {
+                    print("3: Ending secure db session")
+                    url.stopAccessingSecurityScopedResource() }
                 if !FileManager.default.fileExists(atPath: url.path) {
                     do {
                         try FileManager.default.createDirectory(atPath: url.path, withIntermediateDirectories: true, attributes: nil)
@@ -60,7 +63,6 @@ struct WelcomeSheet: View {
                         print(error.localizedDescription)
                     }
                 }
-                defer { url.stopAccessingSecurityScopedResource() }
                 loadDatabase(url, true)
             }
         }, onCancel: {
@@ -71,10 +73,12 @@ struct WelcomeSheet: View {
     func openDBAction(){
         showWelcomeSheet.toggle()
         openFile(allowedTypes: [.spentDatabase], onConfirm: { selectedFile in
-            if selectedFile.startAccessingSecurityScopedResource() {
-                defer { selectedFile.stopAccessingSecurityScopedResource() }
+            //if selectedFile.startAccessingSecurityScopedResource() {
+             //   defer {
+             //       print("4: Ending secure db session")
+              //      selectedFile.stopAccessingSecurityScopedResource() }
                 loadDatabase(selectedFile, false)
-            }
+            //}
         }, onCancel: {
             showWelcomeSheet.toggle()
         })
@@ -82,10 +86,12 @@ struct WelcomeSheet: View {
     
     func loadRecentDBAction(recent: DBFileBookmark){
         showWelcomeSheet.toggle()
-        if recent.path.startAccessingSecurityScopedResource() {
-            defer { recent.path.stopAccessingSecurityScopedResource() }
+        //if recent.path.startAccessingSecurityScopedResource() {
+         //   defer {
+          //      print("5: Ending secure db session")
+          //      recent.path.stopAccessingSecurityScopedResource() }
             loadDatabase(recent.path, false)
-        }
+        //}
     }
 }
 

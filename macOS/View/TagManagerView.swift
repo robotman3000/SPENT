@@ -44,9 +44,10 @@ struct TagManagerView: View {
                 Spacer()
             }
             
-            List(store.tags, id: \.self, selection: $selected){ tag in
-                Text(tag.name)
-                //Row(tag: tag).tag(tag)
+            QueryWrapperView(source: TagRequest()){ tags in
+                List(tags, id: \.self, selection: $selected){ tag in
+                    Text(tag.name)
+                }
             }
         }.sheet(context: context).alert(context: aContext)
     }

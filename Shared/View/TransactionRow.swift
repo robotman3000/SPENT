@@ -9,20 +9,8 @@ import SwiftUI
 
 struct TransactionRow: View {
     @Environment(\.colorScheme) var colorScheme
-    let status: Transaction.StatusTypes
-    let direction: Transaction.TransType
-    let cdirection: Transaction.TransType
-    let date: Date
-    let postDate: Date?
-    let sourceName: String
-    let destinationName: String
-    let amount: Int
-    let payee: String?
-    let memo: String
-    let group: UUID?
-    let tags: [Tag]
-    let splits: [Transaction]
-    let cBucket: Bucket
+    let transactionData: TransactionData
+    let contextBucket: Bucket
     
     @Binding var showTags: Bool
 
@@ -78,40 +66,44 @@ struct TransactionRow: View {
     }
     
     var body: some View {
+        let t = transactionData.transaction
+        let cdirection = t.getType(convertTransfer: true, bucket: contextBucket.id)
+        let direction = t.type
+        
         VStack (alignment: .leading){
             HStack(alignment: .center){
                 //TODO: This should be split into two views
                 Spacer(minLength: 2)
-                status.getIconView().frame(width: 16, height: 16)
+                t.status.getIconView().frame(width: 16, height: 16)
                 
                 VStack{
-                    Text(payee ?? direction.getStringName())
-                    Text(postDate?.transactionFormat ?? date.transactionFormat)
+                    Text(t.payee ?? t.type.getStringName())
+                    Text(t.posted?.transactionFormat ?? t.date.transactionFormat)
                 }.width(150)
                 
                 Spacer()
                 VStack{
-                    if group == nil {
-                        Text(amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray)
-                        Direction(sourceName: sourceName, destinationName: destinationName, direction: direction, contextDirection: cdirection)
+                    if t.group == nil {
+                        Text(t.amount.currencyFormat).foregroundColor(cdirection == .Withdrawal ? .red : .gray)
+                        Direction(sourceName: transactionData.source?.name ?? "NIL", destinationName: transactionData.destination?.name ?? "NIL", direction: direction, contextDirection: cdirection)
                     } else {
-                        Text("Split \(Transaction.getSplitDirection(members: splits).getStringName())")
+                        Text("Split \(Transaction.getSplitDirection(members: transactionData.splitMembers).getStringName())")
                         HStack{
-                            if let trans = Transaction.getSplitMember(splits, bucket: cBucket) {
-                                Text("(\(trans.amount.currencyFormat))").foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray)
+                            if let trans = Transaction.getSplitMember(transactionData.splitMembers, bucket: contextBucket) {
+                                Text("(\(trans.amount.currencyFormat))").foregroundColor(Transaction.getSplitDirection(members: transactionData.splitMembers) == .Withdrawal ? .red : .gray)
                             }
-                            Text(Transaction.amountSum(splits).currencyFormat).foregroundColor(Transaction.getSplitDirection(members: splits) == .Withdrawal ? .red : .gray)
+                            Text(Transaction.amountSum(transactionData.splitMembers).currencyFormat).foregroundColor(Transaction.getSplitDirection(members: transactionData.splitMembers) == .Withdrawal ? .red : .gray)
                         }
                     }
                 }.width(200)
                 
                 
                 
-                Text(memo).frame(maxWidth: .infinity).help(memo)
+                Text(t.memo).frame(maxWidth: .infinity).help(t.memo)
             }
             if showTags {
                 HStack{
-                    ForEach(tags, id: \.self){ tag in
+                    ForEach(transactionData.tags, id: \.self){ tag in
                         Badge(text: tag.name, color: .gray)
                     }
                 }

@@ -17,39 +17,40 @@ private func printError(error: Error) {
 class DatabaseStore: ObservableObject {
     var database: AppDatabase?
     
-    @Published var buckets: [Bucket] = [] {
-        didSet {
-            bucketTree = getBucketTree(treeList: buckets)
-        }
-    }
-    @Published var bucketTree: [BucketNode] = []
-    private var bucketIDMap: [Int64:Int] = [:]
-    private let bucketObserver: ValueObservation<ValueReducers.Fetch<[Bucket]>>
-    private var bucketCancellable: AnyCancellable?
-    
-    @Published var accounts: [Bucket] = []
-    private let accountObserver: ValueObservation<ValueReducers.Fetch<[Bucket]>>
-    private var accountCancellable: AnyCancellable?
-    
-    @Published var tags: [Tag] = []
-    private let tagObserver: ValueObservation<ValueReducers.Fetch<[Tag]>>
-    private var tagCancellable: AnyCancellable?
-    
-    @Published var schedules: [Schedule] = []
-    private let scheduleObserver: ValueObservation<ValueReducers.Fetch<[Schedule]>>
-    private var scheduleCancellable: AnyCancellable?
+    //@Published var bucketss: [Bucket] = []
+//    {
+//        didSet {
+//            bucketTree = getBucketTree(treeList: buckets)
+//        }
+//    }
+    //@Published var bucketTree: [BucketNode] = []
+    //private var bucketIDMap: [Int64:Int] = [:]
+//    private let bucketObserver: ValueObservation<ValueReducers.Fetch<[Bucket]>>
+//    private var bucketCancellable: AnyCancellable?
+//
+//    @Published var accountss: [Bucket] = []
+//    private let accountObserver: ValueObservation<ValueReducers.Fetch<[Bucket]>>
+//    private var accountCancellable: AnyCancellable?
+//
+//    @Published var tagss: [Tag] = []
+//    private let tagObserver: ValueObservation<ValueReducers.Fetch<[Tag]>>
+//    private var tagCancellable: AnyCancellable?
+//
+//    @Published var scheduless: [Schedule] = []
+//    private let scheduleObserver: ValueObservation<ValueReducers.Fetch<[Schedule]>>
+//    private var scheduleCancellable: AnyCancellable?
     
     init(){
-        bucketObserver = ValueObservation.tracking(Bucket.fetchAll)
-        accountObserver = ValueObservation.tracking(Bucket.all().filterAccounts().fetchAll)
-        tagObserver = ValueObservation.tracking(Tag.fetchAll)
-        scheduleObserver = ValueObservation.tracking(Schedule.fetchAll)
+//        bucketObserver = ValueObservation.tracking(Bucket.fetchAll)
+//        accountObserver = ValueObservation.tracking(Bucket.all().filterAccounts().fetchAll)
+//        tagObserver = ValueObservation.tracking(Tag.fetchAll)
+//        scheduleObserver = ValueObservation.tracking(Schedule.fetchAll)
     }
     
-    func preview() -> Self {
-        buckets.append(Bucket(id: 1, name: "Demo Account", parentID: nil, ancestorID: nil, memo: "The Demo Memo", budgetID: nil))
-        return self
-    }
+//    func preview() -> Self {
+//        buckets.append(Bucket(id: 1, name: "Demo Account", parentID: nil, ancestorID: nil, memo: "The Demo Memo", budgetID: nil))
+//        return self
+//    }
     
     func load(_ db: AppDatabase){
         if self.database != nil {
@@ -57,33 +58,33 @@ class DatabaseStore: ObservableObject {
         }
         self.database = db
         
-        bucketCancellable = bucketObserver.publisher(in: database!.databaseReader).sink(
-            receiveCompletion: {_ in},
-            receiveValue: { [weak self] (buckets: [Bucket]) in
-                self?.buckets = buckets
-            }
-        )
-
-        accountCancellable = accountObserver.publisher(in: database!.databaseReader).sink(
-            receiveCompletion: {_ in},
-            receiveValue: { [weak self] (accounts: [Bucket]) in
-                self?.accounts = accounts
-            }
-        )
-        
-        tagCancellable = tagObserver.publisher(in: database!.databaseReader).sink(
-            receiveCompletion: {_ in},
-            receiveValue: { [weak self] (tags: [Tag]) in
-                self?.tags = tags
-            }
-        )
-        
-        scheduleCancellable = scheduleObserver.publisher(in: database!.databaseReader).sink(
-            receiveCompletion: {_ in},
-            receiveValue: { [weak self] (schedules: [Schedule]) in
-                self?.schedules = schedules
-            }
-        )
+//        bucketCancellable = bucketObserver.publisher(in: database!.databaseReader).sink(
+//            receiveCompletion: {_ in},
+//            receiveValue: { [weak self] (buckets: [Bucket]) in
+//                self?.buckets = buckets
+//            }
+//        )
+//
+//        accountCancellable = accountObserver.publisher(in: database!.databaseReader).sink(
+//            receiveCompletion: {_ in},
+//            receiveValue: { [weak self] (accounts: [Bucket]) in
+//                self?.accounts = accounts
+//            }
+//        )
+//
+//        tagCancellable = tagObserver.publisher(in: database!.databaseReader).sink(
+//            receiveCompletion: {_ in},
+//            receiveValue: { [weak self] (tags: [Tag]) in
+//                self?.tags = tags
+//            }
+//        )
+//
+//        scheduleCancellable = scheduleObserver.publisher(in: database!.databaseReader).sink(
+//            receiveCompletion: {_ in},
+//            receiveValue: { [weak self] (schedules: [Schedule]) in
+//                self?.schedules = schedules
+//            }
+//        )
     }
 }
 
@@ -173,14 +174,14 @@ extension DatabaseStore {
         }
     }
     
-    func getBucketByID(_ id: Int64?) -> Bucket? {
-        if id != nil, let ind = bucketIDMap[id!] {
-            return buckets.getByIndex(ind)
-        }
-        return nil
-    }
+//    func getBucketByID(_ id: Int64?) -> Bucket? {
+//        if id != nil, let ind = bucketIDMap[id!] {
+//            return buckets.getByIndex(ind)
+//        }
+//        return nil
+//    }
     
-    private func getBucketTree(treeList: [Bucket]) -> [BucketNode] {
+    static func getBucketTree(treeList: [Bucket]) -> [BucketNode] {
         print("Calculating bucket tree")
         //TODO: This must be made faster
         var nodes: [BucketNode] = []
@@ -199,7 +200,7 @@ extension DatabaseStore {
             idMap[node.bucket.id!] = node.index
         }
         
-        self.bucketIDMap = idMap
+        //self.bucketIDMap = idMap
         
         // Now idList contains only the nodes with no children
         idList.subtract(parentIDList)

@@ -367,9 +367,7 @@
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "96"
-            endingLineNumber = "96"
-            landmarkName = "body"
-            landmarkType = "24">
+            endingLineNumber = "96">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -835,24 +833,8 @@
             filePath = "Shared/Control/Request/TransactionModelRequest.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "76"
-            endingLineNumber = "76"
-            landmarkName = "fetchValue(_:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "516A273A-E27B-4E3F-8E09-E9F77EA50011"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "Shared/Control/Request/TransactionModelRequest.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "53"
-            endingLineNumber = "53"
+            startingLineNumber = "41"
+            endingLineNumber = "41"
             landmarkName = "fetchValue(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -1027,8 +1009,8 @@
             filePath = "Shared/Model/Database/Transaction.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "282"
-            endingLineNumber = "282"
+            startingLineNumber = "286"
+            endingLineNumber = "286"
             landmarkName = "getSplitDirection(members:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -1139,8 +1121,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "156"
-            endingLineNumber = "156"
+            startingLineNumber = "150"
+            endingLineNumber = "150"
             landmarkName = "loadDBBookmark()"
             landmarkType = "7">
          </BreakpointContent>
@@ -1165,14 +1147,14 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "D4B7123A-89BD-4D9E-A300-51CE504EEA94"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "66"
-            endingLineNumber = "66"
+            startingLineNumber = "63"
+            endingLineNumber = "63"
             landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
@@ -1181,14 +1163,14 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "E42CE0D0-B552-438A-9938-0CDF7D22A98C"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "58"
-            endingLineNumber = "58"
+            startingLineNumber = "55"
+            endingLineNumber = "55"
             landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
@@ -1197,14 +1179,14 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "EE679420-4741-4E69-8002-C9A87BF9C0F3"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "213"
-            endingLineNumber = "213"
+            startingLineNumber = "207"
+            endingLineNumber = "207"
             landmarkName = "checkDBCommit(database:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -1213,63 +1195,95 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "9E507679-03CA-4AB8-AED3-5ACDD8328071"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "225"
-            endingLineNumber = "225"
+            startingLineNumber = "219"
+            endingLineNumber = "219"
             landmarkName = "setDBCommit(database:commit:)"
             landmarkType = "7">
             <Locations>
                <Location
-                  uuid = "9E507679-03CA-4AB8-AED3-5ACDD8328071 - dc454ab5b42c35d"
+                  uuid = "9E507679-03CA-4AB8-AED3-5ACDD8328071 - 3866018afc1b5ef3"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
                   symbolName = "SPENT.SPENT.setDBCommit(database: SPENT.AppDatabase, commit: Swift.String) -&gt; ()"
                   moduleName = "SPENT"
                   usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/enims/Application%20Data/Xcode/SPENT-Git/macOS/SPENT.swift"
+                  urlString = "file:///Users/enims/Library/Mobile%20Documents/com~apple~CloudDocs/Application%20Data/Xcode/SPENT-Git/macOS/SPENT.swift"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "226"
-                  endingLineNumber = "226"
+                  startingLineNumber = "220"
+                  endingLineNumber = "220"
                   offsetFromSymbolStart = "59">
                </Location>
                <Location
-                  uuid = "9E507679-03CA-4AB8-AED3-5ACDD8328071 - ff61f5ad9a8a4ecb"
+                  uuid = "9E507679-03CA-4AB8-AED3-5ACDD8328071 - cac3a08c3dd3d325"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
                   symbolName = "closure #1 (GRDB.Database) throws -&gt; () in SPENT.SPENT.setDBCommit(database: SPENT.AppDatabase, commit: Swift.String) -&gt; ()"
                   moduleName = "SPENT"
                   usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/enims/Application%20Data/Xcode/SPENT-Git/macOS/SPENT.swift"
+                  urlString = "file:///Users/enims/Library/Mobile%20Documents/com~apple~CloudDocs/Application%20Data/Xcode/SPENT-Git/macOS/SPENT.swift"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "227"
-                  endingLineNumber = "227"
+                  startingLineNumber = "221"
+                  endingLineNumber = "221"
                   offsetFromSymbolStart = "60">
                </Location>
                <Location
-                  uuid = "9E507679-03CA-4AB8-AED3-5ACDD8328071 - ff61f5ad9a8a4eea"
+                  uuid = "9E507679-03CA-4AB8-AED3-5ACDD8328071 - cac3a08c3dd3d344"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
                   symbolName = "closure #1 (GRDB.Database) throws -&gt; () in SPENT.SPENT.setDBCommit(database: SPENT.AppDatabase, commit: Swift.String) -&gt; ()"
                   moduleName = "SPENT"
                   usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/enims/Application%20Data/Xcode/SPENT-Git/macOS/SPENT.swift"
+                  urlString = "file:///Users/enims/Library/Mobile%20Documents/com~apple~CloudDocs/Application%20Data/Xcode/SPENT-Git/macOS/SPENT.swift"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "226"
-                  endingLineNumber = "226"
+                  startingLineNumber = "220"
+                  endingLineNumber = "220"
                   offsetFromSymbolStart = "441">
                </Location>
             </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "8BD8FB74-DC2D-48AF-AFA7-857467C83C02"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Shared/Control/Request/TransactionFilter.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "63"
+            endingLineNumber = "63"
+            landmarkName = "getMatchedIDs(_:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "7EA65755-7571-4490-AE64-58A66FC2A3CE"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Shared/Control/Request/TransactionModelRequest.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "29"
+            endingLineNumber = "29"
+            landmarkName = "fetchValue(_:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

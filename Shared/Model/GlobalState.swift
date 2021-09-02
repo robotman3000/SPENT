@@ -10,7 +10,6 @@ import Foundation
 class GlobalState: ObservableObject {
     @Published var includeTree: Bool = true
     @Published var showTags: Bool = false
-    @Published var sorting = TransactionModelRequest.Ordering.byDate
-    @Published var sortDirection = TransactionModelRequest.OrderDirection.descending
-    @Published var contextBucket: Bucket?
+    @Published var sorting = TransactionFilter.Ordering.byDate
+    @Published var sortDirection = TransactionFilter.OrderDirection.descending
 }

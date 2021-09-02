@@ -40,6 +40,10 @@ struct Transaction: Identifiable, Codable, Hashable {
         }
     }
     
+    var amountNegative: Int {
+        return type == .Withdrawal ? amount * -1 : amount
+    }
+    
     private enum CodingKeys: String, CodingKey {
         case id, status = "Status", date = "TransDate", posted = "PostDate", amount = "Amount", sourceID = "SourceBucket", destID = "DestBucket", memo = "Memo", payee = "Payee", group = "Group"
     }

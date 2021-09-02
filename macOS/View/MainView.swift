@@ -9,9 +9,6 @@ import SwiftUI
 import SwiftUIKit
 
 struct MainView: View {
-    //@Binding var bucketTree: [BucketNode]
-    //let schedules: [Schedule]
-    //let tags: [Tag]
     @State private var selectedView: Int? = 0
     @State var selectedBucket: Bucket?
     
@@ -35,28 +32,21 @@ struct MainView: View {
                         Label("Summary", systemImage: "house")
                     }
                     
-//                    NavigationLink(destination: TagTable(tags: tags)) {
-//                        Label("Tags", systemImage: "tag")
-//                    }
-//
-//                    //TODO: Design and implement a proper schedule manager
-//                    NavigationLink(destination: ScheduleTable(schedules: schedules)) {
-//                        Label("Schedules", systemImage: "calendar.badge.clock")
-//                    }
-                    
                     Section(header: Text("Accounts")){
-                        if !store.accounts.isEmpty {
-                            OutlineGroup(store.bucketTree, id: \.bucket, children: \.children) { node in
-                                NavigationLink(destination: TransactionListView(selectedBucket: node.bucket)) {
-                                    QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
-                                        BucketRow(name: node.bucket.name, balance: balance.postedInTree)
+                        QueryWrapperView(source: BucketRequest(order: .byTree)){ accounts in
+                            if !accounts.isEmpty {
+                                OutlineGroup(DatabaseStore.getBucketTree(treeList: accounts), id: \.bucket, children: \.children) { node in
+                                    NavigationLink(destination: TransactionsView(forBucket: node.bucket)) {
+                                        QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
+                                            BucketRow(name: node.bucket.name, balance: balance.postedInTree)
+                                        }
+                                    }.contextMenu {
+                                        AccountContextMenu(context: context, aContext: aContext, contextAccount: node.bucket)
                                     }
-                                }.contextMenu {
-                                    AccountContextMenu(context: context, aContext: aContext, contextAccount: node.bucket)
                                 }
+                            } else {
+                                Text("No Accounts")
                             }
-                        } else {
-                            Text("No Accounts")
                         }
                     }.collapsible(false)
                 }.listStyle(SidebarListStyle())

@@ -34,10 +34,7 @@ struct SPENT: App {
                         print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
                         
                         if let dbURL = loadDBBookmark() {
-                            //if dbURL.startAccessingSecurityScopedResource() {
-                            //    defer { print("A: Security end"); dbURL.stopAccessingSecurityScopedResource() }
-                                setupDBInstance(url: dbURL)
-                            //}
+                            setupDBInstance(url: dbURL)
                         }
                         
                         if !isActive {
@@ -99,7 +96,6 @@ struct SPENT: App {
                 Button("Change Database") {
                     isDBSwitch = true
                     isActive = false
-                    //showWelcomeSheet = true
                 }
             }
             
@@ -119,9 +115,7 @@ struct SPENT: App {
                         DispatchQueue.main.async {
                             // allowedTypes = SPENTLegacyImportAgent.importTypes
                             openFile(allowedTypes: [], onConfirm: { selectedFile in
-                                //if selectedFile.startAccessingSecurityScopedResource() {
-                                    SPENTLegacyImportAgent.importSPENTLegacy(url: selectedFile, dbStore: dbStore)
-                                //}
+                                SPENTLegacyImportAgent.importSPENTLegacy(url: selectedFile, dbStore: dbStore)
                             }, onCancel: {})
                         }
                     }

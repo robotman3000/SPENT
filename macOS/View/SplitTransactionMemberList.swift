@@ -37,43 +37,48 @@ struct SplitTransactionMemberList: View {
             
             
             List(splits, id: \.self, selection: $selected){ split in
-                Row(bucketName: store.getBucketByID(splitDirection == .Deposit ? split.destID : split.sourceID)?.name ?? "Error", amount: split.amount, memo: split.memo).tag(split).height(32)
+                QueryWrapperView(source: SingleBucketRequest(id: (splitDirection == .Deposit ? split.destID : split.sourceID)!)){ bucket in
+                    Row(bucketName: bucket?.name ?? "Error", amount: split.amount, memo: split.memo).tag(split).height(32)
+                }
             }
         }.popover(item: $selected) { transaction in
-            SplitMemberForm(transaction: transaction,
-                            bucketChoices: store.buckets,
-                            splitDirection: splitDirection,
-                            onSubmit: {data in
-                                var sindex = -1
-                                
-                                for index in splits.indices {
-                                    if splits[index] == selected {
-                                        sindex = index
-                                        break;
+            QueryWrapperView(source: BucketRequest()){ buckets in
+                SplitMemberForm(transaction: transaction,
+                                bucketChoices: buckets,
+                                splitDirection: splitDirection,
+                                onSubmit: {data in
+                                    var sindex = -1
+                                    
+                                    for index in splits.indices {
+                                        if splits[index] == selected {
+                                            sindex = index
+                                            break;
+                                        }
                                     }
-                                }
-                                
-                                if sindex != -1 {
-                                    splits[sindex] = data
-                                }
-                                selected = nil
-                            },
-                            onDelete: {
-                                var dindex = -1
-                                
-                                for index in splits.indices {
-                                    if splits[index] == selected {
-                                        dindex = index
-                                        break;
+                                    
+                                    if sindex != -1 {
+                                        splits[sindex] = data
                                     }
-                                }
-                                
-                                if dindex != -1 {
-                                    splits.remove(at: dindex)
-                                }
-                                selected = nil
-                            },
-                            onCancel: { selected = nil }).padding()
+                                    selected = nil
+                                },
+                                onDelete: {
+                                    var dindex = -1
+                                    
+                                    for index in splits.indices {
+                                        if splits[index] == selected {
+                                            dindex = index
+                                            break;
+                                        }
+                                    }
+                                    
+                                    if dindex != -1 {
+                                        splits.remove(at: dindex)
+                                    }
+                                    selected = nil
+                                },
+                                onCancel: { selected = nil }).padding()
+                
+            }
             
         }.sheet(context: context).alert(context: aContext)
     }

@@ -36,20 +36,6 @@ struct Query<Query: Queryable>: DynamicProperty {
         core.value ?? Query.defaultValue
     }
     
-    var wrappedValueBinding: Binding<Query.Value> {
-        get {
-            Binding<Query.Value>(
-                get: {
-                    print("Wrapped value get: \(core.value ?? Query.defaultValue)")
-                    return wrappedValue
-                },
-                set: { arg in
-                    print("wraped binding: ignoring set")
-                }
-            )
-        }
-    }
-    
     /// A binding to the query, that lets your views modify it.
     ///
     /// This is how the demo app changes the player ordering.

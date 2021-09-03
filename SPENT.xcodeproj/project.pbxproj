@@ -357,11 +357,11 @@
 				A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */,
 				A2676C72267CD04300548F06 /* TransactionsView.swift */,
 				A2C2ADB026D58D7100537971 /* WelcomeSheet.swift */,
+				A268902826E1163B00BB9330 /* TransactionList.swift */,
 				A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */,
 				A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */,
 				A2C2ADB726D58F7D00537971 /* AccountContextMenu.swift */,
 				A20781FD266168C600DE372A /* Forms */,
-				A268902826E1163B00BB9330 /* TransactionList.swift */,
 			);
 			path = View;
 			sourceTree = "<group>";

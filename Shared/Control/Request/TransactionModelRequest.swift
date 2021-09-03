@@ -26,20 +26,6 @@ struct TransactionModelRequest: Queryable {
     }
     
     func fetchValue(_ db: Database) throws -> [TransactionData] {
-        var result = try filter.getMatchedIDs(db)
-//        var query = try Transaction.filter(ids: ids)
-//            .including(all: Transaction.tags.forKey("tags"))
-//            .including(optional: Transaction.source.forKey("source"))
-//            .including(optional: Transaction.destination.forKey("destination"))
-//            .including(all: Transaction.splitMembers.forKey("splitMembers"))
-//
-//
-//        var result = try TransactionData.fetchAll(db, query)
-//
-        return result
-        //print(result[0])
-        //return []
+        return try filter.getMatches(db)
     }
-
-
 }

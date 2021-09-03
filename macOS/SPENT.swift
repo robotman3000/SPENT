@@ -24,7 +24,7 @@ struct SPENT: App {
     var body: some Scene {
         WindowGroup {
             if isActive {
-                MainView().environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database!).sheet(context: context).alert(context: aContext)
+                MainView().environmentObject(globalState).environmentObject(dbStore).sheet(context: context).alert(context: aContext)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now()) {

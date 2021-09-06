@@ -11,8 +11,6 @@ import GRDB
 struct TransactionFilter {
     let includeTree: Bool
     let bucket: Bucket
-    let order: TransactionFilter.Ordering
-    let orderDirection: TransactionFilter.OrderDirection
     let textFilter: String
 
     func getMatches(_ db: Database) throws -> [TransactionData] {
@@ -30,7 +28,7 @@ struct TransactionFilter {
         }
         let bucketStr: String = bucketIDs.map({ val in return "\(val)" }).joined(separator: ", ")
 
-        var query = Transaction.filter(sql: """
+        let query = Transaction.filter(sql: """
             
             (
                 (
@@ -60,17 +58,6 @@ struct TransactionFilter {
             .including(optional: Transaction.destination.forKey("destination"))
             .including(all: Transaction.splitMembers.forKey("splitMembers"))
         
-        
-        switch(order){
-        case .byDate: query = query.orderedByDate()
-        case .byPayee: query = query.orderedByPayee()
-        case .byMemo: query = query.orderedByMemo()
-        case .bySource: query = query.orderedBySource()
-        case .byDestination: query = query.orderedByDestination()
-        case .byStatus: query = query.orderedByStatus()
-        case .byAmount: 1 + 1
-        }
-        
         var result = try TransactionData.fetchAll(db, query)
         
         if !textFilter.isEmpty {
@@ -81,43 +68,6 @@ struct TransactionFilter {
         
         for index in result.indices {
             result[index].preCalcValues(contextBucket: bucket)
-        }
-        
-        if orderDirection == .ascending && order != .byAmount {
-            result = result.reversed()
-        }
-
-        if order == .byAmount {
-            // We sort this in code rather than SQL because all amounts are stored as positive integers
-            if orderDirection == .ascending {
-                result.sort {
-                    if $0.transactionType == .Transfer && $1.transactionType == .Transfer {
-                        return $0.transaction.amountNegative < $1.transaction.amountNegative
-                    }
-                    if $0.transactionType == .Transfer {
-                        return false
-                    }
-                    if $1.transactionType == .Transfer {
-                        return true
-                    }
-
-                    return $0.transaction.amountNegative < $1.transaction.amountNegative
-                }
-            } else {
-                result.sort {
-                    if $0.transactionType == .Transfer && $1.transactionType == .Transfer {
-                        return $0.transaction.amountNegative > $1.transaction.amountNegative
-                    }
-                    if $0.transactionType == .Transfer {
-                        return true
-                    }
-                    if $1.transactionType == .Transfer {
-                        return false
-                    }
-
-                    return $0.transaction.amountNegative > $1.transaction.amountNegative
-                }
-            }
         }
         
         return result

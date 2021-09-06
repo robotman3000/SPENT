@@ -40,6 +40,10 @@
 		A217EA9D26A9C1C2004388FF /* FormKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EA9C26A9C1C2004388FF /* FormKeys.swift */; };
 		A217EAA126A9CD57004388FF /* AlertKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA026A9CD57004388FF /* AlertKeys.swift */; };
 		A217EAA326A9D7A0004388FF /* TransferForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA226A9D7A0004388FF /* TransferForm.swift */; };
+		A2202ACC26E551EA0060D94A /* SortingWrapperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2202ACB26E551EA0060D94A /* SortingWrapperView.swift */; };
+		A2202ACD26E551EA0060D94A /* SortingWrapperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2202ACB26E551EA0060D94A /* SortingWrapperView.swift */; };
+		A2202ACF26E5547C0060D94A /* SortingAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2202ACE26E5547C0060D94A /* SortingAgent.swift */; };
+		A2202AD026E5547C0060D94A /* SortingAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2202ACE26E5547C0060D94A /* SortingAgent.swift */; };
 		A228202B267B9518006C38AC /* SPENTDatabaseDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */; };
 		A228FC59264C571800CD5BB6 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC58264C571800CD5BB6 /* Query.swift */; };
 		A228FC5A264C571800CD5BB6 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC58264C571800CD5BB6 /* Query.swift */; };
@@ -151,6 +155,8 @@
 		A217EA9C26A9C1C2004388FF /* FormKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormKeys.swift; sourceTree = "<group>"; };
 		A217EAA026A9CD57004388FF /* AlertKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertKeys.swift; sourceTree = "<group>"; };
 		A217EAA226A9D7A0004388FF /* TransferForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferForm.swift; sourceTree = "<group>"; };
+		A2202ACB26E551EA0060D94A /* SortingWrapperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortingWrapperView.swift; sourceTree = "<group>"; };
+		A2202ACE26E5547C0060D94A /* SortingAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortingAgent.swift; sourceTree = "<group>"; };
 		A22727DF2616341900814696 /* iOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = iOS.entitlements; sourceTree = "<group>"; };
 		A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTDatabaseDocument.swift; sourceTree = "<group>"; };
 		A228FC58264C571800CD5BB6 /* Query.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
@@ -314,6 +320,7 @@
 				A2A56734262747A7009C7E8C /* SplashView.swift */,
 				A2C2ADAC26D58ABC00537971 /* Pickers */,
 				A26B732126909A850082A0F6 /* QueryWrapperView.swift */,
+				A2202ACB26E551EA0060D94A /* SortingWrapperView.swift */,
 				A24033C12672898C00A2B5CE /* CurrencyText.swift */,
 				A20DCD74264ED0270070EB07 /* BalanceTable.swift */,
 				A2676C8C267E367900548F06 /* TableToolbar.swift */,
@@ -333,6 +340,7 @@
 				A20DCD7A264ED0B80070EB07 /* View */,
 				A20DCD67264EBBFC0070EB07 /* Model */,
 				A2A5671D262741F4009C7E8C /* Control */,
+				A2202ACE26E5547C0060D94A /* SortingAgent.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -606,6 +614,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2202ACD26E551EA0060D94A /* SortingWrapperView.swift in Sources */,
 				A257FC3926D800EE00383855 /* WindowKeys.swift in Sources */,
 				A268902926E1163B00BB9330 /* TransactionList.swift in Sources */,
 				A217EA9826A9BB08004388FF /* AccountForm.swift in Sources */,
@@ -647,6 +656,7 @@
 				A278086D268E668C00CEA560 /* SchedulePicker.swift in Sources */,
 				A228FC60264C57E700CD5BB6 /* AppDatabase.swift in Sources */,
 				A20781EE265E954C00DE372A /* BucketRequest.swift in Sources */,
+				A2202AD026E5547C0060D94A /* SortingAgent.swift in Sources */,
 				A24CF68726814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */,
 				A26B73262690A6FF0082A0F6 /* BucketNode.swift in Sources */,
 				A26B73352690BF2B0082A0F6 /* TransactionData.swift in Sources */,
@@ -704,6 +714,7 @@
 				A228FC5C264C574C00CD5BB6 /* TransactionRequest.swift in Sources */,
 				A20781F7266001CC00DE372A /* TransactionTags.swift in Sources */,
 				A228FC5F264C57E700CD5BB6 /* AppDatabase.swift in Sources */,
+				A2202ACC26E551EA0060D94A /* SortingWrapperView.swift in Sources */,
 				A2C4C0CE2613E61A0048DB83 /* SPENTiOSApp.swift in Sources */,
 				A2EE03F1268512400092F63E /* BalanceTable.swift in Sources */,
 				A228FC59264C571800CD5BB6 /* Query.swift in Sources */,
@@ -717,6 +728,7 @@
 				A2EC30A1269743DC00781EC8 /* GlobalState.swift in Sources */,
 				A206D786267C111F00CB094D /* TransactionRecipt.swift in Sources */,
 				A2EC30A9269758AB00781EC8 /* EditAccountListView.swift in Sources */,
+				A2202ACF26E5547C0060D94A /* SortingAgent.swift in Sources */,
 				A2A56738262879BD009C7E8C /* Util.swift in Sources */,
 				A276B57B26D887D3003C24E2 /* AppConfiguration.swift in Sources */,
 				A206D77D267BBF5C00CB094D /* BucketBalance.swift in Sources */,

@@ -31,18 +31,19 @@ struct TransactionsView: View {
                 Spacer(minLength: 15)
             }.padding()
             
-            QueryWrapperView(source: TransactionModelRequest(withFilter: TransactionFilter(includeTree: appState.includeTree, bucket: forBucket, order: appState.sorting, orderDirection: appState.sortDirection, textFilter: stringFilter))){ model in
-                
-                TransactionList(selected: $selected, selectedBucket: forBucket, model: model, context: context, aContext: aContext).contextMenu {
-                    _NewTransactionContextButtons(context: context, aContext: aContext, contextBucket: forBucket, onFormDismiss: { context.dismiss() })
+            QueryWrapperView(source: TransactionModelRequest(withFilter: TransactionFilter(includeTree: appState.includeTree, bucket: forBucket, textFilter: stringFilter))){ model in
+                SortingWrapperView(agent: TransactionDataSortingAgent(order: appState.sorting, orderDirection: appState.sortDirection), input: model){ data in
+                    TransactionList(selected: $selected, selectedBucket: forBucket, model: data, context: context, aContext: aContext).contextMenu {
+                        _NewTransactionContextButtons(context: context, aContext: aContext, contextBucket: forBucket, onFormDismiss: { context.dismiss() })
+                    }
+                    
+                    HStack(alignment: .firstTextBaseline) {
+                        Spacer()
+                        Text("\(model.count) transactions")
+                        Spacer()
+                        Text("Showing matches for: \(stringFilter)")
+                    }.padding().frame(height: 30)
                 }
-                
-                HStack(alignment: .firstTextBaseline) {
-                    Spacer()
-                    Text("\(model.count) transactions")
-                    Spacer()
-                    Text("Showing matches for: \(stringFilter)")
-                }.padding().frame(height: 30)
             }
         }.navigationTitle(forBucket.name).sheet(context: context).alert(context: aContext)
     }

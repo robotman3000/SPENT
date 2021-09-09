@@ -115,6 +115,11 @@ struct SplitTransactionForm: View {
             return false
         }
         
+        // Prevent over spending a split
+        if (headAmount - splitAmount < 0){
+            return false
+        }
+        
         if payee.isEmpty {
             head.payee = nil
         } else {

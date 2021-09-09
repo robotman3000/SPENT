@@ -23,7 +23,7 @@ struct TransactionTagForm: View {
             List(tagChoices, id: \.self, selection: $tags) { tag in
                 Text("\(tag.name)")
             }
-        }
+        }.frame(minWidth: 250, minHeight: 300)
         .toolbar(content: {
             ToolbarItem(placement: .confirmationAction){
                 Button("Done", action: {
@@ -35,7 +35,7 @@ struct TransactionTagForm: View {
                     onCancel()
                 })
             }
-        }).frame(minWidth: 300, minHeight: 300)
+        })
     }
 }
 

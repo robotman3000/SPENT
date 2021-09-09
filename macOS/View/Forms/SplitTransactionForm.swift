@@ -62,14 +62,15 @@ struct SplitTransactionForm: View {
             
             Section(){
                 SplitTransactionMemberList(head: head, splits: $splitMembers, splitDirection: initType).labelStyle(DefaultLabelStyle())
-            }
+            }//.frameSize()
             
             Section(){
                 TextField("Payee", text: $payee)
                 TextEditor(text: $head.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
             
-        }.onAppear { loadState() }
+        }.frame(minWidth: 300, minHeight: 400)
+        .onAppear { loadState() }
         .toolbar(content: {
             ToolbarItem(placement: .confirmationAction){
                 Button("Done", action: {
@@ -113,7 +114,6 @@ struct SplitTransactionForm: View {
         if amount.isEmpty || selectedBucket == nil || splitMembers.isEmpty {
             return false
         }
-        
         
         if payee.isEmpty {
             head.payee = nil

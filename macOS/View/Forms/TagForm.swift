@@ -21,7 +21,7 @@ struct TagForm: View {
                 TextField("Name", text: $tag.name)
                 TextEditor(text: $tag.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
-        }
+        }.frame(minWidth: 250, minHeight: 200)
         .toolbar(content: {
             ToolbarItem(placement: .confirmationAction){
                 Button("Done", action: {
@@ -38,7 +38,6 @@ struct TagForm: View {
                 })
             }
         })
-        .frame(minWidth: 300, minHeight: 200)
         .alert(context: aContext)
     }
     

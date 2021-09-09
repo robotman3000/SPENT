@@ -52,7 +52,8 @@ struct TransactionForm: View {
                 TextEditor(text: $transaction.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
             
-        }.onAppear { loadState() }
+        }.frame(minWidth: 250, minHeight: 300)
+        .onAppear { loadState() }
         .toolbar(content: {
             ToolbarItem(placement: .confirmationAction){
                 Button("Done", action: {
@@ -68,7 +69,7 @@ struct TransactionForm: View {
                     onCancel()
                 })
             }
-        }).frame(minWidth: 250, minHeight: 350)
+        })
         .alert(context: aContext)
     }
     

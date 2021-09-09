@@ -20,7 +20,7 @@ struct AccountForm: View {
             TextField("Name", text: $account.name)
             
             TextEditor(text: $account.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
-        }
+        }.frame(minWidth: 250, minHeight: 200)
         .toolbar(content: {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", action: {
@@ -37,7 +37,6 @@ struct AccountForm: View {
                 })
             }
         }).onAppear { loadState() }
-        //.frame(minWidth: 300, minHeight: 200)
         .alert(context: aContext)
     }
     

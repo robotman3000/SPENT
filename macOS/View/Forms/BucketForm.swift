@@ -38,7 +38,7 @@ struct BucketForm: View {
             }
             
             TextEditor(text: $bucket.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
-        }
+        }.frame(minWidth: 250, minHeight: 250)
         .toolbar(content: {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel", action: {
@@ -55,7 +55,6 @@ struct BucketForm: View {
                 })
             }
         }).onAppear { loadState() }
-        .frame(minWidth: 300, minHeight: 200)
         .alert(context: aContext)
     }
     

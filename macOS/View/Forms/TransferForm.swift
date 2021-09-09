@@ -45,7 +45,8 @@ struct TransferForm: View {
             Section(){
                 TextEditor(text: $transaction.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
-        }.onAppear { loadState() }
+        }.frame(minWidth: 250, minHeight: 300)
+        .onAppear { loadState() }
         .toolbar(content: {
             ToolbarItem(placement: .confirmationAction){
                 Button("Done", action: {
@@ -61,7 +62,7 @@ struct TransferForm: View {
                     onCancel()
                 })
             }
-        }).frame(minWidth: 250, minHeight: 325).alert(context: aContext)
+        }).alert(context: aContext)
     }
     
     func loadState(){

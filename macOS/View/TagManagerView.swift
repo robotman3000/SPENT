@@ -15,41 +15,46 @@ struct TagManagerView: View {
     @StateObject private var aContext = AlertContext()
     
     var body: some View {
-        VStack{
-            HStack {
-                TableToolbar(onClick: { action in
-                    switch action {
-                    case .new:
-                        context.present(FormKeys.tag(context: context, tag: nil, onSubmit: {data in
-                            store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                        }))
-                    case .edit:
-                        if selected != nil {
-                            context.present(FormKeys.tag(context: context, tag: selected!, onSubmit: {data in
+        if store.database != nil {
+            VStack{
+                HStack {
+                    TableToolbar(onClick: { action in
+                        switch action {
+                        case .new:
+                            context.present(FormKeys.tag(context: context, tag: nil, onSubmit: {data in
                                 store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
                             }))
-                        } else {
-                            aContext.present(AlertKeys.message(message: "Select a tag first"))
+                        case .edit:
+                            if selected != nil {
+                                context.present(FormKeys.tag(context: context, tag: selected!, onSubmit: {data in
+                                    store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                                }))
+                            } else {
+                                aContext.present(AlertKeys.message(message: "Select a tag first"))
+                            }
+                        case .delete:
+                            if selected != nil {
+                                context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
+                                    store.deleteTag(selected!.id!, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                                }))
+                            } else {
+                                aContext.present(AlertKeys.message(message: "Select a tag first"))
+                            }
                         }
-                    case .delete:
-                        if selected != nil {
-                            context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-                                store.deleteTag(selected!.id!, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                            }))
-                        } else {
-                            aContext.present(AlertKeys.message(message: "Select a tag first"))
-                        }
-                    }
-                })
-                Spacer()
-            }
-            
-            QueryWrapperView(source: TagRequest()){ tags in
-                List(tags, id: \.self, selection: $selected){ tag in
-                    Text(tag.name)
+                    })
+                    Spacer()
                 }
-            }
-        }.sheet(context: context).alert(context: aContext)
+                
+
+                QueryWrapperView(source: TagRequest()){ tags in
+                    List(tags, id: \.self, selection: $selected){ tag in
+                        Text(tag.name)
+                    }
+                }
+            }.sheet(context: context).alert(context: aContext)
+        } else {
+            Text("No database is loaded").frame(width: 100, height: 100)
+        }
     }
 }
 

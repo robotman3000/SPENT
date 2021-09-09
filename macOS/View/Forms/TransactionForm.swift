@@ -14,7 +14,7 @@ struct TransactionForm: View {
     @State var transaction: Transaction
     
     @State var selectedBucket: Bucket?
-    @State var bucketChoices: [Bucket]
+    @Query(BucketRequest()) var bucketChoices: [Bucket]
     
     @State fileprivate var postDate: Date = Date()
     @State fileprivate var payee: String = ""

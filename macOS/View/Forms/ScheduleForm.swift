@@ -12,16 +12,7 @@ struct ScheduleForm: View {
     @State var schedule: Schedule = Schedule(id: nil, name: "", scheduleType: .OneTime, rule: .Never, markerID: -1, memo: "")
     @State fileprivate var marker: Tag?
     
-    let markerChoices: [Tag]
-
-    /*
-     var name: String
-     var scheduleType: ScheduleType
-     var rule: ScheduleRule
-     var customRule: String? // TODO: Change this to the correct type
-     var markerID: Int64
-     var memo: String?
-     */
+    @Query(TagRequest()) var markerChoices: [Tag]
     
     let onSubmit: (_ data: inout Schedule) -> Void
     let onCancel: () -> Void

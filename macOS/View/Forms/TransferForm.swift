@@ -13,8 +13,7 @@ struct TransferForm: View {
     @StateObject fileprivate var aContext = AlertContext()
     @State var transaction: Transaction
     
-    @State var sourceChoices: [Bucket]
-    @State var destinationChoices: [Bucket]
+    @Query(BucketRequest()) var bucketChoices: [Bucket]
     
     @State fileprivate var postDate: Date = Date()
     @State var selectedSource: Bucket?
@@ -40,8 +39,8 @@ struct TransferForm: View {
                 TextField("Amount", text: $amount)
             }
 
-            BucketPicker(label: "From", selection: $selectedSource, choices: sourceChoices)
-            BucketPicker(label: "To", selection: $selectedDest, choices: destinationChoices)
+            BucketPicker(label: "From", selection: $selectedSource, choices: bucketChoices)
+            BucketPicker(label: "To", selection: $selectedDest, choices: bucketChoices)
             
             Section(){
                 TextEditor(text: $transaction.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)

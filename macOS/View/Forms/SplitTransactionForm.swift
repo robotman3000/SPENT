@@ -13,17 +13,15 @@ struct SplitTransactionForm: View {
     @EnvironmentObject fileprivate var dbStore: DatabaseStore
     @State var head: Transaction
     
-    @State var bucketChoices: [Bucket] = []
+    @Query(BucketRequest()) var bucketChoices: [Bucket]
     @State var splitMembers: [Transaction]
 
-    @State var sourceChoices: [Bucket]
-    @State var destinationChoices: [Bucket]
-    
     @State var selectedBucket: Bucket?
     @State fileprivate var payee: String = ""
-    @State var initType: Transaction.TransType = .Deposit
-    @State var transType: Transaction.TransType = .Deposit
+    @State fileprivate var initType: Transaction.TransType = .Deposit
+    @State fileprivate var transType: Transaction.TransType = .Deposit
     @State fileprivate var amount: String = "0"
+    
     var splitAmount: Int {
         get {
             var amnt = 0

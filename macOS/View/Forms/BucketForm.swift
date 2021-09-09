@@ -17,8 +17,8 @@ struct BucketForm: View {
     @State fileprivate var hasBudget = false
     @State fileprivate var budget: Schedule?
     
-    let parentChoices: [Bucket]
-    let budgetChoices: [Schedule]
+    @Query(AccountRequest()) var parentChoices: [Bucket]
+    @Query(ScheduleRequest()) var budgetChoices: [Schedule]
     
     let onSubmit: (_ data: inout Bucket) -> Void
     let onCancel: () -> Void

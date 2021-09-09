@@ -17,74 +17,11 @@ private func printError(error: Error) {
 class DatabaseStore: ObservableObject {
     var database: AppDatabase?
     
-    //@Published var bucketss: [Bucket] = []
-//    {
-//        didSet {
-//            bucketTree = getBucketTree(treeList: buckets)
-//        }
-//    }
-    //@Published var bucketTree: [BucketNode] = []
-    //private var bucketIDMap: [Int64:Int] = [:]
-//    private let bucketObserver: ValueObservation<ValueReducers.Fetch<[Bucket]>>
-//    private var bucketCancellable: AnyCancellable?
-//
-//    @Published var accountss: [Bucket] = []
-//    private let accountObserver: ValueObservation<ValueReducers.Fetch<[Bucket]>>
-//    private var accountCancellable: AnyCancellable?
-//
-//    @Published var tagss: [Tag] = []
-//    private let tagObserver: ValueObservation<ValueReducers.Fetch<[Tag]>>
-//    private var tagCancellable: AnyCancellable?
-//
-//    @Published var scheduless: [Schedule] = []
-//    private let scheduleObserver: ValueObservation<ValueReducers.Fetch<[Schedule]>>
-//    private var scheduleCancellable: AnyCancellable?
-    
-    init(){
-//        bucketObserver = ValueObservation.tracking(Bucket.fetchAll)
-//        accountObserver = ValueObservation.tracking(Bucket.all().filterAccounts().fetchAll)
-//        tagObserver = ValueObservation.tracking(Tag.fetchAll)
-//        scheduleObserver = ValueObservation.tracking(Schedule.fetchAll)
-    }
-    
-//    func preview() -> Self {
-//        buckets.append(Bucket(id: 1, name: "Demo Account", parentID: nil, ancestorID: nil, memo: "The Demo Memo", budgetID: nil))
-//        return self
-//    }
-    
     func load(_ db: AppDatabase){
         if self.database != nil {
             self.database?.endSecureScope()
         }
         self.database = db
-        
-//        bucketCancellable = bucketObserver.publisher(in: database!.databaseReader).sink(
-//            receiveCompletion: {_ in},
-//            receiveValue: { [weak self] (buckets: [Bucket]) in
-//                self?.buckets = buckets
-//            }
-//        )
-//
-//        accountCancellable = accountObserver.publisher(in: database!.databaseReader).sink(
-//            receiveCompletion: {_ in},
-//            receiveValue: { [weak self] (accounts: [Bucket]) in
-//                self?.accounts = accounts
-//            }
-//        )
-//
-//        tagCancellable = tagObserver.publisher(in: database!.databaseReader).sink(
-//            receiveCompletion: {_ in},
-//            receiveValue: { [weak self] (tags: [Tag]) in
-//                self?.tags = tags
-//            }
-//        )
-//
-//        scheduleCancellable = scheduleObserver.publisher(in: database!.databaseReader).sink(
-//            receiveCompletion: {_ in},
-//            receiveValue: { [weak self] (schedules: [Schedule]) in
-//                self?.schedules = schedules
-//            }
-//        )
     }
 }
 

@@ -82,11 +82,7 @@ struct BucketBalanceRequest: Queryable {
     }
     
     private func getBalanceQuery(buckets: [Bucket], statusTypes: [Transaction.StatusTypes]) throws -> String {
-        var statusIDs: [Int] = []
-        for status in statusTypes {
-            statusIDs.append(status.rawValue)
-        }
-        let statusStr: String = statusIDs.map({ val in return "\(val)" }).joined(separator: ", ")
+        let statusStr: String = statusTypes.map({ "\($0.rawValue)" }).joined(separator: ", ")
         
         var bucketIDs: [Int64] = []
         for bucket in buckets {
@@ -94,7 +90,7 @@ struct BucketBalanceRequest: Queryable {
                 bucketIDs.append(bucket.id!)
             }
         }
-        let bucketStr: String = bucketIDs.map({ val in return "\(val)" }).joined(separator: ", ")
+        let bucketStr: String = bucketIDs.map({ "\($0)" }).joined(separator: ", ")
         
         return """
                     SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (

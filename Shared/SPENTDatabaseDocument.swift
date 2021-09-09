@@ -16,42 +16,42 @@ extension UTType {
     }
 }
 
-struct SPENTDatabaseDocument: FileDocument {
-    //private let dbURL: URL
-    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".spentdb")
-    let database: AppDatabase
-    
-    init(){
-        print("Creating a new DB")
-        database = AppDatabase(path: tempURL)
-    }
-
-    init(url: URL){
-        print("Reading Existing DB; Using provided path \(url.absoluteString)")
-        database = AppDatabase(path: url)
-    }
-    
-    init(configuration: ReadConfiguration) throws {
-        print("Reading Existing DB; Using temp path \(tempURL.absoluteString)")
-        database = AppDatabase(configuration.file, tempURL: self.tempURL)
-    }
-
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        print("Saving DB at \(tempURL.absoluteString)")
-        do {
-            let data = try FileWrapper(url: tempURL.absoluteURL).regularFileContents
-            let fw = FileWrapper(regularFileWithContents: data!)
-            return fw
-        } catch {
-            print(error)
-        }
-        return FileWrapper()
-    }
-    
-    var title = "Enter Title Here"
-
-    static var readableContentTypes: [UTType] { [.spentDatabase] }
-}
+//struct SPENTDatabaseDocument: FileDocument {
+//    //private let dbURL: URL
+//    let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".spentdb")
+//    let database: AppDatabase
+//    
+//    init(){
+//        print("Creating a new DB")
+//        database = AppDatabase(path: tempURL)
+//    }
+//
+//    init(url: URL){
+//        print("Reading Existing DB; Using provided path \(url.absoluteString)")
+//        database = AppDatabase(path: url)
+//    }
+//    
+//    init(configuration: ReadConfiguration) throws {
+//        print("Reading Existing DB; Using temp path \(tempURL.absoluteString)")
+//        database = AppDatabase(configuration.file, tempURL: self.tempURL)
+//    }
+//
+//    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+//        print("Saving DB at \(tempURL.absoluteString)")
+//        do {
+//            let data = try FileWrapper(url: tempURL.absoluteURL).regularFileContents
+//            let fw = FileWrapper(regularFileWithContents: data!)
+//            return fw
+//        } catch {
+//            print(error)
+//        }
+//        return FileWrapper()
+//    }
+//    
+//    var title = "Enter Title Here"
+//
+//    static var readableContentTypes: [UTType] { [.spentDatabase] }
+//}
 
 // Copied from https://github.com/groue/GRDB.swift/issues/986#issuecomment-860973769
 // As a temp solution

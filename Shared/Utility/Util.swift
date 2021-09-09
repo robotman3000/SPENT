@@ -50,48 +50,6 @@ func getURLByBookmark(_ data: Data, isStale: inout Bool) -> URL? {
     return nil
 }
 
-/// This wraps the struct of Type in an observable class so that we can know when the struct is changed or becomes nil
-class ObservableStructWrapper<Type>: ObservableObject {
-    @Published var wrappedStruct: Type?
-    
-    init(wrappedStruct: Type? = nil) {
-        self.wrappedStruct = wrappedStruct
-    }
-}
-
-func getDocumentsDirectory() -> URL {
-    let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
-    let documentsDirectory = paths[0]
-    return documentsDirectory
-}
-
-/// This returns the default database path
-func getDBURL() -> URL {
-    // Pick a folder for storing the SQLite database, as well as
-    // the various temporary files created during normal database
-    // operations (https://sqlite.org/tempfiles.html).
-//    let fileManager = FileManager()
-//    let folderURL = try fileManager
-//        .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-//        .appendingPathComponent("database", isDirectory: true)
-//
-//    // Support for tests: delete the database if requested
-//    if CommandLine.arguments.contains("-reset") {
-//        print("Resetting DB as requested")
-//        try? fileManager.removeItem(at: folderURL)
-//    }
-//
-    // Create the database folder if needed
-    //try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true)
-    
-    // Connect to a database on disk
-    // See https://github.com/groue/GRDB.swift/blob/master/README.md#database-connections
-    let dbURL = getDocumentsDirectory().appendingPathComponent("db.spentdb")
-    
-    print("Using DB at: \(dbURL.absoluteString)")
-    return dbURL
-}
-
 func generateRandomDate(daysBack: Int)-> Date? {
     let day = arc4random_uniform(UInt32(daysBack))+1
     let hour = arc4random_uniform(23)
@@ -114,27 +72,6 @@ public func genHash(_ items: [AnyHashable]) -> Int{
         hasher.combine(i)
     }
     return hasher.finalize()
-}
-
-func toString(_ str: String?) -> String {
-    if str == nil {
-        return "nil"
-    }
-    return str!
-}
-
-func toString(_ int: Int64?) -> String {
-    if int == nil {
-        return "nil"
-    }
-    return int!.description
-}
-
-func toString(_ int: Int?) -> String {
-    if int == nil {
-        return "nil"
-    }
-    return int!.description
 }
 
 let nformatter = NumberFormatter()
@@ -164,20 +101,4 @@ extension String {
   func trunc(length: Int, trailing: String = "…") -> String {
     return (self.count > length) ? self.prefix(length) + trailing : self
   }
-}
-
-extension Array {
-    func getByIndex(_ index: Int) -> Element? {
-        if self.count > index {
-            return self[index]
-        }
-        return nil
-    }
-}
-
-extension Bool {
-    mutating func flipFlop() -> Bool {
-        self.toggle()
-        return self
-    }
 }

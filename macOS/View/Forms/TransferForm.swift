@@ -98,6 +98,10 @@ struct TransferForm: View {
         }
         
         if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
+            if postDate < transaction.date {
+                // Prevent a transaction that posted before it was made
+                return false
+            }
             transaction.posted = postDate
         }
         

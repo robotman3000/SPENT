@@ -179,7 +179,10 @@ struct AppDatabase {
                 t.autoIncrementedPrimaryKey("id")
                 t.column("Status", .integer).notNull()
                 t.column("TransDate", .date).notNull()
-                t.column("PostDate", .date)
+                let transDate = Column("TransDate")
+                t.column("PostDate", .date).check {
+                    $0 == nil || $0 >= transDate
+                }
                 t.column("Amount", .integer).notNull().check {
                     // While things won't break with negative values, we don't allow them in the DB because it would start to get confusing to the end user
                     // I.E Negatives don't really make sense here

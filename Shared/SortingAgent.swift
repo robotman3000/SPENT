@@ -36,22 +36,22 @@ struct TransactionDataSortingAgent: SortingAgent {
             })
         }
         
-        if order == .byAmount {
-            // We sort this in code rather than SQL because all amounts are stored as positive integers
-            output.sort {
-                if $0.transactionType == .Transfer && $1.transactionType == .Transfer {
-                    return $0.transaction.amountNegative < $1.transaction.amountNegative
-                }
-                if $0.transactionType == .Transfer {
-                    return false
-                }
-                if $1.transactionType == .Transfer {
-                    return true
-                }
-
-                return $0.transaction.amountNegative < $1.transaction.amountNegative
-            }
-        }
+//        if order == .byAmount {
+//            // We sort this in code rather than SQL because all amounts are stored as positive integers
+//            output.sort {
+//                if $0.transactionType == .Transfer && $1.transactionType == .Transfer {
+//                    return $0.transaction.amountNegative < $1.transaction.amountNegative
+//                }
+//                if $0.transactionType == .Transfer {
+//                    return false
+//                }
+//                if $1.transactionType == .Transfer {
+//                    return true
+//                }
+//
+//                return $0.transaction.amountNegative < $1.transaction.amountNegative
+//            }
+//        }
         
         if orderDirection == .ascending {// && order != .byAmount {
             output = output.reversed()

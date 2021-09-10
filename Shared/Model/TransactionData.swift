@@ -28,7 +28,6 @@ struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
     
     // Cached computed properties
     var contextType: Transaction.TransType = .Deposit
-    var transactionType: Transaction.TransType = .Deposit
     var dateFormatted: String = ""
     var postedFormatted: String?
     var amountFormatted: String = ""
@@ -38,7 +37,6 @@ struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
     
     mutating func preCalcValues(contextBucket: Bucket){
         contextType = transaction.getType(convertTransfer: true, bucket: contextBucket.id)
-        transactionType = transaction.type
         dateFormatted = transaction.date.transactionFormat
         postedFormatted = transaction.posted?.transactionFormat
         amountFormatted = transaction.amount.currencyFormat

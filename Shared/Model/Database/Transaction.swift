@@ -22,30 +22,15 @@ struct Transaction: Identifiable, Codable, Hashable {
     
     static let databaseUUIDEncodingStrategy = DatabaseUUIDEncodingStrategy.string
     var group: UUID?
-    
-    var type: TransType {
-        get {
-            if sourceID == nil && destID == nil {
-                return .Split
-            }
-            
-            if sourceID != nil {
-                if destID != nil {
-                    return .Transfer
-                } else {
-                    return .Withdrawal
-                }
-            }
-            return .Deposit
-        }
-    }
-    
-    var amountNegative: Int {
-        return type == .Withdrawal ? amount * -1 : amount
-    }
+
+    var type: TransType
+
+//    var amountNegative: Int {
+//        return type == .Withdrawal ? amount * -1 : amount
+//    }
     
     private enum CodingKeys: String, CodingKey {
-        case id, status = "Status", date = "TransDate", posted = "PostDate", amount = "Amount", sourceID = "SourceBucket", destID = "DestBucket", memo = "Memo", payee = "Payee", group = "Group"
+        case id, status = "Status", date = "TransDate", posted = "PostDate", amount = "Amount", sourceID = "SourceBucket", destID = "DestBucket", memo = "Memo", payee = "Payee", group = "Group", type = "Type"
     }
     
     func hash(into hasher: inout Hasher) {
@@ -87,6 +72,39 @@ extension Transaction: FetchableRecord, MutablePersistableRecord {
         static let memo = Column(CodingKeys.memo)
         static let payee = Column(CodingKeys.payee)
         static let group = Column(CodingKeys.group)
+        static let type = Column(CodingKeys.type)
+    }
+    
+    /// Creates a record from a database row
+    init(row: Row) {
+        // For high performance, use numeric indexes that match the
+        // order of Place.databaseSelection
+        id = row[Columns.id]
+        status = row[Columns.status]
+        date = row[Columns.transdate]
+        posted = row[Columns.postdate]
+        amount = row[Columns.amount]
+        sourceID = row[Columns.sourcebucket]
+        destID = row[Columns.destbucket]
+        memo = row[Columns.memo]
+        payee = row[Columns.payee]
+        group = row[Columns.group]
+        //print(row[Columns.type])
+        type = TransType.init(rawValue: row[Columns.type] ?? 0) ?? .Invalid
+        //type = .Invalid
+    }
+    
+    func encode(to container: inout PersistenceContainer) {
+        container[Columns.id] = id
+        container[Columns.status] = status
+        container[Columns.transdate] = date
+        container[Columns.postdate] = posted
+        container[Columns.amount] = amount
+        container[Columns.sourcebucket] = sourceID
+        container[Columns.destbucket] = destID
+        container[Columns.memo] = memo
+        container[Columns.payee] = payee
+        container[Columns.group] = group
     }
 }
 
@@ -174,13 +192,15 @@ extension Transaction.StatusTypes: DatabaseValueConvertible { }
 
 // Transaction Type Enum
 extension Transaction {
-    enum TransType: String, Codable, CaseIterable, Identifiable, Stringable {
+    enum TransType: Int, Codable, CaseIterable, Identifiable, Stringable {
+        case Invalid
         case Deposit
         case Withdrawal
         case Transfer
         case Split
+        case Split_Head
         
-        var id: String { self.rawValue }
+        var id: Int { self.rawValue }
         
         var opposite: Self {
             if self == .Transfer || self == .Split {
@@ -190,7 +210,14 @@ extension Transaction {
         }
         
         func getStringName() -> String {
-            return self.rawValue
+            switch self {
+            case .Invalid: return "Invalid"
+            case .Withdrawal: return "Withdrawal"
+            case .Deposit: return "Deposit"
+            case .Transfer: return "Transfer"
+            case .Split: return "Split Member"
+            case .Split_Head: return "Split Head"
+            }
         }
     }
     
@@ -210,19 +237,19 @@ extension Transaction {
 }
 
 // Random transaction generation for testing
-extension Transaction {
-    static func newRandom(id: Int64, bucketIDs: [Int64]) -> Transaction {
-        return Transaction(id: id,
-                           status: Transaction.StatusTypes.allCases[Int.random(in: 0..<Transaction.StatusTypes.allCases.count)],
-                           date: generateRandomDate(daysBack: 5)!,
-                           posted: generateRandomDate(daysBack: 5),
-                           amount: Int.random(in: 0..<10000),
-                           sourceID: bucketIDs.randomElement()!,
-                           destID: bucketIDs.randomElement()!,
-                           memo: "Test Memo \(Int.random(in: 0..<10))",
-                           payee: ["Person A", "Person B", "Person C"].randomElement())
-    }
-}
+//extension Transaction {
+//    static func newRandom(id: Int64, bucketIDs: [Int64]) -> Transaction {
+//        return Transaction(id: id,
+//                           status: Transaction.StatusTypes.allCases[Int.random(in: 0..<Transaction.StatusTypes.allCases.count)],
+//                           date: generateRandomDate(daysBack: 5)!,
+//                           posted: generateRandomDate(daysBack: 5),
+//                           amount: Int.random(in: 0..<10000),
+//                           sourceID: bucketIDs.randomElement()!,
+//                           destID: bucketIDs.randomElement()!,
+//                           memo: "Test Memo \(Int.random(in: 0..<10))",
+//                           payee: ["Person A", "Person B", "Person C"].randomElement())
+//    }
+//}
 
 extension DerivableRequest where RowDecoder == Transaction {
     func ownedByBucket(bucket: Int64) -> Self {
@@ -261,15 +288,15 @@ extension DerivableRequest where RowDecoder == Transaction {
 // Utility Functions
 extension Transaction {
     static func newTransaction() -> Transaction {
-        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: nil)
+        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: nil, type: .Invalid)
     }
     
     static func newSplitTransaction() -> Transaction {
-        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: UUID())
+        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: UUID(), type: .Invalid)
     }
     
     static func newSplitMember(head: Transaction) -> Transaction {
-        return Transaction(id: nil, status: head.status, date: head.date, posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: head.group)
+        return Transaction(id: nil, status: head.status, date: head.date, posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: head.group, type: .Invalid)
     }
     
     static func getSplitDirection(members: [Transaction]) -> TransType {

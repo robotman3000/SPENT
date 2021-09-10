@@ -109,17 +109,14 @@ struct TransactionForm: View {
             transaction.posted = postDate
         }
         
-        switch transType {
-        case .Deposit:
+        if transType == .Deposit {
             transaction.sourceID = nil
             transaction.destID = selectedBucket?.id
-        case .Withdrawal:
+        }
+        
+        if transType == .Withdrawal {
             transaction.sourceID = selectedBucket?.id
             transaction.destID = nil
-        case .Transfer:
-            print("Make the compiler happy")
-        case .Split:
-            print("Make the compiler happy")
         }
         
         if payee.isEmpty {

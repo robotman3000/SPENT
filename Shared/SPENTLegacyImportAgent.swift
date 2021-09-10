@@ -20,7 +20,7 @@ class SPENTLegacyImportAgent: ImportAgent {
             
             do {
                 // Then connect to it
-                let dbQueue = try DatabaseQueue(path: url.absoluteString)
+                let dbQueue = try DatabaseQueue(path: url.path)
                 
                 // And proceed to read everything into memory
                 
@@ -103,7 +103,7 @@ class SPENTLegacyImportAgent: ImportAgent {
                         }
                         
                         // Create the new db object
-                        transactions.append(Transaction(id: id, status: newStatus, date: newDate, posted: newPDate, amount: newAmount, sourceID: source, destID: destination, memo: memo, payee: payee, group: nil))
+                        transactions.append(Transaction(id: id, status: newStatus, date: newDate, posted: newPDate, amount: newAmount, sourceID: source, destID: destination, memo: memo, payee: payee, group: nil, type: .Invalid))
                     }
                     
                     

@@ -63,7 +63,7 @@ extension DatabaseStore {
     func getEmptyTransaction() -> Binding<Transaction> {
         return Binding<Transaction>(
             get: {
-                Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0)
+                Transaction(id: nil, status: .Uninitiated, date: Date(), amount: 0, type: .Invalid)
             },
             set: { _ in
                 print("Trans binding: ignoring set")

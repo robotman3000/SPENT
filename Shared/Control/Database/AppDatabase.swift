@@ -31,19 +31,6 @@ struct AppDatabase {
     static var DB_VERSION: Int64 = 1
     var bundlePath: URL?
     
-//    func beginSecureScope() -> Bool {
-//        print("startAccessingSecurityScopedResource")
-//        if let url = bundlePath {
-//            if url.startAccessingSecurityScopedResource() {
-//                print("OK")
-//                return true
-//            }
-//        } else {
-//            print("FAIL")
-//        }
-//        return false
-//    }
-//
     func endSecureScope(){
         print("stopAccessingSecurityScopedResource")
         if let url = bundlePath {
@@ -76,9 +63,13 @@ struct AppDatabase {
     init(path: URL, trace: Bool = false) {
         do {
             self.bundlePath = path
+//            let newURL = try FileManager.default
+//                .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+//                .appendingPathComponent("db.sqlite")
             let newURL = path.appendingPathComponent("db.sqlite")
-            print("Using DB from path: \(newURL.absoluteString)")
-            self.dbWriter = try DatabaseQueue(path: newURL.absoluteString)
+            //newURL.startAccessingSecurityScopedResource()
+            print("Using DB from path: \(newURL.path)")
+            self.dbWriter = try DatabaseQueue(path: newURL.path)//.absoluteString.replacingOccurrences(of: "file://", with: ""))
             if trace {
                 try databaseReader.read { db in
                     db.trace(options: .statement) { event in
@@ -98,25 +89,6 @@ struct AppDatabase {
 //             * The device is out of space.
 //             * The database could not be migrated to its latest schema version.
 //             Check the error message to determine what the actual problem was.
-            fatalError("Unresolved error \(error)")
-        }
-    }
-    
-    init(_ fileWrapper: FileWrapper, tempURL: URL){
-        do {
-            print("Using DB from FileWrapper")
-            self.dbWriter = try DatabaseQueue(fileWrapper: fileWrapper, tempURL: tempURL)
-            try migrator.migrate(dbWriter)
-        } catch {
-            // Replace this implementation with code to handle the error appropriately.
-            // fatalError() causes the application to generate a crash log and terminate.
-            //
-            // Typical reasons for an error here include:
-            // * The parent directory cannot be created, or disallows writing.
-            // * The database is not accessible, due to permissions or data protection when the device is locked.
-            // * The device is out of space.
-            // * The database could not be migrated to its latest schema version.
-            // Check the error message to determine what the actual problem was.
             fatalError("Unresolved error \(error)")
         }
     }
@@ -179,10 +151,10 @@ struct AppDatabase {
                 t.autoIncrementedPrimaryKey("id")
                 t.column("Status", .integer).notNull()
                 t.column("TransDate", .date).notNull()
-                let transDate = Column("TransDate")
-                t.column("PostDate", .date).check {
-                    $0 == nil || $0 >= transDate
-                }
+                //let transDate = Column("TransDate")
+                t.column("PostDate", .date)//.check {
+                //    $0 == nil || $0 >= transDate
+                //}
                 t.column("Amount", .integer).notNull().check {
                     // While things won't break with negative values, we don't allow them in the DB because it would start to get confusing to the end user
                     // I.E Negatives don't really make sense here
@@ -195,6 +167,26 @@ struct AppDatabase {
                 t.column("Memo", .text).notNull().defaults(to: "")
                 t.column("Payee", .text)
                 t.column("Group", .text)
+                
+                // Order as written
+                /*
+                 Split Head
+                 Split Member
+                 Transfer
+                 Withdrawal
+                 Deposit
+                 Unknown
+                 */
+                t.column("Type", .integer).generatedAs(sql: """
+                   CASE
+                       WHEN "SourceBucket" IS NULL AND "DestBucket" IS NULL AND "Group" IS NOT NULL THEN 5
+                       WHEN "SourceBucket" IS NOT NULL AND "DestBucket" IS NOT NULL AND "Group" IS NOT NULL THEN 4
+                       WHEN "SourceBucket" IS NOT NULL AND "DestBucket" IS NOT NULL AND "Group" IS NULL THEN 3
+                       WHEN "SourceBucket" IS NOT NULL AND "DestBucket" IS NULL AND "Group" IS NULL THEN 2
+                       WHEN "SourceBucket" IS NULL AND "DestBucket" IS NOT NULL AND "Group" IS NULL THEN 1
+                       ELSE 0
+                   END
+                """)
             }
             
             try db.create(table: "TransactionTags") { t in

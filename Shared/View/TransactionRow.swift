@@ -21,9 +21,9 @@ struct TransactionRow: View {
                 //TODO: This should be split into two views
                 Spacer(minLength: 2)
                 t.status.getIconView().frame(width: 16, height: 16)
-                
+                Text(transactionData.transaction.type.getStringName())
                 VStack{
-                    Text(t.payee ?? td.transactionType.getStringName())
+                    Text(t.payee ?? t.type.getStringName())
                     Text(td.postedFormatted ?? td.dateFormatted)
                 }.width(150)
                 
@@ -35,7 +35,7 @@ struct TransactionRow: View {
                         
                         Text(td.amountFormatted).foregroundColor(td.contextType == .Withdrawal ? .red : .gray)
                         HStack {
-                            if td.transactionType == .Transfer {
+                            if t.type == .Transfer {
                                 Text(td.contextType == .Deposit ? sName : dName)
                                     .foregroundColor(.gray)
                                     .font(.subheadline)

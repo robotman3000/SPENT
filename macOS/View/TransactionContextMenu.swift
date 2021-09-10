@@ -31,7 +31,7 @@ struct TransactionContextMenu: View {
                                 store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
                             }))
                         }
-                    } else if t.transaction.type == .Split {
+                    } else if t.transaction.type == .Split_Head {
                         Button("Edit Split"){
                             context.present(FormKeys.splitTransaction(context: context, splitMembers: t.splitMembers, contextBucket: contextBucket, onSubmit: { data in
                                 store.updateTransactions(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})

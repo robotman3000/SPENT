@@ -37,7 +37,7 @@ struct SplitTransactionMemberList: View {
             
             
             List(splits, id: \.self, selection: $selected){ split in
-                QueryWrapperView(source: SingleBucketRequest(id: (splitDirection == .Deposit ? split.destID : split.sourceID)!)){ bucket in
+                QueryWrapperView(source: SingleBucketRequest(id: (splitDirection == .Deposit ? split.destID : split.sourceID) ?? -1)){ bucket in
                     Row(bucketName: bucket?.name ?? "Error", amount: split.amount, memo: split.memo).tag(split).height(32)
                 }
             }

@@ -67,7 +67,7 @@ enum FormKeys: SheetProvider {
             
             for member in members {
                 // Only the head will have this type
-                if member.type == .Split {
+                if member.type == .Split_Head {
                     head = member
                 } else {
                     newMembers.append(member)

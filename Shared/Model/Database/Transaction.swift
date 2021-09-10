@@ -203,7 +203,7 @@ extension Transaction {
         var id: Int { self.rawValue }
         
         var opposite: Self {
-            if self == .Transfer || self == .Split {
+            if self == .Transfer || self == .Split_Head || self == .Split {
                 return self
             }
             return self == .Deposit ? .Withdrawal : .Deposit
@@ -223,7 +223,7 @@ extension Transaction {
     
     func getType(convertTransfer: Bool = false, bucket: Int64?) -> Transaction.TransType {
         if sourceID == nil && destID == nil {
-            return .Split
+            return .Split_Head
         }
         
         if sourceID != nil && destID != nil && convertTransfer && bucket != nil {
@@ -288,15 +288,15 @@ extension DerivableRequest where RowDecoder == Transaction {
 // Utility Functions
 extension Transaction {
     static func newTransaction() -> Transaction {
-        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: nil, type: .Invalid)
+        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: nil, type: .Transfer)
     }
     
     static func newSplitTransaction() -> Transaction {
-        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: UUID(), type: .Invalid)
+        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: UUID(), type: .Split_Head)
     }
     
     static func newSplitMember(head: Transaction) -> Transaction {
-        return Transaction(id: nil, status: head.status, date: head.date, posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: head.group, type: .Invalid)
+        return Transaction(id: nil, status: head.status, date: head.date, posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: head.group, type: .Split)
     }
     
     static func getSplitDirection(members: [Transaction]) -> TransType {

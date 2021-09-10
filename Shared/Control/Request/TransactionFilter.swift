@@ -10,6 +10,7 @@ import GRDB
 
 struct TransactionFilter {
     let includeTree: Bool
+    let showInTree: Bool
     let bucket: Bucket
     let textFilter: String
 

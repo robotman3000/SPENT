@@ -24,6 +24,7 @@ struct TransactionsView: View {
             HStack {
                 Toggle(isOn: $appState.includeTree, label: { Text("Show All Transactions") })
                 Toggle(isOn: $appState.showTags, label: { Text("Show Tags") })
+                Toggle(isOn: $appState.showInTree, label: { Text("Show Local Transfers") })
                 Spacer()
                 EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionFilter.Ordering.allCases)
                 EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionFilter.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
@@ -31,7 +32,7 @@ struct TransactionsView: View {
                 Spacer(minLength: 15)
             }.padding()
             
-            QueryWrapperView(source: TransactionModelRequest(withFilter: TransactionFilter(includeTree: appState.includeTree, bucket: forBucket, textFilter: stringFilter))){ model in
+            QueryWrapperView(source: TransactionModelRequest(withFilter: TransactionFilter(includeTree: appState.includeTree, showInTree: appState.showInTree, bucket: forBucket, textFilter: stringFilter))){ model in
                 SortingWrapperView(agent: TransactionDataSortingAgent(order: appState.sorting, orderDirection: appState.sortDirection), input: model){ data in
                     TransactionList(selected: $selected, selectedBucket: forBucket, model: data, context: context, aContext: aContext).contextMenu {
                         _NewTransactionContextButtons(context: context, aContext: aContext, contextBucket: forBucket, onFormDismiss: { context.dismiss() })

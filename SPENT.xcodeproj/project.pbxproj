@@ -122,6 +122,10 @@
 		A2CE549626A87F1E00DB9955 /* TagPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CE549426A87F1E00DB9955 /* TagPicker.swift */; };
 		A2CE549826A881E700DB9955 /* ScheduleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CE549726A881E700DB9955 /* ScheduleManager.swift */; };
 		A2CE549926A881E700DB9955 /* ScheduleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CE549726A881E700DB9955 /* ScheduleManager.swift */; };
+		A2DFFD1626ED6BED00B6CBE6 /* Balance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DFFD1526ED6BED00B6CBE6 /* Balance.swift */; };
+		A2DFFD1726ED6BED00B6CBE6 /* Balance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DFFD1526ED6BED00B6CBE6 /* Balance.swift */; };
+		A2DFFD1C26ED924700B6CBE6 /* SPENTV0ImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */; };
+		A2DFFD1D26ED924700B6CBE6 /* SPENTV0ImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */; };
 		A2EC30A1269743DC00781EC8 /* GlobalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EC30A0269743DC00781EC8 /* GlobalState.swift */; };
 		A2EC30A2269743DC00781EC8 /* GlobalState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EC30A0269743DC00781EC8 /* GlobalState.swift */; };
 		A2EC30A42697544800781EC8 /* AccountNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EC30A32697544800781EC8 /* AccountNavigation.swift */; };
@@ -266,6 +270,8 @@
 		A2C8351026DAE8FE00819F35 /* DBFileBookmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBFileBookmark.swift; sourceTree = "<group>"; };
 		A2CE549426A87F1E00DB9955 /* TagPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagPicker.swift; sourceTree = "<group>"; };
 		A2CE549726A881E700DB9955 /* ScheduleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleManager.swift; sourceTree = "<group>"; };
+		A2DFFD1526ED6BED00B6CBE6 /* Balance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Balance.swift; sourceTree = "<group>"; };
+		A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTV0ImportAgent.swift; sourceTree = "<group>"; };
 		A2EC30A0269743DC00781EC8 /* GlobalState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalState.swift; sourceTree = "<group>"; };
 		A2EC30A32697544800781EC8 /* AccountNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountNavigation.swift; sourceTree = "<group>"; };
 		A2EC30A62697571C00781EC8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -307,6 +313,7 @@
 				A206D77F267C10BA00CB094D /* Schedule.swift */,
 				A206D782267C110600CB094D /* Recipt.swift */,
 				A206D785267C111F00CB094D /* TransactionRecipt.swift */,
+				A2DFFD1526ED6BED00B6CBE6 /* Balance.swift */,
 			);
 			path = Database;
 			sourceTree = "<group>";
@@ -395,6 +402,7 @@
 			children = (
 				A2C2ADB926D5AF2E00537971 /* ImportAgent.swift */,
 				A2C2ADBB26D5B0CE00537971 /* SPENTLegacyImportAgent.swift */,
+				A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */,
 				A26B73302690BC8C0082A0F6 /* Utility */,
 				A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */,
 				A20DCD7A264ED0B80070EB07 /* View */,
@@ -786,6 +794,7 @@
 				A2676CA0267E630B00548F06 /* ScheduleForm.swift in Sources */,
 				A2676C91267E3D2700548F06 /* ScheduleRequest.swift in Sources */,
 				A217EAA326A9D7A0004388FF /* TransferForm.swift in Sources */,
+				A2DFFD1D26ED924700B6CBE6 /* SPENTV0ImportAgent.swift in Sources */,
 				A2780867268E55F600CEA560 /* EnumPicker.swift in Sources */,
 				A228FC5A264C571800CD5BB6 /* Query.swift in Sources */,
 				A268902D26E152F800BB9330 /* AccountRequest.swift in Sources */,
@@ -794,6 +803,7 @@
 				A217EA9D26A9C1C2004388FF /* FormKeys.swift in Sources */,
 				A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */,
 				A278086A268E588000CEA560 /* Stringable.swift in Sources */,
+				A2DFFD1726ED6BED00B6CBE6 /* Balance.swift in Sources */,
 				A2676C73267CD04300548F06 /* TransactionsView.swift in Sources */,
 				A26B732F2690AE710082A0F6 /* TransactionFilter.swift in Sources */,
 				A20DCD6D264EBC470070EB07 /* Bucket.swift in Sources */,
@@ -820,6 +830,7 @@
 				A2CE549526A87F1E00DB9955 /* TagPicker.swift in Sources */,
 				A257FC4426D80BDF00383855 /* SPENTLegacyImportAgent.swift in Sources */,
 				A2780866268E55F600CEA560 /* EnumPicker.swift in Sources */,
+				A2DFFD1C26ED924700B6CBE6 /* SPENTV0ImportAgent.swift in Sources */,
 				A257FC4026D80BAF00383855 /* BucketRow.swift in Sources */,
 				A206D78B267C47A400CB094D /* CurrencyText.swift in Sources */,
 				A257FC3F26D80BA700383855 /* TableToolbar.swift in Sources */,
@@ -856,6 +867,7 @@
 				A26B732B2690A9650082A0F6 /* TransactionModelRequest.swift in Sources */,
 				A257FC4126D80BBA00383855 /* TransactionRow.swift in Sources */,
 				A2676C90267E3D2700548F06 /* ScheduleRequest.swift in Sources */,
+				A2DFFD1626ED6BED00B6CBE6 /* Balance.swift in Sources */,
 				A20DCD83264EEB510070EB07 /* Tag.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

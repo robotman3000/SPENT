@@ -76,7 +76,7 @@ struct SPENT: App {
                         }
                     
                     })
-                }).sheet(context: context)
+                }).sheet(context: context).alert(context: aContext)
             }
         }.commands {
             CommandGroup(replacing: .newItem){
@@ -115,7 +115,25 @@ struct SPENT: App {
                         DispatchQueue.main.async {
                             // allowedTypes = SPENTLegacyImportAgent.importTypes
                             openFile(allowedTypes: [], onConfirm: { selectedFile in
-                                SPENTLegacyImportAgent.importSPENTLegacy(url: selectedFile, dbStore: dbStore)
+                                do {
+                                    try SPENTLegacyImportAgent.importSPENTLegacy(url: selectedFile, dbStore: dbStore)
+                                } catch {
+                                    print(error)
+                                    aContext.present(AlertKeys.message(message: "Failed to import legacy database!"))
+                                }
+                            }, onCancel: {})
+                        }
+                    }
+                    Button("SPENT Dev V0") {
+                        DispatchQueue.main.async {
+                            // allowedTypes = SPENTLegacyImportAgent.importTypes
+                            openFile(allowedTypes: [], onConfirm: { selectedFile in
+                                do {
+                                    try SPENTV0ImportAgent.importDB(url: selectedFile, db: dbStore)
+                                } catch {
+                                    print(error)
+                                    aContext.present(AlertKeys.message(message: "Failed to import v0 database!"))
+                                }
                             }, onCancel: {})
                         }
                     }

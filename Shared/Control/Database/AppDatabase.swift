@@ -60,7 +60,7 @@ struct AppDatabase {
         }
     }
     
-    init(path: URL, trace: Bool = false) {
+    init(path: URL, trace: Bool = true) {
         do {
             self.bundlePath = path
 //            let newURL = try FileManager.default
@@ -212,6 +212,20 @@ struct AppDatabase {
                 t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .cascade)
                 t.column("ReciptID", .integer).notNull().references("Recipts", onDelete: .cascade)
             }
+            
+            try db.execute(sql: """
+            CREATE VIEW balance AS
+                WITH
+                bkTrees AS (SELECT id, aid FROM Buckets b LEFT JOIN (SELECT id AS "aid" FROM Buckets WHERE Ancestor IS NULL) a ON a.aid = b.Ancestor OR a.aid = b.id),
+                status AS ( VALUES (4), (5), (6) ),
+                trans AS (SELECT t.id AS tid, b1.aid AS sa, b2.aid AS da FROM Transactions t LEFT JOIN bkTrees b1 ON SourceBucket = b1.id LEFT JOIN bkTrees b2 ON DestBucket = b2.id WHERE IFNULL(sa, -1) != IFNULL(da, -1)),
+                realAmnt AS (
+                    SELECT id AS "tid", -1*Amount AS amount, SourceBucket AS bid, IFNULL(PostDate, TransDate) AS tdate FROM Transactions WHERE SourceBucket IN (SELECT id FROM Buckets)
+                    UNION ALL
+                    SELECT id AS "tid", Amount AS amount, DestBucket AS bid, IFNULL(PostDate, TransDate) AS tdate FROM Transactions WHERE DestBucket IN (SELECT id FROM Buckets)
+                )
+                SELECT tid, bid, aid, amount, SUM(amount) OVER win1 AS running, tdate FROM realAmnt ra LEFT JOIN bkTrees bt ON bt.id = ra.bid WHERE tid IN (SELECT tid FROM trans) WINDOW win1 AS (PARTITION BY aid ORDER BY tdate, tid ASC ROWS UNBOUNDED PRECEDING) ORDER BY tdate ASC
+            """)
         }
 
         migrator.registerMigration("DB-Versioning"){ db in

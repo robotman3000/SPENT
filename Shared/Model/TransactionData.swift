@@ -21,9 +21,10 @@ struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
     var destination: Bucket?
     var transaction: Transaction
     var splitMembers: [Transaction]
+    var balance: Balance?
     
     private enum CodingKeys: String, CodingKey {
-        case tags = "tags", source = "source", destination = "destination", transaction = "transaction", splitMembers = "splitMembers"
+        case tags = "tags", source = "source", destination = "destination", transaction = "transaction", splitMembers = "splitMembers", balance = "balance"
     }
     
     // Cached computed properties

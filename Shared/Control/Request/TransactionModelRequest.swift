@@ -26,6 +26,11 @@ struct TransactionModelRequest: Queryable {
     }
     
     func fetchValue(_ db: Database) throws -> [TransactionData] {
-        return try filter.getMatches(db)
+        do {
+            return try filter.getMatches(db)
+        } catch {
+            print(error)
+        }
+        return []
     }
 }

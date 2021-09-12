@@ -15,25 +15,36 @@ struct TransactionFilter {
     let textFilter: String
 
     func getMatches(_ db: Database) throws -> [TransactionData] {
-        var buckets = [bucket]
-        if includeTree {
-            let result = try bucket.tree.fetchAll(db)
-            buckets.append(contentsOf: result)
-        }
-        
-        var bucketIDs: [Int64] = []
-        for bucket in buckets {
-            if bucket.id != nil {
-                bucketIDs.append(bucket.id!)
-            }
-        }
-        let bucketStr: String = bucketIDs.map({ val in return "\(val)" }).joined(separator: ", ")
-
-        let query = Transaction.filter(sql: """
+        let bkts = CommonTableExpression(
+            recursive: true,
+            named: "bkts",
+            sql: """
+                SELECT id FROM Buckets e WHERE e.id = \(bucket.id ?? -1)
             
+                \(includeTree ? """
+                    UNION ALL
+                    
+                    SELECT e.id FROM Buckets e
+                    JOIN bkts c ON c.id = e.Parent
+                    """ : "")
+            """
+        )
+        
+        let balance = CommonTableExpression(
+            named: "balance",
+            sql: "SELECT * FROM balance"
+        )
+        
+        let balanceAssociation = Transaction.association(
+            to: balance,
+            on: { transactions, balance in
+                transactions[Column("id")] == balance[Column("tid")] && bucket.id! == balance[Column("bid")]
+            })
+        
+        let query = Transaction.filter(sql: """
             (
                 (
-                    SourceBucket IN (\(bucketStr)) OR DestBucket IN (\(bucketStr))
+                    SourceBucket IN (SELECT * FROM bkts) OR DestBucket IN (SELECT * FROM bkts)
                 ) AND (
                     \"Group\" IS NULL
                 )
@@ -43,7 +54,7 @@ struct TransactionFilter {
                         SELECT "Group" FROM Transactions
                         WHERE
                             (
-                                SourceBucket IN (\(bucketStr)) OR DestBucket IN (\(bucketStr))
+                                SourceBucket IN (SELECT * FROM bkts) OR DestBucket IN (SELECT * FROM bkts)
                             ) AND (
                                 \"Group\" IS NOT NULL
                             )
@@ -54,13 +65,20 @@ struct TransactionFilter {
                 )
             )
             
-            """).including(all: Transaction.tags.forKey("tags"))
+            """)
+            
+            .including(all: Transaction.tags.forKey("tags"))
             .including(optional: Transaction.source.forKey("source"))
             .including(optional: Transaction.destination.forKey("destination"))
             .including(all: Transaction.splitMembers.forKey("splitMembers"))
+            .with(bkts)
+            .including(optional: balanceAssociation)
+            
         
         var result = try TransactionData.fetchAll(db, query)
-        
+        //let data = try Row.fetchAll(db, query)
+        //print(data[0].debugDescription)
+        //var result: [TransactionData] = []
         if !textFilter.isEmpty {
             result = result.filter({ item in
                 item.transaction.memo.contains(textFilter)

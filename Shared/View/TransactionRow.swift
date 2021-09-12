@@ -21,7 +21,13 @@ struct TransactionRow: View {
                 //TODO: This should be split into two views
                 Spacer(minLength: 2)
                 t.status.getIconView().frame(width: 16, height: 16)
-                Text(transactionData.transaction.type.getStringName())
+                if let bal = transactionData.balance {
+                    Text(bal.running.currencyFormat)
+                    Text(bal.amount.currencyFormat)
+                } else {
+                    Text("----")
+                }
+                //Text(transactionData.transaction.balance?.currencyFormat ?? "")
                 VStack{
                     Text(t.payee ?? t.type.getStringName())
                     Text(td.postedFormatted ?? td.dateFormatted)

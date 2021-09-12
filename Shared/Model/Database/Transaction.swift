@@ -24,7 +24,6 @@ struct Transaction: Identifiable, Codable, Hashable {
     var group: UUID?
 
     var type: TransType
-
 //    var amountNegative: Int {
 //        return type == .Withdrawal ? amount * -1 : amount
 //    }
@@ -89,9 +88,7 @@ extension Transaction: FetchableRecord, MutablePersistableRecord {
         memo = row[Columns.memo]
         payee = row[Columns.payee]
         group = row[Columns.group]
-        //print(row[Columns.type])
         type = TransType.init(rawValue: row[Columns.type] ?? 0) ?? .Invalid
-        //type = .Invalid
     }
     
     func encode(to container: inout PersistenceContainer) {

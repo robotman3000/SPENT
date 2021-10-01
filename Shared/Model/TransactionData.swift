@@ -24,7 +24,7 @@ struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
     var balance: TransactionBalance?
     
     private enum CodingKeys: String, CodingKey {
-        case tags = "tags", source = "source", destination = "destination", transaction = "transaction", splitMembers = "splitMembers", balance = "balance"
+        case tags = "tags", source = "source", destination = "destination", transaction = "transaction", splitMembers = "splitMembers", balance = "transactionBalance"
     }
     // sh amount, sm amount,
     

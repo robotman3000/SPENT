@@ -6,6 +6,7 @@
 //
 
 import GRDB
+import Foundation
 
 struct TransactionBalance: Codable, Hashable, FetchableRecord {
     var transactionID: Int64

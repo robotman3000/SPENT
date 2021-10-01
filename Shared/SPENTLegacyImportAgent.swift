@@ -54,7 +54,7 @@ class SPENTLegacyImportAgent: ImportAgent {
                     }
                     
                     // Create the new db object
-                    buckets.append(Bucket(id: id, name: name, parentID: parent, ancestorID: ancestor, memo: "", budgetID: nil))
+                    buckets.append(Bucket(id: id, name: name, parentID: parent, ancestorID: ancestor))
                 }
                 
                 // Then fetch the tags
@@ -101,8 +101,12 @@ class SPENTLegacyImportAgent: ImportAgent {
                         destination = nil
                     }
                     
+                    let sDate: Date? = source != nil ? newPDate : nil
+                    let dDate: Date? = destination != nil ? newPDate : nil
+                    
+                    
                     // Create the new db object
-                    transactions.append(Transaction(id: id, status: newStatus, date: newDate, posted: newPDate, amount: newAmount, sourceID: source, destID: destination, memo: memo, payee: payee, group: nil, type: .Invalid))
+                    transactions.append(Transaction(id: id, status: newStatus, date: newDate, sourcePosted: sDate, destPosted: dDate, amount: newAmount, sourceID: source, destID: destination, memo: memo, payee: payee, group: nil, type: .Invalid))
                 }
                 
                 

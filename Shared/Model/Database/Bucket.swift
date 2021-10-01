@@ -60,13 +60,13 @@ extension Bucket {
             recursive: true,
             named: "cte_Buckets",
             sql: """
-                SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo
+                SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo, e.Favorite
                 FROM Buckets e
                 WHERE e.id = \(theID)
                 
                 UNION ALL
                 
-                SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo
+                SELECT e.id, e.Name, e.Parent, e.Ancestor, e.Memo, e.Favorite
                 FROM Buckets e
                 JOIN cte_Buckets c ON c.id = e.Parent
             """

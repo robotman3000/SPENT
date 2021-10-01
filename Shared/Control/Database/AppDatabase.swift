@@ -107,7 +107,7 @@ struct AppDatabase {
                 t.column("Ancestor", .integer).references("Buckets", onDelete: .cascade)
                 t.column("Memo", .text).notNull().defaults(to: "")
                 t.column("Favorite", .boolean).notNull().defaults(to: false)
-                t.column("V_Ancestor", .integer).generatedAs(sql: "IFNULL(Ancestor, id)")
+                t.column(sql: "V_Ancestor \(Database.ColumnType.integer.rawValue) GENERATED AS (IFNULL(Ancestor, id)) STORED")
             }
             
             try db.create(table: "Transactions") { t in
@@ -143,15 +143,17 @@ struct AppDatabase {
                  Deposit
                  Unknown
                  */
-                t.column("V_Type", .integer).generatedAs(sql: """
-                   CASE
-                       WHEN "SourceBucket" IS NULL AND "DestBucket" IS NULL AND "Group" IS NOT NULL THEN 5
-                       WHEN "SourceBucket" IS NOT NULL AND "DestBucket" IS NOT NULL AND "Group" IS NOT NULL THEN 4
-                       WHEN "SourceBucket" IS NOT NULL AND "DestBucket" IS NOT NULL AND "Group" IS NULL THEN 3
-                       WHEN "SourceBucket" IS NOT NULL AND "DestBucket" IS NULL AND "Group" IS NULL THEN 2
-                       WHEN "SourceBucket" IS NULL AND "DestBucket" IS NOT NULL AND "Group" IS NULL THEN 1
-                       ELSE 0
-                   END
+                t.column(sql: """
+                         V_Type \(Database.ColumnType.integer.rawValue) GENERATED AS (
+                            CASE
+                                WHEN SourceBucket IS NULL AND DestBucket IS NULL AND "Group" IS NOT NULL THEN 5
+                                WHEN SourceBucket IS NOT NULL AND DestBucket IS NOT NULL AND "Group" IS NOT NULL THEN 4
+                                WHEN SourceBucket IS NOT NULL AND DestBucket IS NOT NULL AND "Group" IS NULL THEN 3
+                                WHEN SourceBucket IS NOT NULL AND DestBucket IS NULL AND "Group" IS NULL THEN 2
+                                WHEN SourceBucket IS NULL AND DestBucket IS NOT NULL AND "Group" IS NULL THEN 1
+                                ELSE 0
+                            END
+                        ) STORED
                 """)
                 
                 //t.column("V_Date", .integer).generatedAs(sql: "IFNULL(PostDate, TransDate)")
@@ -204,16 +206,32 @@ struct AppDatabase {
                 SELECT id AS "tid",
                        -1*Amount AS amount,
                        SourceBucket AS bid,
-                       Status
+                       Status,
+                       SourcePostDate AS "tdate"
                 FROM Transactions
                 WHERE SourceBucket IN (SELECT id FROM Buckets)
                 UNION ALL
                 SELECT id AS "tid",
                        Amount AS amount,
                        DestBucket AS bid,
-                       Status
+                       Status,
+                       DestPostDate AS "tdate"
                 FROM Transactions
                 WHERE DestBucket IN (SELECT id FROM Buckets)
+            """)
+            
+            // VIEW - Transaction Running Balance
+            try db.execute(sql: """
+                CREATE VIEW transactionBalance AS
+                SELECT V_Ancestor as "aid",
+                       tid, bid, amount, tdate, Status,
+                       SUM(amount) FILTER (WHERE Status IN (4, 5, 6)) OVER win1 AS pRunning,
+                       SUM(amount) FILTER (WHERE Status IN (1, 3)) OVER win1 AS aRunning
+                FROM transactionAmounts ra
+                LEFT JOIN Buckets bt ON bt.id = ra.bid
+                WHERE tid IN (SELECT tid FROM transactionAncestors)
+                WINDOW win1 AS (PARTITION BY V_Ancestor ORDER BY tdate, tid ASC ROWS UNBOUNDED PRECEDING)
+                ORDER BY tdate ASC
             """)
             
             // VIEW - Bucket Balance
@@ -227,13 +245,13 @@ struct AppDatabase {
                 LEFT JOIN (
                     SELECT SUM(amount) AS "available", bid
                     FROM transactionAmounts
-                    WHERE Status IN (SELECT * FROM aStatus)
+                    WHERE Status IN (1, 3)
                     GROUP BY bid
                 ) "a" ON r.bid == a.bid
                 LEFT JOIN (
                     SELECT SUM(amount) AS "posted", bid
                     FROM transactionAmounts
-                    WHERE Status IN (SELECT * FROM pStatus)
+                    WHERE Status IN (4, 5, 6)
                     GROUP BY bid
                 ) "p" ON r.bid == p.bid
             """)

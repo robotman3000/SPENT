@@ -54,7 +54,7 @@ struct SPENTV0ImportAgent: ImportAgent {
                     }
                     
                     // Create the new db object
-                    buckets.append(Bucket(id: id, name: name, parentID: parent, ancestorID: ancestor, memo: memo, budgetID: nil))
+                    buckets.append(Bucket(id: id, name: name, parentID: parent, ancestorID: ancestor, memo: memo))
                 }
                 
                 // Then fetch the tags
@@ -102,8 +102,11 @@ struct SPENTV0ImportAgent: ImportAgent {
                         destination = nil
                     }
                     
+                    let sDate: Date? = source != nil ? postDate : nil
+                    let dDate: Date? = destination != nil ? postDate : nil
+                    
                     // Create the new db object
-                    transactions.append(Transaction(id: id, status: newStatus, date: date, posted: postDate, amount: amount, sourceID: source, destID: destination, memo: memo, payee: payee, group: UUID(uuidString: group ?? ""), type: .Invalid))
+                    transactions.append(Transaction(id: id, status: newStatus, date: date, sourcePosted: sDate, destPosted: dDate, amount: amount, sourceID: source, destID: destination, memo: memo, payee: payee, group: UUID(uuidString: group ?? ""), type: .Invalid))
                 }
                 
                 

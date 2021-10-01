@@ -26,7 +26,7 @@ class DatabaseStore: ObservableObject {
         // Debug data dump
         do {
             try db.databaseReader.read { dbc in
-                var result = try TransactionBalance.fetchAll(dbc, sql: "SELECT * FROM balance")
+                var result = try TransactionBalance.fetchAll(dbc, sql: "SELECT * FROM transactionBalance")
                 print(result)
             }
         } catch {

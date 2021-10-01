@@ -31,7 +31,7 @@ struct TransactionFilter {
         )
         
         let balance = CommonTableExpression(
-            named: "balance",
+            named: "transactionBalance",
             sql: "SELECT * FROM transactionBalance"
         )
         
@@ -66,14 +66,14 @@ struct TransactionFilter {
                 )
             )
             
-            """).order(sql: "V_Date")
+            """).order(sql: "tdate")
             
             .including(all: Transaction.tags.forKey("tags"))
             .including(optional: Transaction.source.forKey("source"))
             .including(optional: Transaction.destination.forKey("destination"))
             .including(all: Transaction.splitMembers.forKey("splitMembers"))
             .with(bkts)
-            .including(optional: balanceAssociation)
+            .including(optional: balanceAssociation.forKey("transactionBalance"))
             
         
         var result = try TransactionData.fetchAll(db, query)

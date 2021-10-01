@@ -49,7 +49,6 @@ struct AccountForm: View {
         
         account.parentID = nil
         account.ancestorID = nil
-        account.budgetID = nil
         return true
     }
 }

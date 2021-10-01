@@ -15,7 +15,8 @@ struct TransferForm: View {
     
     @Query(BucketRequest()) var bucketChoices: [Bucket]
     
-    @State fileprivate var postDate: Date = Date()
+    @State fileprivate var sPostDate: Date = Date()
+    @State fileprivate var dPostDate: Date = Date()
     @State var selectedSource: Bucket?
     @State var selectedDest: Bucket?
     @State fileprivate var amount: String = ""
@@ -30,7 +31,8 @@ struct TransferForm: View {
             Section(){
                 DatePicker("Date", selection: $transaction.date, displayedComponents: [.date])
                 if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-                    DatePicker("Posting Date", selection: $postDate, displayedComponents: [.date])
+                    DatePicker("Source Posting Date", selection: $sPostDate, displayedComponents: [.date])
+                    DatePicker("Destination Posting Date", selection: $dPostDate, displayedComponents: [.date])
                 }
             }
             
@@ -71,8 +73,11 @@ struct TransferForm: View {
             // We have an existing transaction
             amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
             
-            if transaction.posted != nil {
-                postDate = transaction.posted!
+            if transaction.sourcePosted != nil {
+                sPostDate = transaction.sourcePosted!
+            }
+            if transaction.destPosted != nil {
+                dPostDate = transaction.destPosted!
             }
             
             if transaction.sourceID != nil {
@@ -99,11 +104,12 @@ struct TransferForm: View {
         }
         
         if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            if postDate < transaction.date {
+            if sPostDate < transaction.date || dPostDate < transaction.date {
                 // Prevent a transaction that posted before it was made
                 return false
             }
-            transaction.posted = postDate
+            transaction.sourcePosted = sPostDate
+            transaction.destPosted = dPostDate
         }
         
         transaction.sourceID = selectedSource?.id

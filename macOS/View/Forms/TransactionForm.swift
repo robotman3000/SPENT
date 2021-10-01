@@ -16,7 +16,8 @@ struct TransactionForm: View {
     @State var selectedBucket: Bucket?
     @Query(BucketRequest()) var bucketChoices: [Bucket]
     
-    @State fileprivate var postDate: Date = Date()
+    @State fileprivate var sPostDate: Date = Date()
+    @State fileprivate var dPostDate: Date = Date()
     @State fileprivate var payee: String = ""
     @State fileprivate var transType: Transaction.TransType = .Withdrawal
     @State fileprivate var amount: String = ""
@@ -31,7 +32,8 @@ struct TransactionForm: View {
             Section(){
                 DatePicker("Date", selection: $transaction.date, displayedComponents: [.date])
                 if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-                    DatePicker("Posting Date", selection: $postDate, displayedComponents: [.date])
+                    DatePicker("Source Posting Date", selection: $sPostDate, displayedComponents: [.date])
+                    DatePicker("Destination Posting Date", selection: $dPostDate, displayedComponents: [.date])
                 }
             }
 
@@ -82,8 +84,11 @@ struct TransactionForm: View {
             
             amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
             
-            if transaction.posted != nil {
-                postDate = transaction.posted!
+            if transaction.sourcePosted != nil {
+                sPostDate = transaction.sourcePosted!
+            }
+            if transaction.destPosted != nil {
+                dPostDate = transaction.destPosted!
             }
             
             if transaction.sourceID != nil {
@@ -102,12 +107,14 @@ struct TransactionForm: View {
         }
         
         if transaction.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            if postDate < transaction.date {
+            if sPostDate < transaction.date || dPostDate < transaction.date {
                 // Prevent a transaction that posted before it was made
                 return false
             }
-            transaction.posted = postDate
+            transaction.sourcePosted = sPostDate
+            transaction.destPosted = dPostDate
         }
+        
         
         if transType == .Deposit {
             transaction.sourceID = nil

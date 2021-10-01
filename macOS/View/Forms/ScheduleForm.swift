@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ScheduleForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
-    @State var schedule: Schedule = Schedule(id: nil, name: "", scheduleType: .OneTime, rule: .Never, markerID: -1, memo: "")
+    @State var schedule: Schedule = Schedule(id: nil, name: "", templateID: -1)
     @State fileprivate var marker: Tag?
     
     @Query(TagRequest()) var markerChoices: [Tag]
@@ -21,9 +21,6 @@ struct ScheduleForm: View {
         VStack{
             Form {
                 TextField("Name", text: $schedule.name)
-                EnumPicker(label: "Type", selection: $schedule.scheduleType, enumCases: Schedule.ScheduleType.allCases)
-                EnumPicker(label: "Rule", selection: $schedule.rule, enumCases: Schedule.ScheduleRule.allCases)
-                // TODO: Add support for custom rules
                 
                 Text(marker?.name ?? "N/A")
                 TagPicker(label: "Marker", selection: $marker, choices: markerChoices)
@@ -51,16 +48,10 @@ struct ScheduleForm: View {
     }
     
     func loadState(){
-        if schedule.markerID == -1 {
-            // TODO: This will crash if there are no tags defined
-            self.marker = markerChoices.first!
-        } else {
-            self.marker = dbStore.database?.resolveOne(schedule.marker)
-        }
+
     }
     
     func storeState() -> Bool {
-        schedule.markerID = self.marker!.id!
         
         return true
     }

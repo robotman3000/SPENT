@@ -10,25 +10,13 @@ import GRDB
 import Foundation
 import SwiftUI
 
-// Let SwiftUI views access the database through the SwiftUI environment
-private struct AppDatabaseKey: EnvironmentKey {
-    static let defaultValue: AppDatabase? = nil
-}
-
-extension EnvironmentValues {
-    var appDatabase: AppDatabase? {
-        get { return self[AppDatabaseKey.self] }
-        set { self[AppDatabaseKey.self] = newValue }
-    }
-}
-
 /// AppDatabase lets the application access the database.
 ///
 /// It applies the pratices recommended at
 /// https://github.com/groue/GRDB.swift/blob/master/Documentation/GoodPracticesForDesigningRecordTypes.md
 struct AppDatabase {
     
-    static var DB_VERSION: Int64 = 1
+    static var DB_VERSION: Int64 = 3
     var bundlePath: URL?
     
     func endSecureScope(){
@@ -41,56 +29,25 @@ struct AppDatabase {
         }
     }
     
-    init(){
-        do {
-            print("Using Memory DB")
-            self.dbWriter = DatabaseQueue()
-            try migrator.migrate(dbWriter)
-        } catch {
-            // Replace this implementation with code to handle the error appropriately.
-            // fatalError() causes the application to generate a crash log and terminate.
-            //
-            // Typical reasons for an error here include:
-            // * The parent directory cannot be created, or disallows writing.
-            // * The database is not accessible, due to permissions or data protection when the device is locked.
-            // * The device is out of space.
-            // * The database could not be migrated to its latest schema version.
-            // Check the error message to determine what the actual problem was.
-            fatalError("Unresolved error \(error)")
-        }
+    init() throws {
+        print("Using Memory DB")
+        self.dbWriter = DatabaseQueue()
+        try migrator.migrate(dbWriter)
     }
     
-    init(path: URL, trace: Bool = true) {
-        do {
-            self.bundlePath = path
-//            let newURL = try FileManager.default
-//                .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-//                .appendingPathComponent("db.sqlite")
-            let newURL = path.appendingPathComponent("db.sqlite")
-            //newURL.startAccessingSecurityScopedResource()
-            print("Using DB from path: \(newURL.path)")
-            self.dbWriter = try DatabaseQueue(path: newURL.path)//.absoluteString.replacingOccurrences(of: "file://", with: ""))
-            if trace {
-                try databaseReader.read { db in
-                    db.trace(options: .statement) { event in
-                        print("SQL: \(event)")
-                    }
+    init(path: URL, trace: Bool = true) throws {
+        self.bundlePath = path
+        let newURL = path.appendingPathComponent("db.sqlite")
+        print("Using DB from path: \(newURL.path)")
+        self.dbWriter = try DatabaseQueue(path: newURL.path)
+        if trace {
+            try databaseReader.read { db in
+                db.trace(options: .statement) { event in
+                    print("SQL: \(event)")
                 }
             }
-            try migrator.migrate(dbWriter)
         }
-        catch {
-//             Replace this implementation with code to handle the error appropriately.
-//             fatalError() causes the application to generate a crash log and terminate.
-//
-//             Typical reasons for an error here include:
-//             * The parent directory cannot be created, or disallows writing.
-//             * The database is not accessible, due to permissions or data protection when the device is locked.
-//             * The device is out of space.
-//             * The database could not be migrated to its latest schema version.
-//             Check the error message to determine what the actual problem was.
-            fatalError("Unresolved error \(error)")
-        }
+        try migrator.migrate(dbWriter)
     }
     
     /// Provides access to the database.
@@ -125,17 +82,22 @@ struct AppDatabase {
                 t.autoIncrementedPrimaryKey("id")
                 t.column("Name", .text).notNull().unique()
                 t.column("Memo", .text).notNull().defaults(to: "")
+                t.column("Color", .text).notNull().defaults(to: "#8c8c8c")
+                t.column("Favorite", .boolean).notNull().defaults(to: false)
+            }
+            
+            // Create recipts table
+            try db.create(table: "TransactionTemplates") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("Template", .text).notNull()
             }
             
             try db.create(table: "Schedules") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("Name", .text).notNull()
-                t.column("Type", .integer).notNull()
-                t.column("Rule", .integer).notNull()
-                t.column("CustomRule", .blob)
-                t.column("MarkerID", .integer).notNull().references("Tags") // onDelete: Default
+                t.column("Name", .text).notNull().unique()
+                t.column("Template", .integer).references("TransactionTemplates")
                 t.column("Memo", .text).notNull().defaults(to: "")
-                //t.column("LastRun", .date)
+                t.column("Favorite", .boolean).notNull().defaults(to: false)
             }
             
             try db.create(table: "Buckets") { t in
@@ -143,18 +105,22 @@ struct AppDatabase {
                 t.column("Name", .text).notNull().unique()
                 t.column("Parent", .integer).references("Buckets", onDelete: .cascade)
                 t.column("Ancestor", .integer).references("Buckets", onDelete: .cascade)
-                t.column("BudgetID", .text).references("Schedules") // onDelete: Default
                 t.column("Memo", .text).notNull().defaults(to: "")
+                t.column("Favorite", .boolean).notNull().defaults(to: false)
+                t.column("V_Ancestor", .integer).generatedAs(sql: "IFNULL(Ancestor, id)")
             }
             
             try db.create(table: "Transactions") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("Status", .integer).notNull()
+                t.column("Status", .integer).notNull().check {
+                    // This status is only used in code and shouldn't get stored
+                    $0 != Transaction.StatusTypes.Scheduled
+                }
                 t.column("TransDate", .date).notNull()
-                //let transDate = Column("TransDate")
-                t.column("PostDate", .date)//.check {
+                t.column("SourcePostDate", .date)//.check {
                 //    $0 == nil || $0 >= transDate
                 //}
+                t.column("DestPostDate", .date)
                 t.column("Amount", .integer).notNull().check {
                     // While things won't break with negative values, we don't allow them in the DB because it would start to get confusing to the end user
                     // I.E Negatives don't really make sense here
@@ -166,7 +132,7 @@ struct AppDatabase {
                 t.column("DestBucket", .integer).references("Buckets")//, onDelete: .cascade)
                 t.column("Memo", .text).notNull().defaults(to: "")
                 t.column("Payee", .text)
-                t.column("Group", .text)
+                t.column("Group", .text) // String UUID
                 
                 // Order as written
                 /*
@@ -177,7 +143,7 @@ struct AppDatabase {
                  Deposit
                  Unknown
                  */
-                t.column("Type", .integer).generatedAs(sql: """
+                t.column("V_Type", .integer).generatedAs(sql: """
                    CASE
                        WHEN "SourceBucket" IS NULL AND "DestBucket" IS NULL AND "Group" IS NOT NULL THEN 5
                        WHEN "SourceBucket" IS NOT NULL AND "DestBucket" IS NOT NULL AND "Group" IS NOT NULL THEN 4
@@ -187,6 +153,9 @@ struct AppDatabase {
                        ELSE 0
                    END
                 """)
+                
+                //t.column("V_Date", .integer).generatedAs(sql: "IFNULL(PostDate, TransDate)")
+                
             }
             
             try db.create(table: "TransactionTags") { t in
@@ -195,36 +164,78 @@ struct AppDatabase {
                 
                 // It should not be possible to delete a tag assigned to a transaction by cascade because
                 // the schedules table depends on the presence of tags it has assigned.
-                // TODO: Use program logic to determin if a tag can be deleted
+                // TODO: Use program logic to determine if a tag can be deleted
                 t.column("TagID", .integer).notNull().references("Tags")
                 t.uniqueKey(["TransactionID", "TagID"], onConflict: .replace)
             }
             
-            // Create recipts table
-            try db.create(table: "Recipts") { t in
+            // Create attachments table
+            try db.create(table: "Attachments") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("Blob", .blob).notNull()
+                t.column("Filename", .text).notNull()
+                
+                // The hash is for file security/integrity
+                // The unique helps ensure that duplicate files can't be added
+                t.column("SHA256", .text).notNull().unique()
             }
             
-            // Create recipts assignments
-            try db.create(table: "TransactionRecipts") { t in
+            // Create attachment assignments
+            try db.create(table: "TransactionAttachments") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .cascade)
-                t.column("ReciptID", .integer).notNull().references("Recipts", onDelete: .cascade)
+                t.column("AttachmentID", .integer).notNull().references("Attachments", onDelete: .cascade)
             }
             
+            // VIEW - Transaction Ancestors
             try db.execute(sql: """
-            CREATE VIEW balance AS
-                WITH
-                bkTrees AS (SELECT id, aid FROM Buckets b LEFT JOIN (SELECT id AS "aid" FROM Buckets WHERE Ancestor IS NULL) a ON a.aid = b.Ancestor OR a.aid = b.id),
-                status AS ( VALUES (4), (5), (6) ),
-                trans AS (SELECT t.id AS tid, b1.aid AS sa, b2.aid AS da FROM Transactions t LEFT JOIN bkTrees b1 ON SourceBucket = b1.id LEFT JOIN bkTrees b2 ON DestBucket = b2.id WHERE IFNULL(sa, -1) != IFNULL(da, -1)),
-                realAmnt AS (
-                    SELECT id AS "tid", -1*Amount AS amount, SourceBucket AS bid, IFNULL(PostDate, TransDate) AS tdate FROM Transactions WHERE SourceBucket IN (SELECT id FROM Buckets)
-                    UNION ALL
-                    SELECT id AS "tid", Amount AS amount, DestBucket AS bid, IFNULL(PostDate, TransDate) AS tdate FROM Transactions WHERE DestBucket IN (SELECT id FROM Buckets)
-                )
-                SELECT tid, bid, aid, amount, SUM(amount) OVER win1 AS running, tdate FROM realAmnt ra LEFT JOIN bkTrees bt ON bt.id = ra.bid WHERE tid IN (SELECT tid FROM trans) WINDOW win1 AS (PARTITION BY aid ORDER BY tdate, tid ASC ROWS UNBOUNDED PRECEDING) ORDER BY tdate ASC
+                CREATE VIEW transactionAncestors AS
+                SELECT t.id AS tid,
+                       b1.V_Ancestor AS sa,
+                       b2.V_Ancestor AS da
+                FROM Transactions t
+                LEFT JOIN Buckets b1 ON SourceBucket = b1.id
+                LEFT JOIN Buckets b2 ON DestBucket = b2.id
+                WHERE IFNULL(sa, -1) != IFNULL(da, -1)
+            """)
+
+            // VIEW - Transaction Amounts
+            try db.execute(sql: """
+                CREATE VIEW transactionAmounts AS
+                SELECT id AS "tid",
+                       -1*Amount AS amount,
+                       SourceBucket AS bid,
+                       Status
+                FROM Transactions
+                WHERE SourceBucket IN (SELECT id FROM Buckets)
+                UNION ALL
+                SELECT id AS "tid",
+                       Amount AS amount,
+                       DestBucket AS bid,
+                       Status
+                FROM Transactions
+                WHERE DestBucket IN (SELECT id FROM Buckets)
+            """)
+            
+            // VIEW - Bucket Balance
+            try db.execute(sql: """
+                CREATE VIEW bucketBalance AS
+                SELECT DISTINCT
+                        r.bid,
+                        IFNULL(available, 0)+IFNULL(posted, 0) AS "available",
+                        posted
+                FROM transactionAmounts r
+                LEFT JOIN (
+                    SELECT SUM(amount) AS "available", bid
+                    FROM transactionAmounts
+                    WHERE Status IN (SELECT * FROM aStatus)
+                    GROUP BY bid
+                ) "a" ON r.bid == a.bid
+                LEFT JOIN (
+                    SELECT SUM(amount) AS "posted", bid
+                    FROM transactionAmounts
+                    WHERE Status IN (SELECT * FROM pStatus)
+                    GROUP BY bid
+                ) "p" ON r.bid == p.bid
             """)
         }
 
@@ -400,9 +411,6 @@ extension AppDatabase {
     func resolveOne<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> Type? {
         do {
             return try databaseReader.read { db in
-//                db.trace(options: .statement) { event in
-//                    print("SQL: \(event)")
-//                }
                 return try query.fetchOne(db)
             }
         } catch {
@@ -410,43 +418,4 @@ extension AppDatabase {
         }
         return nil
     }
-    
-    func getBucketFromID(_ bucketID: Int64?) -> Bucket? {
-        guard bucketID != nil else {
-            return nil
-        }
-        
-        do {
-            return try databaseReader.read { db in
-                return try Bucket.filter(id: bucketID!).fetchOne(db)
-            }
-        } catch {
-            print(error)
-        }
-        return nil
-    }
-    
-    func getTransactionTags(_ transaction: Transaction) -> [Tag] {
-        return resolve(transaction.tags)
-    }
-    
-    func getTag(_ id: Int64?) throws -> Tag? {
-        guard id != nil else {
-            return nil
-        }
-        
-        return try databaseReader.read { db in
-            try Tag.fetchOne(db, id: id!)
-        }
-    }
-    
-    private func getTreeAtBucket(_ bucket: Bucket) throws -> [Bucket]{
-        return try databaseReader.read { db in
-            var result = try bucket.tree.fetchAll(db)
-            result.append(bucket)
-            return result
-        }
-    }
-    
-
 }

@@ -13,7 +13,8 @@ struct Transaction: Identifiable, Codable, Hashable {
     var id: Int64?
     var status: StatusTypes
     var date: Date
-    var posted: Date?
+    var sourcePosted: Date?
+    var destPosted: Date?
     var amount: Int
     var sourceID: Int64?
     var destID: Int64?
@@ -23,31 +24,24 @@ struct Transaction: Identifiable, Codable, Hashable {
     static let databaseUUIDEncodingStrategy = DatabaseUUIDEncodingStrategy.string
     var group: UUID?
 
-    var type: TransType
-//    var amountNegative: Int {
-//        return type == .Withdrawal ? amount * -1 : amount
-//    }
+    var type: TransType = .Invalid
     
     private enum CodingKeys: String, CodingKey {
-        case id, status = "Status", date = "TransDate", posted = "PostDate", amount = "Amount", sourceID = "SourceBucket", destID = "DestBucket", memo = "Memo", payee = "Payee", group = "Group", type = "Type"
+        case id, status = "Status", date = "TransDate", sourcePosted = "SourcePostDate", destPosted = "DestPostDate", amount = "Amount", sourceID = "SourceBucket", destID = "DestBucket", memo = "Memo", payee = "Payee", group = "Group", type = "V_Type"
     }
     
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(status)
         hasher.combine(date)
-        hasher.combine(posted)
+        hasher.combine(sourcePosted)
+        hasher.combine(destPosted)
         hasher.combine(amount)
         hasher.combine(sourceID)
         hasher.combine(destID)
         hasher.combine(memo)
         hasher.combine(payee)
     }
-    
-//    var amount: Double {
-//        get { Decimal(raw_amount) / 100 }
-//        set { raw_amount = newValue * 100.00 }
-//    }
 }
 
 // SQL Database support
@@ -64,7 +58,8 @@ extension Transaction: FetchableRecord, MutablePersistableRecord {
         static let id = Column(CodingKeys.id)
         static let status = Column(CodingKeys.status)
         static let transdate = Column(CodingKeys.date)
-        static let postdate = Column(CodingKeys.posted)
+        static let sourcepostdate = Column(CodingKeys.sourcePosted)
+        static let destpostdate = Column(CodingKeys.destPosted)
         static let amount = Column(CodingKeys.amount)
         static let sourcebucket = Column(CodingKeys.sourceID)
         static let destbucket = Column(CodingKeys.destID)
@@ -81,7 +76,8 @@ extension Transaction: FetchableRecord, MutablePersistableRecord {
         id = row[Columns.id]
         status = row[Columns.status]
         date = row[Columns.transdate]
-        posted = row[Columns.postdate]
+        sourcePosted = row[Columns.sourcepostdate]
+        destPosted = row[Columns.destpostdate]
         amount = row[Columns.amount]
         sourceID = row[Columns.sourcebucket]
         destID = row[Columns.destbucket]
@@ -95,7 +91,8 @@ extension Transaction: FetchableRecord, MutablePersistableRecord {
         container[Columns.id] = id
         container[Columns.status] = status
         container[Columns.transdate] = date
-        container[Columns.postdate] = posted
+        container[Columns.sourcepostdate] = sourcePosted
+        container[Columns.destpostdate] = destPosted
         container[Columns.amount] = amount
         container[Columns.sourcebucket] = sourceID
         container[Columns.destbucket] = destID
@@ -233,21 +230,6 @@ extension Transaction {
     }
 }
 
-// Random transaction generation for testing
-//extension Transaction {
-//    static func newRandom(id: Int64, bucketIDs: [Int64]) -> Transaction {
-//        return Transaction(id: id,
-//                           status: Transaction.StatusTypes.allCases[Int.random(in: 0..<Transaction.StatusTypes.allCases.count)],
-//                           date: generateRandomDate(daysBack: 5)!,
-//                           posted: generateRandomDate(daysBack: 5),
-//                           amount: Int.random(in: 0..<10000),
-//                           sourceID: bucketIDs.randomElement()!,
-//                           destID: bucketIDs.randomElement()!,
-//                           memo: "Test Memo \(Int.random(in: 0..<10))",
-//                           payee: ["Person A", "Person B", "Person C"].randomElement())
-//    }
-//}
-
 extension DerivableRequest where RowDecoder == Transaction {
     func ownedByBucket(bucket: Int64) -> Self {
         filter(sql: "SourceBucket == ? OR DestBucket == ?", arguments: [bucket, bucket])
@@ -285,15 +267,15 @@ extension DerivableRequest where RowDecoder == Transaction {
 // Utility Functions
 extension Transaction {
     static func newTransaction() -> Transaction {
-        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: nil, type: .Transfer)
+        return Transaction(id: nil, status: .Void, date: Date(), sourcePosted: nil, destPosted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: nil, type: .Transfer)
     }
     
     static func newSplitTransaction() -> Transaction {
-        return Transaction(id: nil, status: .Void, date: Date(), posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: UUID(), type: .Split_Head)
+        return Transaction(id: nil, status: .Void, date: Date(), sourcePosted: nil, destPosted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: UUID(), type: .Split_Head)
     }
     
     static func newSplitMember(head: Transaction) -> Transaction {
-        return Transaction(id: nil, status: head.status, date: head.date, posted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: head.group, type: .Split)
+        return Transaction(id: nil, status: head.status, date: head.date, sourcePosted: nil, destPosted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: head.group, type: .Split)
     }
     
     static func getSplitDirection(members: [Transaction]) -> TransType {

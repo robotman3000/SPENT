@@ -12,9 +12,11 @@ struct Tag: Identifiable, Codable, Hashable {
     var id: Int64?
     var name: String
     var memo: String = ""
+    var color: String = "#8c8c8c"
+    var isFavorite: Bool = false
     
     private enum CodingKeys: String, CodingKey {
-        case id, name = "Name", memo = "Memo"
+        case id, name = "Name", memo = "Memo", color = "Color", isFavorite = "Favorite"
     }
 }
 
@@ -40,6 +42,8 @@ extension Tag: FetchableRecord, MutablePersistableRecord {
         static let id = Column(CodingKeys.id)
         static let name = Column(CodingKeys.name)
         static let memo = Column(CodingKeys.memo)
+        static let color = Column(CodingKeys.color)
+        static let favorite = Column(CodingKeys.isFavorite)
     }
 }
 
@@ -47,4 +51,6 @@ extension Tag {
     static func newTag() -> Tag {
         return Tag(id: nil, name: "", memo: "")
     }
+    
+    //TODO: String color to Color object
 }

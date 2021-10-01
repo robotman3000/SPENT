@@ -8,17 +8,17 @@
 import Foundation
 import GRDB
 
-struct TransactionRecipt: Identifiable, Codable, Hashable {
+struct TransactionAttachment: Identifiable, Codable, Hashable {
     var id: Int64?
     var transactionID: Int64
-    var reciptID: Int64
+    var attachmentID: Int64
     
     private enum CodingKeys: String, CodingKey {
-        case id, transactionID = "TransactionID", reciptID = "ReciptID"
+        case id, transactionID = "TransactionID", attachmentID = "AttachmentID"
     }
 }
 
-extension TransactionRecipt {
+extension TransactionAttachment {
     static let transaction = belongsTo(Transaction.self, key: "TransactionID")
     var transaction: QueryInterfaceRequest<Transaction> {
         guard id != nil else {
@@ -27,19 +27,19 @@ extension TransactionRecipt {
         return Transaction.filter(id: transactionID)
     }
     
-    static let recipt = belongsTo(Recipt.self, key: "ReciptID")
-    var recipt: QueryInterfaceRequest<Recipt> {
+    static let recipt = belongsTo(Attachment.self, key: "AttachmentID")
+    var recipt: QueryInterfaceRequest<Attachment> {
         guard id != nil else {
-            return Recipt.none()
+            return Attachment.none()
         }
-        return Recipt.filter(id: reciptID)
+        return Attachment.filter(id: attachmentID)
     }
 }
 
 
 // SQL Database support
-extension TransactionRecipt: FetchableRecord, MutablePersistableRecord {
-    static var databaseTableName: String = "TransactionRecipts"
+extension TransactionAttachment: FetchableRecord, MutablePersistableRecord {
+    static var databaseTableName: String = "Attachments"
     
     // Update auto-incremented id upon successful insertion
     mutating func didInsert(with rowID: Int64, for column: String?) {
@@ -50,6 +50,6 @@ extension TransactionRecipt: FetchableRecord, MutablePersistableRecord {
     enum Columns {
         static let id = Column(CodingKeys.id)
         static let transactionID = Column(CodingKeys.transactionID)
-        static let reciptID = Column(CodingKeys.reciptID)
+        static let attachmentID = Column(CodingKeys.attachmentID)
     }
 }

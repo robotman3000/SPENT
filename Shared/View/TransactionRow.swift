@@ -22,7 +22,7 @@ struct TransactionRow: View {
                 Spacer(minLength: 2)
                 t.status.getIconView().frame(width: 16, height: 16)
                 if let bal = transactionData.balance {
-                    Text(bal.running.currencyFormat)
+                    Text((bal.postedRunning ?? -1).currencyFormat)
                     Text(bal.amount.currencyFormat)
                 } else {
                     Text("----")
@@ -30,7 +30,12 @@ struct TransactionRow: View {
                 //Text(transactionData.transaction.balance?.currencyFormat ?? "")
                 VStack{
                     Text(t.payee ?? t.type.getStringName())
-                    Text(td.postedFormatted ?? td.dateFormatted)
+                    if let bal = td.balance  {
+                        Text(bal.date.transactionFormat)
+                    } else {
+                        //td.postedFormatted ?? td.dateFormatted
+                        Text("SKIP")
+                    }
                 }.width(150)
                 
                 Spacer()

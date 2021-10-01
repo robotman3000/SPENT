@@ -20,11 +20,11 @@ struct MainView: View {
         NavigationView {
             VStack {
                 QueryWrapperView(source: BucketBalanceRequest(selectedBucket)) { balance in
-                    BalanceTable(name: selectedBucket?.name ?? "NIL",
+                    BalanceTable(name: "\(selectedBucket?.id ?? -1) - \(selectedBucket?.name ?? "NIL")",
                                  posted: balance.posted,
                                  available: balance.available,
-                                 postedInTree: balance.postedInTree,
-                                 availableInTree: balance.availableInTree,
+                                 postedInTree: 0,
+                                 availableInTree: 0,
                                  isNIL: selectedBucket == nil)
                 }
                 List(selection: $selectedBucket) {
@@ -38,7 +38,7 @@ struct MainView: View {
                                 OutlineGroup(DatabaseStore.getBucketTree(treeList: accounts), id: \.bucket, children: \.children) { node in
                                     NavigationLink(destination: TransactionsView(forBucket: node.bucket)) {
                                         QueryWrapperView(source: BucketBalanceRequest(node.bucket)) { balance in
-                                            BucketRow(name: node.bucket.name, balance: balance.postedInTree)
+                                            BucketRow(name: node.bucket.name, balance: balance.posted)
                                         }
                                     }.contextMenu {
                                         AccountContextMenu(context: context, aContext: aContext, contextAccount: node.bucket)

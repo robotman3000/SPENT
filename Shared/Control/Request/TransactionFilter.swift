@@ -32,13 +32,14 @@ struct TransactionFilter {
         
         let balance = CommonTableExpression(
             named: "balance",
-            sql: "SELECT * FROM balance"
+            sql: "SELECT * FROM transactionBalance"
         )
         
         let balanceAssociation = Transaction.association(
             to: balance,
             on: { transactions, balance in
-                transactions[Column("id")] == balance[Column("tid")] && bucket.id! == balance[Column("bid")]
+                // If ancestorID is nil that means the bucket is the ancestor
+                transactions[Column("id")] == balance[Column("tid")] && bucket.ancestorID ?? bucket.id! == balance[Column("aid")]
             })
         
         let query = Transaction.filter(sql: """
@@ -65,7 +66,7 @@ struct TransactionFilter {
                 )
             )
             
-            """)
+            """).order(sql: "V_Date")
             
             .including(all: Transaction.tags.forKey("tags"))
             .including(optional: Transaction.source.forKey("source"))

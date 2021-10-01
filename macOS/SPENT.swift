@@ -34,7 +34,12 @@ struct SPENT: App {
                         print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
                         
                         if let dbURL = loadDBBookmark() {
-                            setupDBInstance(url: dbURL)
+                            do {
+                                try setupDBInstance(url: dbURL)
+                            } catch {
+                                print("Failed to load prefered DB")
+                                print(error)
+                            }
                         }
                         
                         if !isActive {
@@ -46,7 +51,12 @@ struct SPENT: App {
                 .sheet(isPresented: $showWelcomeSheet, content: {
                     let recents = getRecents()
                     WelcomeSheet(showWelcomeSheet: $showWelcomeSheet, recentFiles: recents, loadDatabase: {url,isNew  in
-                        setupDBInstance(url: url, skipHashCheck: isNew)
+                        do {
+                            try setupDBInstance(url: url, skipHashCheck: isNew)
+                        } catch {
+                            print(error)
+                            aContext.present(AlertKeys.databaseError(message: "Failed to load database!"))
+                        }
                         
                         // Store this as the recent db
                         do {
@@ -159,7 +169,7 @@ struct SPENT: App {
         }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.ScheduleManager.rawValue))
         
         Settings{
-            SettingsView().environmentObject(globalState).environmentObject(dbStore).environment(\.appDatabase, dbStore.database)
+            SettingsView().environmentObject(globalState).environmentObject(dbStore)
         }
     
     }
@@ -180,11 +190,11 @@ struct SPENT: App {
         return nil
     }
     
-    func setupDBInstance(url: URL, skipHashCheck: Bool = false){
+    func setupDBInstance(url: URL, skipHashCheck: Bool = false) throws {
         print("startAccessingSecurityScopedResource")
         if url.startAccessingSecurityScopedResource(){
             print("OK")
-            let appDB = AppDatabase(path: url)
+            let appDB = try AppDatabase(path: url)
             if checkDBCommit(database: appDB) {
                 dbStore.load(appDB)
                 isActive = true

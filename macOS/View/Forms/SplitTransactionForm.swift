@@ -128,7 +128,8 @@ struct SplitTransactionForm: View {
         
         // The split head must be inert except for the amount
         // which is used to calculcate the max split amount
-        head.posted = nil
+        head.sourcePosted = nil
+        head.destPosted = nil
         head.sourceID = nil
         head.destID = nil
         head.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
@@ -138,7 +139,8 @@ struct SplitTransactionForm: View {
             // Ensure that the members adhear to the state rules
             splitMembers[index].status = head.status
             splitMembers[index].date = head.date
-            splitMembers[index].posted = head.posted
+            splitMembers[index].sourcePosted = head.sourcePosted
+            splitMembers[index].destPosted = head.destPosted
             splitMembers[index].group = head.group
             splitMembers[index].payee = head.payee
             

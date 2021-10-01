@@ -21,11 +21,12 @@ struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
     var destination: Bucket?
     var transaction: Transaction
     var splitMembers: [Transaction]
-    var balance: Balance?
+    var balance: TransactionBalance?
     
     private enum CodingKeys: String, CodingKey {
         case tags = "tags", source = "source", destination = "destination", transaction = "transaction", splitMembers = "splitMembers", balance = "balance"
     }
+    // sh amount, sm amount,
     
     // Cached computed properties
     var contextType: Transaction.TransType = .Deposit
@@ -39,7 +40,8 @@ struct TransactionData: Identifiable, FetchableRecord, Decodable, Hashable {
     mutating func preCalcValues(contextBucket: Bucket){
         contextType = transaction.getType(convertTransfer: true, bucket: contextBucket.id)
         dateFormatted = transaction.date.transactionFormat
-        postedFormatted = transaction.posted?.transactionFormat
+        //TODO: Add support for source and dest post dates
+        postedFormatted = transaction.sourcePosted?.transactionFormat
         amountFormatted = transaction.amount.currencyFormat
         splitType = Transaction.getSplitDirection(members: splitMembers)
         splitMember = Transaction.getSplitMember(splitMembers, bucket: contextBucket)

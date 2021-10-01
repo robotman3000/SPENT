@@ -11,14 +11,12 @@ import GRDB
 struct Schedule: Identifiable, Codable, Hashable {
     var id: Int64?
     var name: String
-    var scheduleType: ScheduleType
-    var rule: ScheduleRule
-    var customRule: String? // TODO: Change this to the correct type
-    var markerID: Int64
-    var memo: String
+    var memo: String = ""
+    var templateID: Int64
+    var isFavorite: Bool = false
     
     private enum CodingKeys: String, CodingKey {
-        case id, name = "Name", scheduleType = "Type", rule = "Rule", customRule = "CustomRule", markerID = "MarkerID", memo = "Memo"
+        case id, name = "Name", memo = "Memo", templateID = "Template", isFavorite = "Favorite"
     }
 }
 
@@ -35,67 +33,21 @@ extension Schedule: FetchableRecord, MutablePersistableRecord {
     enum Columns {
         static let id = Column(CodingKeys.id)
         static let name = Column(CodingKeys.name)
-        static let scheduleType = Column(CodingKeys.scheduleType)
-        static let rule = Column(CodingKeys.rule)
-        static let customRule = Column(CodingKeys.customRule)
-        static let markerID = Column(CodingKeys.markerID)
         static let memo = Column(CodingKeys.memo)
+        static let template = Column(CodingKeys.templateID)
+        static let favorite = Column(CodingKeys.isFavorite)
     }
 }
 
-extension Schedule {
-    static let marker = belongsTo(Tag.self, using: ForeignKey(["MarkerID"]))
-    var marker: QueryInterfaceRequest<Tag> {
-        request(for: Schedule.marker)
-    }
-}
- 
-// Status Enum
-extension Schedule {
-    enum ScheduleType: Int, Codable, CaseIterable, Identifiable, Stringable {
-        case OneTime
-        case Recurring
-        
-        var id: String { self.getStringName() }
-        
-        func getStringName() -> String{
-            switch self {
-            case .OneTime: return "Once"
-            case .Recurring: return "Recurring"
-            }
-        }
-    }
-}
-extension Schedule.ScheduleType: DatabaseValueConvertible { }
-
-// Transaction Type Enum
-extension Schedule {
-    enum ScheduleRule: Int, Codable, CaseIterable, Identifiable, Stringable {
-        /// Always triggers
-        case Anytime
-        
-        /// Never triggers
-        case Never
-        
-        /// Uses the JSON data in the CustomRule colum
-        case Custom
-        
-        var id: String { self.getStringName() }
-        
-        func getStringName() -> String {
-            switch self {
-            case .Anytime: return "Anytime"
-            case .Never: return "Disabled"
-            case .Custom: return "User Defined"
-            }
-        }
-    }
-}
-
-extension Schedule.ScheduleRule: DatabaseValueConvertible { }
+//extension Schedule {
+//    static let template = belongsTo(TransactionTemplate.self, using: ForeignKey(["Template"]))
+//    var template: QueryInterfaceRequest<TransactionTemplate> {
+//        request(for: Schedule.template)
+//    }
+//}
 
 extension Schedule {
     static func newSchedule() -> Schedule {
-        return Schedule(id: nil, name: "", scheduleType: .Recurring, rule: .Never, customRule: "", markerID: -1, memo: "")
+        return Schedule(id: nil, name: "", templateID: -1)
     }
 }

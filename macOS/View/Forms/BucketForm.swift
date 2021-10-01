@@ -18,7 +18,6 @@ struct BucketForm: View {
     @State fileprivate var budget: Schedule?
     
     @Query(AccountRequest()) var parentChoices: [Bucket]
-    @Query(ScheduleRequest()) var budgetChoices: [Schedule]
     
     let onSubmit: (_ data: inout Bucket) -> Void
     let onCancel: () -> Void
@@ -30,12 +29,6 @@ struct BucketForm: View {
             // Disable changing the bucket parent after creation
             // TODO: Make this possible in the future
             BucketPicker(label: "Account", selection: $parent, choices: parentChoices).disabled(bucket.id != nil)
-            
-            Section(){
-                Toggle("Enable Budget", isOn: $hasBudget).disabled(budgetChoices.isEmpty)
-                SchedulePicker(label: "Budget", selection: $budget, choices: budgetChoices)
-                    .disabled(!hasBudget)
-            }
             
             TextEditor(text: $bucket.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
         }.frame(minWidth: 250, minHeight: 250)
@@ -62,12 +55,6 @@ struct BucketForm: View {
         if bucket.parentID != nil {
             parent = dbStore.database?.resolveOne(bucket.parent)
         }
-        
-        if bucket.budgetID == nil {
-            hasBudget = false
-        } else {
-            budget = dbStore.database?.resolveOne(bucket.budget)
-        }
     }
     
     func storeState() -> Bool {
@@ -84,12 +71,6 @@ struct BucketForm: View {
             bucket.ancestorID = ancestor
         } else {
             bucket.ancestorID = bucket.parentID
-        }
-        
-        if hasBudget {
-            bucket.budgetID = nil
-        } else {
-            bucket.budgetID = budget?.id
         }
         return true
     }

@@ -14,10 +14,10 @@ struct Bucket: Identifiable, Codable, Hashable {
     var parentID: Int64?
     var ancestorID: Int64?
     var memo: String = ""
-    var budgetID: Int64?
+    var isFavorite: Bool = false
     
     private enum CodingKeys: String, CodingKey {
-        case id, name = "Name", parentID = "Parent", ancestorID = "Ancestor", memo = "Memo", budgetID = "BudgetID"
+        case id, name = "Name", parentID = "Parent", ancestorID = "Ancestor", memo = "Memo", isFavorite = "Favorite"
     }
 }
 
@@ -30,11 +30,6 @@ extension Bucket {
     static let ancestor = belongsTo(Bucket.self, key: "Ancestor")
     var ancestor: QueryInterfaceRequest<Bucket> {
         request(for: Bucket.ancestor)
-    }
-    
-    static let budget = belongsTo(Schedule.self, key: "BudgetID")
-    var budget: QueryInterfaceRequest<Schedule> {
-        request(for: Bucket.budget)
     }
     
     //static let transactions = hasMany(Transaction.self)
@@ -60,8 +55,7 @@ extension Bucket {
         if self.id != nil {
             theID = "\(self.id!)"
         }
-        
-        //TODO: Is it posible to do this without raw sql?
+
         let cte = CommonTableExpression(
             recursive: true,
             named: "cte_Buckets",
@@ -98,7 +92,7 @@ extension Bucket: FetchableRecord, MutablePersistableRecord {
         static let parent = Column(CodingKeys.parentID)
         static let ancestor = Column(CodingKeys.ancestorID)
         static let memo = Column(CodingKeys.memo)
-        static let budgetID = Column(CodingKeys.budgetID)
+        static let favorite = Column(CodingKeys.isFavorite)
     }
 }
 
@@ -126,6 +120,6 @@ extension DerivableRequest where RowDecoder == Bucket {
 // Utility Functions
 extension Bucket {
     static func newBucket() -> Bucket {
-        return Bucket(id: nil, name: "", parentID: nil, ancestorID: nil, memo: "", budgetID: nil)
+        return Bucket(id: nil, name: "", parentID: nil, ancestorID: nil, memo: "")
     }
 }

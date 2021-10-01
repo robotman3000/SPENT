@@ -13,7 +13,7 @@ struct BucketBalanceRequest: Queryable {
         return lhs.hash == rhs.hash
     }
     
-    static var defaultValue: BucketBalance { BucketBalance(posted: 0, available: 0, postedInTree: 0, availableInTree: 0) }
+    static var defaultValue: BucketBalance { BucketBalance(bucketID: -1, available: 0, posted: 0) }
     private let bucket: Bucket?
     private let hash: Int
     
@@ -65,7 +65,7 @@ struct BucketBalanceRequest: Queryable {
                     atb = row["Amount"]
                 }
                 
-                return BucketBalance(posted: pb, available: ab, postedInTree: ptb, availableInTree: atb)
+                return BucketBalance(bucketID: bucket!.id!, available: ab, posted: pb)
             } catch {
                 print("Error while calculating balance for bucket")
                 throw error

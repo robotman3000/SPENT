@@ -207,7 +207,7 @@ struct AppDatabase {
                        -1*Amount AS amount,
                        SourceBucket AS bid,
                        Status,
-                       SourcePostDate AS "tdate"
+                       IFNULL(SourcePostDate, TransDate) AS "tdate"
                 FROM Transactions
                 WHERE SourceBucket IN (SELECT id FROM Buckets)
                 UNION ALL
@@ -215,7 +215,7 @@ struct AppDatabase {
                        Amount AS amount,
                        DestBucket AS bid,
                        Status,
-                       DestPostDate AS "tdate"
+                       IFNULL(DestPostDate, TransDate) AS "tdate"
                 FROM Transactions
                 WHERE DestBucket IN (SELECT id FROM Buckets)
             """)

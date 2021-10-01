@@ -23,8 +23,8 @@ struct MainView: View {
                     BalanceTable(name: "\(selectedBucket?.id ?? -1) - \(selectedBucket?.name ?? "NIL")",
                                  posted: balance.posted,
                                  available: balance.available,
-                                 postedInTree: 0,
-                                 availableInTree: 0,
+                                 postedInTree: balance.postedTree ?? 0,
+                                 availableInTree: balance.availableTree ?? 0,
                                  isNIL: selectedBucket == nil)
                 }
                 List(selection: $selectedBucket) {

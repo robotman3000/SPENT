@@ -66,7 +66,7 @@ struct TransactionFilter {
                 )
             )
             
-            """).order(sql: "tdate")
+            """).order(sql: "IFNULL(tdate, TransDate)")
             
             .including(all: Transaction.tags.forKey("tags"))
             .including(optional: Transaction.source.forKey("source"))

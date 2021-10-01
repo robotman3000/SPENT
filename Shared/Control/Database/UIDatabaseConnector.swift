@@ -22,17 +22,6 @@ class DatabaseStore: ObservableObject {
             self.database?.endSecureScope()
         }
         self.database = db
-        
-        // Debug data dump
-        do {
-            try db.databaseReader.read { dbc in
-                var result = try TransactionBalance.fetchAll(dbc, sql: "SELECT * FROM transactionBalance")
-                print(result)
-            }
-        } catch {
-           print(error)
-        }
-        
     }
 }
 

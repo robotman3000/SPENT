@@ -24,48 +24,26 @@ struct BucketBalanceRequest: Queryable {
     }
     
     func fetchValue(_ db: Database) throws -> BucketBalance {
-        if bucket != nil {
+        if let bk = bucket {
             do {
-                var pb = 0
-                var ptb = 0
-                var ab = 0
-                var atb = 0
+                var tree = try bk.tree.fetchAll(db)
+                tree.append(bk)
                 
-                // Posted
-                if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: [bucket!], statusTypes: Transaction.StatusTypes.allCases.filter({status in
-                    status.rawValue == Transaction.StatusTypes.Posting.rawValue
-                        || status.rawValue == Transaction.StatusTypes.Complete.rawValue
-                        || status.rawValue == Transaction.StatusTypes.Reconciled.rawValue
-                })), arguments: []) {
-                    pb = row["Amount"]
+                var bucketIDs: [Int64] = []
+                for bucket in tree {
+                    if bucket.id != nil {
+                        bucketIDs.append(bucket.id!)
+                    }
                 }
-            
-                // Available
-                if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: [bucket!], statusTypes: Transaction.StatusTypes.allCases.filter({status in
-                    status.rawValue != Transaction.StatusTypes.Void.rawValue
-                    && status.rawValue != Transaction.StatusTypes.Scheduled.rawValue // Treat scheduled like void until the feature is ready
-                })), arguments: []) {
-                    ab = row["Amount"]
-                }
+                let bucketStr: String = bucketIDs.map({ "\($0)" }).joined(separator: ", ")
                 
-                // Posted Tree
-                if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: getTreeAtBucket(bucket!, db: db), statusTypes: Transaction.StatusTypes.allCases.filter({status in
-                    status.rawValue == Transaction.StatusTypes.Posting.rawValue
-                        || status.rawValue == Transaction.StatusTypes.Complete.rawValue
-                        || status.rawValue == Transaction.StatusTypes.Reconciled.rawValue
-                })), arguments: []) {
-                    ptb = row["Amount"]
+                let balance = try BucketBalance.fetchOne(db, sql: """
+                    SELECT * FROM \(BucketBalance.databaseTableName) a LEFT JOIN (SELECT SUM(available) AS "availableTree", SUM(posted) AS "postedTree" FROM \(BucketBalance.databaseTableName) b WHERE b.bid IN (\(bucketStr))) WHERE a.bid == \(bk.id!)
+                """)
+                if let b = balance {
+                    return b
                 }
-
-                // Available Tree
-                if let row = try Row.fetchOne(db, sql: try getBalanceQuery(buckets: getTreeAtBucket(bucket!, db: db), statusTypes: Transaction.StatusTypes.allCases.filter({status in
-                    status.rawValue != Transaction.StatusTypes.Void.rawValue
-                    && status.rawValue != Transaction.StatusTypes.Scheduled.rawValue // Treat scheduled like void until the feature is ready
-                })), arguments: []) {
-                    atb = row["Amount"]
-                }
-                
-                return BucketBalance(bucketID: bucket!.id!, available: ab, posted: pb)
+                return BucketBalance(bucketID: -1, available: 0, posted: 0)
             } catch {
                 print("Error while calculating balance for bucket")
                 throw error
@@ -73,33 +51,5 @@ struct BucketBalanceRequest: Queryable {
         } else {
             return BucketBalanceRequest.defaultValue
         }
-    }
-    
-    private func getTreeAtBucket(_ bucket: Bucket, db: Database) throws -> [Bucket]{
-        var result = try bucket.tree.fetchAll(db)
-        result.append(bucket)
-        return result
-    }
-    
-    private func getBalanceQuery(buckets: [Bucket], statusTypes: [Transaction.StatusTypes]) throws -> String {
-        let statusStr: String = statusTypes.map({ "\($0.rawValue)" }).joined(separator: ", ")
-        
-        var bucketIDs: [Int64] = []
-        for bucket in buckets {
-            if bucket.id != nil {
-                bucketIDs.append(bucket.id!)
-            }
-        }
-        let bucketStr: String = bucketIDs.map({ "\($0)" }).joined(separator: ", ")
-        
-        return """
-                    SELECT IFNULL(SUM(Amount), 0) AS \"Amount\" FROM (
-                        SELECT -1*SUM(Amount) AS \"Amount\" FROM Transactions WHERE SourceBucket IN (\(bucketStr)) AND Status IN (\(statusStr))
-                    
-                        UNION ALL
-                    
-                        SELECT SUM(Amount) AS \"Amount\" FROM Transactions WHERE DestBucket IN (\(bucketStr)) AND Status IN (\(statusStr))
-                    )
-            """
     }
 }

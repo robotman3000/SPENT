@@ -43,7 +43,7 @@ struct TransactionFilter {
             })
         
         let query = Transaction.filter(sql: """
-            (
+            ((
                 (
                     SourceBucket IN (SELECT * FROM bkts) OR DestBucket IN (SELECT * FROM bkts)
                 ) AND (
@@ -64,7 +64,14 @@ struct TransactionFilter {
                 ) AND (
                     SourceBucket IS NULL AND DestBucket IS NULL
                 )
-            )
+            )) \(!showInTree ? """
+                AND Transactions.id NOT IN
+                (SELECT t.id AS tid
+                FROM Transactions t
+                LEFT JOIN Buckets b1 ON SourceBucket = b1.id
+                LEFT JOIN Buckets b2 ON DestBucket = b2.id
+                WHERE IFNULL(b1.V_Ancestor, -1) == IFNULL(b2.V_Ancestor, -1) AND b1.V_Ancestor IS NOT NULL)
+            """ : "")
             
             """).order(sql: "IFNULL(tdate, TransDate)")
             

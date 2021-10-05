@@ -24,6 +24,7 @@ struct TransactionsView: View {
             HStack {
                 Toggle(isOn: $appState.includeTree, label: { Text("Show All Transactions") })
                 Toggle(isOn: $appState.showTags, label: { Text("Show Tags") })
+                Toggle(isOn: $appState.showMemo, label: { Text("Show Memo") })
                 Toggle(isOn: $appState.showInTree, label: { Text("Show Local Transfers") })
                 Spacer()
                 EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionFilter.Ordering.allCases)

@@ -11,6 +11,7 @@ class GlobalState: ObservableObject {
     @Published var includeTree: Bool = true
     @Published var showInTree: Bool = true
     @Published var showTags: Bool = false
+    @Published var showMemo: Bool = false
     @Published var sorting = TransactionFilter.Ordering.byDate
     @Published var sortDirection = TransactionFilter.OrderDirection.descending
 }

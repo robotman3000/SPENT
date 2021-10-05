@@ -70,7 +70,7 @@ struct TransactionFilter {
                 FROM Transactions t
                 LEFT JOIN Buckets b1 ON SourceBucket = b1.id
                 LEFT JOIN Buckets b2 ON DestBucket = b2.id
-                WHERE IFNULL(b1.V_Ancestor, -1) == IFNULL(b2.V_Ancestor, -1) AND b1.V_Ancestor IS NOT NULL)
+                WHERE (IFNULL(b1.V_Ancestor, -1) == IFNULL(b2.V_Ancestor, -1) AND b1.V_Ancestor IS NOT NULL) OR V_Type IN (4, 5))
             """ : "")
             
             """).order(sql: "IFNULL(tdate, TransDate)")

@@ -11,81 +11,116 @@ struct TransactionRow: View {
     @Environment(\.colorScheme) var colorScheme
     let transactionData: TransactionData
     @Binding var showTags: Bool
+    @Binding var showMemo: Bool
     
     var body: some View {
         let td = transactionData
         let t = td.transaction
         
         VStack (alignment: .leading){
+            Spacer()
             HStack(alignment: .center){
                 //TODO: This should be split into two views
                 Spacer(minLength: 2)
                 t.status.getIconView().frame(width: 16, height: 16)
-                if let bal = transactionData.balance {
-                    Text((bal.postedRunning ?? -1).currencyFormat)
-                    Text(bal.amount.currencyFormat)
-                } else {
-                    Text("----")
-                }
-                //Text(transactionData.transaction.balance?.currencyFormat ?? "")
-                VStack{
-                    Text(t.payee ?? t.type.getStringName())
+                
+                // Running Balance
+                HStack{
+                    if let bal = transactionData.balance {
+                        Text((bal.postedRunning ?? -1).currencyFormat)
+                    } else {
+                        Text("")
+                    }
+                    Spacer()
+                }.frame(minWidth: 70, maxWidth: 80)
+                
+                // Payee or Type
+                HStack{
+                    Text(td.balance == nil ? "Allocation" : t.payee ?? t.type.getStringName())
+                    Spacer()
+                }.frame(minWidth: 100, maxWidth: 150)
+                    
+                // Date
+                HStack {
                     if let bal = td.balance  {
                         Text(bal.date.transactionFormat)
                     } else {
-                        //td.postedFormatted ?? td.dateFormatted
-                        Text("SKIP")
+                        Text("")
                     }
-                }.width(150)
+                    Spacer()
+                }.frame(minWidth: 90, maxWidth: 90)
                 
-                Spacer()
-                VStack{
-                    if t.group == nil {
-                        let sName = transactionData.source?.name ?? "NIL"
-                        let dName = transactionData.destination?.name ?? "NIL"
-                        
+                // Amount
+                HStack {
+                    Spacer()
+                    //Text(bal.amount.currencyFormat)
+                    if let trans = td.splitMember {
+                        Text(trans.amount.currencyFormat).foregroundColor(td.splitType == .Withdrawal ? .red : .gray)
+                    } else {
                         Text(td.amountFormatted).foregroundColor(td.contextType == .Withdrawal ? .red : .gray)
-                        HStack {
-                            if t.type == .Transfer {
-                                Text(td.contextType == .Deposit ? sName : dName)
+                    }
+                }.frame(minWidth: 80, maxWidth: 80)
+                
+                // Bucket
+                HStack {
+                    if td.splitMember != nil {
+                        Text("(\(td.amountFormatted))").foregroundColor(td.splitType == .Withdrawal ? .red : .gray)
+                    }
+                    VStack{
+                        if t.group == nil {
+                            let sName = transactionData.source?.name ?? "NIL"
+                            let dName = transactionData.destination?.name ?? "NIL"
+                            
+                            HStack {
+                                if t.type == .Transfer {
+                                    Text(td.contextType == .Deposit ? sName : dName)
+                                        .foregroundColor(.gray)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                }
+                                
+                                Image(systemName: td.contextType == .Withdrawal ? "arrow.left" : "arrow.right")
+                                
+                                Text(td.contextType == .Deposit ? dName : sName)
                                     .foregroundColor(.gray)
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                             }
-                            
-                            Image(systemName: td.contextType == .Withdrawal ? "arrow.left" : "arrow.right")
-                            
-                            Text(td.contextType == .Deposit ? dName : sName)
-                                .foregroundColor(.gray)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                        }
-                    } else {
-                        Text("Split \(td.splitType.getStringName())")
-                        HStack{
-                            if let trans = td.splitMember {
-                                Text("(\(trans.amount.currencyFormat))").foregroundColor(td.splitType == .Withdrawal ? .red : .gray)
-                            }
-                            Text(td.splitAmount.currencyFormat).foregroundColor(td.splitType == .Withdrawal ? .red : .gray)
+                        } else {
+                            Text("Split \(td.splitType.getStringName())")
                         }
                     }
-                }.width(200)
+                    Spacer()
+                }.frame(minWidth: 80, maxWidth: .infinity)
                 
-                Text(t.memo).frame(maxWidth: .infinity).help(t.memo)
+                
             }
-            if showTags {
-                HStack{
-                    ForEach(transactionData.tags, id: \.self){ tag in
-                        Text(tag.name).fontWeight(.bold).frame(minWidth: 50)
-                            .font(.caption)
-                            .padding(3)
-                            .background(Color.gray)
-                            .cornerRadius(50)
+            
+            // Tags and Memo
+            if showMemo || showTags {
+                HStack {
+                    Text("").frame(width: 16)
+                    if showMemo {
+                        Text(t.memo).help(t.memo)
+                    }
+                    Spacer()
+                    if showTags {
+                        ForEach(transactionData.tags, id: \.self){ tag in
+                            Text(tag.name).fontWeight(.bold).frame(minWidth: 50)
+                                .font(.caption)
+                                .padding(3)
+                                .background(Color.gray)
+                                .cornerRadius(50)
+                        }
                     }
                 }
             }
-            Spacer(minLength: 5)
-            Divider()
+//
+//                Spacer(minLength: 5)
+
+//
+//            Divider().frame(height: 5)
+            Spacer()
         }
     }
 }

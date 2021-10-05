@@ -72,6 +72,13 @@ struct AccountContextMenu: View {
         Button("Add Split"){
             context.present(FormKeys.splitTransaction(context: context, splitMembers: [], contextBucket: contextAccount, onSubmit: splitSubmit))
         }
+        
+        Divider()
+        
+        Button("\(contextAccount.isFavorite ? "Unfavorite" : "Mark as Favorite")"){
+            contextAccount.isFavorite = !contextAccount.isFavorite
+            store.updateBucket(&contextAccount, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+        }
     }
     
     func splitSubmit(transactions: inout [Transaction]) {

@@ -6,12 +6,47 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct HomeView: View {
+    @StateObject private var context = SheetContext()
+    @StateObject private var aContext = AlertContext()
+    
     var body: some View {
-        VStack{
-            Text("Welcome to SPENT!")
+        ScrollView {
+            VStack{
+                Section (header: Text("Shortcuts")){
+                    HStack{
+                        Spacer()
+                        Button("New Transaction"){
+                            aContext.present(AlertKeys.notImplemented)
+                        }
+                        Spacer()
+                        Button("Reconcile with Statement"){
+                            aContext.present(AlertKeys.notImplemented)
+                        }
+                        Spacer()
+                    }
+                }
+                
+                // Pinned accounts and buckets
+                Section(header: Text("Favorites")){
+                    QueryWrapperView(source: TagRequest(onlyFavorite: true)){ tags in
+                        ForEach(tags) { tag in
+                            Text(tag.name)
+                        }
+                    }
+                    QueryWrapperView(source: BucketRequest(onlyFavorite: true)){ buckets in
+                        ForEach(buckets) { bucket in
+                            Text(bucket.name)
+                        }
+                    }
+                }
+            }
         }
+        .navigationTitle("Summary")
+        .alert(context: aContext)
+        .sheet(context: context)
     }
 }
 

@@ -21,7 +21,7 @@ struct ScheduleForm: View {
         VStack{
             Form {
                 TextField("Name", text: $schedule.name)
-                
+                Toggle("Favorite", isOn: $schedule.isFavorite)
                 Text(marker?.name ?? "N/A")
                 TagPicker(label: "Marker", selection: $marker, choices: markerChoices)
                 

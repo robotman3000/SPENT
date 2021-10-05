@@ -19,24 +19,32 @@ struct BucketRequest: Queryable {
     private let hash: Int
     private let query: QueryInterfaceRequest<Bucket>
     var ordering: Ordering
+    var onlyFavorite: Bool
     
     /// Selects every transaction in the database
-    init(order: Ordering = .byTree){
+    init(order: Ordering = .byTree, onlyFavorite: Bool = false){
         query = Bucket.all()
         hash = genHash([1234567, order])
         self.ordering = order
+        self.onlyFavorite = onlyFavorite
     }
     
-    init(order: Ordering = .byTree, rootNode: Bucket){
+    init(order: Ordering = .byTree, rootNode: Bucket, onlyFavorite: Bool = false){
         query = Bucket.all()
         hash = genHash([order, rootNode])
         self.ordering = order
+        self.onlyFavorite = onlyFavorite
     }
     
     func fetchValue(_ db: Database) throws -> [Bucket] {
+        var q = query
+        if onlyFavorite {
+            q = q.filter(Bucket.Columns.favorite == true)
+        }
+        
         switch ordering {
-        case .byTree: return try query.orderByTree().fetchAll(db)
-        case .none: return try query.fetchAll(db)
+        case .byTree: return try q.orderByTree().fetchAll(db)
+        case .none: return try q.fetchAll(db)
         }
     }
     

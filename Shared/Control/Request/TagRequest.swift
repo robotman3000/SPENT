@@ -19,23 +19,31 @@ struct TagRequest: Queryable {
     private let hash: Int
     private let query: QueryInterfaceRequest<Tag>
     var ordering: Ordering
+    var onlyFavorite: Bool
     
     /// Selects every transaction in the database
-    init(order: Ordering = .none){
+    init(order: Ordering = .none, onlyFavorite: Bool = false){
         query = Tag.all()
         hash = genHash([1234567])
         self.ordering = order
+        self.onlyFavorite = onlyFavorite
     }
     
-    init(_ transaction: Transaction, order: Ordering = .none){
+    init(_ transaction: Transaction, order: Ordering = .none, onlyFavorite: Bool = false){
         query = transaction.tags
         hash = genHash([1234567, transaction])
         self.ordering = order
+        self.onlyFavorite = onlyFavorite
     }
     
     func fetchValue(_ db: Database) throws -> [Tag] {
+        var q = query
+        if onlyFavorite {
+            q = q.filter(Tag.Columns.favorite == true)
+        }
+        
         switch ordering {
-        case .none: return try query.fetchAll(db)
+        case .none: return try q.fetchAll(db)
         }
     }
     

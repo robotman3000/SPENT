@@ -27,9 +27,8 @@ struct BucketForm: View {
             TextField("Name", text: $bucket.name)
             
             // Disable changing the bucket parent after creation
-            // TODO: Make this possible in the future
             BucketPicker(label: "Account", selection: $parent, choices: parentChoices).disabled(bucket.id != nil)
-            
+            Toggle("Favorite", isOn: $bucket.isFavorite)
             TextEditor(text: $bucket.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
         }.frame(minWidth: 250, minHeight: 250)
         .toolbar(content: {

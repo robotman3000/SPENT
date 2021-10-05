@@ -19,6 +19,7 @@ struct TagForm: View {
         Form {
             Section(){
                 TextField("Name", text: $tag.name)
+                Toggle("Favorite", isOn: $tag.isFavorite)
                 TextEditor(text: $tag.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
         }.frame(minWidth: 250, minHeight: 200)

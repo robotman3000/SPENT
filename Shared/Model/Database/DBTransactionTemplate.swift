@@ -32,3 +32,20 @@ extension DBTransactionTemplate: FetchableRecord, MutablePersistableRecord {
         static let template = Column(CodingKeys.template)
     }
 }
+
+extension DBTransactionTemplate {
+    static func newTemplate() -> DBTransactionTemplate {
+        // This should never actually fail so we just ignore the exception
+        // If it does the runtime crash will be useful
+        let jsonData = try! JSONEncoder().encode(TransactionTemplate(name: "", memo: "", amount: 0, tags: []))
+        return DBTransactionTemplate(id: nil, template: String(data: jsonData, encoding: .utf8)!)
+    }
+    
+    func decodeTemplate() throws -> TransactionTemplate? {
+        if let jsonData = template.data(using: .utf8) {
+            let decoder = JSONDecoder()
+            return try decoder.decode(TransactionTemplate.self, from: jsonData)
+        }
+        return nil
+    }
+}

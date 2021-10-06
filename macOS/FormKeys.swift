@@ -17,6 +17,7 @@ enum FormKeys: SheetProvider {
     case schedule(context: SheetContext, schedule: Schedule?, onSubmit: (_ data: inout Schedule) -> Void)
     case transactionTags(context: SheetContext, transaction: Transaction, onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void)
     case splitTransaction(context: SheetContext, splitMembers: [Transaction], contextBucket: Bucket, onSubmit: (_ data: inout [Transaction]) -> Void)
+    case transactionTemplate(context: SheetContext, template: DBTransactionTemplate?, onSubmit: (_ data: inout DBTransactionTemplate) -> Void)
     case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
     case confirmAction(context: SheetContext, message: String, onConfirm: () -> Void, onCancel: () -> Void)
     
@@ -60,6 +61,12 @@ enum FormKeys: SheetProvider {
             
         case .transactionTags(context: let context, transaction: let transaction, onSubmit: let handleSubmit):
             return TransactionTagForm(transaction: transaction, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            
+        case .transactionTemplate(context: let context, template: var template, onSubmit: let handleSubmit):
+            if template == nil {
+                template = DBTransactionTemplate.newTemplate()
+            }
+            return TemplateForm(dbtemplate: template!, onSubmit: handleSubmit, onCancel:{ context.dismiss() }).padding().any()
             
         case .splitTransaction(context: let context, splitMembers: let members, contextBucket: let contextBucket, onSubmit: let handleSubmit):
             var head: Transaction?

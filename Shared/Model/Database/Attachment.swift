@@ -41,3 +41,20 @@ extension Attachment: FetchableRecord, MutablePersistableRecord {
         static let sha256 = Column(CodingKeys.sha256)
     }
 }
+
+//extension Attachment {
+//    func showInFinder(url: URL?) {
+//        guard let url = url else { return }
+//        
+//        if url.isDirectory {
+//            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: url.path)
+//        }
+//        else {
+//            showInFinderAndSelectLastComponent(of: url)
+//        }
+//    }
+//
+//    fileprivate func showInFinderAndSelectLastComponent(of url: URL) {
+//        NSWorkspace.shared.activateFileViewerSelecting([url])
+//    }
+//}

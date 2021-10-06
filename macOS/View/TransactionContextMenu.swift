@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftUIKit
+import UniformTypeIdentifiers
 
 struct TransactionContextMenu: View {
     @ObservedObject var context: SheetContext
@@ -46,6 +47,39 @@ struct TransactionContextMenu: View {
                     }
 
                     Button("Add Document") {
+                                //[UTType.plainText]
+                        openFile(allowedTypes: [.data], onConfirm: { url in
+                            if url.startAccessingSecurityScopedResource() {
+                                do {
+                                    defer { url.stopAccessingSecurityScopedResource() }
+                                    // Generate the file hash and read the file data
+                                    let data = try Data(contentsOf: url)
+                                    let hash256 = data.sha256()
+                                    
+                                    // Create Attachment record
+                                    var attachment = Attachment(filename: url.lastPathComponent, sha256: hash256)
+                                    
+                                    // Attempt to store the attachment to the DB
+                                    // if this fails cleanup is easy
+                                    store.updateAttachmentRecord(&attachment, onComplete: {}, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                                    
+                                    // Copy the file to the db bundle
+                                    //var attachmentPath: URL = store.getAttachmentPath(hash256)
+                                    try store.storeAttachment(sourceURL: url, hash256: hash256)
+                                    
+                                    // Register the attachment with the transaction
+                                    store.addTransactionAttachment(transaction: t.transaction, attachment: attachment)
+                                } catch {
+                                    //TODO: Handle failure conditions
+                                    //throw Error.failedToLoadData
+                                }
+                            } else {
+                                aContext.present(AlertKeys.message(message: "Failed to open file!"))
+                            }
+                        }, onCancel: { print("Document add cancled ") })
+                    }
+                    
+                    Button("View Documents") {
                         aContext.present(AlertKeys.notImplemented)
                     }
                 }

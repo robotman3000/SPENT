@@ -174,7 +174,8 @@ struct AppDatabase {
             // Create attachments table
             try db.create(table: "Attachments") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("Filename", .text).notNull()
+                // Prevent duplicate filenames for information clarity
+                t.column("Filename", .text).notNull().unique()
                 
                 // The hash is for file security/integrity
                 // The unique helps ensure that duplicate files can't be added
@@ -403,6 +404,37 @@ extension AppDatabase {
     func deleteSchedule(id: Int64) throws {
         try dbWriter.write { db in
             _ = try Schedule.deleteOne(db, id: id)
+        }
+    }
+    
+    func saveTemplate(_ template: inout DBTransactionTemplate) throws {
+        try dbWriter.write { db in
+            try template.save(db)
+        }
+    }
+    
+    func deleteTemplate(id: Int64) throws {
+        try dbWriter.write { db in
+            _ = try DBTransactionTemplate.deleteOne(db, id: id)
+        }
+    }
+    
+    func saveAttachment(_ attachment: inout Attachment) throws {
+        try dbWriter.write { db in
+            try attachment.save(db)
+        }
+    }
+    
+    func deleteAttachment(id: Int64) throws {
+        try dbWriter.write { db in
+            _ = try Attachment.deleteOne(db, id: id)
+        }
+    }
+    
+    func addTransactionAttachment(transaction: Transaction, attachment: Attachment) throws {
+        try dbWriter.write { db in
+            var tAttachment = TransactionAttachment(id: nil, transactionID: transaction.id!, attachmentID: attachment.id!)
+            try tAttachment.save(db)
         }
     }
 }

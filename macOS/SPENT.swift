@@ -117,6 +117,10 @@ struct SPENT: App {
                 Button("Manage Schedules"){
                     WindowKeys.ScheduleManager.open()
                 }
+                
+                Button("Manage Templates"){
+                    WindowKeys.TemplateManager.open()
+                }
             }
             
             CommandGroup(replacing: .importExport) {
@@ -157,6 +161,18 @@ struct SPENT: App {
                         aContext.present(AlertKeys.notImplemented)
                     }
                 }
+                
+                Button("Export all attachments"){
+                    chooseFolder(onConfirm: { url in
+                        for attachment in dbStore.getAllAttachments() {
+                            do {
+                                try dbStore.exportAttachment(destinationURL: url, attachment: attachment)
+                            } catch {
+                                print(error)
+                            }
+                        }
+                    }, onCancel: {})
+                }
             }
         }
         
@@ -167,6 +183,10 @@ struct SPENT: App {
         WindowGroup("Schedule Manager") {
             ScheduleManagerView().environmentObject(globalState).environmentObject(dbStore)
         }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.ScheduleManager.rawValue))
+        
+        WindowGroup("Template Manager") {
+            TemplateManagerView().environmentObject(globalState).environmentObject(dbStore)
+        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TemplateManager.rawValue))
         
         Settings{
             SettingsView().environmentObject(globalState).environmentObject(dbStore)

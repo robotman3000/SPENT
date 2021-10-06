@@ -198,7 +198,6 @@ extension DatabaseStore {
             onError(error)
         }
     }
-
 }
 
 // Schedules
@@ -220,5 +219,81 @@ extension DatabaseStore {
         } catch {
             onError(error)
         }
+    }
+}
+
+// Transaction Templates
+extension DatabaseStore {
+    func updateTemplate(_ data: inout DBTransactionTemplate, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
+        print(data)
+        do {
+            try database!.saveTemplate(&data)
+            onComplete()
+        } catch {
+            onError(error)
+        }
+    }
+
+    func deleteTemplate(_ id: Int64, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
+        do {
+            try database!.deleteTemplate(id: id)
+            onComplete()
+        } catch {
+            onError(error)
+        }
+    }
+}
+
+// Attachments
+extension DatabaseStore {
+    func updateAttachmentRecord(_ data: inout Attachment, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
+        print(data)
+        do {
+            try database!.saveAttachment(&data)
+            onComplete()
+        } catch {
+            onError(error)
+        }
+    }
+
+    func deleteAttachment(_ id: Int64, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
+        do {
+            try database!.deleteAttachment(id: id)
+            onComplete()
+        } catch {
+            onError(error)
+        }
+    }
+    
+    func addTransactionAttachment(transaction: Transaction, attachment: Attachment, onComplete: () -> Void = {}, onError: (Error) -> Void = printError) {
+        do {
+            try database!.addTransactionAttachment(transaction: transaction, attachment: attachment)
+            onComplete()
+        } catch {
+            onError(error)
+        }
+    }
+
+    func storeAttachment(sourceURL: URL, hash256: String) throws {
+        var attachmentURL = database!.bundlePath!
+        attachmentURL.appendPathComponent("attachments", isDirectory: true)
+        attachmentURL.appendPathComponent(hash256.trunc(length: 2, trailing: ""), isDirectory: true)
+        try FileManager.default.createDirectory(at: attachmentURL, withIntermediateDirectories: true, attributes: nil)
+        attachmentURL.appendPathComponent(hash256)
+        try FileManager.default.copyItem(at: sourceURL, to: attachmentURL)
+    }
+
+    func exportAttachment(destinationURL: URL, attachment: Attachment) throws {
+        var attachmentURL = database!.bundlePath!
+        attachmentURL.appendPathComponent("attachments", isDirectory: true)
+        attachmentURL.appendPathComponent(attachment.sha256.trunc(length: 2, trailing: ""), isDirectory: true)
+        attachmentURL.appendPathComponent(attachment.sha256)
+        var destURL = destinationURL
+        destURL.appendPathComponent(attachment.filename)
+        try FileManager.default.copyItem(at: attachmentURL, to: destURL)
+    }
+    
+    func getAllAttachments() -> [Attachment] {
+        return database?.resolve(Attachment.all()) ?? []
     }
 }

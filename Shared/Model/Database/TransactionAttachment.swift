@@ -39,7 +39,7 @@ extension TransactionAttachment {
 
 // SQL Database support
 extension TransactionAttachment: FetchableRecord, MutablePersistableRecord {
-    static var databaseTableName: String = "Attachments"
+    static var databaseTableName: String = "TransactionAttachments"
     
     // Update auto-incremented id upon successful insertion
     mutating func didInsert(with rowID: Int64, for column: String?) {

@@ -35,7 +35,7 @@ struct AppDatabase {
         try migrator.migrate(dbWriter)
     }
     
-    init(path: URL, trace: Bool = true) throws {
+    init(path: URL, trace: Bool = false) throws {
         self.bundlePath = path
         let newURL = path.appendingPathComponent("db.sqlite")
         print("Using DB from path: \(newURL.path)")

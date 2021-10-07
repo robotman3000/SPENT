@@ -19,13 +19,21 @@ struct TransactionsView: View {
     @StateObject private var context = SheetContext()
     @StateObject private var aContext = AlertContext()
     
+    @State var showViewOptions: Bool = false
+    
     var body: some View {
         VStack {
             HStack {
-                Toggle(isOn: $appState.includeTree, label: { Text("Show All Transactions") })
-                Toggle(isOn: $appState.showTags, label: { Text("Show Tags") })
-                Toggle(isOn: $appState.showMemo, label: { Text("Show Memo") })
-                Toggle(isOn: $appState.showInTree, label: { Text("Show Local Transfers") })
+                Button("View Options"){
+                    showViewOptions.toggle()
+                }.popover(isPresented: $showViewOptions){
+                    VStack(alignment: .leading){
+                        Toggle(isOn: $appState.includeTree, label: { Text("Show All Transactions") })
+                        Toggle(isOn: $appState.showTags, label: { Text("Show Tags") })
+                        Toggle(isOn: $appState.showMemo, label: { Text("Show Memo") })
+                        Toggle(isOn: $appState.showInTree, label: { Text("Show Local Transfers") })
+                    }.padding()
+                }
                 Spacer()
                 EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionFilter.Ordering.allCases)
                 EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionFilter.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
@@ -39,12 +47,18 @@ struct TransactionsView: View {
                         _NewTransactionContextButtons(context: context, aContext: aContext, contextBucket: forBucket, onFormDismiss: { context.dismiss() })
                     }
                     
-                    HStack(alignment: .firstTextBaseline) {
+                    VStack {
                         Spacer()
-                        Text("\(model.count) transactions")
+                        HStack(alignment: .center) {
+                            Spacer()
+                            Text("\(model.count) transactions")
+                            Spacer()
+                            if !stringFilter.isEmpty {
+                                Text("Showing matches for: \(stringFilter)")
+                            }
+                        }
                         Spacer()
-                        Text("Showing matches for: \(stringFilter)")
-                    }.padding().frame(height: 30)
+                    }.frame(height: 30)
                 }
             }
         }.navigationTitle(forBucket.name).sheet(context: context).alert(context: aContext)

@@ -19,7 +19,7 @@ struct TransactionList: View {
     var body: some View {
         if !model.isEmpty {
             List(model, id: \.self, selection: $selected){ item in
-                TransactionRow(transactionData: item, showTags: $appState.showTags, showMemo: $appState.showMemo)
+                TransactionRow(transactionData: item, showTags: appState.showTags, showMemo: appState.showMemo, showRunning: selectedBucket.parentID == nil && appState.sorting == .byDate)
                     .frame(height: appState.showMemo || appState.showTags ? 48 : 24)
                 .contextMenu {
                     TransactionContextMenu(context: context, aContext: aContext, contextBucket: selectedBucket, transactions: selected.contains(item) ? selected : [item], onFormDismiss: {

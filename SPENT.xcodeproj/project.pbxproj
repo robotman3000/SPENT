@@ -14,7 +14,6 @@
 		A206D786267C111F00CB094D /* TransactionAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D785267C111F00CB094D /* TransactionAttachment.swift */; };
 		A206D787267C111F00CB094D /* TransactionAttachment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A206D785267C111F00CB094D /* TransactionAttachment.swift */; };
 		A206D78B267C47A400CB094D /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* CurrencyText.swift */; };
-		A206D78C267C4A2E00CB094D /* SPENTDatabaseDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */; };
 		A20781ED265E954C00DE372A /* BucketRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20781EC265E954C00DE372A /* BucketRequest.swift */; };
 		A20781EE265E954C00DE372A /* BucketRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20781EC265E954C00DE372A /* BucketRequest.swift */; };
 		A20781F7266001CC00DE372A /* TransactionTags.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20781F6266001CC00DE372A /* TransactionTags.swift */; };
@@ -43,7 +42,6 @@
 		A2202ACD26E551EA0060D94A /* SortingWrapperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2202ACB26E551EA0060D94A /* SortingWrapperView.swift */; };
 		A2202ACF26E5547C0060D94A /* SortingAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2202ACE26E5547C0060D94A /* SortingAgent.swift */; };
 		A2202AD026E5547C0060D94A /* SortingAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2202ACE26E5547C0060D94A /* SortingAgent.swift */; };
-		A228202B267B9518006C38AC /* SPENTDatabaseDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */; };
 		A228FC59264C571800CD5BB6 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC58264C571800CD5BB6 /* Query.swift */; };
 		A228FC5A264C571800CD5BB6 /* Query.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC58264C571800CD5BB6 /* Query.swift */; };
 		A228FC5C264C574C00CD5BB6 /* TransactionRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5B264C574C00CD5BB6 /* TransactionRequest.swift */; };
@@ -53,6 +51,8 @@
 		A230C0C7270CEB55000C739F /* TemplateForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C6270CEB55000C739F /* TemplateForm.swift */; };
 		A230C0C9270CF320000C739F /* TemplateManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C8270CF320000C739F /* TemplateManagerView.swift */; };
 		A230C0CB270CF3FB000C739F /* TemplateRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0CA270CF3FB000C739F /* TemplateRequest.swift */; };
+		A230C0CE270E0970000C739F /* Libical in Frameworks */ = {isa = PBXBuildFile; productRef = A230C0CD270E0970000C739F /* Libical */; };
+		A230C0D0270E0970000C739F /* SwiftIcal in Frameworks */ = {isa = PBXBuildFile; productRef = A230C0CF270E0970000C739F /* SwiftIcal */; };
 		A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* CurrencyText.swift */; };
 		A24CF68626814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24CF68526814EDA0037BBEF /* BucketBalanceRequest.swift */; };
 		A24CF68726814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24CF68526814EDA0037BBEF /* BucketBalanceRequest.swift */; };
@@ -105,6 +105,8 @@
 		A2A56736262747A8009C7E8C /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A56734262747A7009C7E8C /* SplashView.swift */; };
 		A2A56738262879BD009C7E8C /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A56737262879BD009C7E8C /* Util.swift */; };
 		A2A56739262879BD009C7E8C /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A56737262879BD009C7E8C /* Util.swift */; };
+		A2AA26E2270E937E00794C6C /* DebugUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA26E1270E937E00794C6C /* DebugUtil.swift */; };
+		A2AA26E3270E937E00794C6C /* DebugUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA26E1270E937E00794C6C /* DebugUtil.swift */; };
 		A2C2ADA126D5878A00537971 /* SwiftUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = A2C2ADA026D5878A00537971 /* SwiftUIKit */; };
 		A2C2ADAB26D58AAF00537971 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7C2671802A00347205 /* TransactionRow.swift */; };
 		A2C2ADAE26D58B9300537971 /* TransactionContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */; };
@@ -165,7 +167,6 @@
 		A2202ACB26E551EA0060D94A /* SortingWrapperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortingWrapperView.swift; sourceTree = "<group>"; };
 		A2202ACE26E5547C0060D94A /* SortingAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortingAgent.swift; sourceTree = "<group>"; };
 		A22727DF2616341900814696 /* iOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = iOS.entitlements; sourceTree = "<group>"; };
-		A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTDatabaseDocument.swift; sourceTree = "<group>"; };
 		A228FC58264C571800CD5BB6 /* Query.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
 		A228FC5B264C574C00CD5BB6 /* TransactionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRequest.swift; sourceTree = "<group>"; };
 		A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
@@ -208,6 +209,7 @@
 		A2A56719262740ED009C7E8C /* macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = macOS.entitlements; sourceTree = "<group>"; };
 		A2A56734262747A7009C7E8C /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		A2A56737262879BD009C7E8C /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
+		A2AA26E1270E937E00794C6C /* DebugUtil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugUtil.swift; sourceTree = "<group>"; };
 		A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionContextMenu.swift; sourceTree = "<group>"; };
 		A2C2ADB026D58D7100537971 /* WelcomeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeSheet.swift; sourceTree = "<group>"; };
 		A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
@@ -243,8 +245,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A230C0CE270E0970000C739F /* Libical in Frameworks */,
 				A217EA9B26A9BF1A004388FF /* SwiftUIKit in Frameworks */,
 				A21C63D327074D36002D3084 /* GRDB in Frameworks */,
+				A230C0D0270E0970000C739F /* SwiftIcal in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -363,7 +367,6 @@
 				A2C2ADBB26D5B0CE00537971 /* SPENTLegacyImportAgent.swift */,
 				A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */,
 				A26B73302690BC8C0082A0F6 /* Utility */,
-				A228202A267B9518006C38AC /* SPENTDatabaseDocument.swift */,
 				A20DCD7A264ED0B80070EB07 /* View */,
 				A20DCD67264EBBFC0070EB07 /* Model */,
 				A2A5671D262741F4009C7E8C /* Control */,
@@ -377,6 +380,7 @@
 			children = (
 				A2780868268E588000CEA560 /* Stringable.swift */,
 				A2A56737262879BD009C7E8C /* Util.swift */,
+				A2AA26E1270E937E00794C6C /* DebugUtil.swift */,
 			);
 			path = Utility;
 			sourceTree = "<group>";
@@ -387,8 +391,8 @@
 				A257FC3226D7F5C400383855 /* MainView.swift */,
 				A20DAF6C26701A4300347205 /* HomeView.swift */,
 				A257FC3626D7FA7C00383855 /* ScheduleManagerView.swift */,
-				A257FC3426D7F62400383855 /* TagManagerView.swift */,
 				A230C0C8270CF320000C739F /* TemplateManagerView.swift */,
+				A257FC3426D7F62400383855 /* TagManagerView.swift */,
 				A2C2ADB426D58F1F00537971 /* SettingsView.swift */,
 				A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */,
 				A2676C72267CD04300548F06 /* TransactionsView.swift */,
@@ -522,6 +526,8 @@
 			packageProductDependencies = (
 				A217EA9A26A9BF1A004388FF /* SwiftUIKit */,
 				A21C63D227074D36002D3084 /* GRDB */,
+				A230C0CD270E0970000C739F /* Libical */,
+				A230C0CF270E0970000C739F /* SwiftIcal */,
 			);
 			productName = macOS;
 			productReference = A2A5670D262740EC009C7E8C /* SPENT.app */;
@@ -577,6 +583,7 @@
 			packageReferences = (
 				A217EA9926A9BF1A004388FF /* XCRemoteSwiftPackageReference "SwiftUIKit" */,
 				A21C63D127074D36002D3084 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+				A230C0CC270E0970000C739F /* XCRemoteSwiftPackageReference "swift-ical" */,
 			);
 			productRefGroup = A2C4C0CB2613E61A0048DB83 /* Products */;
 			projectDirPath = "";
@@ -681,6 +688,7 @@
 				A2202AD026E5547C0060D94A /* SortingAgent.swift in Sources */,
 				A24CF68726814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */,
 				A26B73262690A6FF0082A0F6 /* BucketNode.swift in Sources */,
+				A2AA26E3270E937E00794C6C /* DebugUtil.swift in Sources */,
 				A230C0C9270CF320000C739F /* TemplateManagerView.swift in Sources */,
 				A26B73352690BF2B0082A0F6 /* TransactionData.swift in Sources */,
 				A2676C9D267E599400548F06 /* UIDatabaseConnector.swift in Sources */,
@@ -708,7 +716,6 @@
 				A2C2ADB126D58D7100537971 /* WelcomeSheet.swift in Sources */,
 				A20DAF6D26701A4300347205 /* HomeView.swift in Sources */,
 				A2A56710262740EC009C7E8C /* SPENT.swift in Sources */,
-				A228202B267B9518006C38AC /* SPENTDatabaseDocument.swift in Sources */,
 				A2DA01162706AE83007167EA /* BucketBalance.swift in Sources */,
 				A2E0F52E26F4043E002EC601 /* DBTransactionTemplate.swift in Sources */,
 			);
@@ -736,7 +743,6 @@
 				A2CE549826A881E700DB9955 /* ScheduleManager.swift in Sources */,
 				A2EE03FA268518BF0092F63E /* iOSTransactionListView.swift in Sources */,
 				A278086C268E668C00CEA560 /* SchedulePicker.swift in Sources */,
-				A206D78C267C4A2E00CB094D /* SPENTDatabaseDocument.swift in Sources */,
 				A2EC30A72697571C00781EC8 /* SettingsView.swift in Sources */,
 				A2676C9C267E599400548F06 /* UIDatabaseConnector.swift in Sources */,
 				A228FC5C264C574C00CD5BB6 /* TransactionRequest.swift in Sources */,
@@ -767,6 +773,7 @@
 				A2DFFD1626ED6BED00B6CBE6 /* TransactionBalance.swift in Sources */,
 				A2DA01152706AE83007167EA /* BucketBalance.swift in Sources */,
 				A20DCD83264EEB510070EB07 /* Tag.swift in Sources */,
+				A2AA26E2270E937E00794C6C /* DebugUtil.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1061,6 +1068,14 @@
 				minimumVersion = 5.0.0;
 			};
 		};
+		A230C0CC270E0970000C739F /* XCRemoteSwiftPackageReference "swift-ical" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tbartelmess/swift-ical";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.8;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1073,6 +1088,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A21C63D127074D36002D3084 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
 			productName = GRDB;
+		};
+		A230C0CD270E0970000C739F /* Libical */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A230C0CC270E0970000C739F /* XCRemoteSwiftPackageReference "swift-ical" */;
+			productName = Libical;
+		};
+		A230C0CF270E0970000C739F /* SwiftIcal */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A230C0CC270E0970000C739F /* XCRemoteSwiftPackageReference "swift-ical" */;
+			productName = SwiftIcal;
 		};
 		A2C2ADA026D5878A00537971 /* SwiftUIKit */ = {
 			isa = XCSwiftPackageProductDependency;

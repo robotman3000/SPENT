@@ -15,42 +15,53 @@ struct ScheduleManagerView: View {
     @StateObject private var aContext = AlertContext()
     
     var body: some View {
-        VStack{
-            HStack {
-//                TableToolbar(onClick: { action in
-//                    switch action {
-//                    case .new:
-//                        context.present(FormKeys.schedule(context: context, schedule: nil, markerChoices: store.tags, onSubmit: {data in
-//                            store.updateSchedule(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-//                        }))
-//                    case .edit:
-//                        if selected != nil {
-//                            context.present(FormKeys.schedule(context: context, schedule: selected!, markerChoices: store.tags, onSubmit: {data in
-//                                store.updateSchedule(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-//                            }))
-//                        } else {
-//                            aContext.present(AlertKeys.message(message: "Select a tag first"))
-//                        }
-//                    case .delete:
-//                        if selected != nil {
-//                            context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-//                                store.deleteSchedule(selected!.id!, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-//                            }))
-//                        } else {
-//                            aContext.present(AlertKeys.message(message: "Select a tag first"))
-//                        }
-//                    }
-//                })
-                Spacer()
-            }
-            
-            QueryWrapperView(source: ScheduleRequest()){ schedules in
-                List(schedules, id: \.self, selection: $selected){ schedule in
-                    Text(schedule.name)
-                    //Row(tag: tag).tag(tag)
+        if store.database != nil {
+            VStack{
+                HStack {
+                    TableToolbar(onClick: { action in
+                        switch action {
+                        case .new:
+                            context.present(FormKeys.schedule(context: context, schedule: nil, onSubmit: {data in
+                                store.updateSchedule(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                            }))
+                        case .edit:
+                            if selected != nil {
+                                context.present(FormKeys.schedule(context: context, schedule: selected!, onSubmit: {data in
+                                    store.updateSchedule(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                                }))
+                            } else {
+                                aContext.present(AlertKeys.message(message: "Select a schedule first"))
+                            }
+                        case .delete:
+                            if selected != nil {
+                                context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
+                                    store.deleteSchedule(selected!.id!, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                                }))
+                            } else {
+                                aContext.present(AlertKeys.message(message: "Select a schedule first"))
+                            }
+                        }
+                    })
+                    Button("Render"){
+                        if selected != nil {
+                            
+                        } else {
+                            aContext.present(AlertKeys.message(message: "Select a schedule first"))
+                        }
+                    }
+                    Spacer()
                 }
-            }
-        }.sheet(context: context).alert(context: aContext)
+                
+                QueryWrapperView(source: ScheduleRequest()){ schedules in
+                    List(schedules, id: \.self, selection: $selected){ schedule in
+                        Text(schedule.name)
+                        //Row(tag: tag).tag(tag)
+                    }
+                }
+            }.sheet(context: context).alert(context: aContext)
+        } else {
+            Text("No database is loaded").frame(width: 100, height: 100)
+        }
     }
 }
 

@@ -10,9 +10,9 @@ import SwiftUI
 struct ScheduleForm: View {
     @EnvironmentObject var dbStore: DatabaseStore
     @State var schedule: Schedule = Schedule(id: nil, name: "", templateID: -1)
-    @State fileprivate var marker: Tag?
+    @State var selected: DBTransactionTemplate?
     
-    @Query(TagRequest()) var markerChoices: [Tag]
+    @Query(TemplateRequest()) var templates: [DBTransactionTemplate]
     
     let onSubmit: (_ data: inout Schedule) -> Void
     let onCancel: () -> Void
@@ -22,11 +22,21 @@ struct ScheduleForm: View {
             Form {
                 TextField("Name", text: $schedule.name)
                 Toggle("Favorite", isOn: $schedule.isFavorite)
-                Text(marker?.name ?? "N/A")
-                TagPicker(label: "Marker", selection: $marker, choices: markerChoices)
+                
+                QueryWrapperView(source: TemplateRequest()){ templateList in
+                    Picker(selection: $selected, label: Text("Template: ")) {
+                        ForEach(templateList, id: \.id) { template in
+                            let templateData = try! template.decodeTemplate()
+                            if let templData = templateData {
+                                Text(templData.name).tag(template as DBTransactionTemplate?)
+                            }
+                        }
+                    }
+                }
                 
                 TextEditor(text: $schedule.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
-            }//.navigationTitle(Text(title))
+            }.frame(minWidth: 250, minHeight: 200)
+            .onAppear { loadState() }
             .toolbar(content: {
                 ToolbarItem(placement: .confirmationAction){
                     Button("Done", action: {
@@ -48,11 +58,19 @@ struct ScheduleForm: View {
     }
     
     func loadState(){
-
+        for template in templates {
+            if template.id == schedule.templateID {
+                selected = template
+            }
+        }
     }
     
     func storeState() -> Bool {
+        if selected == nil || schedule.name.isEmpty {
+            return false
+        }
         
+        schedule.templateID = selected!.id!
         return true
     }
 }

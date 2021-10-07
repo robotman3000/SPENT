@@ -8,6 +8,7 @@
 import Foundation
 
 enum PreferenceKeys: String {
-    case autoloadDB
+    case debugMode
+    case debugQueries
     case databaseBookmark
 }

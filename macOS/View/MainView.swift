@@ -67,7 +67,7 @@ struct MainView: View {
                     })
                 }
             }
-            .frame(minWidth: 300)
+            .frame(minWidth: 300, maxWidth: 400)
             .navigationTitle("Accounts")
         }
     }

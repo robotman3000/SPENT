@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftUIKit
 import GRDB
 import Foundation
+import SwiftIcal
 
 @main
 struct SPENT: App {
@@ -24,28 +25,18 @@ struct SPENT: App {
     var body: some Scene {
         WindowGroup {
             if isActive {
-                MainView().environmentObject(globalState).environmentObject(dbStore).sheet(context: context).alert(context: aContext)
+                MainView().environmentObject(globalState).environmentObject(dbStore).sheet(context: context).alert(context: aContext).frame(minWidth: 1000, minHeight: 600)
             } else {
                 SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now()) {
-                        print("Initializing State Controller")
-                        print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)")")
-                        print("App Name: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") ?? "(NIL)")")
-                        print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
-                        
-                        if let dbURL = loadDBBookmark() {
-                            do {
-                                try setupDBInstance(url: dbURL)
-                            } catch {
-                                print("Failed to load prefered DB")
-                                print(error)
-                            }
+                        globalState.debugMode = UserDefaults.standard.bool(forKey: PreferenceKeys.debugMode.rawValue)
+                        if globalState.debugMode {
+                            print("Initializing State Controller")
+                            print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)")")
+                            print("App Name: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") ?? "(NIL)")")
+                            print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
                         }
-                        
-                        if !isActive {
-                            // Something went wrong opening the prefered db
-                            showWelcomeSheet = true
-                        }
+                        showWelcomeSheet = true
                     }
                 }
                 .sheet(isPresented: $showWelcomeSheet, content: {
@@ -177,44 +168,29 @@ struct SPENT: App {
         }
         
         WindowGroup("Tag Manager") {
-            TagManagerView().environmentObject(globalState).environmentObject(dbStore)
+            TagManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
         }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TagManager.rawValue))
         
         WindowGroup("Schedule Manager") {
-            ScheduleManagerView().environmentObject(globalState).environmentObject(dbStore)
+            ScheduleManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
         }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.ScheduleManager.rawValue))
         
         WindowGroup("Template Manager") {
-            TemplateManagerView().environmentObject(globalState).environmentObject(dbStore)
+            TemplateManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
         }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TemplateManager.rawValue))
         
         Settings{
-            SettingsView().environmentObject(globalState).environmentObject(dbStore)
+            SettingsView().environmentObject(globalState).environmentObject(dbStore).frameSize()
         }
     
-    }
-    
-    func loadDBBookmark() -> URL? {
-        if !isDBSwitch && UserDefaults.standard.bool(forKey: PreferenceKeys.autoloadDB.rawValue) {
-            if let dbBookmark = UserDefaults.standard.data(forKey: PreferenceKeys.databaseBookmark.rawValue) {
-                var isStale = false
-                if let dbURL = getURLByBookmark(dbBookmark, isStale: &isStale) {
-                    return dbURL
-                } else {
-                    print("Bookmark -> URL failed")
-                }
-            } else {
-                print("Bookmark Failed")
-            }
-        }
-        return nil
     }
     
     func setupDBInstance(url: URL, skipHashCheck: Bool = false) throws {
         print("startAccessingSecurityScopedResource")
         if url.startAccessingSecurityScopedResource(){
             print("OK")
-            let appDB = try AppDatabase(path: url)
+            let printQueries = UserDefaults.standard.bool(forKey: PreferenceKeys.debugQueries.rawValue)
+            let appDB = try AppDatabase(path: url, trace: printQueries)
             if checkDBCommit(database: appDB) {
                 dbStore.load(appDB)
                 isActive = true
@@ -253,13 +229,17 @@ struct SPENT: App {
             print("DB Version: \(AppDatabase.DB_VERSION), Loaded Version: \(config.dbVersion)")
             print("\(config.commitHash) vs. \(currentHash)")
             if config.commitHash == currentHash {
-                print("Hash matched")
+                if globalState.debugMode {
+                    print("Hash matched")
+                }
                 return true
             }
         } catch {
             print(error)
         }
-        print("Hash didn't match")
+        if globalState.debugMode {
+            print("Hash didn't match")
+        }
         return false
     }
     

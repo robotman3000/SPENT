@@ -62,12 +62,17 @@ struct HomeView: View {
                 Section(header: Text("Favorites")){
                     QueryWrapperView(source: TagRequest(onlyFavorite: true)){ tags in
                         ForEach(tags) { tag in
-                            Text(tag.name)
+                            Text("Tag: \(tag.name)")
                         }
                     }
                     QueryWrapperView(source: BucketRequest(onlyFavorite: true)){ buckets in
                         ForEach(buckets) { bucket in
-                            Text(bucket.name)
+                            Text("Bucket: \(bucket.name)")
+                        }
+                    }
+                    QueryWrapperView(source: ScheduleRequest(onlyFavorite: true)){ schedules in
+                        ForEach(schedules) { schedule in
+                            Text("Schedule: \(schedule.name)")
                         }
                     }
                 }

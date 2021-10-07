@@ -15,7 +15,7 @@ private func printError(error: Error) {
 }
 
 class DatabaseStore: ObservableObject {
-    var database: AppDatabase?
+    @Published var database: AppDatabase?
     
     func load(_ db: AppDatabase){
         if self.database != nil {

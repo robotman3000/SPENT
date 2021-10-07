@@ -14,4 +14,7 @@ class GlobalState: ObservableObject {
     @Published var showMemo: Bool = false
     @Published var sorting = TransactionFilter.Ordering.byDate
     @Published var sortDirection = TransactionFilter.OrderDirection.descending
+    
+    // Not able to be changed during runtime
+    var debugMode: Bool = false
 }

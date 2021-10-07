@@ -19,17 +19,24 @@ struct ScheduleRequest: Queryable {
     private let hash: Int
     private let query: QueryInterfaceRequest<Schedule>
     var ordering: Ordering
+    var onlyFavorite: Bool
     
     /// Selects every transaction in the database
-    init(order: Ordering = .none){
+    init(order: Ordering = .none, onlyFavorite: Bool = false){
         query = Schedule.all()
         hash = genHash([1234567])
         self.ordering = order
+        self.onlyFavorite = onlyFavorite
     }
     
     func fetchValue(_ db: Database) throws -> [Schedule] {
+        var q = query
+        if onlyFavorite {
+            q = q.filter(Schedule.Columns.favorite == true)
+        }
+        
         switch ordering {
-        case .none: return try query.fetchAll(db)
+        case .none: return try q.fetchAll(db)
         }
     }
     

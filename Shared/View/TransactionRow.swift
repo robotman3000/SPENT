@@ -10,8 +10,9 @@ import SwiftUI
 struct TransactionRow: View {
     @Environment(\.colorScheme) var colorScheme
     let transactionData: TransactionData
-    @Binding var showTags: Bool
-    @Binding var showMemo: Bool
+    var showTags: Bool
+    var showMemo: Bool
+    var showRunning: Bool
     
     var body: some View {
         let td = transactionData
@@ -25,14 +26,16 @@ struct TransactionRow: View {
                 t.status.getIconView().frame(width: 16, height: 16)
                 
                 // Running Balance
-                HStack{
-                    if let bal = transactionData.balance {
-                        Text((bal.postedRunning ?? -1).currencyFormat)
-                    } else {
-                        Text("")
-                    }
-                    Spacer()
-                }.frame(minWidth: 70, maxWidth: 80)
+                if showRunning {
+                    HStack{
+                        if let bal = transactionData.balance {
+                            Text((bal.postedRunning ?? -1).currencyFormat)
+                        } else {
+                            Text("")
+                        }
+                        Spacer()
+                    }.frame(minWidth: 70, maxWidth: 80)
+                }
                 
                 // Payee or Type
                 HStack{

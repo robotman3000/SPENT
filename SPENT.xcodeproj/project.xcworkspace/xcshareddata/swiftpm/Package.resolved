@@ -11,6 +11,15 @@
         }
       },
       {
+        "package": "swift-ical",
+        "repositoryURL": "https://github.com/tbartelmess/swift-ical",
+        "state": {
+          "branch": null,
+          "revision": "b94f9e8f4d316d946208f37d749a872a1774d702",
+          "version": "0.0.8"
+        }
+      },
+      {
         "package": "SwiftUIKit",
         "repositoryURL": "https://github.com/danielsaidi/SwiftUIKit.git",
         "state": {

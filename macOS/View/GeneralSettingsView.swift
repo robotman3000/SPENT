@@ -8,55 +8,15 @@
 import SwiftUI
 
 struct GeneralSettingsView: View {
-    @AppStorage(PreferenceKeys.autoloadDB.rawValue) private var autoloadDB = false
+    @AppStorage(PreferenceKeys.debugMode.rawValue) private var debugMode = false
+    @AppStorage(PreferenceKeys.debugQueries.rawValue) private var debugQueries = false
 
     @State var showError = false
     var body: some View {
         Form {
-            Toggle("Load DB on start", isOn: $autoloadDB)
-            Section {
-                Text("Selected Database:")
-                if let data = UserDefaults.standard.data(forKey: PreferenceKeys.databaseBookmark.rawValue) {
-                    var isStale = false
-                    if let url = getURLByBookmark(data, isStale: &isStale) {
-                        Text(url.absoluteString)
-                    }
-                }
-                Button("Change DB") {
-                    let panel = NSOpenPanel()
-                    panel.allowsMultipleSelection = false
-                    panel.canChooseDirectories = false
-                    panel.canChooseFiles = true
-                    panel.allowedContentTypes = [.spentDatabase]
-                    if panel.runModal() == .OK {
-                        let selectedFile = panel.url?.absoluteURL
-                        if let file = selectedFile {
-                            if file.startAccessingSecurityScopedResource() {
-                                defer {
-                                    print("2: Ending secure db session")
-                                    file.stopAccessingSecurityScopedResource() }
-                                do {
-                                    let bookmarkData = try file.bookmarkData(options: URL.BookmarkCreationOptions.withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                                    UserDefaults.standard.setValue(bookmarkData, forKey: PreferenceKeys.databaseBookmark.rawValue)
-                                } catch {
-                                    print(error)
-                                    showError.toggle()
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }.alert(isPresented: $showError){
-            Alert(
-                title: Text("Error"),
-                message: Text("Failed to update database path"),
-                dismissButton: .default(Text("OK")) {
-                    showError.toggle()
-                }
-            )
+            Toggle("Debug Mode", isOn: $debugMode)
+            Toggle("Log SQL Queries", isOn: $debugQueries)
         }
-        .padding(20)
     }
 }
 

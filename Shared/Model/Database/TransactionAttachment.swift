@@ -27,8 +27,8 @@ extension TransactionAttachment {
         return Transaction.filter(id: transactionID)
     }
     
-    static let recipt = belongsTo(Attachment.self, key: "AttachmentID")
-    var recipt: QueryInterfaceRequest<Attachment> {
+    static let attachment = belongsTo(Attachment.self, key: "AttachmentID")
+    var attachment: QueryInterfaceRequest<Attachment> {
         guard id != nil else {
             return Attachment.none()
         }

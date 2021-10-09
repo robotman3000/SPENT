@@ -48,6 +48,8 @@
 		A228FC5D264C574C00CD5BB6 /* TransactionRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5B264C574C00CD5BB6 /* TransactionRequest.swift */; };
 		A228FC5F264C57E700CD5BB6 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */; };
 		A228FC60264C57E700CD5BB6 /* AppDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */; };
+		A22FA30C270F40BF00C0A3CF /* DocumentListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22FA30B270F40BF00C0A3CF /* DocumentListView.swift */; };
+		A22FA30E270F417500C0A3CF /* AttachmentRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22FA30D270F417500C0A3CF /* AttachmentRequest.swift */; };
 		A230C0C7270CEB55000C739F /* TemplateForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C6270CEB55000C739F /* TemplateForm.swift */; };
 		A230C0C9270CF320000C739F /* TemplateManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C8270CF320000C739F /* TemplateManagerView.swift */; };
 		A230C0CB270CF3FB000C739F /* TemplateRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0CA270CF3FB000C739F /* TemplateRequest.swift */; };
@@ -170,6 +172,8 @@
 		A228FC58264C571800CD5BB6 /* Query.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Query.swift; sourceTree = "<group>"; };
 		A228FC5B264C574C00CD5BB6 /* TransactionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRequest.swift; sourceTree = "<group>"; };
 		A228FC5E264C57E700CD5BB6 /* AppDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDatabase.swift; sourceTree = "<group>"; };
+		A22FA30B270F40BF00C0A3CF /* DocumentListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentListView.swift; sourceTree = "<group>"; };
+		A22FA30D270F417500C0A3CF /* AttachmentRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttachmentRequest.swift; sourceTree = "<group>"; };
 		A230C0C6270CEB55000C739F /* TemplateForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateForm.swift; sourceTree = "<group>"; };
 		A230C0C8270CF320000C739F /* TemplateManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateManagerView.swift; sourceTree = "<group>"; };
 		A230C0CA270CF3FB000C739F /* TemplateRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateRequest.swift; sourceTree = "<group>"; };
@@ -291,6 +295,7 @@
 			isa = PBXGroup;
 			children = (
 				A228FC5B264C574C00CD5BB6 /* TransactionRequest.swift */,
+				A22FA30D270F417500C0A3CF /* AttachmentRequest.swift */,
 				A20B3C9E26558BB400555CF1 /* TagRequest.swift */,
 				A230C0CA270CF3FB000C739F /* TemplateRequest.swift */,
 				A2676C8F267E3D2700548F06 /* ScheduleRequest.swift */,
@@ -396,6 +401,7 @@
 				A2C2ADB426D58F1F00537971 /* SettingsView.swift */,
 				A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */,
 				A2676C72267CD04300548F06 /* TransactionsView.swift */,
+				A22FA30B270F40BF00C0A3CF /* DocumentListView.swift */,
 				A2C2ADB026D58D7100537971 /* WelcomeSheet.swift */,
 				A268902826E1163B00BB9330 /* TransactionList.swift */,
 				A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */,
@@ -667,6 +673,7 @@
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
 				A2CE549926A881E700DB9955 /* ScheduleManager.swift in Sources */,
 				A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */,
+				A22FA30E270F417500C0A3CF /* AttachmentRequest.swift in Sources */,
 				A2F18BD026B2E312009BA9F4 /* SplitTransactionMemberList.swift in Sources */,
 				A257FC3526D7F62400383855 /* TagManagerView.swift in Sources */,
 				A20781F8266001CC00DE372A /* TransactionTags.swift in Sources */,
@@ -686,6 +693,7 @@
 				A228FC60264C57E700CD5BB6 /* AppDatabase.swift in Sources */,
 				A20781EE265E954C00DE372A /* BucketRequest.swift in Sources */,
 				A2202AD026E5547C0060D94A /* SortingAgent.swift in Sources */,
+				A22FA30C270F40BF00C0A3CF /* DocumentListView.swift in Sources */,
 				A24CF68726814EDA0037BBEF /* BucketBalanceRequest.swift in Sources */,
 				A26B73262690A6FF0082A0F6 /* BucketNode.swift in Sources */,
 				A2AA26E3270E937E00794C6C /* DebugUtil.swift in Sources */,

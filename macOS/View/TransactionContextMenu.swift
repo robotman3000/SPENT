@@ -80,7 +80,7 @@ struct TransactionContextMenu: View {
                     }
                     
                     Button("View Documents") {
-                        aContext.present(AlertKeys.notImplemented)
+                        context.present(FormKeys.documentList(context: context, transaction: t.transaction))
                     }
                 }
             }

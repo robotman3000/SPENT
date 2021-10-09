@@ -18,6 +18,7 @@ enum FormKeys: SheetProvider {
     case transactionTags(context: SheetContext, transaction: Transaction, onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void)
     case splitTransaction(context: SheetContext, splitMembers: [Transaction], contextBucket: Bucket, onSubmit: (_ data: inout [Transaction]) -> Void)
     case transactionTemplate(context: SheetContext, template: DBTransactionTemplate?, onSubmit: (_ data: inout DBTransactionTemplate) -> Void)
+    case documentList(context: SheetContext, transaction: Transaction)
     case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
     case confirmAction(context: SheetContext, message: String, onConfirm: () -> Void, onCancel: () -> Void)
     
@@ -86,6 +87,13 @@ enum FormKeys: SheetProvider {
             }
             
             return SplitTransactionForm(head: head!, splitMembers: newMembers, selectedBucket: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+        
+        case .documentList(context: let context, transaction: let transaction):
+            return DocumentListView(transaction: transaction).toolbar(content: {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done", action: { context.dismiss() })
+                }
+            }).padding().any()
             
         case .confirmDelete(context: let context, message: _, onConfirm: let onConfirm):
             return VStack{

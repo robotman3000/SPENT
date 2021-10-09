@@ -186,7 +186,10 @@ struct AppDatabase {
             try db.create(table: "TransactionAttachments") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .cascade)
-                t.column("AttachmentID", .integer).notNull().references("Attachments", onDelete: .cascade)
+                
+                // We can have may attachents for a transaction but each attachment can have only one transaction
+                // so we prevent the attachment id from being used more than once
+                t.column("AttachmentID", .integer).unique().notNull().references("Attachments", onDelete: .cascade)
             }
             
             // VIEW - Transaction Ancestors

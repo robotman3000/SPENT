@@ -117,6 +117,11 @@ extension Transaction {
     var tags: QueryInterfaceRequest<Tag> {
         request(for: Transaction.tags)
     }
+
+    static let attachments = hasMany(Attachment.self, through: hasMany(TransactionAttachment.self, key: "TransactionID"), using: TransactionAttachment.attachment)
+    var attachments: QueryInterfaceRequest<Attachment> {
+        request(for: Transaction.attachments)
+    }
     
     static let splitMembers = hasMany(Transaction.self, using: ForeignKey(["Group"], to: ["Group"]))
     var splitMembers: QueryInterfaceRequest<Transaction> {

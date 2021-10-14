@@ -11,6 +11,16 @@ import GRDB
 struct DBTransactionTemplate: Identifiable, Codable, Hashable {
     var id: Int64?
     var template: String
+    var templateData: TransactionTemplate? {
+        get {
+            do {
+                return try decodeTemplate()
+            } catch {
+                print(error)
+            }
+            return nil
+        }
+    }
     
     private enum CodingKeys: String, CodingKey {
         case id, template = "Template"

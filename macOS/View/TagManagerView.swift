@@ -17,44 +17,67 @@ struct TagManagerView: View {
     var body: some View {
         if store.database != nil {
             VStack{
-                HStack {
+                VStack {
+                    Spacer()
                     TableToolbar(onClick: { action in
                         switch action {
                         case .new:
-                            context.present(FormKeys.tag(context: context, tag: nil, onSubmit: {data in
-                                store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                            }))
+                            updateTag(tag: nil)
                         case .edit:
-                            if selected != nil {
-                                context.present(FormKeys.tag(context: context, tag: selected!, onSubmit: {data in
-                                    store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                                }))
+                            if let tag = selected {
+                                updateTag(tag: tag)
                             } else {
                                 aContext.present(AlertKeys.message(message: "Select a tag first"))
                             }
                         case .delete:
-                            if selected != nil {
-                                context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-                                    store.deleteTag(selected!.id!, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                                }))
+                            if let tag = selected {
+                                deleteTag(tag: tag)
                             } else {
                                 aContext.present(AlertKeys.message(message: "Select a tag first"))
                             }
                         }
                     })
                     Spacer()
-                }
+                }.height(32)
                 
 
                 QueryWrapperView(source: TagRequest()){ tags in
                     List(tags, id: \.self, selection: $selected){ tag in
-                        Text(tag.name)
+                        Text(tag.name).contextMenu {
+                            Button("New Tag"){
+                                updateTag(tag: nil)
+                            }
+                            
+                            Button("Edit Tag"){
+                                updateTag(tag: tag)
+                            }
+                            
+                            Button("Delete Tag"){
+                                deleteTag(tag: tag)
+                            }
+                        }
+                    }.listStyle(.plain).contextMenu {
+                        Button("New Tag"){
+                            updateTag(tag: nil)
+                        }
                     }
                 }
             }.sheet(context: context).alert(context: aContext)
         } else {
-            Text("No database is loaded").frame(width: 100, height: 100)
+            Text("No database is loaded")
         }
+    }
+    
+    func updateTag(tag: Tag?){
+        context.present(FormKeys.tag(context: context, tag: tag, onSubmit: {data in
+            store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+        }))
+    }
+    
+    func deleteTag(tag: Tag){
+        context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
+            store.deleteTag(tag.id!, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+        }))
     }
 }
 

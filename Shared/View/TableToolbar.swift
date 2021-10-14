@@ -22,7 +22,7 @@ struct TableToolbar: View {
             Button(action: { onClick(.delete) }) {
                 Image(systemName: "trash")
             }
-        }.padding()
+        }
     }
 }
 

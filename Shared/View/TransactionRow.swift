@@ -25,18 +25,6 @@ struct TransactionRow: View {
                 Spacer(minLength: 2)
                 t.status.getIconView().frame(width: 16, height: 16)
                 
-                // Running Balance
-                if showRunning {
-                    HStack{
-                        if let bal = transactionData.balance {
-                            Text((bal.postedRunning ?? -1).currencyFormat)
-                        } else {
-                            Text("")
-                        }
-                        Spacer()
-                    }.frame(minWidth: 70, maxWidth: 80)
-                }
-                
                 // Payee or Type
                 HStack{
                     Text(td.balance == nil ? "Allocation" : t.payee ?? t.type.getStringName())
@@ -96,6 +84,17 @@ struct TransactionRow: View {
                     Spacer()
                 }.frame(minWidth: 80, maxWidth: .infinity)
                 
+                // Running Balance
+                if showRunning {
+                    HStack{
+                        Spacer()
+                        if let bal = transactionData.balance {
+                            Text((bal.postedRunning ?? -1).currencyFormat)
+                        } else {
+                            Text("")
+                        }
+                    }.frame(minWidth: 70, maxWidth: 80)
+                }
                 
             }
             

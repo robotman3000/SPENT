@@ -1057,8 +1057,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "198"
-            endingLineNumber = "198"
+            startingLineNumber = "209"
+            endingLineNumber = "209"
             landmarkName = "checkDBCommit(database:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -1073,8 +1073,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "214"
-            endingLineNumber = "214"
+            startingLineNumber = "225"
+            endingLineNumber = "225"
             landmarkName = "setDBCommit(database:commit:)"
             landmarkType = "7">
             <Locations>
@@ -1854,8 +1854,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "104"
-            endingLineNumber = "104"
+            startingLineNumber = "106"
+            endingLineNumber = "106"
             landmarkName = "body"
             landmarkType = "24">
          </BreakpointContent>
@@ -1934,8 +1934,8 @@
             filePath = "Shared/View/TransactionRow.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "57"
-            endingLineNumber = "57"
+            startingLineNumber = "45"
+            endingLineNumber = "45"
             landmarkName = "body"
             landmarkType = "24">
             <Locations>

@@ -9,8 +9,8 @@ import SwiftUI
 
 struct SplashView: View {
     
-    var showLoading: Bool
-    let loadDatabase: (_ path: URL, _ isNew: Bool) -> Void
+    var showLoading: Bool = false
+    var loadDatabase: (_ path: URL, _ isNew: Bool) -> Void = {_,_ in}
     
     var body: some View {
         VStack {

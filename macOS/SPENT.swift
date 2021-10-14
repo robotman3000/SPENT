@@ -22,26 +22,28 @@ struct SPENT: App {
     @StateObject var aContext: AlertContext = AlertContext()
     private let MAX_RECENTS = 7
     
+    @State var freshStart: Bool = true
+    
     var body: some Scene {
         WindowGroup {
             if isActive {
                 MainView().environmentObject(globalState).environmentObject(dbStore).sheet(context: context).alert(context: aContext).frame(minWidth: 1000, minHeight: 600)
             } else {
-                SplashView(showLoading: false, loadDatabase: { url, isNew  in
-                    do {
-                        try setupDBInstance(url: url, skipHashCheck: isNew)
-                    } catch {
-                        print(error)
-                        aContext.present(AlertKeys.databaseError(message: "Failed to load database!"))
-                    }
-                }).frame(minWidth: 1000, minHeight: 600).onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now()) {
-                        globalState.debugMode = UserDefaults.standard.bool(forKey: PreferenceKeys.debugMode.rawValue)
-                        if globalState.debugMode {
-                            print("Initializing State Controller")
-                            print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)")")
-                            print("App Name: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") ?? "(NIL)")")
-                            print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
+                SplashView(showLoading: false, loadDatabase: loadDB).frame(minWidth: 1000, minHeight: 600).onAppear {
+                    if freshStart {
+                        freshStart = false
+                        DispatchQueue.main.asyncAfter(deadline: .now()) {
+                            globalState.debugMode = UserDefaults.standard.bool(forKey: PreferenceKeys.debugMode.rawValue)
+                            if globalState.debugMode {
+                                print("Initializing State Controller")
+                                print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)")")
+                                print("App Name: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") ?? "(NIL)")")
+                                print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
+                            }
+                            
+//                            openFile(allowedTypes: [.spentDatabase], onConfirm: { selectedFile in
+//                                loadDB(url: selectedFile, isNew: false)
+//                            }, onCancel: {})
                         }
                     }
                 }.sheet(context: context).alert(context: aContext)
@@ -150,6 +152,15 @@ struct SPENT: App {
             SettingsView().environmentObject(globalState).environmentObject(dbStore).frameSize()
         }
     
+    }
+    
+    func loadDB(url: URL, isNew: Bool){
+        do {
+            try setupDBInstance(url: url, skipHashCheck: isNew)
+        } catch {
+            print(error)
+            aContext.present(AlertKeys.databaseError(message: "Failed to load database!"))
+        }
     }
     
     func setupDBInstance(url: URL, skipHashCheck: Bool = false) throws {

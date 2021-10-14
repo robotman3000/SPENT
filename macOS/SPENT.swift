@@ -27,7 +27,14 @@ struct SPENT: App {
             if isActive {
                 MainView().environmentObject(globalState).environmentObject(dbStore).sheet(context: context).alert(context: aContext).frame(minWidth: 1000, minHeight: 600)
             } else {
-                SplashView(showLoading: true).frame(minWidth: 1000, minHeight: 600).onAppear {
+                SplashView(showLoading: false, loadDatabase: { url, isNew  in
+                    do {
+                        try setupDBInstance(url: url, skipHashCheck: isNew)
+                    } catch {
+                        print(error)
+                        aContext.present(AlertKeys.databaseError(message: "Failed to load database!"))
+                    }
+                }).frame(minWidth: 1000, minHeight: 600).onAppear {
                     DispatchQueue.main.asyncAfter(deadline: .now()) {
                         globalState.debugMode = UserDefaults.standard.bool(forKey: PreferenceKeys.debugMode.rawValue)
                         if globalState.debugMode {
@@ -36,48 +43,8 @@ struct SPENT: App {
                             print("App Name: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") ?? "(NIL)")")
                             print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
                         }
-                        showWelcomeSheet = true
                     }
-                }
-                .sheet(isPresented: $showWelcomeSheet, content: {
-                    let recents = getRecents()
-                    WelcomeSheet(showWelcomeSheet: $showWelcomeSheet, recentFiles: recents, loadDatabase: {url,isNew  in
-                        do {
-                            try setupDBInstance(url: url, skipHashCheck: isNew)
-                        } catch {
-                            print(error)
-                            aContext.present(AlertKeys.databaseError(message: "Failed to load database!"))
-                        }
-                        
-                        // Store this as the recent db
-                        do {
-                            var dontAddRecent: Bool = false
-                            for i in recents {
-                                if i.path.absoluteString == url.absoluteString {
-                                    dontAddRecent = true
-                                    break
-                                }
-                            }
-                            
-                            if !dontAddRecent {
-                                let bookmarkData = try url.bookmarkData(options: URL.BookmarkCreationOptions.withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                                if var dbBookmarks = UserDefaults.standard.array(forKey: PreferenceKeys.databaseBookmark.rawValue) as? [Data] {
-                                    dbBookmarks.append(bookmarkData)
-                                    if dbBookmarks.count > MAX_RECENTS {
-                                        dbBookmarks.removeFirst()
-                                    }
-                                    UserDefaults.standard.set(dbBookmarks, forKey: PreferenceKeys.databaseBookmark.rawValue)
-                                } else {
-                                    UserDefaults.standard.set([bookmarkData], forKey: PreferenceKeys.databaseBookmark.rawValue)
-                                }
-                            }
-                        } catch {
-                            print("Failed to save db bookmark")
-                            print(error)
-                        }
-                    
-                    })
-                }).sheet(context: context).alert(context: aContext)
+                }.sheet(context: context).alert(context: aContext)
             }
         }.commands {
             CommandGroup(replacing: .newItem){

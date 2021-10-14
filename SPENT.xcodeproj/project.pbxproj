@@ -112,7 +112,6 @@
 		A2C2ADA126D5878A00537971 /* SwiftUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = A2C2ADA026D5878A00537971 /* SwiftUIKit */; };
 		A2C2ADAB26D58AAF00537971 /* TransactionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7C2671802A00347205 /* TransactionRow.swift */; };
 		A2C2ADAE26D58B9300537971 /* TransactionContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */; };
-		A2C2ADB126D58D7100537971 /* WelcomeSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADB026D58D7100537971 /* WelcomeSheet.swift */; };
 		A2C2ADB326D58F0200537971 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */; };
 		A2C2ADB526D58F1F00537971 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADB426D58F1F00537971 /* SettingsView.swift */; };
 		A2C2ADB826D58F7D00537971 /* AccountContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADB726D58F7D00537971 /* AccountContextMenu.swift */; };
@@ -215,7 +214,6 @@
 		A2A56737262879BD009C7E8C /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
 		A2AA26E1270E937E00794C6C /* DebugUtil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugUtil.swift; sourceTree = "<group>"; };
 		A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionContextMenu.swift; sourceTree = "<group>"; };
-		A2C2ADB026D58D7100537971 /* WelcomeSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeSheet.swift; sourceTree = "<group>"; };
 		A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A2C2ADB426D58F1F00537971 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A2C2ADB726D58F7D00537971 /* AccountContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountContextMenu.swift; sourceTree = "<group>"; };
@@ -402,7 +400,6 @@
 				A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */,
 				A2676C72267CD04300548F06 /* TransactionsView.swift */,
 				A22FA30B270F40BF00C0A3CF /* DocumentListView.swift */,
-				A2C2ADB026D58D7100537971 /* WelcomeSheet.swift */,
 				A268902826E1163B00BB9330 /* TransactionList.swift */,
 				A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */,
 				A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */,
@@ -721,7 +718,6 @@
 				A26B732F2690AE710082A0F6 /* TransactionFilter.swift in Sources */,
 				A20DCD6D264EBC470070EB07 /* Bucket.swift in Sources */,
 				A2A56739262879BD009C7E8C /* Util.swift in Sources */,
-				A2C2ADB126D58D7100537971 /* WelcomeSheet.swift in Sources */,
 				A20DAF6D26701A4300347205 /* HomeView.swift in Sources */,
 				A2A56710262740EC009C7E8C /* SPENT.swift in Sources */,
 				A2DA01162706AE83007167EA /* BucketBalance.swift in Sources */,

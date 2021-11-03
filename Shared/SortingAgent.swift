@@ -24,8 +24,8 @@ struct TransactionDataSortingAgent: SortingAgent {
     
     static var defaultValue: [TransactionData] = []
     
-    let order: TransactionFilter.Ordering
-    let orderDirection: TransactionFilter.OrderDirection
+    let order: TTransactionFilter.Ordering
+    let orderDirection: TTransactionFilter.OrderDirection
     
     func sort(_ input: [TransactionData]) -> [TransactionData] {
         var output: [TransactionData] = input

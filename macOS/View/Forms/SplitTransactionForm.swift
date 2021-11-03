@@ -13,7 +13,7 @@ struct SplitTransactionForm: View {
     @EnvironmentObject fileprivate var dbStore: DatabaseStore
     @State var head: Transaction
     
-    @Query(BucketRequest()) var bucketChoices: [Bucket]
+    var bucketChoices: [Bucket] = []
     @State var splitMembers: [Transaction]
 
     @State var selectedBucket: Bucket?

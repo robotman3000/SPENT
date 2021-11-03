@@ -34,7 +34,8 @@ enum FormKeys: SheetProvider {
             if bucket == nil{
                 bucket = Bucket.newBucket()
             }
-            return BucketForm(bucket: bucket!, parent: parent, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            return EmptyView().any()
+            //return BucketForm(bucket: bucket!, parent: parent, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
             
         case .transaction(context: let context, transaction: var transaction, contextBucket: let bucket, onSubmit: let handleSubmit):
             if transaction == nil {
@@ -58,7 +59,8 @@ enum FormKeys: SheetProvider {
             if schedule == nil {
                 schedule = Schedule.newSchedule()
             }
-            return ScheduleForm(schedule: schedule!, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            return EmptyView().any()
+            //return ScheduleForm(schedule: schedule!, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
             
         case .transactionTags(context: let context, transaction: let transaction, onSubmit: let handleSubmit):
             return TransactionTagForm(transaction: transaction, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
@@ -89,11 +91,12 @@ enum FormKeys: SheetProvider {
             return SplitTransactionForm(head: head!, splitMembers: newMembers, selectedBucket: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
         
         case .documentList(context: let context, transaction: let transaction):
-            return DocumentListView(transaction: transaction).toolbar(content: {
+            /*return DocumentListView(transaction: transaction).toolbar(content: {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done", action: { context.dismiss() })
                 }
-            }).padding().any()
+            }).padding().any()*/
+            return EmptyView().any()
             
         case .confirmDelete(context: let context, message: _, onConfirm: let onConfirm):
             return VStack{

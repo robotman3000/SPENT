@@ -13,7 +13,8 @@ struct TransactionTagForm: View {
     @State var transaction: Transaction
     @State fileprivate var tags: Set<Tag> = Set<Tag>()
     
-    @Query(TagRequest()) var tagChoices: [Tag]
+    //@Query(TagRequest()) var tagChoices: [Tag]
+    var tagChoices: [Tag] = []
     
     let onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void
     let onCancel: () -> Void

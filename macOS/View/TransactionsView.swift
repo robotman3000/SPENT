@@ -12,10 +12,9 @@ import GRDB
 struct TransactionsView: View {
     @EnvironmentObject var appState: GlobalState
     @EnvironmentObject var store: DatabaseStore
-    @State var selected: Set<TransactionData> = Set<TransactionData>()
     @State var editTags = false
     @State var stringFilter: String = ""
-    let forBucket: Bucket
+    let forBucketID: Int64?
     @StateObject private var context = SheetContext()
     @StateObject private var aContext = AlertContext()
     
@@ -35,23 +34,23 @@ struct TransactionsView: View {
                     }.padding()
                 }
                 Spacer()
-                EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionFilter.Ordering.allCases)
-                EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionFilter.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
+                EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TTransactionFilter.Ordering.allCases)
+                EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TTransactionFilter.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
                 TextField("", text: $stringFilter)
                 Spacer(minLength: 15)
             }.padding()
             
-            QueryWrapperView(source: TransactionModelRequest(withFilter: TransactionFilter(includeTree: appState.includeTree, showInTree: appState.showInTree, bucket: forBucket, textFilter: stringFilter))){ model in
-                SortingWrapperView(agent: TransactionDataSortingAgent(order: appState.sorting, orderDirection: appState.sortDirection), input: model){ data in
-                    TransactionList(selected: $selected, selectedBucket: forBucket, model: data, context: context, aContext: aContext).contextMenu {
-                        _NewTransactionContextButtons(context: context, aContext: aContext, contextBucket: forBucket, onFormDismiss: { context.dismiss() })
+            if let bid = forBucketID {
+                QueryWrapperView(source: TTransactionFilter(forBucket: bid, includeBucketTree: appState.includeTree, showAllocations: appState.showInTree, memoLike: stringFilter)){ transactionIDs in
+                    AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: bid)) { bucketModel in
+                        TransactionListView(ids: transactionIDs, contextBucket: bucketModel.bucket)
                     }
                     
                     VStack {
                         Spacer()
                         HStack(alignment: .center) {
                             Spacer()
-                            Text("\(model.count) transactions")
+                            Text("\(transactionIDs.count) transactions")
                             Spacer()
                             if !stringFilter.isEmpty {
                                 Text("Showing matches for: \(stringFilter)")
@@ -61,7 +60,7 @@ struct TransactionsView: View {
                     }.frame(height: 30)
                 }
             }
-        }.navigationTitle(forBucket.name).sheet(context: context).alert(context: aContext)
+        }//.navigationTitle(forBucketID ?? "All Transactions").sheet(context: context).alert(context: aContext)
     }
 }
 

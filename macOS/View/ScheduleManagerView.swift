@@ -51,11 +51,12 @@ struct ScheduleManagerView: View {
                     }
                     Spacer()
                 }
-                
-                QueryWrapperView(source: ScheduleRequest()){ schedules in
-                    List(schedules, id: \.self, selection: $selected){ schedule in
-                        Text(schedule.name)
-                        //Row(tag: tag).tag(tag)
+                QueryWrapperView(source: ScheduleFilter()){ scheduleIDs in
+                    List(scheduleIDs, id: \.self, selection: $selected) { scheduleID in
+                        AsyncContentView(source: ScheduleFilter.publisher(store.getReader(), forID: scheduleID)){ schedule in
+                            Text(schedule.name)
+                            //Row(tag: tag).tag(tag)
+                        }
                     }
                 }
             }.sheet(context: context).alert(context: aContext)

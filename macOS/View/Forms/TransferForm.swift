@@ -13,7 +13,7 @@ struct TransferForm: View {
     @StateObject fileprivate var aContext = AlertContext()
     @State var transaction: Transaction
     
-    @Query(BucketRequest()) var bucketChoices: [Bucket]
+    var bucketChoices: [Bucket] = []
     
     @State fileprivate var sPostDate: Date = Date()
     @State fileprivate var dPostDate: Date = Date()

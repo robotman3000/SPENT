@@ -41,31 +41,31 @@ struct TemplateManagerView: View {
                 }.height(32)
                 
 
-                QueryWrapperView(source: TemplateRequest()){ templates in
-                    List(templates, id: \.self, selection: $selected){ template in
-                        if let tempData = template.templateData {
-                            Text(tempData.name).contextMenu {
-                                Button("New Template"){
-                                    updateTemplate(template: nil)
-                                }
-                                
-                                Button("Edit Template"){
-                                    updateTemplate(template: template)
-                                }
-                                
-                                Button("Delete Template"){
-                                    deleteTemplate(template: template)
-                                }
-                            }
-                        } else {
-                            Text("Undecoded Template")
-                        }
-                    }.listStyle(.plain).contextMenu {
-                        Button("New Template"){
-                            updateTemplate(template: nil)
-                        }
-                    }
-                }
+//                QueryWrapperView(source: TemplateFilter()){ templateIDs in
+//                    List(templateIDs, id: \.self, selection: $selected){ template in
+//                        if let tempData = template.templateData {
+//                            Text(tempData.name).contextMenu {
+//                                Button("New Template"){
+//                                    updateTemplate(template: nil)
+//                                }
+//                                
+//                                Button("Edit Template"){
+//                                    updateTemplate(template: template)
+//                                }
+//                                
+//                                Button("Delete Template"){
+//                                    deleteTemplate(template: template)
+//                                }
+//                            }
+//                        } else {
+//                            Text("Undecoded Template")
+//                        }
+//                    }.listStyle(.plain).contextMenu {
+//                        Button("New Template"){
+//                            updateTemplate(template: nil)
+//                        }
+//                    }
+//                }
             }.sheet(context: context).alert(context: aContext)
         } else {
             Text("No database is loaded")

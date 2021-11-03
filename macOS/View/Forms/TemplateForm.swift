@@ -14,7 +14,7 @@ struct TemplateForm: View {
     @State var dbtemplate: DBTransactionTemplate
     @State var template: TransactionTemplate = TransactionTemplate(name: "", memo: "", amount: 0, tags: [])
     
-    @Query(BucketRequest()) var bucketChoices: [Bucket]
+    var bucketChoices: [Bucket] = []
     
     @State var selectedSource: Bucket?
     @State var selectedDest: Bucket?

@@ -60,16 +60,16 @@ struct HomeView: View {
                 
                 // Pinned accounts and buckets
                 Section(header: Text("Favorites")){
-                    QueryWrapperView(source: TagRequest(onlyFavorite: true)){ tags in
-                        ForEach(tags) { tag in
-                            Text("Tag: \(tag.name)")
-                        }
-                    }
-                    QueryWrapperView(source: BucketRequest(onlyFavorite: true)){ buckets in
-                        ForEach(buckets) { bucket in
-                            Text("Bucket: \(bucket.name)")
-                        }
-                    }
+//                    QueryWrapperView(source: TagRequest(onlyFavorite: true)){ tags in
+//                        ForEach(tags) { tag in
+//                            Text("Tag: \(tag.name)")
+//                        }
+//                    }
+//                    QueryWrapperView(source: BucketRequest(onlyFavorite: true)){ buckets in
+//                        ForEach(buckets) { bucket in
+//                            Text("Bucket: \(bucket.name)")
+//                        }
+//                    }
                     QueryWrapperView(source: ScheduleRequest(onlyFavorite: true)){ schedules in
                         ForEach(schedules) { schedule in
                             Text("Schedule: \(schedule.name)")

@@ -7,46 +7,29 @@
 
 import SwiftUI
 import SwiftUIKit
-import GRDB
-import Foundation
-import SwiftIcal
 
 @main
 struct SPENT: App {
     @State var isActive: Bool = false
-    @State var showWelcomeSheet: Bool = false
-    @State var isDBSwitch: Bool = false
     @StateObject var globalState: GlobalState = GlobalState()
     @StateObject var dbStore: DatabaseStore = DatabaseStore()
-    @StateObject var context: SheetContext = SheetContext()
-    @StateObject var aContext: AlertContext = AlertContext()
-    private let MAX_RECENTS = 7
-    
-    @State var freshStart: Bool = true
+    @StateObject var sheetContext: SheetContext = SheetContext()
+    @StateObject var alertContext: AlertContext = AlertContext()
     
     var body: some Scene {
         WindowGroup {
             if isActive {
-                MainView().environmentObject(globalState).environmentObject(dbStore).sheet(context: context).alert(context: aContext).frame(minWidth: 1000, minHeight: 600)
+                MainView()
+                    .environmentObject(globalState)
+                    .environmentObject(dbStore)
+                    .sheet(context: sheetContext)
+                    .alert(context: alertContext)
+                    .frame(minWidth: 1000, minHeight: 600)
             } else {
-                SplashView(showLoading: false, loadDatabase: loadDB).frame(minWidth: 1000, minHeight: 600).onAppear {
-                    if freshStart {
-                        freshStart = false
-                        DispatchQueue.main.asyncAfter(deadline: .now()) {
-                            globalState.debugMode = UserDefaults.standard.bool(forKey: PreferenceKeys.debugMode.rawValue)
-                            if globalState.debugMode {
-                                print("Initializing State Controller")
-                                print("Source Version: \(Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)")")
-                                print("App Name: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleName") ?? "(NIL)")")
-                                print("Identifier: \(Bundle.main.object(forInfoDictionaryKey: "CFBundleIdentifier") ?? "(NIL)")")
-                            }
-                            
-//                            openFile(allowedTypes: [.spentDatabase], onConfirm: { selectedFile in
-//                                loadDB(url: selectedFile, isNew: false)
-//                            }, onCancel: {})
-                        }
-                    }
-                }.sheet(context: context).alert(context: aContext)
+                SplashView(showLoading: false, loadDatabase: loadDB)
+                    .frame(minWidth: 1000, minHeight: 600)
+                    .sheet(context: sheetContext)
+                    .alert(context: alertContext)
             }
         }.commands {
             CommandGroup(replacing: .newItem){
@@ -57,14 +40,13 @@ struct SPENT: App {
             CommandGroup(after: .newItem) {
                 Section{
                     Button("New Account") {
-                        context.present(FormKeys.account(context: context, account: nil, onSubmit: {data in
-                            dbStore.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                        sheetContext.present(FormKeys.account(context: sheetContext, account: nil, onSubmit: {data in
+                            dbStore.updateBucket(&data, onComplete: { sheetContext.dismiss() }, onError: { error in alertContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
                         }))
                     }
                 }
                 
                 Button("Change Database") {
-                    isDBSwitch = true
                     isActive = false
                 }
             }
@@ -93,7 +75,7 @@ struct SPENT: App {
                                     try SPENTLegacyImportAgent.importSPENTLegacy(url: selectedFile, dbStore: dbStore)
                                 } catch {
                                     print(error)
-                                    aContext.present(AlertKeys.message(message: "Failed to import legacy database!"))
+                                    alertContext.present(AlertKeys.message(message: "Failed to import legacy database!"))
                                 }
                             }, onCancel: {})
                         }
@@ -106,19 +88,19 @@ struct SPENT: App {
                                     try SPENTV0ImportAgent.importDB(url: selectedFile, db: dbStore)
                                 } catch {
                                     print(error)
-                                    aContext.present(AlertKeys.message(message: "Failed to import v0 database!"))
+                                    alertContext.present(AlertKeys.message(message: "Failed to import v0 database!"))
                                 }
                             }, onCancel: {})
                         }
                     }
                     Button("CSV File") {
-                        aContext.present(AlertKeys.notImplemented)
+                        alertContext.present(AlertKeys.notImplemented)
                     }
                 }
                 
                 Menu("Export As") {
                     Button("CSV File") {
-                        aContext.present(AlertKeys.notImplemented)
+                        alertContext.present(AlertKeys.notImplemented)
                     }
                 }
                 
@@ -159,7 +141,7 @@ struct SPENT: App {
             try setupDBInstance(url: url, skipHashCheck: isNew)
         } catch {
             print(error)
-            aContext.present(AlertKeys.databaseError(message: "Failed to load database!"))
+            alertContext.present(AlertKeys.databaseError(message: "Failed to load database!"))
         }
     }
     
@@ -177,13 +159,12 @@ struct SPENT: App {
                 
                 if !skipHashCheck {
                     let upgradeMessage = "The current git hash is \(gitCommit), the hash in the database doesn't match. Load Anyway?"
-                    context.present(FormKeys.confirmAction(context: context, message: upgradeMessage, onConfirm: {
+                    sheetContext.present(FormKeys.confirmAction(context: sheetContext, message: upgradeMessage, onConfirm: {
                         setDBCommit(database: appDB, commit: gitCommit)
                         dbStore.load(appDB)
                         isActive = true
                     }, onCancel: {
                         isActive = false
-                        showWelcomeSheet = true
                     }))
                 } else {
                     // Assume the answer was yes

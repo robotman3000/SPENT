@@ -20,6 +20,9 @@
 		A20B3C9D2655840600555CF1 /* TagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2487765265582A7002D7D9F /* TagForm.swift */; };
 		A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20B3C9E26558BB400555CF1 /* TagRequest.swift */; };
 		A20C690F2732F875002A87A3 /* TransactionFormModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20C690E2732F875002A87A3 /* TransactionFormModel.swift */; };
+		A20C691C27330E5A002A87A3 /* FormModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20C691B27330E5A002A87A3 /* FormModel.swift */; };
+		A20C691D27342E7C002A87A3 /* BucketForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD78264ED0620070EB07 /* BucketForm.swift */; };
+		A20C691F273431B8002A87A3 /* Errors.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20C691E273431B8002A87A3 /* Errors.swift */; };
 		A20DAF7B2671509B00347205 /* TransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7A2671509B00347205 /* TransactionForm.swift */; };
 		A20DCD69264EBC260070EB07 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD68264EBC260070EB07 /* Transaction.swift */; };
 		A20DCD6A264EBC260070EB07 /* Transaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD68264EBC260070EB07 /* Transaction.swift */; };
@@ -130,6 +133,8 @@
 		A20781F6266001CC00DE372A /* TransactionTags.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTags.swift; sourceTree = "<group>"; };
 		A20B3C9E26558BB400555CF1 /* TagRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagRequest.swift; sourceTree = "<group>"; };
 		A20C690E2732F875002A87A3 /* TransactionFormModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionFormModel.swift; sourceTree = "<group>"; };
+		A20C691B27330E5A002A87A3 /* FormModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormModel.swift; sourceTree = "<group>"; };
+		A20C691E273431B8002A87A3 /* Errors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Errors.swift; sourceTree = "<group>"; };
 		A20DAF6C26701A4300347205 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A20DAF7A2671509B00347205 /* TransactionForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionForm.swift; sourceTree = "<group>"; };
 		A20DCD68264EBC260070EB07 /* Transaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transaction.swift; sourceTree = "<group>"; };
@@ -291,6 +296,7 @@
 				A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */,
 				A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */,
 				A230C0C6270CEB55000C739F /* TemplateForm.swift */,
+				A20C691B27330E5A002A87A3 /* FormModel.swift */,
 			);
 			path = Forms;
 			sourceTree = "<group>";
@@ -391,6 +397,7 @@
 				A27C1D88271B8218005339FD /* Filter */,
 				A20781FA266162A200DE372A /* Database */,
 				A2202ACE26E5547C0060D94A /* SortingAgent.swift */,
+				A20C691E273431B8002A87A3 /* Errors.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -695,6 +702,7 @@
 				A20781F8266001CC00DE372A /* TransactionTags.swift in Sources */,
 				A2449FF1271F7B51006B5185 /* TTransactionFilter.swift in Sources */,
 				A2F18BD226B496E1009BA9F4 /* SplitMemberForm.swift in Sources */,
+				A20C691C27330E5A002A87A3 /* FormModel.swift in Sources */,
 				A206D784267C110600CB094D /* Attachment.swift in Sources */,
 				A2C8351126DAE8FE00819F35 /* DBFileBookmark.swift in Sources */,
 				A20B3C9D2655840600555CF1 /* TagForm.swift in Sources */,
@@ -718,6 +726,7 @@
 				A217EAA326A9D7A0004388FF /* TransferForm.swift in Sources */,
 				A2DFFD1D26ED924700B6CBE6 /* SPENTV0ImportAgent.swift in Sources */,
 				A2780867268E55F600CEA560 /* EnumPicker.swift in Sources */,
+				A20C691D27342E7C002A87A3 /* BucketForm.swift in Sources */,
 				A228FC5A264C571800CD5BB6 /* Query.swift in Sources */,
 				A2E0F53326F40BF8002EC601 /* TransactionTemplate.swift in Sources */,
 				A27C1D8C271B8462005339FD /* TagListRow.swift in Sources */,
@@ -725,6 +734,7 @@
 				A257FC3726D7FA7C00383855 /* ScheduleManagerView.swift in Sources */,
 				A2C2ADBC26D5B0CE00537971 /* SPENTLegacyImportAgent.swift in Sources */,
 				A217EA9D26A9C1C2004388FF /* FormKeys.swift in Sources */,
+				A20C691F273431B8002A87A3 /* Errors.swift in Sources */,
 				A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */,
 				A278086A268E588000CEA560 /* Stringable.swift in Sources */,
 				A2EA48F0272AE4D700624827 /* ScheduleFilter.swift in Sources */,

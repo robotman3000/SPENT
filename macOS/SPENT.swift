@@ -20,10 +20,10 @@ struct SPENT: App {
         WindowGroup {
             if isActive {
                 MainView()
-                    .environmentObject(globalState)
-                    .environmentObject(dbStore)
                     .sheet(context: sheetContext)
                     .alert(context: alertContext)
+                    .environmentObject(globalState)
+                    .environmentObject(dbStore)
                     .frame(minWidth: 1000, minHeight: 600)
             } else {
                 SplashView(showLoading: false, loadDatabase: loadDB)
@@ -40,9 +40,7 @@ struct SPENT: App {
             CommandGroup(after: .newItem) {
                 Section{
                     Button("New Account") {
-                        sheetContext.present(FormKeys.account(context: sheetContext, account: nil, onSubmit: {data in
-                            dbStore.updateBucket(&data, onComplete: { sheetContext.dismiss() }, onError: { error in alertContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                        }))
+                        sheetContext.present(FormKeys.account(context: sheetContext, account: nil))
                     }
                 }
                 

@@ -11,7 +11,7 @@ struct DocumentListView: View {
     var transaction: Transaction
     
     var body: some View {
-        QueryWrapperView(source: AttachmentRequest(transaction)){ attachments in
+        QueryWrapperView(source: AttachmentQuery()){ attachments in
             if attachments.count > 0 {
                 List(){
                     ForEach(attachments){ attachment in

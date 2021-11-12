@@ -20,3 +20,11 @@ struct AttachmentRequest: DatabaseRequest {
         throw RequestFetchError()
     }
 }
+
+struct AttachmentQuery: Queryable {
+    static var defaultValue: [Attachment] = []
+    
+    func fetchValue(_ db: Database) throws -> [Attachment] {
+        return try Attachment.fetchAll(db)
+    }
+}

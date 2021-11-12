@@ -100,13 +100,12 @@ enum FormKeys: SheetProvider {
             //return SplitTransactionForm(head: head!, splitMembers: newMembers, selectedBucket: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
         
         case .documentList(context: let context, transaction: let transaction):
-            /*return DocumentListView(transaction: transaction).toolbar(content: {
+            return DocumentListView(transaction: transaction).toolbar(content: {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done", action: { context.dismiss() })
                 }
-            }).padding().any()*/
-            return EmptyView().any()
-            
+            }).padding().any()
+
         case .confirmDelete(context: let context, message: _, onConfirm: let onConfirm):
             return VStack{
                 Text("Are you sure you want to delete this?")

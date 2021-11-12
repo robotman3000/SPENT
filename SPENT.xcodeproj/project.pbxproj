@@ -104,6 +104,7 @@
 		A2DA01162706AE83007167EA /* BucketBalance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DA01142706AE83007167EA /* BucketBalance.swift */; };
 		A2DA50A1273ECB0000ACA051 /* ScheduleFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EA48EF272AE4D700624827 /* ScheduleFilter.swift */; };
 		A2DA50A2273ECB0800ACA051 /* ScheduleRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C8F267E3D2700548F06 /* ScheduleRequest.swift */; };
+		A2DA50A3273ECCFA00ACA051 /* DocumentListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22FA30B270F40BF00C0A3CF /* DocumentListView.swift */; };
 		A2DFFD1626ED6BED00B6CBE6 /* TransactionBalance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DFFD1526ED6BED00B6CBE6 /* TransactionBalance.swift */; };
 		A2DFFD1726ED6BED00B6CBE6 /* TransactionBalance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DFFD1526ED6BED00B6CBE6 /* TransactionBalance.swift */; };
 		A2DFFD1C26ED924700B6CBE6 /* SPENTV0ImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */; };
@@ -689,6 +690,7 @@
 				A230C0CB270CF3FB000C739F /* TemplateRequest.swift in Sources */,
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
 				A2DA50A1273ECB0000ACA051 /* ScheduleFilter.swift in Sources */,
+				A2DA50A3273ECCFA00ACA051 /* DocumentListView.swift in Sources */,
 				A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */,
 				A22FA30E270F417500C0A3CF /* AttachmentRequest.swift in Sources */,
 				A2FE6FE9271B360D000F8F89 /* TagFilter.swift in Sources */,

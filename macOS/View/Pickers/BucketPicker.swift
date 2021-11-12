@@ -11,7 +11,7 @@ struct BucketPicker: View {
 
     var label: String = ""
     @Binding var selection: Bucket?
-    var choices: [Bucket]
+    let choices: [Bucket]
     
     var body: some View {
         if !choices.isEmpty {

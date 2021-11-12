@@ -450,6 +450,7 @@ extension AppDatabase {
         dbWriter
     }
     
+    // TODO: Make this a throwing function
     func resolve<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> [Type] {
         do {
             return try databaseReader.read { db in

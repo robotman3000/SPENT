@@ -31,9 +31,7 @@ struct TransactionContextMenu: View {
             Section {
                 if model.transaction.type == .Transfer {
                     Button("Edit Transfer") {
-                        context.present(FormKeys.transfer(context: context, transaction: model.transaction, contextBucket: contextBucket, onSubmit: {data in
-                            store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                        }))
+                        context.present(FormKeys.transfer(context: context, transaction: model.transaction, contextBucket: contextBucket))
                     }
                 } else if model.transaction.type == .Split_Head {
                     Button("Edit Split"){
@@ -43,9 +41,7 @@ struct TransactionContextMenu: View {
                     }
                 } else {
                     Button("Edit Transaction") {
-                        context.present(FormKeys.transaction(context: context, transaction: model.transaction, contextBucket: contextBucket, onSubmit: {data in
-                            store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                        }))
+                        context.present(FormKeys.transaction(context: context, transaction: model.transaction, contextBucket: contextBucket))
                     }
                 }
             }
@@ -90,16 +86,7 @@ struct TransactionContextMenu: View {
                 }
                 
                 Button("Set Tags") {
-                    context.present(
-                        FormKeys.transactionTags(
-                            context: context,
-                            transaction: model.transaction,
-                            onSubmit: {tags, transaction in
-                                print(tags)
-                                store.setTransactionTags(transaction: model.transaction, tags: tags, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                            }
-                        )
-                    )
+                    context.present(FormKeys.transactionTags(context: context, transaction: model.transaction))
                 }
             }
             
@@ -164,15 +151,11 @@ struct _NewTransactionContextButtons: View {
     var body: some View{
         Section{
             Button("Add Transaction") {
-                context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: contextBucket, onSubmit: {data in
-                    store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                }))
+                context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: contextBucket))
             }
 
             Button("Add Transfer"){
-                context.present(FormKeys.transfer(context: context, transaction: nil, contextBucket: contextBucket, onSubmit: {data in
-                    store.updateTransaction(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                }))
+                context.present(FormKeys.transfer(context: context, transaction: nil, contextBucket: contextBucket))
             }
 
             Button("Add Split"){

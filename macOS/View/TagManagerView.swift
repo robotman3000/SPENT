@@ -77,9 +77,7 @@ struct TagManagerView: View {
     }
     
     func updateTag(tag: Tag?){
-        context.present(FormKeys.tag(context: context, tag: tag, onSubmit: {data in
-            store.updateTag(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-        }))
+        context.present(FormKeys.tag(context: context, tag: tag))
     }
     
     func deleteTag(tag: Tag){

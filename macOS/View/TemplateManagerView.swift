@@ -73,9 +73,7 @@ struct TemplateManagerView: View {
     }
     
     func updateTemplate(template: DBTransactionTemplate?){
-        context.present(FormKeys.transactionTemplate(context: context, template: template, onSubmit: {data in
-            store.updateTemplate(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-        }))
+        context.present(FormKeys.transactionTemplate(context: context, template: template))
     }
     
     func deleteTemplate(template: DBTransactionTemplate){

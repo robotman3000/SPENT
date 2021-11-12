@@ -9,50 +9,55 @@ import SwiftUI
 import SwiftUIKit
 
 struct AccountForm: View {
-    @StateObject fileprivate var aContext: AlertContext = AlertContext()
-    @State var account: Bucket
+    @StateObject var model: AccountFormModel
     
-    let onSubmit: (_ data: inout Bucket) -> Void
+    let onSubmit: () -> Void
     let onCancel: () -> Void
     
     var body: some View {
+        // Form Controls
         Form {
-            TextField("Name", text: $account.name)
-            Toggle("Favorite", isOn: $account.isFavorite)
-            TextEditor(text: $account.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+            TextField("Name", text: $model.name)
+            Toggle("Favorite", isOn: $model.isFavorite)
+            TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
         }.frame(minWidth: 250, minHeight: 200)
-        .toolbar(content: {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel", action: {
-                    onCancel()
-                })
-            }
-            ToolbarItem(placement: .confirmationAction){
-                Button("Done", action: {
-                    if storeState() {
-                        onSubmit(&account)
-                    } else {
-                        aContext.present(AlertKeys.message(message: "Invalid input"))
-                    }
-                })
-            }
-        }).onAppear { loadState() }
-        .alert(context: aContext)
-    }
-    
-    func loadState(){}
-    
-    func storeState() -> Bool {
-        if account.name.isEmpty {
-            return false
-        }
         
-        account.parentID = nil
-        account.ancestorID = nil
-        return true
+        // Form Lifecycle
+        .formFooter(model, onSubmit: onSubmit, onCancel: onCancel)
     }
 }
 
+class AccountFormModel: FormModel {
+    fileprivate var bucket: Bucket
+    
+    @Published var name: String
+    @Published var isFavorite: Bool
+    @Published var memo: String
+    
+    init(bucket: Bucket){
+        self.bucket = bucket
+        self.name = bucket.name
+        self.isFavorite = bucket.isFavorite
+        self.memo = bucket.memo
+    }
+    
+    func loadState(withDatabase: DatabaseStore) throws {}
+    
+    func validate() throws {
+        if name.isEmpty {
+            throw FormValidationError()
+        }
+    }
+    
+    func submit(withDatabase: DatabaseStore) throws {
+        bucket.name = name
+        bucket.parentID = nil
+        bucket.ancestorID = nil
+        bucket.memo = memo
+        bucket.isFavorite = isFavorite
+        try withDatabase.updateBucket(&bucket, onComplete: { print("Submit complete") })
+    }
+}
 
 //struct AccountForm_Previews: PreviewProvider {
 //    static var previews: some View {

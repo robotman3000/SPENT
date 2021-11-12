@@ -31,14 +31,9 @@ class DatabaseStore: ObservableObject {
 
 // Transactions
 extension DatabaseStore {
-    func updateTransaction(_ data: inout Transaction, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
-        print(data)
-        do {
-            try database!.saveTransaction(&data)
-            onComplete()
-        } catch {
-            onError(error)
-        }
+    func updateTransaction(_ data: inout Transaction, onComplete: () -> Void = {}) throws {
+        try database!.saveTransaction(&data)
+        onComplete()
     }
 
     func updateTransactions(_ data: inout [Transaction], onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
@@ -75,35 +70,22 @@ extension DatabaseStore {
         )
     }
     
-    func setTransactionTags(transaction: Transaction, tags: [Tag], onComplete: () -> Void = {}, onError: (Error) -> Void = printError) {
-        do {
-            try database!.setTransactionTags(transaction: transaction, tags: tags)
-            onComplete()
-        } catch {
-            onError(error)
-        }
+    func setTransactionTags(transaction: Transaction, tags: [Tag], onComplete: () -> Void = {}) throws {
+        try database!.setTransactionTags(transaction: transaction, tags: tags)
+        onComplete()
     }
     
-    func setTransactionsTags(transactions: [Transaction], tags: [Tag], onComplete: () -> Void = {}, onError: (Error) -> Void = printError) {
-        do {
-            try database!.setTransactionsTags(transactions: transactions, tags: tags)
-            onComplete()
-        } catch {
-            onError(error)
-        }
+    func setTransactionsTags(transactions: [Transaction], tags: [Tag], onComplete: () -> Void = {}) throws {
+        try database!.setTransactionsTags(transactions: transactions, tags: tags)
+        onComplete()
     }
 }
 
 // Buckets
 extension DatabaseStore {
-    func updateBucket(_ data: inout Bucket, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
-        print(data)
-        do {
-            try database!.saveBucket(&data)
-            onComplete()
-        } catch {
-            onError(error)
-        }
+    func updateBucket(_ data: inout Bucket, onComplete: () -> Void = {}) throws {
+        try database!.saveBucket(&data)
+        onComplete()
     }
 
     func deleteBucket(_ id: Int64, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
@@ -118,14 +100,9 @@ extension DatabaseStore {
 
 // Tags
 extension DatabaseStore {
-    func updateTag(_ data: inout Tag, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
-        print(data)
-        do {
-            try database!.saveTag(&data)
-            onComplete()
-        } catch {
-            onError(error)
-        }
+    func updateTag(_ data: inout Tag, onComplete: () -> Void = {}) throws {
+        try database!.saveTag(&data)
+        onComplete()
     }
 
     func deleteTag(_ id: Int64, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
@@ -162,14 +139,9 @@ extension DatabaseStore {
 
 // Transaction Templates
 extension DatabaseStore {
-    func updateTemplate(_ data: inout DBTransactionTemplate, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){
-        print(data)
-        do {
-            try database!.saveTemplate(&data)
-            onComplete()
-        } catch {
-            onError(error)
-        }
+    func updateTemplate(_ data: inout DBTransactionTemplate, onComplete: () -> Void = {}) throws {
+        try database!.saveTemplate(&data)
+        onComplete()
     }
 
     func deleteTemplate(_ id: Int64, onComplete: () -> Void = {}, onError: (Error) -> Void = printError){

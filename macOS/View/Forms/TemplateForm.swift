@@ -7,111 +7,99 @@
 
 import SwiftUI
 import SwiftUIKit
+import AudioToolbox
 
 struct TemplateForm: View {
-    @StateObject fileprivate var aContext: AlertContext = AlertContext()
-    @EnvironmentObject fileprivate var dbStore: DatabaseStore
-    @State var dbtemplate: DBTransactionTemplate
-    @State var template: TransactionTemplate = TransactionTemplate(name: "", memo: "", amount: 0, tags: [])
+    @StateObject var model: TemplateFormModel
     
-    var bucketChoices: [Bucket] = []
-    
-    @State var selectedSource: Bucket?
-    @State var selectedDest: Bucket?
-    
-    @State fileprivate var payee: String = ""
-    @State fileprivate var transType: Transaction.TransType = .Withdrawal
-    @State fileprivate var amount: String = ""
-    
-    let onSubmit: (_ data: inout DBTransactionTemplate) -> Void
+    let onSubmit: () -> Void
     let onCancel: () -> Void
     
     var body: some View {
         Form {
-            TextField("Name", text: $template.name)
+            TextField("Name", text: $model.name)
             
             HStack{
                 Text("$") // TODO: Localize this text
-                TextField("Amount", text: $amount)
+                TextField("Amount", text: $model.amount)
             }
 
             Section(header:
-                        EnumPicker(label: "Type", selection: $transType, enumCases: [.Deposit, .Withdrawal, .Transfer]).pickerStyle(SegmentedPickerStyle())
+                        EnumPicker(label: "Type", selection: $model.type, enumCases: [.Deposit, .Withdrawal, .Transfer]).pickerStyle(SegmentedPickerStyle())
             ){
-                if transType == .Transfer || transType == .Withdrawal {
-                    BucketPicker(label: "From", selection: $selectedSource, choices: bucketChoices)
+                if model.type == .Transfer || model.type == .Withdrawal {
+                    BucketPicker(label: "From", selection: $model.selectedSource, choices: model.bucketChoices)
                 }
                 
-                if transType == .Transfer || transType == .Deposit {
-                    BucketPicker(label: "To", selection: $selectedDest, choices: bucketChoices)
+                if model.type == .Transfer || model.type == .Deposit {
+                    BucketPicker(label: "To", selection: $model.selectedDest, choices: model.bucketChoices)
                 }
             }
             
             Section(){
-                TextField("Payee", text: $payee)
-                TextEditor(text: $template.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+                TextField("Payee", text: $model.payee)
+                TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
             
         }.frame(minWidth: 250, minHeight: 300)
-        .onAppear { loadState() }
-        .toolbar(content: {
-            ToolbarItem(placement: .confirmationAction){
-                Button("Done", action: {
-                    if storeState() {
-                        onSubmit(&dbtemplate)
-                    } else {
-                        aContext.present(AlertKeys.message(message: "Invalid Input"))
-                    }
-                })
-            }
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel", action: {
-                    onCancel()
-                })
-            }
-        })
-        .alert(context: aContext)
+        .formFooter(model, onSubmit: onSubmit, onCancel: onCancel)
+    }
+}
+
+class TemplateFormModel: FormModel {
+    fileprivate var dbtemplate: DBTransactionTemplate
+    fileprivate var template: TransactionTemplate = TransactionTemplate(name: "", memo: "", amount: 0, tags: [])
+    
+    var bucketChoices: [Bucket] = []
+    
+    @Published var selectedSource: Bucket?
+    @Published var selectedDest: Bucket?
+    
+    @Published var name: String = ""
+    @Published var type: Transaction.TransType = .Withdrawal
+    @Published var amount: String = ""
+    @Published var payee: String = ""
+    @Published var memo: String = ""
+    
+    init(template: DBTransactionTemplate){
+        self.dbtemplate = template
     }
     
-    func loadState(){
-        do {
-            if let templateObj = try dbtemplate.decodeTemplate() {
-                template = templateObj
-                
-                payee = template.payee ?? ""
-                transType = ( (template.sourceBucket == template.destinationBucket) && template.sourceBucket != nil ? .Transfer : template.sourceBucket == nil ? .Deposit : .Withdrawal)
-                amount = NSDecimalNumber(value: template.amount).dividing(by: 100).stringValue
-                
-                if let sourceID = template.sourceBucket {
-                    selectedSource = dbStore.database?.resolveOne(Bucket.filter(id: sourceID))
-                }
-                
-                if let destID = template.destinationBucket {
-                    selectedDest = dbStore.database?.resolveOne(Bucket.filter(id: destID))
-                }
-            } else {
-                print("Unknown error occured while decoding template")
+    func loadState(withDatabase: DatabaseStore) throws {
+        if let templateObj = try dbtemplate.decodeTemplate() {
+            template = templateObj
+            
+            payee = template.payee ?? ""
+            type = ( (template.sourceBucket == template.destinationBucket) && template.sourceBucket != nil ? .Transfer : template.sourceBucket == nil ? .Deposit : .Withdrawal)
+            amount = NSDecimalNumber(value: template.amount).dividing(by: 100).stringValue
+            
+            if let sourceID = template.sourceBucket {
+                selectedSource = withDatabase.database?.resolveOne(Bucket.filter(id: sourceID))
             }
-        } catch {
-            print(error.localizedDescription)
-            aContext.present(AlertKeys.message(message: "Failed to decode template"))
-            onCancel()
+            
+            if let destID = template.destinationBucket {
+                selectedDest = withDatabase.database?.resolveOne(Bucket.filter(id: destID))
+            }
+        } else {
+            throw FormInitializeError()
         }
     }
     
-    func storeState() -> Bool {
+    func validate() throws {
         if amount.isEmpty || (selectedSource == nil && selectedDest == nil) {
-            return false
+            throw FormValidationError()
         }
-        
+    }
+    
+    func submit(withDatabase: DatabaseStore) throws {
         template.sourceBucket = selectedSource?.id
         template.destinationBucket = selectedDest?.id
         
-        if transType == .Deposit {
+        if type == .Deposit {
             template.sourceBucket = nil
         }
         
-        if transType == .Withdrawal {
+        if type == .Withdrawal {
             template.destinationBucket = nil
         }
         
@@ -122,18 +110,11 @@ struct TemplateForm: View {
         }
         
         template.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
+     
+        let jsonData = try JSONEncoder().encode(template)
+        dbtemplate.template = String(data: jsonData, encoding: .utf8) ?? ""
         
-        
-        do {
-            let jsonData = try JSONEncoder().encode(template)
-            dbtemplate.template = String(data: jsonData, encoding: .utf8) ?? ""
-        } catch {
-            print(error)
-            aContext.present(AlertKeys.message(message: "Failed to encode template"))
-            return false
-        }
-        
-        return true
+        try withDatabase.updateTemplate(&dbtemplate, onComplete: { print("Submit complete") })
     }
 }
 

@@ -9,44 +9,53 @@ import SwiftUI
 import SwiftUIKit
 
 struct TagForm: View {
-    @StateObject fileprivate var aContext: AlertContext = AlertContext()
-    @State var tag: Tag
+    @StateObject var model: TagFormModel
     
-    let onSubmit: (_ data: inout Tag) -> Void
+    let onSubmit: () -> Void
     let onCancel: () -> Void
     
     var body: some View {
         Form {
             Section(){
-                TextField("Name", text: $tag.name)
-                Toggle("Favorite", isOn: $tag.isFavorite)
-                TextEditor(text: $tag.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+                TextField("Name", text: $model.name)
+                Toggle("Favorite", isOn: $model.isFavorite)
+                TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
         }.frame(minWidth: 250, minHeight: 200)
-        .toolbar(content: {
-            ToolbarItem(placement: .confirmationAction){
-                Button("Done", action: {
-                    if storeState() {
-                        onSubmit(&tag)
-                    } else {
-                        aContext.present(AlertKeys.message(message: "Invalid input"))
-                    }
-                })
-            }
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel", action: {
-                    onCancel()
-                })
-            }
-        })
-        .alert(context: aContext)
+        .formFooter(model, onSubmit: onSubmit, onCancel: onCancel)
+    }
+}
+
+class TagFormModel: FormModel {
+    fileprivate var tag: Tag
+    
+    @Published var name: String
+    @Published var isFavorite: Bool
+    @Published var memo: String
+    
+    init(tag: Tag){
+        self.tag = tag
+        self.name = tag.name
+        self.isFavorite = tag.isFavorite
+        self.memo = tag.memo
     }
     
-    func storeState() -> Bool {
-        if tag.name.isEmpty {
-            return false
+    func loadState(withDatabase: DatabaseStore) throws {}
+    
+    func validate() throws {
+        if name.isEmpty {
+            throw FormValidationError()
         }
-        
-        return true
+    }
+    
+    func submit(withDatabase: DatabaseStore) throws {
+        tag.name = name
+        tag.isFavorite = isFavorite
+        tag.memo = memo
+        try withDatabase.updateTag(&tag, onComplete: { print("Submit complete") })
+    }
+    
+    func isNew() -> Bool {
+        return tag.id == nil
     }
 }

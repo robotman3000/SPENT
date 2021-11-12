@@ -9,67 +9,75 @@ import SwiftUI
 import SwiftUIKit
 
 enum FormKeys: SheetProvider {
-    case account(context: SheetContext, account: Bucket?, onSubmit: (_ data: inout Bucket) -> Void)
-    case bucket(context: SheetContext, bucket: Bucket?, parent: Bucket?, onSubmit: (_ data: inout Bucket) -> Void)
-    case transaction(context: SheetContext, transaction: Transaction?, contextBucket: Bucket, onSubmit: (_ data: inout Transaction) -> Void)
-    case transfer(context: SheetContext, transaction: Transaction?, contextBucket: Bucket, onSubmit: (_ data: inout Transaction) -> Void)
-    case tag(context: SheetContext, tag: Tag?, onSubmit: (_ data: inout Tag) -> Void)
-    case schedule(context: SheetContext, schedule: Schedule?, onSubmit: (_ data: inout Schedule) -> Void)
-    case transactionTags(context: SheetContext, transaction: Transaction, onSubmit: (_ tags: [Tag], _ transaction: Transaction) -> Void)
+    case account(context: SheetContext, account: Bucket?)
+    case bucket(context: SheetContext, bucket: Bucket?, parent: Bucket?)
+    case transaction(context: SheetContext, transaction: Transaction?, contextBucket: Bucket)
+    case transfer(context: SheetContext, transaction: Transaction?, contextBucket: Bucket)
+    case tag(context: SheetContext, tag: Tag?)
+    //case schedule(context: SheetContext, schedule: Schedule?, onSubmit: (_ data: inout Schedule) -> Void)
+    case transactionTags(context: SheetContext, transaction: Transaction)
     case splitTransaction(context: SheetContext, splitMembers: [Transaction], contextBucket: Bucket, onSubmit: (_ data: inout [Transaction]) -> Void)
-    case transactionTemplate(context: SheetContext, template: DBTransactionTemplate?, onSubmit: (_ data: inout DBTransactionTemplate) -> Void)
+    case transactionTemplate(context: SheetContext, template: DBTransactionTemplate?)
     case documentList(context: SheetContext, transaction: Transaction)
     case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
     case confirmAction(context: SheetContext, message: String, onConfirm: () -> Void, onCancel: () -> Void)
     
     var sheet: AnyView {
         switch self {
-        case .account(context: let context, account: var account, onSubmit: let handleSubmit):
+        case .account(context: let context, account: var account):
             if account == nil{
                 account = Bucket.newBucket()
             }
-            return AccountForm(account: account!, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            return AccountForm(model: AccountFormModel(bucket: account!),
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .bucket(context: let context, bucket: var bucket, parent: let parent, onSubmit: let handleSubmit):
+        case .bucket(context: let context, bucket: var bucket, parent: let parent):
             if bucket == nil{
                 bucket = Bucket.newBucket()
             }
-            return EmptyView().any()
-            //return BucketForm(bucket: bucket!, parent: parent, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            return BucketForm(model: BucketFormModel(bucket: bucket!, parent: parent),
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .transaction(context: let context, transaction: var transaction, contextBucket: let bucket, onSubmit: let handleSubmit):
+        case .transaction(context: let context, transaction: var transaction, contextBucket: let bucket):
             if transaction == nil {
                 transaction = Transaction.newTransaction()
             }
-            return TransactionForm(transaction: transaction!, selectedBucket: bucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            let model = TransactionFormModel(transaction: transaction!, contextBucket: bucket)
+            return TransactionForm(model: model,
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .transfer(context: let context, transaction: var transaction, contextBucket: let contextBucket, onSubmit: let handleSubmit):
+        case .transfer(context: let context, transaction: var transaction, contextBucket: let bucket):
             if transaction == nil {
                 transaction = Transaction.newTransaction()
             }
-            return TransferForm(transaction: transaction!, selectedSource: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            let model = TransferFormModel(transaction: transaction!, contextBucket: bucket)
+            return TransferForm(model: model,
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .tag(context: let context, tag: var tag, onSubmit: let handleSubmit):
+        case .tag(context: let context, tag: var tag):
             if tag == nil {
                 tag = Tag.newTag()
             }
-            return TagForm(tag: tag!, onSubmit: handleSubmit, onCancel: { context.dismiss() } ).padding().any()
+            return TagForm(model: TagFormModel(tag: tag!),
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() } ).padding().any()
             
-        case .schedule(context: let context, schedule: var schedule, onSubmit: let handleSubmit):
-            if schedule == nil {
-                schedule = Schedule.newSchedule()
-            }
-            return EmptyView().any()
-            //return ScheduleForm(schedule: schedule!, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+//        case .schedule(context: let context, schedule: var schedule, onSubmit: let handleSubmit):
+//            if schedule == nil {
+//                schedule = Schedule.newSchedule()
+//            }
+//            return EmptyView().any()
+//            //return ScheduleForm(schedule: schedule!, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
             
-        case .transactionTags(context: let context, transaction: let transaction, onSubmit: let handleSubmit):
-            return TransactionTagForm(transaction: transaction, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+        case .transactionTags(context: let context, transaction: let transaction):
+            return TransactionTagForm(model: TransactionTagFormModel(transaction: transaction),
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .transactionTemplate(context: let context, template: var template, onSubmit: let handleSubmit):
+        case .transactionTemplate(context: let context, template: var template):
             if template == nil {
                 template = DBTransactionTemplate.newTemplate()
             }
-            return TemplateForm(dbtemplate: template!, onSubmit: handleSubmit, onCancel:{ context.dismiss() }).padding().any()
+            return TemplateForm(model: TemplateFormModel(template: template!),
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
         case .splitTransaction(context: let context, splitMembers: let members, contextBucket: let contextBucket, onSubmit: let handleSubmit):
             var head: Transaction?
@@ -88,7 +96,8 @@ enum FormKeys: SheetProvider {
                 head = Transaction.newSplitTransaction()
             }
             
-            return SplitTransactionForm(head: head!, splitMembers: newMembers, selectedBucket: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            return EmptyView().any()
+            //return SplitTransactionForm(head: head!, splitMembers: newMembers, selectedBucket: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
         
         case .documentList(context: let context, transaction: let transaction):
             /*return DocumentListView(transaction: transaction).toolbar(content: {

@@ -16,17 +16,13 @@ struct AccountContextMenu: View {
     
     var body: some View {
         Button("New Account"){
-            context.present(FormKeys.account(context: context, account: nil, onSubmit: {data in
-                store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-            }))
+            context.present(FormKeys.account(context: context, account: nil))
         }
         
         if var model = model {
             if(model.bucket.ancestorID == nil){
                 Button("Edit Account"){
-                    context.present(FormKeys.account(context: context, account: model.bucket, onSubmit: {data in
-                        store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                    }))
+                    context.present(FormKeys.account(context: context, account: model.bucket))
                 }
                 
                 Button("Delete Account"){
@@ -38,15 +34,11 @@ struct AccountContextMenu: View {
                 Divider()
                 
                 Button("Add Bucket"){
-                    context.present(FormKeys.bucket(context: context, bucket: nil, parent: model.bucket, onSubmit: {data in
-                        store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                    }))
+                    context.present(FormKeys.bucket(context: context, bucket: nil, parent: model.bucket))
                 }
             } else {
                 Button("Edit Bucket"){
-                    context.present(FormKeys.bucket(context: context, bucket: model.bucket, parent: nil, onSubmit: {data in
-                        store.updateBucket(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                    }))
+                    context.present(FormKeys.bucket(context: context, bucket: model.bucket, parent: nil))
                 }
                 
                 Button("Delete Bucket"){
@@ -59,15 +51,11 @@ struct AccountContextMenu: View {
             Divider()
             
             Button("Add Transaction"){
-                context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: model.bucket, onSubmit: {data in
-                    store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                }))
+                context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: model.bucket))
             }
             
             Button("Add Transfer"){
-                context.present(FormKeys.transfer(context: context, transaction: nil, contextBucket: model.bucket, onSubmit: {data in
-                    store.updateTransaction(&data, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                }))
+                context.present(FormKeys.transfer(context: context, transaction: nil, contextBucket: model.bucket))
             }
             
             Button("Add Split"){
@@ -78,7 +66,11 @@ struct AccountContextMenu: View {
             
             Button("\(model.bucket.isFavorite ? "Unfavorite" : "Mark as Favorite")"){
                 model.bucket.isFavorite = !model.bucket.isFavorite
-                store.updateBucket(&model.bucket, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                do {
+                    try store.updateBucket(&model.bucket, onComplete: { context.dismiss() })
+                } catch {
+                    aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
+                }
             }
         }
     }

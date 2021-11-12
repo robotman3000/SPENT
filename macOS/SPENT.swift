@@ -54,9 +54,9 @@ struct SPENT: App {
                     WindowKeys.TagManager.open()
                 }
                 
-                Button("Manage Schedules"){
-                    WindowKeys.ScheduleManager.open()
-                }
+//                Button("Manage Schedules"){
+//                    WindowKeys.ScheduleManager.open()
+//                }
                 
                 Button("Manage Templates"){
                     WindowKeys.TemplateManager.open()
@@ -120,9 +120,9 @@ struct SPENT: App {
             TagManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
         }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TagManager.rawValue))
         
-        WindowGroup("Schedule Manager") {
-            ScheduleManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
-        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.ScheduleManager.rawValue))
+//        WindowGroup("Schedule Manager") {
+//            ScheduleManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
+//        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.ScheduleManager.rawValue))
         
         WindowGroup("Template Manager") {
             TemplateManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)

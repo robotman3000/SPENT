@@ -9,68 +9,71 @@ import SwiftUI
 import SwiftUIKit
 
 struct BucketForm: View {
-    @StateObject fileprivate var aContext: AlertContext = AlertContext()
-    @EnvironmentObject fileprivate var dbStore: DatabaseStore
-    @State var bucket: Bucket
+    @StateObject var model: BucketFormModel
     
-    @State var parent: Bucket?
-    @State fileprivate var hasBudget = false
-    @State fileprivate var budget: Schedule?
-    
-    @Query(AccountRequest()) var parentChoices: [Bucket]
-    
-    let onSubmit: (_ data: inout Bucket) -> Void
+    let onSubmit: () -> Void
     let onCancel: () -> Void
     
     var body: some View {
         Form {
-            TextField("Name", text: $bucket.name)
+            TextField("Name", text: $model.name)
             
             // Disable changing the bucket parent after creation
-            BucketPicker(label: "Account", selection: $parent, choices: parentChoices).disabled(bucket.id != nil)
-            Toggle("Favorite", isOn: $bucket.isFavorite)
-            TextEditor(text: $bucket.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+            BucketPicker(label: "Account", selection: $model.parent, choices: model.parentChoices).disabled(!model.isNew())
+            Toggle("Favorite", isOn: $model.isFavorite)
+            TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
         }.frame(minWidth: 250, minHeight: 250)
-        .toolbar(content: {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel", action: {
-                    onCancel()
-                })
-            }
-            ToolbarItem(placement: .confirmationAction){
-                Button("Done", action: {
-                    if storeState() {
-                        onSubmit(&bucket)
-                    } else {
-                        aContext.present(AlertKeys.message(message: "Invalid input"))
-                    }
-                })
-            }
-        }).onAppear { loadState() }
-        .alert(context: aContext)
+        .formFooter(model, onSubmit: onSubmit, onCancel: onCancel)
+    }
+}
+
+class BucketFormModel: FormModel {
+    fileprivate var bucket: Bucket
+    
+    @Published var name: String
+    @Published var isFavorite: Bool
+    @Published var memo: String
+    
+    @Published var parent: Bucket?
+    @Published var parentChoices: [Bucket] = []
+    
+    init(bucket: Bucket, parent: Bucket? = nil){
+        self.bucket = bucket
+        self.name = bucket.name
+        self.isFavorite = bucket.isFavorite
+        self.memo = bucket.memo
+        self.parent = parent
     }
     
-    func loadState(){
+    func loadState(withDatabase: DatabaseStore) throws {
+        // TODO: Correctly handle parent from init
+        parentChoices = withDatabase.database?.resolve(Bucket.all().filterAccounts()) ?? []
+        
         if bucket.parentID != nil {
-            parent = dbStore.database?.resolveOne(bucket.parent)
+            parent = withDatabase.database?.resolveOne(bucket.parent)
         }
     }
     
-    func storeState() -> Bool {
-        if bucket.name.isEmpty || parent == nil {
-            return false
+    func validate() throws {
+        if name.isEmpty || parent == nil {
+            throw FormValidationError()
         }
-        
-        if hasBudget && budget == nil {
-            return false
-        }
-        
+    }
+    
+    func submit(withDatabase: DatabaseStore) throws {
+        bucket.name = name
         bucket.parentID = parent?.id
         if let ancestor = parent?.ancestorID {
             bucket.ancestorID = ancestor
         } else {
             bucket.ancestorID = bucket.parentID
         }
-        return true
+        bucket.memo = memo
+        bucket.isFavorite = isFavorite
+        try withDatabase.updateBucket(&bucket, onComplete: { print("Submit complete") })
+    }
+    
+    func isNew() -> Bool {
+        return bucket.id == nil
     }
 }

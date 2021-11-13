@@ -9,8 +9,8 @@ import Foundation
 import GRDB
 import Combine
 
-struct TTransactionFilter: Queryable, DatabaseFilter {
-    typealias Request = TTransactionRequest
+struct TransactionFilter: Queryable, DatabaseFilter {
+    typealias Request = TransactionRequest
     
     static var defaultValue: [Int64] { [] }
     
@@ -68,7 +68,7 @@ struct TTransactionFilter: Queryable, DatabaseFilter {
     }
     
     static func publisher(_ withReader: DatabaseReader, forID: Int64) -> AnyPublisher<TransactionModel, Error> {
-        let request = TTransactionRequest(forID: forID)
+        let request = TransactionRequest(forID: forID)
         let publisher = ValueObservation
             .tracking(request.requestValue)
             .publisher(

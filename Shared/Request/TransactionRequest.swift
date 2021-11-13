@@ -8,7 +8,7 @@
 import Foundation
 import GRDB
 
-struct TTransactionRequest: DatabaseRequest {
+struct TransactionRequest: DatabaseRequest {
     var forID: Int64
     
     func requestValue(_ db: Database) throws -> TransactionModel {

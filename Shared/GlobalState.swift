@@ -13,8 +13,8 @@ class GlobalState: ObservableObject {
     @Published var showInTree: Bool = true
     @Published var showTags: Bool = false
     @Published var showMemo: Bool = false
-    @Published var sorting = TTransactionFilter.Ordering.byDate
-    @Published var sortDirection = TTransactionFilter.OrderDirection.descending
+    @Published var sorting = TransactionFilter.Ordering.byDate
+    @Published var sortDirection = TransactionFilter.OrderDirection.descending
     
     // Not able to be changed during runtime
     var debugMode: Bool = false

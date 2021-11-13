@@ -34,13 +34,13 @@ struct TransactionsView: View {
                     }.padding()
                 }
                 Spacer()
-                EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TTransactionFilter.Ordering.allCases)
-                EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TTransactionFilter.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
+                EnumPicker(label: "Sort By", selection: $appState.sorting, enumCases: TransactionFilter.Ordering.allCases)
+                EnumPicker(label: "", selection: $appState.sortDirection, enumCases: TransactionFilter.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
                 TextField("", text: $stringFilter)
                 Spacer(minLength: 15)
             }.padding()
 
-            QueryWrapperView(source: TTransactionFilter(forBucket: forBucketID, includeBucketTree: appState.includeTree, showAllocations: appState.showInTree, memoLike: stringFilter)){ transactionIDs in
+            QueryWrapperView(source: TransactionFilter(forBucket: forBucketID, includeBucketTree: appState.includeTree, showAllocations: appState.showInTree, memoLike: stringFilter)){ transactionIDs in
                 TransactionListView(ids: transactionIDs, contextBucket: forBucketID)
                 
                 VStack {

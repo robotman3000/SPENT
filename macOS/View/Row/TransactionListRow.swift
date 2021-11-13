@@ -13,7 +13,7 @@ struct TransactionListRow: View {
     let forID: Int64
     
     var body: some View {
-        AsyncContentView(source: TTransactionFilter.publisher(store.getReader(), forID: forID)) { model in
+        AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forID: forID)) { model in
             Internal_TransactionListRow(model: model, showTags: appState.showTags, showMemo: appState.showMemo)
         }
     }

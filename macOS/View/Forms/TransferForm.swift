@@ -59,7 +59,7 @@ class TransferFormModel: FormModel {
     @Published var selectedDest: Bucket?
     @Published var bucketChoices: [Bucket]
    
-    init(transaction: Transaction, contextBucket: Bucket? = nil){
+    init(transaction: Transaction, contextBucket: Int64? = nil){
         // TODO: Use contextBucket to preselect source/dest
         amount = ""
         type = .Withdrawal

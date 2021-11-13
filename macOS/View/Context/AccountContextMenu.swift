@@ -51,15 +51,15 @@ struct AccountContextMenu: View {
             Divider()
             
             Button("Add Transaction"){
-                context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: model.bucket))
+                context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: model.bucket.id))
             }
             
             Button("Add Transfer"){
-                context.present(FormKeys.transfer(context: context, transaction: nil, contextBucket: model.bucket))
+                context.present(FormKeys.transfer(context: context, transaction: nil, contextBucket: model.bucket.id))
             }
             
             Button("Add Split"){
-                context.present(FormKeys.splitTransaction(context: context, splitMembers: [], contextBucket: model.bucket, onSubmit: splitSubmit))
+                context.present(FormKeys.splitTransaction(context: context, splitMembers: [], contextBucket: model.bucket.id, onSubmit: splitSubmit))
             }
             
             Divider()

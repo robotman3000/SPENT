@@ -14,24 +14,30 @@ struct TTransactionFilter: Queryable, DatabaseFilter {
     
     static var defaultValue: [Int64] { [] }
     
-    let forBucket: Int64
+    let forBucket: Int64?
     
     var includeBucketTree: Bool = false
     var showAllocations: Bool = false
     var memoLike: String? = nil
 
     func fetchValue(_ db: Database) throws -> [Int64] {
-        let bkts = CommonTableExpression(
-            recursive: true,
-            named: "bkts",
-            sql: """
-                SELECT id FROM Buckets e WHERE e.id = \(forBucket)
+        var bucketQuery = "SELECT id FROM Buckets"
+        
+        if let bid = forBucket {
+            bucketQuery = """
+                SELECT id FROM Buckets e WHERE e.id = \(bid)
             \(includeBucketTree ? """
                 UNION ALL
                 SELECT e.id FROM Buckets e
                 JOIN bkts c ON c.id = e.Parent
             """ : "")
             """
+        }
+        
+        let bkts = CommonTableExpression(
+            recursive: true,
+            named: "bkts",
+            sql: bucketQuery
         )
         
         let splits = CommonTableExpression(

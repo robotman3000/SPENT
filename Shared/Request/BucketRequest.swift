@@ -7,6 +7,8 @@
 
 
 import GRDB
+import Combine
+import SwiftUI
 
 /// Make `BucketRequest` able to be used with the `@Query` property wrapper.
 struct BucketRequest: DatabaseRequest {   
@@ -24,5 +26,28 @@ struct BucketRequest: DatabaseRequest {
         }
         //print("brequest was bad")
         throw RequestFetchError()
+    }
+}
+
+struct BucketQuery: Queryable {
+    static var defaultValue: [BucketModel] = []
+    
+    func fetchValue(_ db: Database) throws -> [BucketModel] {
+        let buckets = try Bucket.fetchAll(db)
+        var models: [BucketModel] = []
+        for bucket in buckets {
+            models.append(BucketModel(bucket: bucket, balance: nil))
+        }
+        return models
+    }
+    
+    static func publisher(withReader: DatabaseReader) -> AnyPublisher<Array<BucketModel>, Error> {
+        let request = BucketQuery()
+        let publisher = ValueObservation
+            .tracking(request.fetchValue)
+            .publisher(
+                in: withReader, scheduling: .async(onQueue: DispatchQueue.init(label: "UI Database Queue"))).eraseToAnyPublisher()
+        //print("filter return pblisher")
+        return publisher
     }
 }

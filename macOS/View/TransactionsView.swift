@@ -39,26 +39,22 @@ struct TransactionsView: View {
                 TextField("", text: $stringFilter)
                 Spacer(minLength: 15)
             }.padding()
-            
-            if let bid = forBucketID {
-                QueryWrapperView(source: TTransactionFilter(forBucket: bid, includeBucketTree: appState.includeTree, showAllocations: appState.showInTree, memoLike: stringFilter)){ transactionIDs in
-                    AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: bid)) { bucketModel in
-                        TransactionListView(ids: transactionIDs, contextBucket: bucketModel.bucket)
-                    }
-                    
-                    VStack {
+
+            QueryWrapperView(source: TTransactionFilter(forBucket: forBucketID, includeBucketTree: appState.includeTree, showAllocations: appState.showInTree, memoLike: stringFilter)){ transactionIDs in
+                TransactionListView(ids: transactionIDs, contextBucket: forBucketID)
+                
+                VStack {
+                    Spacer()
+                    HStack(alignment: .center) {
                         Spacer()
-                        HStack(alignment: .center) {
-                            Spacer()
-                            Text("\(transactionIDs.count) transactions")
-                            Spacer()
-                            if !stringFilter.isEmpty {
-                                Text("Showing matches for: \(stringFilter)")
-                            }
+                        Text("\(transactionIDs.count) transactions")
+                        Spacer()
+                        if !stringFilter.isEmpty {
+                            Text("Showing matches for: \(stringFilter)")
                         }
-                        Spacer()
-                    }.frame(height: 30)
-                }
+                    }
+                    Spacer()
+                }.frame(height: 30)
             }
         }//.navigationTitle(forBucketID ?? "All Transactions").sheet(context: context).alert(context: aContext)
     }

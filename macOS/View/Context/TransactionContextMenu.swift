@@ -14,7 +14,7 @@ struct TransactionContextMenu: View {
     @ObservedObject var aContext: AlertContext
     @EnvironmentObject var store: DatabaseStore
     
-    let contextBucket: Bucket
+    let contextBucket: Int64?
     //let transactions: Set<Int64>
     let forTransaction: TransactionModel?
     
@@ -145,7 +145,7 @@ struct _NewTransactionContextButtons: View {
     @ObservedObject var aContext: AlertContext
     @EnvironmentObject var store: DatabaseStore
 
-    let contextBucket: Bucket
+    let contextBucket: Int64?
     let onFormDismiss: () -> Void
     
     var body: some View{

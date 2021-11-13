@@ -12,11 +12,12 @@ struct TransactionListView: View {
     @EnvironmentObject var store: DatabaseStore
     @StateObject var sheetContext: SheetContext = SheetContext()
     @StateObject var alertContext: AlertContext = AlertContext()
+    @State var selected = Set<Int64>()
     let ids: [Int64]
     let contextBucket: Int64?
     
     var body: some View {
-        List {
+        List(selection: $selected) {
             if ids.isEmpty {
                     Text("No Transactions")
             }
@@ -25,22 +26,13 @@ struct TransactionListView: View {
                 TransactionListRow(forID: transactionID)
                 .contextMenu {
                     AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forID: transactionID)){ model in
-                        TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransaction: model, onFormDismiss: {})
+                        TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransactions: selected, forTransaction: model, onFormDismiss: {})
                     }
                 }
             }
-            /*
-             TransactionRow(transactionData: item, showTags: appState.showTags, showMemo: appState.showMemo, showRunning: selectedBucket.parentID == nil && appState.sorting == .byDate)
-                 .frame(height: appState.showMemo || appState.showTags ? 48 : 24)
-             .contextMenu {
-                 TransactionContextMenu(context: context, aContext: aContext, contextBucket: selectedBucket, transactions: selected.contains(item) ? selected : [item], onFormDismiss: {
-                     selected.removeAll()
-                 })
-             }
-             */
         }
         .contextMenu {
-            TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransaction: nil, onFormDismiss: {})
+            TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransactions: selected, forTransaction: nil, onFormDismiss: {})
         }
         .sheet(context: sheetContext)
         .alert(context: alertContext)

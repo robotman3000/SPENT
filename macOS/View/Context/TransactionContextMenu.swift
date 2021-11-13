@@ -15,7 +15,7 @@ struct TransactionContextMenu: View {
     @EnvironmentObject var store: DatabaseStore
     
     let contextBucket: Int64?
-    //let transactions: Set<Int64>
+    var forTransactions: Set<Int64>? = nil
     let forTransaction: TransactionModel?
     
     let onFormDismiss: () -> Void
@@ -123,6 +123,13 @@ struct TransactionContextMenu: View {
                 Button("Debug Info") {
                     aContext.present(AlertKeys.message(message: forTransaction.debugDescription))
                 }
+            }
+        }
+        Button("Debug Selection") {
+            if let selection = forTransactions {
+                print(selection.debugDescription)
+            } else {
+                print("No large selection")
             }
         }
     }

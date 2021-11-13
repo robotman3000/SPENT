@@ -16,29 +16,37 @@ struct TransactionListView: View {
     let contextBucket: Bucket
     
     var body: some View {
-        List(ids, id: \.self){ transactionID in
-            TransactionListRow(forID: transactionID)
-            .contextMenu {
-                AsyncContentView(source: TTransactionFilter.publisher(store.getReader(), forID: transactionID)){ model in
-                    TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransaction: model, onFormDismiss: {})
+        if !ids.isEmpty {
+            List(ids, id: \.self){ transactionID in
+                TransactionListRow(forID: transactionID)
+                .contextMenu {
+                    AsyncContentView(source: TTransactionFilter.publisher(store.getReader(), forID: transactionID)){ model in
+                        TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransaction: model, onFormDismiss: {})
+                    }
                 }
+                
+                /*
+                 TransactionRow(transactionData: item, showTags: appState.showTags, showMemo: appState.showMemo, showRunning: selectedBucket.parentID == nil && appState.sorting == .byDate)
+                     .frame(height: appState.showMemo || appState.showTags ? 48 : 24)
+                 .contextMenu {
+                     TransactionContextMenu(context: context, aContext: aContext, contextBucket: selectedBucket, transactions: selected.contains(item) ? selected : [item], onFormDismiss: {
+                         selected.removeAll()
+                     })
+                 }
+                 */
             }
-            
-            /*
-             TransactionRow(transactionData: item, showTags: appState.showTags, showMemo: appState.showMemo, showRunning: selectedBucket.parentID == nil && appState.sorting == .byDate)
-                 .frame(height: appState.showMemo || appState.showTags ? 48 : 24)
-             .contextMenu {
-                 TransactionContextMenu(context: context, aContext: aContext, contextBucket: selectedBucket, transactions: selected.contains(item) ? selected : [item], onFormDismiss: {
-                     selected.removeAll()
-                 })
-             }
-             */
+            .contextMenu {
+                TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransaction: nil, onFormDismiss: {})
+            }
+            .sheet(context: sheetContext)
+            .alert(context: alertContext)
+        } else {
+            List{
+                Text("No transactions")
+            }.contextMenu {
+                TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransaction: nil, onFormDismiss: {})
+            }
         }
-        .contextMenu {
-            TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransaction: nil, onFormDismiss: {})
-        }
-        .sheet(context: sheetContext)
-        .alert(context: alertContext)
     }
 }
 

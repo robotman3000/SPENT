@@ -59,7 +59,7 @@ enum FormKeys: SheetProvider {
                 tag = Tag.newTag()
             }
             return TagForm(model: TagFormModel(tag: tag!),
-                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() } ).padding().any()
+                           onSubmit: { context.dismiss() }, onCancel: { context.dismiss() } ).any()
             
 //        case .schedule(context: let context, schedule: var schedule, onSubmit: let handleSubmit):
 //            if schedule == nil {

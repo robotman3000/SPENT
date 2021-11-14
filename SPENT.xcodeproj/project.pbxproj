@@ -89,6 +89,7 @@
 		A2A56739262879BD009C7E8C /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A56737262879BD009C7E8C /* Util.swift */; };
 		A2AA26E2270E937E00794C6C /* DebugUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA26E1270E937E00794C6C /* DebugUtil.swift */; };
 		A2AA26E3270E937E00794C6C /* DebugUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA26E1270E937E00794C6C /* DebugUtil.swift */; };
+		A2AF19BA274088810006C055 /* TagListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AF19B9274088810006C055 /* TagListView.swift */; };
 		A2C2ADA126D5878A00537971 /* SwiftUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = A2C2ADA026D5878A00537971 /* SwiftUIKit */; };
 		A2C2ADAE26D58B9300537971 /* TransactionContextMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */; };
 		A2C2ADB326D58F0200537971 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */; };
@@ -193,6 +194,7 @@
 		A2A56734262747A7009C7E8C /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		A2A56737262879BD009C7E8C /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
 		A2AA26E1270E937E00794C6C /* DebugUtil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugUtil.swift; sourceTree = "<group>"; };
+		A2AF19B9274088810006C055 /* TagListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagListView.swift; sourceTree = "<group>"; };
 		A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionContextMenu.swift; sourceTree = "<group>"; };
 		A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A2C2ADB426D58F1F00537971 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -357,6 +359,7 @@
 			children = (
 				A2449FEE271F797C006B5185 /* TransactionListView.swift */,
 				A22FA30B270F40BF00C0A3CF /* DocumentListView.swift */,
+				A2AF19B9274088810006C055 /* TagListView.swift */,
 				A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */,
 			);
 			path = List;
@@ -677,6 +680,7 @@
 				A26B732326909A850082A0F6 /* QueryWrapperView.swift in Sources */,
 				A2449FF9272075AA006B5185 /* DatabaseRequest.swift in Sources */,
 				A230C0C7270CEB55000C739F /* TemplateForm.swift in Sources */,
+				A2AF19BA274088810006C055 /* TagListView.swift in Sources */,
 				A257FC3326D7F5C400383855 /* MainView.swift in Sources */,
 				A20DCD84264EEB510070EB07 /* Tag.swift in Sources */,
 				A20DCD6A264EBC260070EB07 /* Transaction.swift in Sources */,

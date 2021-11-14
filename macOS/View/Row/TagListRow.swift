@@ -7,14 +7,32 @@
 
 import SwiftUI
 
+import SwiftUI
+import Combine
+import GRDB
+import SwiftUIKit
+
 struct TagListRow: View {
+    @EnvironmentObject var store: DatabaseStore
+    let forID: Int64
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        AsyncContentView(source: TagFilter.publisher(store.getReader(), forID: forID)) { model in
+            Internal_TagListRow(model: model)
+        }
     }
 }
 
-struct TagListRow_Previews: PreviewProvider {
-    static var previews: some View {
-        TagListRow()
+private struct Internal_TagListRow: View {
+    let model: Tag
+    
+    var body: some View {
+        Text(model.name)
     }
 }
+
+//struct TagListRow_Previews: PreviewProvider {
+//    static var previews: some View {
+//        TagListRow()
+//    }
+//}

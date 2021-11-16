@@ -50,7 +50,7 @@ struct BucketFilter: Queryable, DatabaseFilter {
     
     static func publisher(_ withReader: DatabaseReader, forID: Int64) -> AnyPublisher<Request.Value, Error> {
         //print("filter make pblisher")
-        let request = BucketRequest(forID: forID)
+        let request = BucketRequest(forID: forID, includeAggregate: true)
         let publisher = ValueObservation
             .tracking(request.requestValue)
             .publisher(

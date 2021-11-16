@@ -66,10 +66,14 @@ class TemplateFormModel: FormModel {
     }
     
     func loadState(withDatabase: DatabaseStore) throws {
+        bucketChoices = withDatabase.database?.resolve(Bucket.all()) ?? []
+        
         if let templateObj = try dbtemplate.decodeTemplate() {
             template = templateObj
             
+            name = template.name
             payee = template.payee ?? ""
+            memo = template.memo
             type = ( (template.sourceBucket == template.destinationBucket) && template.sourceBucket != nil ? .Transfer : template.sourceBucket == nil ? .Deposit : .Withdrawal)
             amount = NSDecimalNumber(value: template.amount).dividing(by: 100).stringValue
             
@@ -92,6 +96,8 @@ class TemplateFormModel: FormModel {
     }
     
     func submit(withDatabase: DatabaseStore) throws {
+        template.name = name
+        
         template.sourceBucket = selectedSource?.id
         template.destinationBucket = selectedDest?.id
         
@@ -108,6 +114,8 @@ class TemplateFormModel: FormModel {
         } else {
             template.payee = payee
         }
+        
+        template.memo = memo
         
         template.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
      

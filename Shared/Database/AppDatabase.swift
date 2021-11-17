@@ -16,7 +16,7 @@ import SwiftUI
 /// https://github.com/groue/GRDB.swift/blob/master/Documentation/GoodPracticesForDesigningRecordTypes.md
 struct AppDatabase {
     
-    static var DB_VERSION: Int64 = 3
+    static var DB_VERSION: Int64 = 4
     var bundlePath: URL?
     
     func endSecureScope(){
@@ -244,7 +244,7 @@ struct AppDatabase {
                 SELECT DISTINCT
                         r.bid,
                         IFNULL(available, 0)+IFNULL(posted, 0) AS "available",
-                        posted
+                        IFNULL(posted, 0) AS "posted"
                 FROM transactionAmounts r
                 LEFT JOIN (
                     SELECT SUM(amount) AS "available", bid

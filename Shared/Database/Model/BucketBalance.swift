@@ -9,7 +9,7 @@ import GRDB
 
 struct BucketBalance: Codable, Hashable, FetchableRecord, TableRecord {
     var bucketID: Int64
-    var available: Int
+    var available: Int?
     var posted: Int?
     var availableTree: Int?
     var postedTree: Int?

@@ -19,10 +19,17 @@ struct BucketRequest: DatabaseRequest {
         do {
             let bucket = try Bucket.fetchOne(db, id: forID)
             var balance = try BucketBalance.fetchOne(db, sql: "SELECT * FROM \(BucketBalance.databaseTableName) WHERE bid == \(forID)")
-            if includeAggregate && balance != nil {
-                try queryAggregates(withDatabase: db, balance: &balance!)
-            }
+            
             if let bucket = bucket {
+                if balance == nil {
+                    // This means the balance table has no value for this bucket.
+                    // I.E. It has no transactions
+                    balance = BucketBalance(bucketID: bucket.id!, available: 0, posted: 0)
+                }
+                if includeAggregate {
+                    try queryAggregates(withDatabase: db, balance: &balance!)
+                }
+                
                 return BucketModel(bucket: bucket, balance: balance)
             }
         }
@@ -41,7 +48,7 @@ struct BucketRequest: DatabaseRequest {
                 JOIN bkts c ON c.id = e.Parent
             """
         )
-        let bal = try BucketBalance.select(sql: "bid, posted, available, SUM(available) AS \"availableTree\", SUM(posted) AS \"postedTree\"").filter(sql: "bid IN (SELECT * FROM bkts)").with(bkts).fetchOne(withDatabase)
+        let bal = try BucketBalance.select(sql: "IFNULL(bid, -1) AS \"bid\", posted, available, SUM(available) AS \"availableTree\", SUM(posted) AS \"postedTree\"").filter(sql: "bid IN (SELECT * FROM bkts)").with(bkts).fetchOne(withDatabase)
         balance.availableTree = bal?.availableTree
         balance.postedTree = bal?.postedTree
     }

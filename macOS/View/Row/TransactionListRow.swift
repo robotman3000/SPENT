@@ -14,17 +14,17 @@ struct TransactionListRow: View {
     
     var body: some View {
         AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forID: forID)) { model in
-            Internal_TransactionListRow(model: model, showTags: appState.showTags, showMemo: appState.showMemo)
+            Internal_TransactionListRow(model: model, showTags: appState.showTags, showMemo: appState.showMemo, showRunning: appState.sorting == .byDate)
         }
     }
 }
 
 struct Internal_TransactionListRow: View {
     @Environment(\.colorScheme) var colorScheme
-    @State var model: TransactionModel
-    @State var showTags: Bool = true
-    @State var showMemo: Bool = true
-    @State var showRunning: Bool = true
+    let model: TransactionModel
+    var showTags: Bool = true
+    var showMemo: Bool = true
+    var showRunning: Bool = true
     
     var body: some View {
         VStack (alignment: .leading){
@@ -53,7 +53,11 @@ struct Internal_TransactionListRow: View {
                 // Amount
                 HStack {
                     Spacer()
-                    //Text(bal.amount.currencyFormat)
+                    if let bal = model.balance {
+                        Text(bal.amount.currencyFormat)
+                    } else {
+                        Text("Balance Error")
+                    }
                     //if let trans = td.splitMember {
                     //    Text(trans.amount.currencyFormat).foregroundColor(td.splitType == .Withdrawal ? .red : .gray)
                     //} else {

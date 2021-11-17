@@ -123,6 +123,8 @@ class TransactionFormModel: FormModel {
     }
     
     func submit(withDatabase: DatabaseStore) throws {
+        transaction.status = status
+        transaction.date = date
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
             transaction.sourcePosted = sourceDate
             transaction.destPosted = destDate
@@ -146,6 +148,7 @@ class TransactionFormModel: FormModel {
         } else {
             transaction.payee = payee
         }
+        transaction.memo = memo
 
         transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
 

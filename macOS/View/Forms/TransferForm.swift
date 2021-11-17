@@ -123,6 +123,8 @@ class TransferFormModel: FormModel {
     }
     
     func submit(withDatabase: DatabaseStore) throws {
+        transaction.status = status
+        transaction.date = date
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
             transaction.sourcePosted = sourceDate
             transaction.destPosted = destDate
@@ -134,6 +136,7 @@ class TransferFormModel: FormModel {
         transaction.sourceID = selectedSource?.id
         transaction.destID = selectedDest?.id
         transaction.payee = nil // Transfers don't need payees
+        transaction.memo = memo
         transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
 
         try withDatabase.updateTransaction(&transaction, onComplete: { print("Submit complete") })

@@ -311,10 +311,10 @@ extension Transaction {
         return amount
     }
     
-    static func getSplitMember(_ data: [Transaction], bucket: Bucket) -> Transaction? {
+    static func getSplitMember(_ data: [Transaction], forBucket: Int64?) -> Transaction? {
         for t in data {
             // Eliminate the optional value
-            if let bID = bucket.id {
+            if let bID = forBucket {
                 // and thereby cause nil sources or dests to be ignored
                 if t.sourceID == bID || t.destID == bID {
                     return t

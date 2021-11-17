@@ -69,8 +69,12 @@ struct TransactionFilter: Queryable, DatabaseFilter {
     
     static func publisher(_ withReader: DatabaseReader, forID: Int64) -> AnyPublisher<TransactionModel, Error> {
         let request = TransactionRequest(forID: forID)
+        return publisher(withReader, forRequest: request)
+    }
+    
+    static func publisher(_ withReader: DatabaseReader, forRequest: TransactionRequest) -> AnyPublisher<TransactionModel, Error> {
         let publisher = ValueObservation
-            .tracking(request.requestValue)
+            .tracking(forRequest.requestValue)
             .publisher(
                 in: withReader, scheduling: .async(onQueue: DispatchQueue.init(label: "UI Database Queue"))).eraseToAnyPublisher()
         return publisher

@@ -53,36 +53,39 @@ struct Internal_TransactionListRow: View {
                 // Amount
                 HStack {
                     Spacer()
-                    if let bal = model.balance {
-                        Text(bal.amount.currencyFormat)
+                    if let splitMember = model.splitMember {
+                        Text(splitMember.amount.currencyFormat).foregroundColor(model.splitType == .Withdrawal ? .red : .gray)
                     } else {
-                        Text("Balance Error")
+                        if let bal = model.balance {
+                            Text(bal.amount.currencyFormat).foregroundColor(model.contextType == .Withdrawal ? .red : .gray)
+                        } else {
+                            Text(model.transaction.amount.currencyFormat).foregroundColor(.black)
+                        }
                     }
-                    //if let trans = td.splitMember {
-                    //    Text(trans.amount.currencyFormat).foregroundColor(td.splitType == .Withdrawal ? .red : .gray)
-                    //} else {
-                    //    Text(td.amountFormatted).foregroundColor(td.contextType == .Withdrawal ? .red : .gray)
-                    //}
                     
                 }.frame(minWidth: 80, maxWidth: 80)
                 
                 // Bucket
                 HStack {
-//                    if td.splitMember != nil {
-//                        Text("(\(td.amountFormatted))").foregroundColor(td.splitType == .Withdrawal ? .red : .gray)
-//                    }
+                    if model.splitMember != nil {
+                        if let bal = model.balance {
+                            Text("(\(bal.amount.currencyFormat))").foregroundColor(model.splitType == .Withdrawal ? .red : .gray)
+                        } else {
+                            Text("Balance Error")
+                        }
+                    }
                     VStack{
                         if model.transaction.group == nil {
                             let sName = model.source?.name ?? "NIL"
                             let dName = model.destination?.name ?? "NIL"
                             
                             HStack {
-//                                if model.transaction.type == .Transfer {
-//                                    Text(td.contextType == .Deposit ? sName : dName)
-//                                        .foregroundColor(.gray)
-//                                        .font(.subheadline)
-//                                        .fontWeight(.medium)
-//                                }
+                                if model.transaction.type == .Transfer {
+                                    Text(model.contextType == .Deposit ? sName : dName)
+                                        .foregroundColor(.gray)
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                }
                                 
                                 Image(systemName: model.transaction.type == .Withdrawal ? "arrow.left" : "arrow.right")
                                 
@@ -92,8 +95,7 @@ struct Internal_TransactionListRow: View {
                                     .fontWeight(.medium)
                             }
                         } else {
-                            //Text("Split \(td.splitType.getStringName())")
-                            Text("Split")
+                            Text("Split \(model.splitType.getStringName())")
                         }
                     }
                     Spacer()
@@ -110,7 +112,6 @@ struct Internal_TransactionListRow: View {
                         }
                     }.frame(minWidth: 70, maxWidth: 80)
                 }
-                
             }
             
             // Tags and Memo

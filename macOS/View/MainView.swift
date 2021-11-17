@@ -15,7 +15,7 @@ struct MainView: View {
     var body: some View {
         NavigationView {
             VStack {
-                BalanceTable(forID: selectedView)
+                BalanceTable(forID: selectedView).height(202)
                 QueryWrapperView(source: BucketTreeFilter()) { bucketIDs in
                     BucketNavigationView(ids: bucketIDs, selection: $selectedView)
                 }

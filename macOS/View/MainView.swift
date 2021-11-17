@@ -16,9 +16,7 @@ struct MainView: View {
         NavigationView {
             VStack {
                 BalanceTable(forID: selectedView)
-
-                TextField("", text: $filter).padding()
-                QueryWrapperView(source: BucketFilter(nameLike: filter)) { bucketIDs in
+                QueryWrapperView(source: BucketTreeFilter()) { bucketIDs in
                     BucketNavigationView(ids: bucketIDs, selection: $selectedView)
                 }
             }

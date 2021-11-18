@@ -11,9 +11,10 @@ struct TransactionListRow: View {
     @EnvironmentObject var appState: GlobalState
     @EnvironmentObject var store: DatabaseStore
     let forID: Int64
+    let forBucket: Int64?
     
     var body: some View {
-        AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forID: forID)) { model in
+        AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forRequest: TransactionRequest(forID: forID, viewingBucket: forBucket))) { model in
             Internal_TransactionListRow(model: model, showTags: appState.showTags, showMemo: appState.showMemo, showRunning: appState.sorting == .byDate)
         }
     }
@@ -87,9 +88,9 @@ struct Internal_TransactionListRow: View {
                                         .fontWeight(.medium)
                                 }
                                 
-                                Image(systemName: model.transaction.type == .Withdrawal ? "arrow.left" : "arrow.right")
+                                Image(systemName: model.contextType == .Withdrawal ? "arrow.left" : "arrow.right")
                                 
-                                Text(model.transaction.type == .Deposit ? dName : sName)
+                                Text(model.contextType == .Deposit ? dName : sName)
                                     .foregroundColor(.gray)
                                     .font(.subheadline)
                                     .fontWeight(.medium)

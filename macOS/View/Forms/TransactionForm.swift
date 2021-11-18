@@ -21,8 +21,7 @@ struct TransactionForm: View {
             Section(){
                 DatePicker("Date", selection: $model.date, displayedComponents: [.date])
                 if model.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-                    DatePicker("Source Posting Date", selection: $model.sourceDate, displayedComponents: [.date])
-                    DatePicker("Destination Posting Date", selection: $model.destDate, displayedComponents: [.date])
+                    DatePicker("Posting Date", selection: $model.postDate, displayedComponents: [.date])
                 }
             }
 
@@ -53,8 +52,7 @@ class TransactionFormModel: FormModel {
     
     @Published var status: Transaction.StatusTypes
     @Published var date: Date
-    @Published var sourceDate: Date
-    @Published var destDate: Date
+    @Published var postDate: Date
     @Published var sourceID: Int64?
     @Published var destID: Int64?
     @Published var amount: String
@@ -77,8 +75,7 @@ class TransactionFormModel: FormModel {
         
         payee = transaction.payee ?? ""
         
-        sourceDate = Date()
-        destDate = Date()
+        postDate = Date()
         
         if transaction.id != nil {
             // We have an existing transaction
@@ -86,11 +83,12 @@ class TransactionFormModel: FormModel {
             
             amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
             
-            if transaction.sourcePosted != nil {
-                sourceDate = transaction.sourcePosted!
-            }
-            if transaction.destPosted != nil {
-                destDate = transaction.destPosted!
+            if transaction.type == .Deposit && transaction.destPosted != nil {
+                postDate = transaction.destPosted!
+            } else if transaction.type == .Withdrawal && transaction.sourcePosted != nil {
+                postDate = transaction.sourcePosted!
+            } else {
+                print("Warning: Transaction with id \(transaction.id ?? -1) is in an invalid state!")
             }
         }
     }
@@ -115,7 +113,7 @@ class TransactionFormModel: FormModel {
         }
 
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            if sourceDate < date || destDate < date {
+            if postDate < date {
                 // Prevent a transaction that posted before it was made
                 throw FormValidationError()
             }
@@ -126,8 +124,14 @@ class TransactionFormModel: FormModel {
         transaction.status = status
         transaction.date = date
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            transaction.sourcePosted = sourceDate
-            transaction.destPosted = destDate
+            // If either is null then set them both
+            if (transaction.sourcePosted == nil || transaction.destPosted == nil) {
+                transaction.sourcePosted = postDate
+                transaction.destPosted = postDate
+            } else {
+                transaction.destPosted = postDate
+                transaction.sourcePosted = postDate
+            }
         } else {
             transaction.sourcePosted = nil
             transaction.destPosted = nil
@@ -151,7 +155,6 @@ class TransactionFormModel: FormModel {
         transaction.memo = memo
 
         transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
-
 
         try withDatabase.updateTransaction(&transaction, onComplete: { print("Submit complete") })
     }

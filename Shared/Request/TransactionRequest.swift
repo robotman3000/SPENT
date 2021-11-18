@@ -33,7 +33,11 @@ struct TransactionRequest: DatabaseRequest {
                 let source = try transaction.source.fetchOne(db)
                 let destination = try transaction.destination.fetchOne(db)
                 let tags = try transaction.tags.fetchAll(db)
-                let balance = try TransactionBalance.fetchOne(db, sql: "SELECT * FROM \(TransactionBalance.databaseTableName) WHERE tid == \(forID)")
+                var bidFilter = ""
+                if let bucketID = viewingBucket {
+                    bidFilter = "AND bid == \(bucketID)"
+                }
+                let balance = try TransactionBalance.fetchOne(db, sql: "SELECT * FROM \(TransactionBalance.databaseTableName) WHERE tid == \(forID) \(bidFilter)")
                 let splitMembers = try transaction.splitMembers.fetchAll(db)
                 
                 // Now for "computed" values

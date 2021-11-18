@@ -21,8 +21,7 @@ struct TransferForm: View {
             Section(){
                 DatePicker("Date", selection: $model.date, displayedComponents: [.date])
                 if model.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-                    DatePicker("Source Posting Date", selection: $model.sourceDate, displayedComponents: [.date])
-                    DatePicker("Destination Posting Date", selection: $model.destDate, displayedComponents: [.date])
+                    DatePicker("Posting Date", selection: $model.postDate, displayedComponents: [.date])
                 }
             }
             
@@ -45,10 +44,11 @@ struct TransferForm: View {
 class TransferFormModel: FormModel {
     fileprivate var transaction: Transaction
     
+    fileprivate var contextType: Transaction.TransType = .Withdrawal
+    
     @Published var status: Transaction.StatusTypes
     @Published var date: Date
-    @Published var sourceDate: Date
-    @Published var destDate: Date
+    @Published var postDate: Date
     @Published var sourceID: Int64?
     @Published var destID: Int64?
     @Published var amount: String
@@ -69,20 +69,25 @@ class TransferFormModel: FormModel {
         self.date = transaction.date
         self.memo = transaction.memo
         
-        sourceDate = Date()
-        destDate = Date()
+        postDate = Date()
         
         if transaction.id != nil {
             // We have an existing transaction
             type = transaction.type
             
             amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
-            
-            if transaction.sourcePosted != nil {
-                sourceDate = transaction.sourcePosted!
+            contextType = transaction.type
+            if let bucketID = contextBucket {
+                print("Transfer Form: Using context bucket")
+                contextType = transaction.getType(convertTransfer: true, bucket: bucketID)
             }
-            if transaction.destPosted != nil {
-                destDate = transaction.destPosted!
+            
+            if contextType == .Deposit && transaction.destPosted != nil {
+                postDate = transaction.destPosted!
+            }
+            
+            if contextType == .Withdrawal && transaction.sourcePosted != nil {
+                postDate = transaction.sourcePosted!
             }
         }
     }
@@ -115,7 +120,7 @@ class TransferFormModel: FormModel {
         }
 
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            if sourceDate < date || destDate < date {
+            if postDate < date {
                 // Prevent a transaction that posted before it was made
                 throw FormValidationError()
             }
@@ -126,8 +131,20 @@ class TransferFormModel: FormModel {
         transaction.status = status
         transaction.date = date
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            transaction.sourcePosted = sourceDate
-            transaction.destPosted = destDate
+            // If either is null then set them both
+            // otherwise update based on type
+            if (transaction.sourcePosted == nil || transaction.destPosted == nil) {
+                transaction.sourcePosted = postDate
+                transaction.destPosted = postDate
+            } else {
+                if contextType == .Deposit {
+                    transaction.destPosted = postDate
+                }
+                
+                if contextType == .Withdrawal {
+                    transaction.sourcePosted = postDate
+                }
+            }
         } else {
             transaction.sourcePosted = nil
             transaction.destPosted = nil

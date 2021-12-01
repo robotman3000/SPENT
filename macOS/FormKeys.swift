@@ -16,7 +16,7 @@ enum FormKeys: SheetProvider {
     case tag(context: SheetContext, tag: Tag?)
     //case schedule(context: SheetContext, schedule: Schedule?, onSubmit: (_ data: inout Schedule) -> Void)
     case transactionTags(context: SheetContext, transaction: Transaction)
-    case splitTransaction(context: SheetContext, splitMembers: [Transaction], contextBucket: Int64?, onSubmit: (_ data: inout [Transaction]) -> Void)
+    case splitTransaction(context: SheetContext, splitHead: Transaction?, contextBucket: Int64?)
     case transactionTemplate(context: SheetContext, template: DBTransactionTemplate?)
     case documentList(context: SheetContext, transaction: Transaction)
     case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
@@ -79,25 +79,11 @@ enum FormKeys: SheetProvider {
             return TemplateForm(model: TemplateFormModel(template: template!),
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .splitTransaction(context: let context, splitMembers: let members, contextBucket: let contextBucket, onSubmit: let handleSubmit):
-            var head: Transaction?
-            var newMembers: [Transaction] = []
-            
-            for member in members {
-                // Only the head will have this type
-                if member.type == .Split_Head {
-                    head = member
-                } else {
-                    newMembers.append(member)
-                }
-            }
-            
+        case .splitTransaction(context: let context, splitHead: var head, contextBucket: let contextBucket):
             if head == nil {
                 head = Transaction.newSplitTransaction()
             }
-            
-            return EmptyView().any()
-            //return SplitTransactionForm(head: head!, splitMembers: newMembers, selectedBucket: contextBucket, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
+            return SplitTransactionForm(model: SplitTransactionFormModel(head: head!), onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
         
         case .documentList(context: let context, transaction: let transaction):
             return DocumentListView(transaction: transaction).toolbar(content: {

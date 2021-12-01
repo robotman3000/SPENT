@@ -125,7 +125,7 @@ extension Transaction {
     
     static let splitMembers = hasMany(Transaction.self, using: ForeignKey(["Group"], to: ["Group"]))
     var splitMembers: QueryInterfaceRequest<Transaction> {
-        request(for: Transaction.splitMembers)
+        request(for: Transaction.splitMembers).filter(Transaction.Columns.sourcebucket != nil && Transaction.Columns.destbucket != nil)
     }
 }
  
@@ -285,15 +285,16 @@ extension Transaction {
     
     static func getSplitDirection(members: [Transaction]) -> TransType {
         // TODO: look into a more efficent process
-        
         var sources = Set<Int64?>()
         var dests = Set<Int64?>()
         
         for member in members {
             sources.insert(member.sourceID)
             dests.insert(member.destID)
+            
+            
         }
-        
+
         return dests.count >= sources.count ? .Deposit : .Withdrawal
     }
     

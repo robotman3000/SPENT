@@ -59,7 +59,7 @@ struct AccountContextMenu: View {
             }
             
             Button("Add Split"){
-                context.present(FormKeys.splitTransaction(context: context, splitMembers: [], contextBucket: model.bucket.id, onSubmit: splitSubmit))
+                context.present(FormKeys.splitTransaction(context: context, splitHead: nil, contextBucket: model.bucket.id))
             }
             
             Divider()
@@ -73,10 +73,6 @@ struct AccountContextMenu: View {
                 }
             }
         }
-    }
-    
-    func splitSubmit(transactions: inout [Transaction]) {
-        store.updateTransactions(&transactions, onComplete: { context.dismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
     }
 }
 

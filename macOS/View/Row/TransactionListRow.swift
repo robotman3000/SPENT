@@ -15,7 +15,11 @@ struct TransactionListRow: View {
     
     var body: some View {
         AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forRequest: TransactionRequest(forID: forID, viewingBucket: forBucket))) { model in
-            Internal_TransactionListRow(model: model, showTags: appState.showTags, showMemo: appState.showMemo, showRunning: appState.sorting == .byDate)
+            if model.transaction.type == .Split_Head {
+                Internal_SplitListRow(model: model)
+            } else {
+                Internal_TransactionListRow(model: model, showTags: $appState.showTags, showMemo: $appState.showMemo, showRunning: appState.sorting == .byDate)
+            }
         }
     }
 }
@@ -23,9 +27,9 @@ struct TransactionListRow: View {
 struct Internal_TransactionListRow: View {
     @Environment(\.colorScheme) var colorScheme
     let model: TransactionModel
-    var showTags: Bool = true
-    var showMemo: Bool = true
-    var showRunning: Bool = true
+    @Binding var showTags: Bool
+    @Binding var showMemo: Bool
+    let showRunning: Bool
     
     var body: some View {
         VStack (alignment: .leading){
@@ -46,7 +50,7 @@ struct Internal_TransactionListRow: View {
                     if let bal = model.balance  {
                         Text(bal.date.transactionFormat)
                     } else {
-                        Text("")
+                        Text(model.transaction.date.transactionFormat)
                     }
                     Spacer()
                 }.frame(minWidth: 90, maxWidth: 90)
@@ -54,49 +58,30 @@ struct Internal_TransactionListRow: View {
                 // Amount
                 HStack {
                     Spacer()
-                    if let splitMember = model.splitMember {
-                        Text(splitMember.amount.currencyFormat).foregroundColor(model.splitType == .Withdrawal ? .red : .gray)
-                    } else {
-                        if let bal = model.balance {
-                            Text(bal.amount.currencyFormat).foregroundColor(model.contextType == .Withdrawal ? .red : .gray)
-                        } else {
-                            Text(model.transaction.amount.currencyFormat).foregroundColor(.black)
-                        }
-                    }
-                    
+                    let amount = model.balance != nil ? model.balance!.amount.currencyFormat : model.transaction.amount.currencyFormat
+                    Text(amount).foregroundColor(model.contextType == .Withdrawal ? .red : .gray)
                 }.frame(minWidth: 80, maxWidth: 80)
                 
                 // Bucket
                 HStack {
-                    if model.splitMember != nil {
-                        if let bal = model.balance {
-                            Text("(\(bal.amount.currencyFormat))").foregroundColor(model.splitType == .Withdrawal ? .red : .gray)
-                        } else {
-                            Text("Balance Error")
-                        }
-                    }
                     VStack{
-                        if model.transaction.group == nil {
-                            let sName = model.source?.name ?? "NIL"
-                            let dName = model.destination?.name ?? "NIL"
-                            
-                            HStack {
-                                if model.transaction.type == .Transfer {
-                                    Text(model.contextType == .Deposit ? sName : dName)
-                                        .foregroundColor(.gray)
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                }
-                                
-                                Image(systemName: model.contextType == .Withdrawal ? "arrow.left" : "arrow.right")
-                                
-                                Text(model.contextType == .Deposit ? dName : sName)
+                        let sName = model.source?.name ?? "NIL"
+                        let dName = model.destination?.name ?? "NIL"
+                        
+                        HStack {
+                            if model.transaction.type == .Transfer {
+                                Text(model.contextType == .Deposit ? sName : dName)
                                     .foregroundColor(.gray)
                                     .font(.subheadline)
                                     .fontWeight(.medium)
                             }
-                        } else {
-                            Text("Split \(model.splitType.getStringName())")
+                            
+                            Image(systemName: model.contextType == .Withdrawal ? "arrow.left" : "arrow.right")
+                            
+                            Text(model.contextType == .Deposit ? dName : sName)
+                                .foregroundColor(.gray)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
                         }
                     }
                     Spacer()
@@ -134,16 +119,26 @@ struct Internal_TransactionListRow: View {
                     }
                 }
             }
-//
-//                Spacer(minLength: 5)
-
-//
-//            Divider().frame(height: 5)
             Spacer()
         }
     }
 }
 
+struct Internal_SplitListRow: View {
+    let model: TransactionModel
+    
+    var body: some View {
+        HStack {
+            Text("Split \(model.splitType.getStringName())")
+            
+            if let splitMember = model.splitMember {
+                Text(splitMember.amount.currencyFormat).foregroundColor(model.splitType == .Withdrawal ? .red : .gray)
+            }
+            
+            Text("(\(model.splitAmount.currencyFormat))").foregroundColor(model.splitType == .Withdrawal ? .red : .gray)
+        }
+    }
+}
 //struct TransactionListRow_Previews: PreviewProvider {
 //    static var previews: some View {
 //        TransactionListRow()

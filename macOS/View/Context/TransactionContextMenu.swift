@@ -35,9 +35,7 @@ struct TransactionContextMenu: View {
                     }
                 } else if model.transaction.type == .Split_Head {
                     Button("Edit Split"){
-                        context.present(FormKeys.splitTransaction(context: context, splitMembers: model.splitMembers, contextBucket: contextBucket, onSubmit: { data in
-                            store.updateTransactions(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                        }))
+                        context.present(FormKeys.splitTransaction(context: context, splitHead: model.transaction, contextBucket: contextBucket))
                     }
                 } else {
                     Button("Edit Transaction") {
@@ -115,7 +113,11 @@ struct TransactionContextMenu: View {
             // Delete
             Button("Delete Selected") {
                 context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-                    store.deleteTransaction(model.transaction.id!, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                    do {
+                        try store.deleteTransaction(model.transaction.id!)
+                    } catch {
+                        aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
+                    }
                 }))
             }
          
@@ -143,7 +145,12 @@ struct TransactionContextMenu: View {
                 transactionsUpdated.append(tr)
             }
         }
-        store.updateTransactions(&transactionsUpdated, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+        do {
+            try store.updateTransactions(&transactionsUpdated)
+        } catch {
+            print(error)
+            aContext.present(AlertKeys.databaseError(message: error.localizedDescription))
+        }
     }
 }
 
@@ -166,9 +173,7 @@ struct _NewTransactionContextButtons: View {
             }
 
             Button("Add Split"){
-                context.present(FormKeys.splitTransaction(context: context, splitMembers: [], contextBucket: contextBucket, onSubmit: { data in
-                    store.updateTransactions(&data, onComplete: { context.dismiss(); onFormDismiss() }, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
-                }))
+                context.present(FormKeys.splitTransaction(context: context, splitHead: nil, contextBucket: contextBucket))
             }
         }
     }

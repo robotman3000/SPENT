@@ -228,7 +228,7 @@
 		A2EC30A62697571C00781EC8 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A2EC30A8269758AB00781EC8 /* EditAccountListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditAccountListView.swift; sourceTree = "<group>"; };
 		A2EE03F9268518BF0092F63E /* iOSTransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSTransactionListView.swift; sourceTree = "<group>"; };
-		A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionForm.swift; sourceTree = "<group>"; };
+		A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionForm.swift; sourceTree = "<group>"; tabWidth = 5; };
 		A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionMemberList.swift; sourceTree = "<group>"; };
 		A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitMemberForm.swift; sourceTree = "<group>"; };
 		A2FE6FE8271B360D000F8F89 /* TemplateFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateFilter.swift; sourceTree = "<group>"; };

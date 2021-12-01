@@ -6,84 +6,92 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct SplitMemberForm: View {
-    @EnvironmentObject fileprivate var dbStore: DatabaseStore
+    @StateObject var model: SplitMemberModel
+    let choices: [Bucket]
     
-    @State var transaction: Transaction
-    @State var bucketChoices: [Bucket]
-    
-    let splitDirection: Transaction.TransType
-    
-    @State fileprivate var amount: String = ""
-    @State fileprivate var bucket: Bucket?
-    
-    let onSubmit: (_ data: inout Transaction) -> Void
-    let onDelete: () -> Void
+    let onSubmit: (_ model: SplitMemberModel) -> Void
+    let onDelete: (_ model: SplitMemberModel) -> Void
     let onCancel: () -> Void
     
     var body: some View {
         Form {
             HStack{
                 Text("$") // TODO: Localize this text
-                TextField("Amount", text: $amount)
+                TextField("Amount", text: $model.amount)
             }
 
-            BucketPicker(label: "Bucket", selection: $bucket, choices: bucketChoices)
+            BucketPicker(label: "Bucket", selection: $model.bucket, choices: choices)
             Section(){
-                TextEditor(text: $transaction.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+                TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
             
             Section{
                 HStack{
+                    Button("Delete", action: {
+                        onDelete(model)
+                    })
+                    
                     Button("Cancel", action: {
                         onCancel()
                     })
-                    Button("Delete", action: {
-                        onDelete()
-                    })
-                    Spacer()
+                    
                     Button("Done", action: {
-                        // No error message here b/c this form is displayed as a popover in the program
-                        // An alert doesn't make sense
-                        if storeState() {
-                            onSubmit(&transaction)
-                        }
+                        onSubmit(model)
                     })
                 }
             }
-        }.onAppear { loadState() }
-        .frame(minWidth: 250, minHeight: 150)
+        }.frame(minWidth: 250, minHeight: 150).padding()
+    }
+}
+
+class SplitMemberModel: ObservableObject, Identifiable, Equatable, Hashable {
+    static func == (lhs: SplitMemberModel, rhs: SplitMemberModel) -> Bool {
+        var result = true
+        if (lhs.id != rhs.id){
+            result = false
+        }
+        
+        if (lhs.amount != rhs.amount){
+            result = false
+        }
+        
+        if (lhs.bucket != rhs.bucket){
+            result = false
+        }
+        
+        if (lhs.memo != rhs.memo){
+            result = false
+        }
+        return result
     }
     
-    func loadState(){
-        amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
-        
-        if splitDirection == .Deposit && transaction.destID != nil {
-            bucket = dbStore.database?.resolveOne(transaction.destination)
-        }
-        
-        if splitDirection == .Withdrawal && transaction.sourceID != nil {
-            bucket = dbStore.database?.resolveOne(transaction.source)
-        }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(amount)
+        hasher.combine(bucket)
+        hasher.combine(memo)
     }
     
-    func storeState() -> Bool {
-        if amount.isEmpty || bucket == nil {
-            return false
+    let transaction: Transaction?
+    let runtimeID = UUID()
+    @Published var amount: String
+    @Published var bucket: Bucket? {
+        didSet {
+            self.bucketID = bucket?.id
         }
-        
-        transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
-        
-        if splitDirection == .Deposit {
-            transaction.destID = bucket!.id!
-        }
-        
-        if splitDirection == .Withdrawal {
-            transaction.sourceID = bucket!.id!
-        }
-        
-        return true
+    }
+    @Published var memo: String
+    private(set) var bucketID: Int64?
+    
+    init(transaction: Transaction?, bucket: Bucket?){
+        self.transaction = transaction
+        self.amount = NSDecimalNumber(value: transaction?.amount ?? 0).dividing(by: 100).stringValue
+        self.bucket = bucket
+        self.bucketID = bucket?.id
+        self.memo = transaction?.memo ?? ""
     }
 }
 

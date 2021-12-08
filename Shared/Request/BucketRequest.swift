@@ -33,7 +33,7 @@ struct BucketRequest: DatabaseRequest {
                 return BucketModel(bucket: bucket, balance: balance)
             }
         }
-        throw RequestFetchError()
+        throw RequestFetchError("requestValue failed for BucketRequest")
     }
     
     private func queryAggregates(withDatabase: Database, balance: inout BucketBalance) throws {

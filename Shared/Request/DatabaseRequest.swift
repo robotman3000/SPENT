@@ -6,6 +6,7 @@
 //
 
 import GRDB
+import Foundation
 
 protocol DatabaseRequest {
     associatedtype Value
@@ -13,6 +14,10 @@ protocol DatabaseRequest {
     func requestValue(_ db: Database) throws -> Value
 }
 
-struct RequestFetchError: Error {
-    
+struct RequestFetchError: Error, LocalizedError {
+    let errorDescription: String?
+
+    init(_ description: String) {
+        errorDescription = description
+    }
 }

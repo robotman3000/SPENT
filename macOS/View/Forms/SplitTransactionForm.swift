@@ -162,7 +162,7 @@ class SplitTransactionFormModel: FormModel {
             
             guard bucket != nil else {
                 // This member is invalid since it's source was null
-                throw FormInitializeError()
+                throw FormInitializeError("Member bucket was nil")
             }
             
             type = bucket!.isAccount() ? .Deposit : .Withdrawal
@@ -183,28 +183,28 @@ class SplitTransactionFormModel: FormModel {
     func validate() throws {
         // nil protection
         if amount.isEmpty || selectedBucket == nil || members.isEmpty {
-            throw FormValidationError()
+            throw FormValidationError("Form is missing required values")
         }
         
         // selectedBucket must be an account
         if !selectedBucket!.isAccount() {
-            throw FormValidationError()
+            throw FormValidationError("Invalid value")
         }
         
         for member in members {
             print(member.bucket)
             guard member.bucket != nil else {
-                throw FormValidationError()
+                throw FormValidationError("Invalid value")
             }
             
             // the bucket of the members must be a bucket
             if member.bucket!.isAccount() {
-                throw FormValidationError()
+                throw FormValidationError("Invalid value")
             }
             
             // The bucket of the member must be a child of the head account
             if member.bucket!.ancestorID! != selectedBucket!.id! {
-                throw FormValidationError()
+                throw FormValidationError("Invalid value")
             }
         }
         // TODO: Prevent over spending a split

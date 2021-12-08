@@ -7,10 +7,18 @@
 
 import Foundation
 
-struct FormValidationError: Error {
-    
+struct FormValidationError: Error, LocalizedError {
+    let errorDescription: String?
+
+    init(_ description: String) {
+        errorDescription = description
+    }
 }
 
-struct FormInitializeError: Error {
-    
+struct FormInitializeError: Error, LocalizedError {
+    let errorDescription: String?
+
+    init(_ description: String) {
+        errorDescription = description
+    }
 }

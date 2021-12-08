@@ -17,6 +17,6 @@ struct TemplateRequest: DatabaseRequest {
                 return template
             }
         }
-        throw RequestFetchError()
+        throw RequestFetchError("requestValue failed for TemplateRequest")
     }
 }

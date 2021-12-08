@@ -19,7 +19,7 @@ struct TransactionListView: View {
     var body: some View {
         List(selection: $selected) {
             if ids.isEmpty {
-                    Text("No Transactions")
+                Text("No Transactions")
             }
             
             ForEach(ids, id: \.self){ transactionID in

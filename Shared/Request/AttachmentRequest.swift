@@ -17,7 +17,7 @@ struct AttachmentRequest: DatabaseRequest {
                 return attachment
             }
         }
-        throw RequestFetchError()
+        throw RequestFetchError("requestValue failed for AttachmentRequest")
     }
 }
 

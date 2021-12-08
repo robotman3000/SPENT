@@ -60,6 +60,6 @@ struct TransactionRequest: DatabaseRequest {
                 return TransactionModel(transaction: transaction, tags: tags, source: source, destination: destination, balance: balance, splitMembers: splitMembers, contextType: contextType, splitType: splitType, splitMember: splitMember, splitAmount: splitAmount)
             }
         }
-        throw RequestFetchError()
+        throw RequestFetchError("requestValue failed for TransactionRequest")
     }
 }

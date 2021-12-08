@@ -18,6 +18,6 @@ struct TagRequest: DatabaseRequest {
                 return tag
             }
         }
-        throw RequestFetchError()
+        throw RequestFetchError("requestValue failed for TagRequest")
     }
 }

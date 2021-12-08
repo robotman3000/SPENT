@@ -44,7 +44,7 @@ class TagFormModel: FormModel {
     
     func validate() throws {
         if name.isEmpty {
-            throw FormValidationError()
+            throw FormValidationError("Please provide a name")
         }
     }
     

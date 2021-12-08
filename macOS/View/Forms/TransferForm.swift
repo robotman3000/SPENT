@@ -108,21 +108,21 @@ class TransferFormModel: FormModel {
     
     func validate() throws {
         if selectedSource?.id == selectedDest?.id {
-            throw FormValidationError()
+            throw FormValidationError("The from and to fields must be different")
         }
         
         if selectedSource?.id == nil || selectedDest?.id == nil {
-            throw FormValidationError()
+            throw FormValidationError("Please provide a value for the From and To fields")
         }
         
         if amount.isEmpty {
-            throw FormValidationError()
+            throw FormValidationError("Please provide a valid amount")
         }
 
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
             if postDate < date {
                 // Prevent a transaction that posted before it was made
-                throw FormValidationError()
+                throw FormValidationError("A transfer cannot have a post date before it's creation date")
             }
         }
     }

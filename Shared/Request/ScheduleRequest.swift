@@ -18,6 +18,6 @@ struct ScheduleRequest: DatabaseRequest {
                 return schedule
             }
         }
-        throw RequestFetchError()
+        throw RequestFetchError("requestValue failed for ScheduleRequest")
     }
 }

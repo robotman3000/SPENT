@@ -56,7 +56,7 @@ class BucketFormModel: FormModel {
     
     func validate() throws {
         if name.isEmpty || parent == nil {
-            throw FormValidationError()
+            throw FormValidationError("Please provide a name and parent")
         }
     }
     

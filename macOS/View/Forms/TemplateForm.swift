@@ -85,13 +85,13 @@ class TemplateFormModel: FormModel {
                 selectedDest = withDatabase.database?.resolveOne(Bucket.filter(id: destID))
             }
         } else {
-            throw FormInitializeError()
+            throw FormInitializeError("Failed to decode template")
         }
     }
     
     func validate() throws {
         if amount.isEmpty || (selectedSource == nil && selectedDest == nil) {
-            throw FormValidationError()
+            throw FormValidationError("Form is missing required values")
         }
     }
     

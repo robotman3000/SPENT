@@ -109,13 +109,13 @@ class TransactionFormModel: FormModel {
     
     func validate() throws {
         if amount.isEmpty || selectedBucket == nil {
-            throw FormValidationError()
+            throw FormValidationError("Form is missing required values")
         }
 
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
             if postDate < date {
                 // Prevent a transaction that posted before it was made
-                throw FormValidationError()
+                throw FormValidationError("A transaction cannot have a post date before it's creation date")
             }
         }
     }

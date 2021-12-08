@@ -2124,9 +2124,9 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "114"
-            endingLineNumber = "114"
-            landmarkName = "init(head:)"
+            startingLineNumber = "116"
+            endingLineNumber = "116"
+            landmarkName = "init(head:contextBucket:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
@@ -2156,8 +2156,8 @@
             filePath = "macOS/View/Forms/TransferForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "131"
-            endingLineNumber = "131"
+            startingLineNumber = "138"
+            endingLineNumber = "138"
             landmarkName = "submit(withDatabase:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2172,8 +2172,8 @@
             filePath = "macOS/View/Forms/TransferForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "82"
-            endingLineNumber = "82"
+            startingLineNumber = "83"
+            endingLineNumber = "83"
             landmarkName = "init(transaction:contextBucket:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2300,8 +2300,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "143"
-            endingLineNumber = "143"
+            startingLineNumber = "146"
+            endingLineNumber = "146"
             landmarkName = "deleteSplitMember(_:_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2316,8 +2316,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "138"
-            endingLineNumber = "138"
+            startingLineNumber = "141"
+            endingLineNumber = "141"
             landmarkName = "deleteSplitMember(_:_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2332,8 +2332,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "125"
-            endingLineNumber = "125"
+            startingLineNumber = "128"
+            endingLineNumber = "128"
             landmarkName = "updateSplitMember(_:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2348,8 +2348,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "217"
-            endingLineNumber = "217"
+            startingLineNumber = "227"
+            endingLineNumber = "227"
             landmarkName = "submit(withDatabase:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2380,8 +2380,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "191"
-            endingLineNumber = "191"
+            startingLineNumber = "201"
+            endingLineNumber = "201"
             landmarkName = "validate()"
             landmarkType = "7">
          </BreakpointContent>
@@ -2390,38 +2390,6 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "A2B9340D-4A26-4355-8232-54B734173F0C"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "197"
-            endingLineNumber = "197"
-            landmarkName = "validate()"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "4391EFE2-D77D-481D-A481-18904CD05C5A"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "202"
-            endingLineNumber = "202"
-            landmarkName = "validate()"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "0E6F1F1E-F424-4E35-ACBB-E20B37E7D164"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
@@ -2437,6 +2405,38 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
+            uuid = "4391EFE2-D77D-481D-A481-18904CD05C5A"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "212"
+            endingLineNumber = "212"
+            landmarkName = "validate()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "0E6F1F1E-F424-4E35-ACBB-E20B37E7D164"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "217"
+            endingLineNumber = "217"
+            landmarkName = "validate()"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
             uuid = "954DBBAE-7AD3-4306-803C-E94C9AAB5489"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -2444,8 +2444,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "186"
-            endingLineNumber = "186"
+            startingLineNumber = "196"
+            endingLineNumber = "196"
             landmarkName = "validate()"
             landmarkType = "7">
          </BreakpointContent>
@@ -2460,8 +2460,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "178"
-            endingLineNumber = "178"
+            startingLineNumber = "181"
+            endingLineNumber = "181"
             landmarkName = "loadState(withDatabase:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2476,8 +2476,8 @@
             filePath = "macOS/View/Forms/SplitMemberForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "90"
-            endingLineNumber = "90"
+            startingLineNumber = "92"
+            endingLineNumber = "92"
             landmarkName = "init(transaction:bucket:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2508,8 +2508,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "185"
-            endingLineNumber = "185"
+            startingLineNumber = "195"
+            endingLineNumber = "195"
             landmarkName = "validate()"
             landmarkType = "7">
          </BreakpointContent>
@@ -2524,8 +2524,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "196"
-            endingLineNumber = "196"
+            startingLineNumber = "206"
+            endingLineNumber = "206"
             landmarkName = "validate()"
             landmarkType = "7">
          </BreakpointContent>
@@ -2540,8 +2540,8 @@
             filePath = "macOS/View/Forms/SplitMemberForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "83"
-            endingLineNumber = "83"
+            startingLineNumber = "85"
+            endingLineNumber = "85"
             landmarkName = "bucket"
             landmarkType = "24">
          </BreakpointContent>
@@ -2556,8 +2556,8 @@
             filePath = "macOS/View/Forms/SplitTransactionForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "249"
-            endingLineNumber = "249"
+            startingLineNumber = "259"
+            endingLineNumber = "259"
             landmarkName = "submit(withDatabase:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2572,9 +2572,57 @@
             filePath = "macOS/View/Forms/TransferForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "132"
-            endingLineNumber = "132"
+            startingLineNumber = "139"
+            endingLineNumber = "139"
             landmarkName = "submit(withDatabase:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "8043AAC5-DF29-43C6-8E58-0A114D58A52F"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "68"
+            endingLineNumber = "68"
+            landmarkName = "body"
+            landmarkType = "24">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D9B73205-ED5B-48BD-BA25-CE3B9745A52E"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "69"
+            endingLineNumber = "69"
+            landmarkName = "body"
+            landmarkType = "24">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "4431BE8B-0DC2-4F9F-839F-A71CE6E14FB8"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "139"
+            endingLineNumber = "139"
+            landmarkName = "deleteSplitMember(_:_:)"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

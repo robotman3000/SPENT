@@ -59,8 +59,9 @@ class TransferFormModel: FormModel {
     @Published var selectedDest: Bucket?
     @Published var bucketChoices: [Bucket]
    
+    fileprivate let contextBucketID: Int64?
+    
     init(transaction: Transaction, contextBucket: Int64? = nil){
-        // TODO: Use contextBucket to preselect source/dest
         amount = ""
         type = .Withdrawal
         bucketChoices = []
@@ -90,6 +91,8 @@ class TransferFormModel: FormModel {
                 postDate = transaction.sourcePosted!
             }
         }
+        
+        self.contextBucketID = contextBucket
     }
     
     func loadState(withDatabase: DatabaseStore) throws {
@@ -100,6 +103,10 @@ class TransferFormModel: FormModel {
 
             if transaction.destID != nil {
                 selectedDest = withDatabase.database?.resolveOne(transaction.destination)
+            }
+        } else {
+            if let id = contextBucketID {
+                selectedSource = withDatabase.database?.resolveOne(Bucket.filter(id: id))
             }
         }
 

@@ -63,8 +63,9 @@ class TransactionFormModel: FormModel {
     @Published var selectedBucket: Bucket?
     @Published var bucketChoices: [Bucket]
    
+    fileprivate let contextBucketID: Int64?
+    
     init(transaction: Transaction, contextBucket: Int64? = nil){
-        // TODO: Use contextBucket to preselect source/dest
         amount = ""
         type = .Withdrawal
         bucketChoices = []
@@ -91,6 +92,8 @@ class TransactionFormModel: FormModel {
                 print("Warning: Transaction with id \(transaction.id ?? -1) is in an invalid state!")
             }
         }
+        
+        self.contextBucketID = contextBucket
     }
     
     func loadState(withDatabase: DatabaseStore) throws {
@@ -101,6 +104,10 @@ class TransactionFormModel: FormModel {
 
             if transaction.destID != nil {
                 selectedBucket = withDatabase.database?.resolveOne(transaction.destination)
+            }
+        } else {
+            if let id = contextBucketID {
+                selectedBucket = withDatabase.database?.resolveOne(Bucket.filter(id: id))
             }
         }
 

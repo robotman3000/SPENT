@@ -79,11 +79,11 @@ enum FormKeys: SheetProvider {
             return TemplateForm(model: TemplateFormModel(template: template!),
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .splitTransaction(context: let context, splitHead: var head, contextBucket: let contextBucket):
+        case .splitTransaction(context: let context, splitHead: var head, contextBucket: let bucket):
             if head == nil {
                 head = Transaction.newSplitTransaction()
             }
-            return SplitTransactionForm(model: SplitTransactionFormModel(head: head!), onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
+            return SplitTransactionForm(model: SplitTransactionFormModel(head: head!, contextBucket: bucket), onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
         
         case .documentList(context: let context, transaction: let transaction):
             return DocumentListView(transaction: transaction).toolbar(content: {

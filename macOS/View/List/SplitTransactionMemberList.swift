@@ -50,7 +50,8 @@ struct Internal_SplitTransactionMemberListRow: View {
                     Spacer()
                 }
                 HStack{
-                    Text(model.amount).bold()
+                    // TODO: Properly format the currency value
+                    Text("$\(model.amount)").bold()
                     Spacer()
                 }
             }.frame(width: 150)

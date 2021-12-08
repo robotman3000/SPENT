@@ -39,7 +39,8 @@ struct SplitTransactionForm: View {
             }
             
             Section(header: EnumPicker(label: "Type", selection: $model.type, enumCases: [.Deposit, .Withdrawal]).pickerStyle(SegmentedPickerStyle())){
-                BucketPicker(label: model.type == .Deposit ? "From" : "To", selection: $model.selectedBucket, choices: model.bucketChoices)
+                BucketPicker(label: model.type == .Deposit ? "From" : "To", selection: $model.selectedBucket, choices: model.bucketChoices.filter( {item in item.isAccount()} ))
+                    .disabled(model.head.id != nil) // TODO: Quick fix for issues arising from changing head bucket after creation
             }
             
             Section(){
@@ -54,7 +55,6 @@ struct SplitTransactionForm: View {
                 Button("+"){
                     if model.selectedBucket != nil {
                         let member = SplitMemberModel(transaction: nil, bucket: nil)
-                        member.memo = "Hello World"
                         selected = member
                     } else {
                         print("Ignoring button click; Head bucket isn't set")
@@ -70,7 +70,7 @@ struct SplitTransactionForm: View {
                     }
                 }.labelStyle(DefaultLabelStyle())
                 .popover(item: $selected) { member in
-                    SplitMemberForm(model: member, choices: model.bucketChoices, onSubmit: { member in
+                    SplitMemberForm(model: member, choices: model.bucketChoices.filter({item in item.ancestorID == model.selectedBucket?.id}), onSubmit: { member in
                         print(member.bucket)
                         model.updateSplitMember(member)
                         selected = nil
@@ -110,14 +110,17 @@ class SplitTransactionFormModel: FormModel {
     
     var deletedMembers: [Int64] = []
     
-    init(head: Transaction){
+    fileprivate let contextBucketID: Int64?
+    
+    init(head: Transaction, contextBucket: Int64? = nil){
         self.head = head
         payee = head.payee ?? ""
         memo = head.memo
         amount = NSDecimalNumber(value: head.amount).dividing(by: 100).stringValue
         date = head.date
         status = head.status
-        // TODO: Source and dest posted
+        
+        self.contextBucketID = contextBucket
     }
     
     func updateSplitMember(_ member: SplitMemberModel){
@@ -176,6 +179,13 @@ class SplitTransactionFormModel: FormModel {
             let bucket = withDatabase.database?.resolveOne(type == .Deposit ? rawMember.destination : rawMember.source)
             members.append(SplitMemberModel(transaction: rawMember, bucket: bucket))
         }
+        
+//        if selectedBucket == nil {
+//            if let id = contextBucketID {
+//                selectedBucket = withDatabase.database?.resolveOne(Bucket.filter(id: id))
+//
+//            }
+//        }
         
         bucketChoices = withDatabase.database?.resolve(Bucket.all()) ?? []
     }

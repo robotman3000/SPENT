@@ -30,13 +30,15 @@ struct SplitMemberForm: View {
             
             Section{
                 HStack{
+                    Button("Cancel", action: {
+                        onCancel()
+                    })
+                    
                     Button("Delete", action: {
                         onDelete(model)
                     })
                     
-                    Button("Cancel", action: {
-                        onCancel()
-                    })
+                    Spacer()
                     
                     Button("Done", action: {
                         onSubmit(model)
@@ -76,7 +78,7 @@ class SplitMemberModel: ObservableObject, Identifiable, Equatable, Hashable {
     }
     
     let transaction: Transaction?
-    let runtimeID = UUID()
+    let id = UUID()
     @Published var amount: String
     @Published var bucket: Bucket? {
         didSet {
@@ -92,6 +94,7 @@ class SplitMemberModel: ObservableObject, Identifiable, Equatable, Hashable {
         self.bucket = bucket
         self.bucketID = bucket?.id
         self.memo = transaction?.memo ?? ""
+        
     }
 }
 

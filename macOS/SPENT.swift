@@ -102,17 +102,17 @@ struct SPENT: App {
                     }
                 }
                 
-                Button("Export all attachments"){
-                    chooseFolder(onConfirm: { url in
-                        for attachment in dbStore.getAllAttachments() {
-                            do {
-                                try dbStore.exportAttachment(destinationURL: url, attachment: attachment)
-                            } catch {
-                                print(error)
-                            }
-                        }
-                    }, onCancel: {})
-                }
+//                Button("Export all attachments"){
+//                    chooseFolder(onConfirm: { url in
+//                        for attachment in dbStore.getAllAttachments() {
+//                            do {
+//                                try dbStore.exportAttachment(destinationURL: url, attachment: attachment)
+//                            } catch {
+//                                print(error)
+//                            }
+//                        }
+//                    }, onCancel: {})
+//                }
             }
         }
         

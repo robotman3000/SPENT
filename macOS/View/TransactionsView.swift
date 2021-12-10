@@ -15,6 +15,7 @@ struct TransactionsView: View {
     @State var editTags = false
     @State var stringFilter: String = ""
     let forBucketID: Int64?
+    let isAccount: Bool
     @StateObject private var context = SheetContext()
     @StateObject private var aContext = AlertContext()
     
@@ -41,7 +42,7 @@ struct TransactionsView: View {
             }.padding()
 
             QueryWrapperView(source: TransactionFilter(forBucket: forBucketID, includeBucketTree: appState.includeTree, showAllocations: appState.showInTree, memoLike: stringFilter)){ transactionIDs in
-                TransactionListView(ids: transactionIDs, contextBucket: forBucketID)
+                TransactionListView(ids: transactionIDs, contextBucket: forBucketID, isAccount: isAccount)
                 
                 VStack {
                     Spacer()

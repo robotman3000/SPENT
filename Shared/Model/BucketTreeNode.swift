@@ -9,5 +9,6 @@ import Foundation
 
 struct BucketTreeNode {
     var id: Int64
+    var isAccount: Bool
     var children: [BucketTreeNode]? = nil
 }

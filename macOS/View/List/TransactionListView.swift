@@ -15,6 +15,7 @@ struct TransactionListView: View {
     @State var selected = Set<Int64>()
     let ids: [Int64]
     let contextBucket: Int64?
+    let isAccount: Bool
     
     var body: some View {
         List(selection: $selected) {
@@ -23,7 +24,7 @@ struct TransactionListView: View {
             }
             
             ForEach(ids, id: \.self){ transactionID in
-                TransactionListRow(forID: transactionID, forBucket: contextBucket)
+                TransactionListRow(forID: transactionID, forBucket: contextBucket, isAccount: isAccount)
                 .contextMenu {
                     AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forRequest: TransactionRequest(forID: transactionID, viewingBucket: contextBucket))){ model in
                         TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransactions: selected, forTransaction: model, onFormDismiss: {})

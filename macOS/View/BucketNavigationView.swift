@@ -18,13 +18,13 @@ struct BucketNavigationView: View {
     
     var body: some View {
        List(selection: $selection) {
-          NavigationLink(destination: TransactionsView(forBucketID: nil), tag: -1, selection: $selection) {
+          NavigationLink(destination: TransactionsView(forBucketID: nil, isAccount: false), tag: -1, selection: $selection) {
               Label("All Transactions", systemImage: "list.triangle")
           }
           Section(header: Text("Accounts")){
               if !ids.isEmpty {
                  OutlineGroup(ids, id: \.id, children: \.children){ bucketNode in
-                    NavigationLink(destination: TransactionsView(forBucketID: bucketNode.id).environmentObject(store), tag: bucketNode.id, selection: $selection) {
+                    NavigationLink(destination: TransactionsView(forBucketID: bucketNode.id, isAccount: bucketNode.isAccount).environmentObject(store), tag: bucketNode.id, selection: $selection) {
                        BucketListRow(id: bucketNode.id)
                     }.contextMenu {
                        AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: bucketNode.id)){ bucketModel in

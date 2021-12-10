@@ -29,7 +29,7 @@ struct BucketTreeFilter: Queryable, DatabaseFilter {
             let buckets = try Bucket.selectID().filter(Bucket.Columns.ancestor == accountID).order(Bucket.Columns.name).fetchAll(db)
             
             // And create a node for it
-            tree.append(BucketTreeNode(id: accountID, children: buckets.isEmpty ? nil : buckets.map({id in BucketTreeNode(id: id, children: nil)})))
+            tree.append(BucketTreeNode(id: accountID, isAccount: true, children: buckets.isEmpty ? nil : buckets.map({id in BucketTreeNode(id: id, isAccount: false, children: nil)})))
         }
         
         return tree

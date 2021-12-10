@@ -12,13 +12,15 @@ struct TransactionListRow: View {
     @EnvironmentObject var store: DatabaseStore
     let forID: Int64
     let forBucket: Int64?
+    let isAccount: Bool
     
     var body: some View {
         AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forRequest: TransactionRequest(forID: forID, viewingBucket: forBucket))) { model in
             if model.transaction.type == .Split_Head {
-                Internal_SplitListRow(model: model)
+                Internal_SplitListRow(model: model, showMemberAmount: !isAccount)
             } else {
-                Internal_TransactionListRow(model: model, showTags: $appState.showTags, showMemo: $appState.showMemo, showRunning: appState.sorting == .byDate)
+                let shouldShowRunning = (appState.sorting == .byDate && isAccount)
+                Internal_TransactionListRow(model: model, showTags: $appState.showTags, showMemo: $appState.showMemo, showRunning: shouldShowRunning)
             }
         }
     }
@@ -126,13 +128,16 @@ struct Internal_TransactionListRow: View {
 
 struct Internal_SplitListRow: View {
     let model: TransactionModel
+    let showMemberAmount: Bool
     
     var body: some View {
         HStack {
             Text("Split \(model.splitType.getStringName())")
             
             if let splitMember = model.splitMember {
-                Text(splitMember.amount.currencyFormat).foregroundColor(model.splitType == .Withdrawal ? .red : .gray)
+                if showMemberAmount {
+                    Text(splitMember.amount.currencyFormat).foregroundColor(model.splitType == .Withdrawal ? .red : .gray)
+                }
             }
             
             Text("(\(model.splitAmount.currencyFormat))").foregroundColor(model.splitType == .Withdrawal ? .red : .gray)

@@ -44,7 +44,9 @@ class TransactionTagFormModel: FormModel {
     func validate() throws {}
     
     func submit(withDatabase: DatabaseStore) throws {
-        try withDatabase.setTransactionTags(transaction: transaction, tags: Array(tags), onComplete: { print("Submit complete") })
+        try withDatabase.write { db in
+            try withDatabase.setTransactionTags(db, transaction: transaction, tags: Array(tags))
+        }
     }
 }
 

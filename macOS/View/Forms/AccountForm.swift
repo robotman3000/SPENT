@@ -55,7 +55,9 @@ class AccountFormModel: FormModel {
         bucket.ancestorID = nil
         bucket.memo = memo
         bucket.isFavorite = isFavorite
-        try withDatabase.updateBucket(&bucket, onComplete: { print("Submit complete") })
+        try withDatabase.write { db in
+            try withDatabase.saveBucket(db, &bucket)
+        }
     }
 }
 

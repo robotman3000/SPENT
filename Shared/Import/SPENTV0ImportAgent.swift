@@ -124,7 +124,7 @@ struct SPENTV0ImportAgent: ImportAgent {
             }
             
             print("Preparing to commit imported data")
-            try db.database!.getWriter().write { db in
+            try db.write { db in
                 // Having created all the database objects, we now proceed to store them
                 // We turn off foreign key verification so that we don't have any "doesn't exist when needed" issues
                 

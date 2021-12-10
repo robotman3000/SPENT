@@ -27,7 +27,13 @@ struct AccountContextMenu: View {
                 
                 Button("Delete Account"){
                     context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-                        store.deleteBucket(model.bucket.id!, onError: {error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription )) })
+                        do {
+                            try store.write { db in
+                                try store.deleteBucket(db, id: model.bucket.id!)
+                            }
+                        } catch {
+                            aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
+                        }
                     }))
                 }
                 
@@ -43,7 +49,13 @@ struct AccountContextMenu: View {
                 
                 Button("Delete Bucket"){
                     context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-                        store.deleteBucket(model.bucket.id!, onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+                        do {
+                            try store.write { db in
+                                try store.deleteBucket(db, id: model.bucket.id!)
+                            }
+                        } catch {
+                            aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
+                        }
                     }))
                 }
             }
@@ -67,7 +79,9 @@ struct AccountContextMenu: View {
             Button("\(model.bucket.isFavorite ? "Unfavorite" : "Mark as Favorite")"){
                 model.bucket.isFavorite = !model.bucket.isFavorite
                 do {
-                    try store.updateBucket(&model.bucket, onComplete: { context.dismiss() })
+                    try store.write { db in
+                        try store.saveBucket(db, &model.bucket)
+                    }
                 } catch {
                     aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
                 }

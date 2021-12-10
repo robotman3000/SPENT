@@ -95,7 +95,7 @@ struct AppDatabase {
             try db.create(table: "Schedules") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("Name", .text).notNull().unique()
-                t.column("Template", .integer).references("TransactionTemplates")
+                t.column("Template", .integer).references("TransactionTemplates", onDelete: .restrict) // Prevent deleting a template in use by a schedule
                 t.column("Memo", .text).notNull().defaults(to: "")
                 t.column("Favorite", .boolean).notNull().defaults(to: false)
             }
@@ -103,8 +103,8 @@ struct AppDatabase {
             try db.create(table: "Buckets") { t in
                 t.autoIncrementedPrimaryKey("id")
                 t.column("Name", .text).notNull().unique()
-                t.column("Parent", .integer).references("Buckets", onDelete: .cascade)
-                t.column("Ancestor", .integer).references("Buckets", onDelete: .cascade)
+                t.column("Parent", .integer).references("Buckets", onDelete: .cascade) // Delete the children with the parent
+                t.column("Ancestor", .integer).references("Buckets", onDelete: .cascade) // Delete the children with the parent
                 t.column("Memo", .text).notNull().defaults(to: "")
                 t.column("Favorite", .boolean).notNull().defaults(to: false)
                 t.column(sql: "V_Ancestor \(Database.ColumnType.integer.rawValue) GENERATED AS (IFNULL(Ancestor, id)) STORED")
@@ -128,8 +128,8 @@ struct AppDatabase {
                 }
                 //TODO: Eventually this will have to set the source or dest to the ancestor account if a bucket is deleted
                 // and delete the transaction if the ancestor account is being deleted
-                t.column("SourceBucket", .integer).references("Buckets")//, onDelete: .cascade)
-                t.column("DestBucket", .integer).references("Buckets")//, onDelete: .cascade)
+                t.column("SourceBucket", .integer).references("Buckets", onDelete: .restrict) // Prevent deleting a bucket with transactions
+                t.column("DestBucket", .integer).references("Buckets", onDelete: .restrict) // Prevent deleting a bucket with transactions
                 t.column("Memo", .text).notNull().defaults(to: "")
                 t.column("Payee", .text)
                 t.column("Group", .text) // String UUID
@@ -155,19 +155,14 @@ struct AppDatabase {
                             END
                         ) STORED
                 """)
-                
                 //t.column("V_Date", .integer).generatedAs(sql: "IFNULL(PostDate, TransDate)")
                 
             }
             
             try db.create(table: "TransactionTags") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .cascade)
-                
-                // It should not be possible to delete a tag assigned to a transaction by cascade because
-                // the schedules table depends on the presence of tags it has assigned.
-                // TODO: Use program logic to determine if a tag can be deleted
-                t.column("TagID", .integer).notNull().references("Tags")
+                t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .cascade) // Delete the assignment with the transaction
+                t.column("TagID", .integer).notNull().references("Tags", onDelete: .restrict) // Prevent deleting a tag that is assigned to transactions
                 t.uniqueKey(["TransactionID", "TagID"], onConflict: .replace)
             }
             
@@ -185,11 +180,11 @@ struct AppDatabase {
             // Create attachment assignments
             try db.create(table: "TransactionAttachments") { t in
                 t.autoIncrementedPrimaryKey("id")
-                t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .cascade)
+                t.column("TransactionID", .integer).notNull().references("Transactions", onDelete: .restrict) // Prevent deleting a transaction with attachments; This will require the program to remove the attachments first, thus reducing the possibility for "loose" attachements in the db
                 
                 // We can have may attachents for a transaction but each attachment can have only one transaction
                 // so we prevent the attachment id from being used more than once
-                t.column("AttachmentID", .integer).unique().notNull().references("Attachments", onDelete: .cascade)
+                t.column("AttachmentID", .integer).unique().notNull().references("Attachments", onDelete: .cascade) // Delete the assignment with the attachment
             }
             
             // VIEW - Transaction Ancestors
@@ -305,139 +300,9 @@ extension AppDatabase {
         }
     }
     
-    func getWriter() -> DatabaseWriter {
-        return dbWriter
-    }
-    
-    /// Saves (inserts or updates) a transaction. When the method returns, the
-    /// transaction is present in the database, and its id is not nil.
-    func saveTransaction(_ transaction: inout Transaction) throws {
-//        if player.name.isEmpty {
-//            throw ValidationError.missingName
-//        }
+    func transaction(_ query: (_ db: Database) throws -> Void) throws {
         try dbWriter.write { db in
-            try transaction.save(db)
-        }
-    }
-    
-    func saveTransactions(_ transactions: inout [Transaction]) throws {
-//        if player.name.isEmpty {
-//            throw ValidationError.missingName
-//        }
-        try dbWriter.write { db in
-            for var t in transactions {
-                try t.save(db)
-            }
-        }
-    }
-    
-    /// Delete the specified transactions
-    func deleteTransactions(ids: [Int64]) throws {
-        try dbWriter.write { db in
-            _ = try Transaction.deleteAll(db, keys: ids)
-        }
-    }
-    
-    /// Delete all transactions
-    func deleteAllTransactions() throws {
-        try dbWriter.write { db in
-            _ = try Transaction.deleteAll(db)
-        }
-    }
-    
-    func saveTag(_ tag: inout Tag) throws {
-        try dbWriter.write { db in
-            try tag.save(db)
-        }
-    }
-    
-    func deleteTag(id: Int64) throws {
-        try dbWriter.write { db in
-            _ = try Tag.deleteOne(db, id: id)
-        }
-    }
-    
-    func setTransactionTags(transaction: Transaction, tags: [Tag]) throws {
-        try dbWriter.write { db in
-            try TransactionTag.filter(TransactionTag.Columns.transactionID == transaction.id!).deleteAll(db)
-            try tags.forEach({ tag in
-                var tTag = TransactionTag(id: nil, transactionID: transaction.id!, tagID: tag.id!)
-                try tTag.save(db)
-            })
-        }
-    }
-    
-    func setTransactionsTags(transactions: [Transaction], tags: [Tag]) throws {
-        try dbWriter.write { db in
-            //TODO: This can be made faster
-            for transaction in transactions {
-                try TransactionTag.filter(TransactionTag.Columns.transactionID == transaction.id!).deleteAll(db)
-                try tags.forEach({ tag in
-                    var tTag = TransactionTag(id: nil, transactionID: transaction.id!, tagID: tag.id!)
-                    try tTag.save(db)
-                })
-            }
-        }
-    }
-    
-    func saveBucket(_ bucket: inout Bucket) throws {
-        try dbWriter.write { db in
-            try bucket.save(db)
-        }
-    }
-    
-    func deleteBucket(id: Int64) throws {
-        try dbWriter.write { db in
-            _ = try Bucket.deleteOne(db, id: id)
-        }
-    }
-    
-    func deleteBuckets(ids: [Int64]) throws {
-        try dbWriter.write { db in
-            _ = try Bucket.deleteAll(db, ids: ids)
-        }
-    }
-    
-    func saveSchedule(_ schedule: inout Schedule) throws {
-        try dbWriter.write { db in
-            try schedule.save(db)
-        }
-    }
-    
-    func deleteSchedule(id: Int64) throws {
-        try dbWriter.write { db in
-            _ = try Schedule.deleteOne(db, id: id)
-        }
-    }
-    
-    func saveTemplate(_ template: inout DBTransactionTemplate) throws {
-        try dbWriter.write { db in
-            try template.save(db)
-        }
-    }
-    
-    func deleteTemplate(id: Int64) throws {
-        try dbWriter.write { db in
-            _ = try DBTransactionTemplate.deleteOne(db, id: id)
-        }
-    }
-    
-    func saveAttachment(_ attachment: inout Attachment) throws {
-        try dbWriter.write { db in
-            try attachment.save(db)
-        }
-    }
-    
-    func deleteAttachment(id: Int64) throws {
-        try dbWriter.write { db in
-            _ = try Attachment.deleteOne(db, id: id)
-        }
-    }
-    
-    func addTransactionAttachment(transaction: Transaction, attachment: Attachment) throws {
-        try dbWriter.write { db in
-            var tAttachment = TransactionAttachment(id: nil, transactionID: transaction.id!, attachmentID: attachment.id!)
-            try tAttachment.save(db)
+            try query(db)
         }
     }
 }

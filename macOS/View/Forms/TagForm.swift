@@ -52,7 +52,9 @@ class TagFormModel: FormModel {
         tag.name = name
         tag.isFavorite = isFavorite
         tag.memo = memo
-        try withDatabase.updateTag(&tag, onComplete: { print("Submit complete") })
+        try withDatabase.write({ db in
+            try withDatabase.saveTag(db, &tag)
+        })
     }
     
     func isNew() -> Bool {

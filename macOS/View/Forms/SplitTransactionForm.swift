@@ -71,7 +71,6 @@ struct SplitTransactionForm: View {
                 }.labelStyle(DefaultLabelStyle())
                 .popover(item: $selected) { member in
                     SplitMemberForm(model: member, choices: model.bucketChoices.filter({item in item.ancestorID == model.selectedBucket?.id}), onSubmit: { member in
-                        print(member.bucket)
                         model.updateSplitMember(member)
                         selected = nil
                     }, onDelete: { member in
@@ -129,7 +128,6 @@ class SplitTransactionFormModel: FormModel {
         
         // Add the new member to the array
         members.append(member)
-        print(member.bucket)
     }
     
     func deleteSplitMember(_ member: SplitMemberModel, _ isUpdate: Bool = false){
@@ -202,7 +200,6 @@ class SplitTransactionFormModel: FormModel {
         }
         
         for member in members {
-            print(member.bucket)
             guard member.bucket != nil else {
                 throw FormValidationError("Invalid value")
             }
@@ -270,13 +267,15 @@ class SplitTransactionFormModel: FormModel {
             newSplit.append(member)
         }
         
-        //TODO: Make these two operations run in a single transaction
-        
-        // Delete any deleted split members
-        try withDatabase.deleteTransactions(deletedMembers)
-        
-        // Update the remaining
-        try withDatabase.updateTransactions(&newSplit, onComplete: { print("Submit complete") })
+        try withDatabase.write { db in
+            // Delete any deleted split members
+            if !deletedMembers.isEmpty {
+                try withDatabase.deleteTransactions(db, ids: deletedMembers)
+            }
+            
+            // Update the remaining
+            try withDatabase.saveTransactions(db, &newSplit)
+        }
     }
 }
 

@@ -114,13 +114,15 @@ struct TransactionContextMenu: View {
             Button("Delete Selected") {
                 context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
                     do {
-                        try store.deleteTransaction(model.transaction.id!)
+                        try store.write { db in
+                            try store.deleteTransactions(db, ids: [model.transaction.id!])
+                        }
                     } catch {
                         aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
                     }
                 }))
             }
-         
+
             Section{
                 Button("Debug Info") {
                     aContext.present(AlertKeys.message(message: forTransaction.debugDescription))
@@ -146,7 +148,9 @@ struct TransactionContextMenu: View {
             }
         }
         do {
-            try store.updateTransactions(&transactionsUpdated)
+            try store.write { db in
+                try store.saveTransactions(db, &transactionsUpdated)
+            }
         } catch {
             print(error)
             aContext.present(AlertKeys.databaseError(message: error.localizedDescription))

@@ -70,7 +70,9 @@ class BucketFormModel: FormModel {
         }
         bucket.memo = memo
         bucket.isFavorite = isFavorite
-        try withDatabase.updateBucket(&bucket, onComplete: { print("Submit complete") })
+        try withDatabase.write { db in
+            try withDatabase.saveBucket(db, &bucket)
+        }
     }
     
     func isNew() -> Bool {

@@ -202,7 +202,7 @@ struct SPENT: App {
     
     func setDBCommit(database: AppDatabase, commit: String){
         do {
-            try database.getWriter().write { db in
+            try database.transaction { db in
                 var config = try AppConfiguration.fetch(db)
                 
                 // Update some config values

@@ -55,7 +55,13 @@ struct TagListView: View {
     
     func deleteTag(tag: Tag){
         sheetContext.present(FormKeys.confirmDelete(context: sheetContext, message: "", onConfirm: {
-            store.deleteTag(tag.id!, onError: { error in alertContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+            do {
+                try store.write { db in
+                    try store.deleteTag(db, id: tag.id!)
+                }
+            } catch {
+                alertContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
+            }
         }))
     }
 }

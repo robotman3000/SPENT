@@ -163,7 +163,9 @@ class TransactionFormModel: FormModel {
 
         transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
 
-        try withDatabase.updateTransaction(&transaction, onComplete: { print("Submit complete") })
+        try withDatabase.write { db in
+            try withDatabase.saveTransaction(db, &transaction)
+        }
     }
 }
 

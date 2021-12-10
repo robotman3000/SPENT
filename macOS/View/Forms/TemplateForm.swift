@@ -122,7 +122,9 @@ class TemplateFormModel: FormModel {
         let jsonData = try JSONEncoder().encode(template)
         dbtemplate.template = String(data: jsonData, encoding: .utf8) ?? ""
         
-        try withDatabase.updateTemplate(&dbtemplate, onComplete: { print("Submit complete") })
+        try withDatabase.write { db in
+            try withDatabase.saveTemplate(db, &dbtemplate)
+        }
     }
 }
 

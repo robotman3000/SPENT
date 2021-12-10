@@ -122,7 +122,7 @@ class SPENTLegacyImportAgent: ImportAgent {
                 }
             }
             
-            try dbStore.database!.getWriter().write { db in
+            try dbStore.write({ db in
                 // Having created all the database objects, we now proceed to store them
                 // We turn off foreign key verification so that we don't have any "doesn't exist when needed" issues
                 
@@ -141,7 +141,7 @@ class SPENTLegacyImportAgent: ImportAgent {
                 for var tTag in transactionTags {
                     try tTag.save(db)
                 }
-            }
+            })
         }
     }
 }

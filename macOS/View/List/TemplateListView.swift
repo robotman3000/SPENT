@@ -55,7 +55,13 @@ struct TemplateListView: View {
     
     func deleteTemplate(template: DBTransactionTemplate){
         sheetContext.present(FormKeys.confirmDelete(context: sheetContext, message: "", onConfirm: {
-            store.deleteTemplate(template.id!, onError: { error in alertContext.present(AlertKeys.databaseError(message: error.localizedDescription ))})
+            do {
+                try store.write { db in
+                    try store.deleteTemplate(db, id: template.id!)
+                }
+            } catch {
+                alertContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
+            }
         }))
     }
 }

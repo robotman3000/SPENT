@@ -38,6 +38,7 @@ class TransactionTagFormModel: FormModel {
     func loadState(withDatabase: DatabaseStore) throws {
         let tags = withDatabase.database?.resolve(transaction.tags) ?? []
         self.tags = Set(tags)
+        choices = withDatabase.database?.resolve(Tag.all()) ?? []
     }
     
     func validate() throws {}

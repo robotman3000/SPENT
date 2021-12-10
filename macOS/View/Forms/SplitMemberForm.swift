@@ -9,7 +9,7 @@ import SwiftUI
 import SwiftUIKit
 
 struct SplitMemberForm: View {
-    @StateObject var model: SplitMemberModel
+    @State var model: SplitMemberModel
     let choices: [Bucket]
     
     let onSubmit: (_ model: SplitMemberModel) -> Void
@@ -49,52 +49,19 @@ struct SplitMemberForm: View {
     }
 }
 
-class SplitMemberModel: ObservableObject, Identifiable, Equatable, Hashable {
-    static func == (lhs: SplitMemberModel, rhs: SplitMemberModel) -> Bool {
-        var result = true
-        if (lhs.id != rhs.id){
-            result = false
-        }
-        
-        if (lhs.amount != rhs.amount){
-            result = false
-        }
-        
-        if (lhs.bucket != rhs.bucket){
-            result = false
-        }
-        
-        if (lhs.memo != rhs.memo){
-            result = false
-        }
-        return result
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(amount)
-        hasher.combine(bucket)
-        hasher.combine(memo)
-    }
+struct SplitMemberModel: Identifiable, Hashable {
+    var id: UUID = UUID()
     
     let transaction: Transaction?
-    let id = UUID()
-    @Published var amount: String
-    @Published var bucket: Bucket? {
-        didSet {
-            self.bucketID = bucket?.id
-        }
-    }
-    @Published var memo: String
-    private(set) var bucketID: Int64?
+    var amount: String
+    var bucket: Bucket?
+    var memo: String
     
     init(transaction: Transaction?, bucket: Bucket?){
         self.transaction = transaction
         self.amount = NSDecimalNumber(value: transaction?.amount ?? 0).dividing(by: 100).stringValue
         self.bucket = bucket
-        self.bucketID = bucket?.id
         self.memo = transaction?.memo ?? ""
-        
     }
 }
 

@@ -136,7 +136,7 @@ class SplitTransactionFormModel: FormModel {
         var deleteIndex: Int? = nil
         var deletedId: Int64?
         for (index, element) in members.enumerated() {
-            if element == member {
+            if element.id == member.id {
                 deletedId = member.transaction?.id
                 deleteIndex = index
                 break

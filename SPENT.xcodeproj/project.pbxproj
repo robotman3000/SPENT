@@ -44,8 +44,6 @@
 		A230C0C7270CEB55000C739F /* TemplateForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C6270CEB55000C739F /* TemplateForm.swift */; };
 		A230C0C9270CF320000C739F /* TemplateManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C8270CF320000C739F /* TemplateManagerView.swift */; };
 		A230C0CB270CF3FB000C739F /* TemplateRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0CA270CF3FB000C739F /* TemplateRequest.swift */; };
-		A230C0CE270E0970000C739F /* Libical in Frameworks */ = {isa = PBXBuildFile; productRef = A230C0CD270E0970000C739F /* Libical */; };
-		A230C0D0270E0970000C739F /* SwiftIcal in Frameworks */ = {isa = PBXBuildFile; productRef = A230C0CF270E0970000C739F /* SwiftIcal */; };
 		A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* CurrencyText.swift */; };
 		A2449FEF271F797C006B5185 /* TransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2449FEE271F797C006B5185 /* TransactionListView.swift */; };
 		A2449FF1271F7B51006B5185 /* TransactionFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2449FF0271F7B51006B5185 /* TransactionFilter.swift */; };
@@ -239,10 +237,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A230C0CE270E0970000C739F /* Libical in Frameworks */,
 				A217EA9B26A9BF1A004388FF /* SwiftUIKit in Frameworks */,
 				A21C63D327074D36002D3084 /* GRDB in Frameworks */,
-				A230C0D0270E0970000C739F /* SwiftIcal in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -569,8 +565,6 @@
 			packageProductDependencies = (
 				A217EA9A26A9BF1A004388FF /* SwiftUIKit */,
 				A21C63D227074D36002D3084 /* GRDB */,
-				A230C0CD270E0970000C739F /* Libical */,
-				A230C0CF270E0970000C739F /* SwiftIcal */,
 			);
 			productName = macOS;
 			productReference = A2A5670D262740EC009C7E8C /* SPENT.app */;
@@ -1116,16 +1110,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A21C63D127074D36002D3084 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
 			productName = GRDB;
-		};
-		A230C0CD270E0970000C739F /* Libical */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A230C0CC270E0970000C739F /* XCRemoteSwiftPackageReference "swift-ical" */;
-			productName = Libical;
-		};
-		A230C0CF270E0970000C739F /* SwiftIcal */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A230C0CC270E0970000C739F /* XCRemoteSwiftPackageReference "swift-ical" */;
-			productName = SwiftIcal;
 		};
 		A2C2ADA026D5878A00537971 /* SwiftUIKit */ = {
 			isa = XCSwiftPackageProductDependency;

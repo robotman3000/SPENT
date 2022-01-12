@@ -26,7 +26,7 @@ struct TransactionListView: View {
             ForEach(ids, id: \.self){ transactionID in
                 TransactionListRow(forID: transactionID, forBucket: contextBucket, isAccount: isAccount)
                 .contextMenu {
-                    AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forRequest: TransactionRequest(forID: transactionID, viewingBucket: contextBucket))){ model in
+                    AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forRequest: TransactionRequest(forID: transactionID, viewingBucket: contextBucket)), "TransactionListView [Context]"){ model in
                         TransactionContextMenu(context: sheetContext, aContext: alertContext, contextBucket: contextBucket, forTransactions: selected, forTransaction: model, onFormDismiss: {})
                     }
                 }

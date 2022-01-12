@@ -23,7 +23,7 @@ struct TagListView: View {
             
             ForEach(ids, id: \.self){ tagID in
                 TagListRow(forID: tagID).contextMenu {
-                    AsyncContentView(source: TagFilter.publisher(store.getReader(), forID: tagID)){ model in
+                    AsyncContentView(source: TagFilter.publisher(store.getReader(), forID: tagID), "TagListView [Context]"){ model in
                         Button("New Tag"){
                             updateTag(tag: nil)
                         }

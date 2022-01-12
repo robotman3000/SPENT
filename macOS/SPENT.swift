@@ -67,27 +67,17 @@ struct SPENT: App {
                 Menu("Import") {
                     Button("SPENT Dev Legacy") {
                         DispatchQueue.main.async {
-                            // allowedTypes = SPENTLegacyImportAgent.importTypes
-                            openFile(allowedTypes: [], onConfirm: { selectedFile in
-                                do {
-                                    try SPENTLegacyImportAgent.importSPENTLegacy(url: selectedFile, dbStore: dbStore)
-                                } catch {
-                                    print(error)
-                                    alertContext.present(AlertKeys.message(message: "Failed to import legacy database!"))
-                                }
+                            let agent = SPENTLegacyImportAgent()
+                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
+                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
                             }, onCancel: {})
                         }
                     }
                     Button("SPENT Dev V0") {
                         DispatchQueue.main.async {
-                            // allowedTypes = SPENTLegacyImportAgent.importTypes
-                            openFile(allowedTypes: [], onConfirm: { selectedFile in
-                                do {
-                                    try SPENTV0ImportAgent.importDB(url: selectedFile, db: dbStore)
-                                } catch {
-                                    print(error)
-                                    alertContext.present(AlertKeys.message(message: "Failed to import v0 database!"))
-                                }
+                            let agent = SPENTV0ImportAgent()
+                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
+                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
                             }, onCancel: {})
                         }
                     }
@@ -132,6 +122,15 @@ struct SPENT: App {
             SettingsView().environmentObject(globalState).environmentObject(dbStore).frameSize()
         }
     
+    }
+    
+    func executeImportAgent(agent: ImportAgent, importURL: URL, database: DatabaseStore) {
+        do {
+            try agent.importFromURL(url: importURL, database: database)
+        } catch {
+            print(error)
+            alertContext.present(AlertKeys.message(message: "Import Failed. \(error.localizedDescription)"))
+        }
     }
     
     func loadDB(url: URL, isNew: Bool){

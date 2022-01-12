@@ -15,7 +15,7 @@ struct TagListRow: View {
     let forID: Int64
     
     var body: some View {
-        AsyncContentView(source: TagFilter.publisher(store.getReader(), forID: forID)) { model in
+        AsyncContentView(source: TagFilter.publisher(store.getReader(), forID: forID), "TagListRow") { model in
             Internal_TagListRow(model: model)
         }
     }

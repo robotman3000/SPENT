@@ -12,7 +12,7 @@ struct TemplateListRow: View {
     let forID: Int64
     
     var body: some View {
-        AsyncContentView(source: TemplateFilter.publisher(store.getReader(), forID: forID)) { model in
+        AsyncContentView(source: TemplateFilter.publisher(store.getReader(), forID: forID), "TemplateListRow") { model in
             Internal_TemplateListRow(model: model)
         }
     }

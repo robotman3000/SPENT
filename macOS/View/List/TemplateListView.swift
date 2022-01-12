@@ -23,7 +23,7 @@ struct TemplateListView: View {
             
             ForEach(ids, id: \.self){ templateID in
                 TemplateListRow(forID: templateID).contextMenu {
-                    AsyncContentView(source: TemplateFilter.publisher(store.getReader(), forID: templateID)){ model in
+                    AsyncContentView(source: TemplateFilter.publisher(store.getReader(), forID: templateID), "TemplateListRow [Context]"){ model in
                         Button("New Template"){
                             updateTemplate(template: nil)
                         }

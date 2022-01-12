@@ -124,6 +124,8 @@
 		A2F18BCE26B2DF82009BA9F4 /* SplitTransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */; };
 		A2F18BD026B2E312009BA9F4 /* SplitTransactionMemberList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */; };
 		A2F18BD226B496E1009BA9F4 /* SplitMemberForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */; };
+		A2F8C092276B9EC600F2B3AF /* QIFImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */; };
+		A2F8C093276B9EC600F2B3AF /* QIFImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */; };
 		A2FE6FE9271B360D000F8F89 /* TemplateFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2FE6FE8271B360D000F8F89 /* TemplateFilter.swift */; };
 /* End PBXBuildFile section */
 
@@ -229,6 +231,7 @@
 		A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionForm.swift; sourceTree = "<group>"; tabWidth = 5; };
 		A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionMemberList.swift; sourceTree = "<group>"; };
 		A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitMemberForm.swift; sourceTree = "<group>"; };
+		A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QIFImportAgent.swift; sourceTree = "<group>"; };
 		A2FE6FE8271B360D000F8F89 /* TemplateFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateFilter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -309,6 +312,7 @@
 			isa = PBXGroup;
 			children = (
 				A2C2ADB926D5AF2E00537971 /* ImportAgent.swift */,
+				A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */,
 				A2C2ADBB26D5B0CE00537971 /* SPENTLegacyImportAgent.swift */,
 				A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */,
 			);
@@ -725,6 +729,7 @@
 				A2C2ADB326D58F0200537971 /* GeneralSettingsView.swift in Sources */,
 				A20DAF7B2671509B00347205 /* TransactionForm.swift in Sources */,
 				A2C2ADB526D58F1F00537971 /* SettingsView.swift in Sources */,
+				A2F8C093276B9EC600F2B3AF /* QIFImportAgent.swift in Sources */,
 				A2DA50A2273ECB0800ACA051 /* ScheduleRequest.swift in Sources */,
 				A27C1D8F271B846B005339FD /* BucketListRow.swift in Sources */,
 				A27C1D92271B847C005339FD /* TransactionListRow.swift in Sources */,
@@ -790,6 +795,7 @@
 				A206D786267C111F00CB094D /* TransactionAttachment.swift in Sources */,
 				A2EC30A9269758AB00781EC8 /* EditAccountListView.swift in Sources */,
 				A2A56738262879BD009C7E8C /* Util.swift in Sources */,
+				A2F8C092276B9EC600F2B3AF /* QIFImportAgent.swift in Sources */,
 				A276B57B26D887D3003C24E2 /* AppConfiguration.swift in Sources */,
 				A206D783267C110600CB094D /* Attachment.swift in Sources */,
 				A2DFFD1626ED6BED00B6CBE6 /* TransactionBalance.swift in Sources */,

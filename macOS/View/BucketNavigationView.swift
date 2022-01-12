@@ -27,7 +27,7 @@ struct BucketNavigationView: View {
                     NavigationLink(destination: TransactionsView(forBucketID: bucketNode.id, isAccount: bucketNode.isAccount).environmentObject(store), tag: bucketNode.id, selection: $selection) {
                        BucketListRow(id: bucketNode.id)
                     }.contextMenu {
-                       AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: bucketNode.id)){ bucketModel in
+                       AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: bucketNode.id), "BucketNavigationView [Context]"){ bucketModel in
                           AccountContextMenu(context: sheetContext, aContext: alertContext, model: bucketModel)
                        }
                     }

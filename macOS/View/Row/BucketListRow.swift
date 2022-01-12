@@ -16,7 +16,7 @@ struct BucketListRow: View {
     
     var body: some View {
         //Text("C").onAppear(perform: {print("appear C")})
-        AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: id)) { model in
+        AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: id), "BucketListRow") { model in
             Internal_BucketListRow(model: model)//.onAppear(perform: {print("appear D")})
         }
     }

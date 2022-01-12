@@ -28,11 +28,15 @@ struct AsyncContentView<Source: LoadableObject, Content: View>: View {
     @ObservedObject var source: Source
     var content: (Source.Output) -> Content
     var id = UUID()
+    var debugInitMessage: String
     
-    init(source: Source, @ViewBuilder content: @escaping (Source.Output) -> Content) {
+    init(source: Source,  _ debugInitMessage: String = "", @ViewBuilder content: @escaping (Source.Output) -> Content) {
         self.source = source
         self.content = content
-        //print("Asunc init \(id)")
+        if !debugInitMessage.isEmpty {
+            print("[UI Debugging]: Initializing AsyncContentView(\(id)): \(debugInitMessage)")
+        }
+        self.debugInitMessage = debugInitMessage
         source.load(id: id)
     }
     
@@ -57,10 +61,12 @@ struct AsyncContentView<Source: LoadableObject, Content: View>: View {
 extension AsyncContentView {
     init<P: Publisher>(
         source: P,
+        _ debugInitMessage: String = "",
         @ViewBuilder content: @escaping (P.Output) -> Content
     ) where Source == PublishedObject<P> {
         self.init(
             source: PublishedObject(publisher: source),
+            debugInitMessage,
             content: content
         )
     }
@@ -90,7 +96,7 @@ class PublishedObject<Wrapped: Publisher>: LoadableObject {
     }
 
     func load(id: UUID) {
-        //print("PublishedObject[\(id)]: .load()")
+        print("[UI Debugging]: PublishedObject[\(id)]: .load()")
         state = .loading
 
         cancellable = publisher
@@ -100,7 +106,7 @@ class PublishedObject<Wrapped: Publisher>: LoadableObject {
                 Just(LoadingState.failed(error))
             }
             .sink { [weak self] state in
-                //print("PublishedObject[\(id)]: sink(\(self)")
+                print("[UI Debugging]: PublishedObject[\(id)]: .sink(\(self)")
                 self?.state = state
             }
     }

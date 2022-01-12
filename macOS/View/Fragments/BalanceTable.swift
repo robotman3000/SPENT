@@ -14,7 +14,7 @@ struct BalanceTable: View {
     
     var body: some View {
         if forID != nil && forID! > -1 {
-            AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: forID!)) { model in
+            AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: forID!), "BalanceTable") { model in
                 Internal_BalanceTable(model: model)
             }
         } else {

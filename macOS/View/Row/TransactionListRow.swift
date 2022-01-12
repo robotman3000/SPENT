@@ -15,7 +15,7 @@ struct TransactionListRow: View {
     let isAccount: Bool
     
     var body: some View {
-        AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forRequest: TransactionRequest(forID: forID, viewingBucket: forBucket))) { model in
+        AsyncContentView(source: TransactionFilter.publisher(store.getReader(), forRequest: TransactionRequest(forID: forID, viewingBucket: forBucket)), "TransactionListRow") { model in
             if model.transaction.type == .Split_Head {
                 Internal_SplitListRow(model: model, showMemberAmount: !isAccount)
             } else {

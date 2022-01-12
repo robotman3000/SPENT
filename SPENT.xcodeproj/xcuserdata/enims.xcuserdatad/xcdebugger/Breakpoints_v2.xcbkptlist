@@ -1009,8 +1009,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "188"
-            endingLineNumber = "188"
+            startingLineNumber = "187"
+            endingLineNumber = "187"
             landmarkName = "checkDBCommit(database:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -1025,8 +1025,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "204"
-            endingLineNumber = "204"
+            startingLineNumber = "203"
+            endingLineNumber = "203"
             landmarkName = "setDBCommit(database:commit:)"
             landmarkType = "7">
             <Locations>
@@ -1735,22 +1735,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "F50B48FA-0EBA-436B-9678-EA12A7E73A0D"
-            shouldBeEnabled = "No"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "macOS/SPENT.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "86"
-            endingLineNumber = "86"
-            landmarkName = "body"
-            landmarkType = "24">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "2D03A745-3238-4610-BF8E-E7853A017207"
             shouldBeEnabled = "No"
             ignoreCount = "0"
@@ -2060,8 +2044,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "158"
-            endingLineNumber = "158"
+            startingLineNumber = "157"
+            endingLineNumber = "157"
             landmarkName = "setupDBInstance(url:skipHashCheck:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2076,8 +2060,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "152"
-            endingLineNumber = "152"
+            startingLineNumber = "151"
+            endingLineNumber = "151"
             landmarkName = "setupDBInstance(url:skipHashCheck:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -2092,8 +2076,8 @@
             filePath = "macOS/SPENT.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "182"
-            endingLineNumber = "182"
+            startingLineNumber = "181"
+            endingLineNumber = "181"
             landmarkName = "checkDBCommit(database:)"
             landmarkType = "7">
          </BreakpointContent>

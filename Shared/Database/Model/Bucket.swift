@@ -74,7 +74,7 @@ extension Bucket {
         return cte.all().with(cte).asRequest(of: Bucket.self)
     }
     
-    static let balance = hasOne(BucketBalance.self, key: "bid")
+    static let balance = hasOne(BucketBalance.self, key: "id")
 }
 
 

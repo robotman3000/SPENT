@@ -18,7 +18,7 @@ struct BucketRequest: DatabaseRequest {
     func requestValue(_ db: Database) throws -> BucketModel {
         do {
             let bucket = try Bucket.fetchOne(db, id: forID)
-            var balance = try BucketBalance.fetchOne(db, sql: "SELECT * FROM \(BucketBalance.databaseTableName) WHERE bid == \(forID)")
+            var balance = try BucketBalance.fetchOne(db, sql: "SELECT * FROM \(BucketBalance.databaseTableName) WHERE id == \(forID)")
             
             if let bucket = bucket {
                 if balance == nil {
@@ -48,7 +48,7 @@ struct BucketRequest: DatabaseRequest {
                 JOIN bkts c ON c.id = e.Parent
             """
         )
-        let bal = try BucketBalance.select(sql: "IFNULL(bid, -1) AS \"bid\", posted, available, SUM(available) AS \"availableTree\", SUM(posted) AS \"postedTree\"").filter(sql: "bid IN (SELECT * FROM bkts)").with(bkts).fetchOne(withDatabase)
+        let bal = try BucketBalance.select(sql: "IFNULL(id, -1) AS \"id\", posted, available, SUM(available) AS \"availableTree\", SUM(posted) AS \"postedTree\"").filter(sql: "id IN (SELECT * FROM bkts)").with(bkts).fetchOne(withDatabase)
         balance.availableTree = bal?.availableTree
         balance.postedTree = bal?.postedTree
     }

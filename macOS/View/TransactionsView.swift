@@ -41,7 +41,7 @@ struct TransactionsView: View {
                 Spacer(minLength: 15)
             }.padding()
 
-            QueryWrapperView(source: TransactionFilter(forBucket: forBucketID, includeBucketTree: appState.includeTree, showAllocations: appState.showInTree, memoLike: stringFilter)){ transactionIDs in
+            QueryWrapperView(source: TransactionFilter(forBucket: forBucketID, includeBucketTree: appState.includeTree, showAllocations: appState.showInTree, memoLike: stringFilter, ordering: appState.sorting, direction: appState.sortDirection)){ transactionIDs in
                 TransactionListView(ids: transactionIDs, contextBucket: forBucketID, isAccount: isAccount)
                 
                 VStack {

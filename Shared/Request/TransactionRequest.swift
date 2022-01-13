@@ -35,11 +35,11 @@ struct TransactionRequest: DatabaseRequest {
                 let tags = try transaction.tags.fetchAll(db)
                 var bidFilter = ""
                 if let bucketID = viewingBucket {
-                    bidFilter = "AND bid == \(bucketID)"
+                    bidFilter = "AND Bucket == \(bucketID)"
                 }
-                let balance = try TransactionBalance.fetchOne(db, sql: "SELECT * FROM \(TransactionBalance.databaseTableName) WHERE tid == \(forID) \(bidFilter)")
+                let balance = try TransactionBalance.fetchOne(db, sql: "SELECT * FROM \(TransactionBalance.databaseTableName) WHERE id == \(forID) \(bidFilter)")
                 let splitMembers = try transaction.splitMembers.fetchAll(db)
-                
+                let display = try DisplayTransaction.fetchOne(db, sql: "SELECT * FROM allTransactions WHERE id == \(forID)")
                 // Now for "computed" values
                 var splitType: Transaction.TransType = .Deposit
                 var splitAmount: Int = 0
@@ -57,7 +57,7 @@ struct TransactionRequest: DatabaseRequest {
                         splitMember = Transaction.getSplitMember(splitMembers, forBucket: bucketID)
                     }
                 }
-                return TransactionModel(transaction: transaction, tags: tags, source: source, destination: destination, balance: balance, splitMembers: splitMembers, contextType: contextType, splitType: splitType, splitMember: splitMember, splitAmount: splitAmount)
+                return TransactionModel(transaction: transaction, tags: tags, source: source, destination: destination, balance: balance, splitMembers: splitMembers, display: display, contextType: contextType, splitType: splitType, splitMember: splitMember, splitAmount: splitAmount)
             }
         }
         throw RequestFetchError("requestValue failed for TransactionRequest")

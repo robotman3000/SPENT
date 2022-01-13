@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import SwiftUIKit
 
 struct TransactionListRow: View {
     @EnvironmentObject var appState: GlobalState
     @EnvironmentObject var store: DatabaseStore
+    
     let forID: Int64
     let forBucket: Int64?
     let isAccount: Bool
@@ -49,8 +51,8 @@ struct Internal_TransactionListRow: View {
                     
                 // Date
                 HStack {
-                    if let bal = model.balance  {
-                        Text(bal.date.transactionFormat)
+                    if let display = model.display  {
+                        Text(display.date.transactionFormat)
                     } else {
                         Text(model.transaction.date.transactionFormat)
                     }
@@ -60,7 +62,7 @@ struct Internal_TransactionListRow: View {
                 // Amount
                 HStack {
                     Spacer()
-                    let amount = model.balance != nil ? model.balance!.amount.currencyFormat : model.transaction.amount.currencyFormat
+                    let amount = model.display != nil ? model.display!.amount.currencyFormat : model.transaction.amount.currencyFormat
                     Text(amount).foregroundColor(model.contextType == .Withdrawal ? .red : .gray)
                 }.frame(minWidth: 80, maxWidth: 80)
                 
@@ -93,7 +95,7 @@ struct Internal_TransactionListRow: View {
                 if showRunning {
                     HStack{
                         Spacer()
-                        if let bal = model.balance {
+                        if let bal = model.display {
                             Text((bal.postedRunning ?? -1).currencyFormat)
                         } else {
                             Text("")

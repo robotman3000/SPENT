@@ -17,6 +17,6 @@ struct BucketBalance: Codable, Hashable, FetchableRecord, TableRecord {
     static var databaseTableName: String = "bucketBalance"
     
     private enum CodingKeys: String, CodingKey {
-        case bucketID = "bid", available = "available", posted = "posted", availableTree = "availableTree", postedTree = "postedTree"
+        case bucketID = "id", available = "available", posted = "posted", availableTree = "availableTree", postedTree = "postedTree"
     }
 }

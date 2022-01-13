@@ -16,7 +16,7 @@ import SwiftUI
 /// https://github.com/groue/GRDB.swift/blob/master/Documentation/GoodPracticesForDesigningRecordTypes.md
 struct AppDatabase {
     
-    static var DB_VERSION: Int64 = 4
+    static var DB_VERSION: Int64 = 5
     var bundlePath: URL?
     
     func endSecureScope(){
@@ -190,69 +190,90 @@ struct AppDatabase {
             // VIEW - Transaction Ancestors
             try db.execute(sql: """
                 CREATE VIEW transactionAncestors AS
-                SELECT t.id AS tid,
-                       b1.V_Ancestor AS sa,
-                       b2.V_Ancestor AS da
+                SELECT t.id AS id,
+                       b1.V_Ancestor AS SourceAccount,
+                       b2.V_Ancestor AS DestAccount,
+                       IFNULL(b1.V_Ancestor == b2.V_Ancestor, False) AS isAllocation
                 FROM Transactions t
                 LEFT JOIN Buckets b1 ON SourceBucket = b1.id
                 LEFT JOIN Buckets b2 ON DestBucket = b2.id
-                WHERE IFNULL(sa, -1) != IFNULL(da, -1)
             """)
 
-            // VIEW - Transaction Amounts
+            // VIEW - Transaction Amounts (and other useful columns)
             try db.execute(sql: """
                 CREATE VIEW transactionAmounts AS
-                SELECT id AS "tid",
-                       -1*Amount AS amount,
-                       SourceBucket AS bid,
+                SELECT id,
                        Status,
-                       IFNULL(SourcePostDate, TransDate) AS "tdate"
+                       -1*Amount AS TrueAmount,
+                       SourceBucket AS Bucket,
+                       t.SourceAccount AS Account,
+                       IFNULL(SourcePostDate, TransDate) AS "Date",
+                       t.isAllocation
                 FROM Transactions
+                JOIN transactionAncestors t USING (id)
                 WHERE SourceBucket IN (SELECT id FROM Buckets)
                 UNION ALL
-                SELECT id AS "tid",
-                       Amount AS amount,
-                       DestBucket AS bid,
+                SELECT id,
                        Status,
-                       IFNULL(DestPostDate, TransDate) AS "tdate"
+                       Amount AS TrueAmount,
+                       DestBucket AS Bucket,
+                       t.DestAccount AS Account,
+                       IFNULL(DestPostDate, TransDate) AS "Date",
+                       t.isAllocation
                 FROM Transactions
+                JOIN transactionAncestors t USING (id)
                 WHERE DestBucket IN (SELECT id FROM Buckets)
             """)
             
             // VIEW - Transaction Running Balance
             try db.execute(sql: """
                 CREATE VIEW transactionBalance AS
-                SELECT V_Ancestor as "aid",
-                       tid, bid, amount, tdate, Status,
-                       SUM(amount) FILTER (WHERE Status IN (4, 5, 6)) OVER win1 AS pRunning,
-                       SUM(amount) FILTER (WHERE Status IN (1, 3)) OVER win1 AS aRunning
+                SELECT
+                       ra.id,
+                       ra.Bucket,
+                       ra.Account,
+                       SUM(TrueAmount) FILTER (WHERE Status IN (4, 5, 6)) OVER win1 AS pRunning,
+                       SUM(TrueAmount) FILTER (WHERE Status IN (1, 3)) OVER win1 AS aRunning
                 FROM transactionAmounts ra
-                LEFT JOIN Buckets bt ON bt.id = ra.bid
-                WHERE tid IN (SELECT tid FROM transactionAncestors)
-                WINDOW win1 AS (PARTITION BY V_Ancestor ORDER BY tdate, tid ASC ROWS UNBOUNDED PRECEDING)
-                ORDER BY tdate ASC
+                LEFT JOIN Buckets bt ON bt.id = ra.Bucket
+                WHERE ra.isAllocation == false
+                WINDOW win1 AS (PARTITION BY V_Ancestor ORDER BY "Date", ra.id ASC ROWS UNBOUNDED PRECEDING)
+                ORDER BY "Date" ASC
             """)
             
             // VIEW - Bucket Balance
             try db.execute(sql: """
                 CREATE VIEW bucketBalance AS
                 SELECT DISTINCT
-                        r.bid,
+                        r.Bucket AS id,
                         IFNULL(available, 0)+IFNULL(posted, 0) AS "available",
                         IFNULL(posted, 0) AS "posted"
                 FROM transactionAmounts r
                 LEFT JOIN (
-                    SELECT SUM(amount) AS "available", bid
+                    SELECT SUM(TrueAmount) AS "available", Bucket
                     FROM transactionAmounts
                     WHERE Status IN (1, 3)
-                    GROUP BY bid
-                ) "a" ON r.bid == a.bid
+                    GROUP BY Bucket
+                ) USING (Bucket)
                 LEFT JOIN (
-                    SELECT SUM(amount) AS "posted", bid
+                    SELECT SUM(TrueAmount) AS "posted", Bucket
                     FROM transactionAmounts
                     WHERE Status IN (4, 5, 6)
-                    GROUP BY bid
-                ) "p" ON r.bid == p.bid
+                    GROUP BY Bucket
+                ) USING (Bucket)
+            """)
+            
+            // VIEW - All Transactions (View optimized for use by the main transactions list)
+            try db.execute(sql: """
+                CREATE VIEW allTransactions AS
+                SELECT
+                    t.id, t.Status, t.SourceBucket, t.DestBucket, t.Memo, t.Payee, t."Group", t.V_Type,
+                    ta.TrueAmount AS "Amount", ta.Bucket, ta.Account, ta."Date", ta.isAllocation,
+                    b.pRunning AS "PostedRunning", b.aRunning AS "AvailableRunning"
+                FROM Transactions t
+                JOIN transactionAmounts ta USING (id)
+                LEFT JOIN transactionBalance b USING (id, Account)
+                ORDER BY t.id
             """)
         }
 

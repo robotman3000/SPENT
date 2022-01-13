@@ -12,14 +12,12 @@ struct TransactionBalance: Codable, Hashable, FetchableRecord {
     var transactionID: Int64
     var bucketID: Int64
     var ancestorID: Int64
-    var amount: Int
     var postedRunning: Int?
     var availRunning: Int?
-    var date: Date
     
     static var databaseTableName: String = "transactionBalance"
     
     private enum CodingKeys: String, CodingKey {
-        case transactionID = "tid", bucketID = "bid", ancestorID = "aid", amount = "amount", postedRunning = "pRunning", availRunning = "aRunning", date = "tdate"
+        case transactionID = "id", bucketID = "Bucket", ancestorID = "Account", postedRunning = "pRunning", availRunning = "aRunning"
     }
 }

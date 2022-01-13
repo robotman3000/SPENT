@@ -124,6 +124,8 @@
 		A2F18BCE26B2DF82009BA9F4 /* SplitTransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */; };
 		A2F18BD026B2E312009BA9F4 /* SplitTransactionMemberList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */; };
 		A2F18BD226B496E1009BA9F4 /* SplitMemberForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */; };
+		A2F72CEE278E7C8A00F852D6 /* DisplayTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F72CED278E7C8A00F852D6 /* DisplayTransaction.swift */; };
+		A2F72CEF278E7C8A00F852D6 /* DisplayTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F72CED278E7C8A00F852D6 /* DisplayTransaction.swift */; };
 		A2F8C092276B9EC600F2B3AF /* QIFImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */; };
 		A2F8C093276B9EC600F2B3AF /* QIFImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */; };
 		A2FE6FE9271B360D000F8F89 /* TemplateFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2FE6FE8271B360D000F8F89 /* TemplateFilter.swift */; };
@@ -231,6 +233,7 @@
 		A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionForm.swift; sourceTree = "<group>"; tabWidth = 5; };
 		A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionMemberList.swift; sourceTree = "<group>"; };
 		A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitMemberForm.swift; sourceTree = "<group>"; };
+		A2F72CED278E7C8A00F852D6 /* DisplayTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayTransaction.swift; sourceTree = "<group>"; };
 		A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QIFImportAgent.swift; sourceTree = "<group>"; };
 		A2FE6FE8271B360D000F8F89 /* TemplateFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateFilter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -331,6 +334,7 @@
 				A20DCD82264EEB510070EB07 /* Tag.swift */,
 				A206D77F267C10BA00CB094D /* Schedule.swift */,
 				A2DFFD1526ED6BED00B6CBE6 /* TransactionBalance.swift */,
+				A2F72CED278E7C8A00F852D6 /* DisplayTransaction.swift */,
 				A2DA01142706AE83007167EA /* BucketBalance.swift */,
 			);
 			path = Model;
@@ -703,6 +707,7 @@
 				A20DCD75264ED0270070EB07 /* BalanceTable.swift in Sources */,
 				A2449FF727206F13006B5185 /* DatabaseFilter.swift in Sources */,
 				A257FC3126D7ED7600383855 /* PreferenceKeys.swift in Sources */,
+				A2F72CEF278E7C8A00F852D6 /* DisplayTransaction.swift in Sources */,
 				A2AF19C2274479DD0006C055 /* BucketTreeFilter.swift in Sources */,
 				A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */,
 				A276B57C26D887D3003C24E2 /* AppConfiguration.swift in Sources */,
@@ -786,6 +791,7 @@
 				A20781F7266001CC00DE372A /* TransactionTags.swift in Sources */,
 				A228FC5F264C57E700CD5BB6 /* AppDatabase.swift in Sources */,
 				A2C4C0CE2613E61A0048DB83 /* SPENTiOSApp.swift in Sources */,
+				A2F72CEE278E7C8A00F852D6 /* DisplayTransaction.swift in Sources */,
 				A228FC59264C571800CD5BB6 /* Query.swift in Sources */,
 				A20DCD6C264EBC470070EB07 /* Bucket.swift in Sources */,
 				A2780869268E588000CEA560 /* Stringable.swift in Sources */,

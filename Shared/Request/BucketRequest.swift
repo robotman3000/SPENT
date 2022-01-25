@@ -32,6 +32,8 @@ struct BucketRequest: DatabaseRequest {
                 
                 return BucketModel(bucket: bucket, balance: balance)
             }
+        } catch {
+            print(error)
         }
         throw RequestFetchError("requestValue failed for BucketRequest")
     }

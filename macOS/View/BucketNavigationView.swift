@@ -18,9 +18,9 @@ struct BucketNavigationView: View {
     
     var body: some View {
        List(selection: $selection) {
-          NavigationLink(destination: TransactionsView(forBucketID: nil, isAccount: false), tag: -1, selection: $selection) {
-              Label("All Transactions", systemImage: "list.triangle")
-          }
+//          NavigationLink(destination: TransactionsView(forBucketID: nil, isAccount: false), tag: -1, selection: $selection) {
+//              Label("All Transactions", systemImage: "list.triangle")
+//          }
           Section(header: Text("Accounts")){
               if !ids.isEmpty {
                  OutlineGroup(ids, id: \.id, children: \.children){ bucketNode in

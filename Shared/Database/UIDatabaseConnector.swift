@@ -25,6 +25,7 @@ class DatabaseStore: ObservableObject {
     }
     
     func getReader() -> DatabaseReader {
+        print("-------- Get reader called -----------")
         return database!.databaseReader
     }
     

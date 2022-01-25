@@ -6,7 +6,10 @@
 //
 
 import Foundation
+import UniformTypeIdentifiers
 
 protocol ImportAgent {
-    func importFromURL() -> Void
+    //var communicator: ImportExportCommunicator { get }
+    var allowedTypes: [UTType] { get }
+    func importFromURL(url: URL, database: DatabaseStore) throws -> Void
 }

@@ -7,12 +7,11 @@
 
 import Foundation
 import GRDB
+import UniformTypeIdentifiers
 
-class SPENTLegacyImportAgent: ImportAgent {
-    func importFromURL() {
-    }
-    
-    static func importSPENTLegacy(url: URL, dbStore: DatabaseStore) throws {
+struct SPENTLegacyImportAgent: ImportAgent {
+    let allowedTypes: [UTType] = []
+    func importFromURL(url: URL, database: DatabaseStore) throws {
         //TODO: This function will eventually need to be split up and moved into the import and export manager (Once ready)
         
         if url.startAccessingSecurityScopedResource() {
@@ -122,7 +121,7 @@ class SPENTLegacyImportAgent: ImportAgent {
                 }
             }
             
-            try dbStore.write({ db in
+            try database.write({ db in
                 // Having created all the database objects, we now proceed to store them
                 // We turn off foreign key verification so that we don't have any "doesn't exist when needed" issues
                 

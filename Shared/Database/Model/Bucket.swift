@@ -27,7 +27,7 @@ extension Bucket {
         request(for: Bucket.parent)
     }
     
-    static let ancestor = belongsTo(Bucket.self, key: "Ancestor")
+    static let ancestor = belongsTo(Bucket.self, using: ForeignKey(["Ancestor"]))
     var ancestor: QueryInterfaceRequest<Bucket> {
         request(for: Bucket.ancestor)
     }

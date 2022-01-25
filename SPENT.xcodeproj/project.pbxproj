@@ -87,6 +87,13 @@
 		A2A56739262879BD009C7E8C /* Util.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2A56737262879BD009C7E8C /* Util.swift */; };
 		A2AA26E2270E937E00794C6C /* DebugUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA26E1270E937E00794C6C /* DebugUtil.swift */; };
 		A2AA26E3270E937E00794C6C /* DebugUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA26E1270E937E00794C6C /* DebugUtil.swift */; };
+		A2AA52B527A097550061F761 /* ExportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52B427A097550061F761 /* ExportAgent.swift */; };
+		A2AA52B727A097880061F761 /* CSVExportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52B627A097880061F761 /* CSVExportAgent.swift */; };
+		A2AA52B827A0980E0061F761 /* ExportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52B427A097550061F761 /* ExportAgent.swift */; };
+		A2AA52B927A098100061F761 /* CSVExportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52B627A097880061F761 /* CSVExportAgent.swift */; };
+		A2AA52BC27A099EE0061F761 /* CSV in Frameworks */ = {isa = PBXBuildFile; productRef = A2AA52BB27A099EE0061F761 /* CSV */; };
+		A2AA52BE27A0AE0D0061F761 /* CSVImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52BD27A0AE0D0061F761 /* CSVImportAgent.swift */; };
+		A2AA52BF27A0AE0D0061F761 /* CSVImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52BD27A0AE0D0061F761 /* CSVImportAgent.swift */; };
 		A2AF19BA274088810006C055 /* TagListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AF19B9274088810006C055 /* TagListView.swift */; };
 		A2AF19BC274468580006C055 /* TemplateListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AF19BB274468580006C055 /* TemplateListRow.swift */; };
 		A2AF19BE274468650006C055 /* TemplateListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AF19BD274468650006C055 /* TemplateListView.swift */; };
@@ -201,6 +208,9 @@
 		A2A56734262747A7009C7E8C /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		A2A56737262879BD009C7E8C /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
 		A2AA26E1270E937E00794C6C /* DebugUtil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugUtil.swift; sourceTree = "<group>"; };
+		A2AA52B427A097550061F761 /* ExportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportAgent.swift; sourceTree = "<group>"; };
+		A2AA52B627A097880061F761 /* CSVExportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExportAgent.swift; sourceTree = "<group>"; };
+		A2AA52BD27A0AE0D0061F761 /* CSVImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVImportAgent.swift; sourceTree = "<group>"; };
 		A2AF19B9274088810006C055 /* TagListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagListView.swift; sourceTree = "<group>"; };
 		A2AF19BB274468580006C055 /* TemplateListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateListRow.swift; sourceTree = "<group>"; };
 		A2AF19BD274468650006C055 /* TemplateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateListView.swift; sourceTree = "<group>"; };
@@ -243,6 +253,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A2AA52BC27A099EE0061F761 /* CSV in Frameworks */,
 				A217EA9B26A9BF1A004388FF /* SwiftUIKit in Frameworks */,
 				A21C63D327074D36002D3084 /* GRDB in Frameworks */,
 			);
@@ -318,6 +329,7 @@
 				A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */,
 				A2C2ADBB26D5B0CE00537971 /* SPENTLegacyImportAgent.swift */,
 				A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */,
+				A2AA52BD27A0AE0D0061F761 /* CSVImportAgent.swift */,
 			);
 			path = Import;
 			sourceTree = "<group>";
@@ -408,6 +420,7 @@
 				A2EC30A0269743DC00781EC8 /* GlobalState.swift */,
 				A26B73302690BC8C0082A0F6 /* Utility */,
 				A20C69102732FB47002A87A3 /* Import */,
+				A2AA52B327A097420061F761 /* Export */,
 				A20781F92661627500DE372A /* Request */,
 				A20DCD67264EBBFC0070EB07 /* Model */,
 				A27C1D88271B8218005339FD /* Filter */,
@@ -489,6 +502,15 @@
 				A2A56716262740ED009C7E8C /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		A2AA52B327A097420061F761 /* Export */ = {
+			isa = PBXGroup;
+			children = (
+				A2AA52B427A097550061F761 /* ExportAgent.swift */,
+				A2AA52B627A097880061F761 /* CSVExportAgent.swift */,
+			);
+			path = Export;
 			sourceTree = "<group>";
 		};
 		A2C2ADA826D58A8100537971 /* View */ = {
@@ -573,6 +595,7 @@
 			packageProductDependencies = (
 				A217EA9A26A9BF1A004388FF /* SwiftUIKit */,
 				A21C63D227074D36002D3084 /* GRDB */,
+				A2AA52BB27A099EE0061F761 /* CSV */,
 			);
 			productName = macOS;
 			productReference = A2A5670D262740EC009C7E8C /* SPENT.app */;
@@ -629,6 +652,7 @@
 				A217EA9926A9BF1A004388FF /* XCRemoteSwiftPackageReference "SwiftUIKit" */,
 				A21C63D127074D36002D3084 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 				A230C0CC270E0970000C739F /* XCRemoteSwiftPackageReference "swift-ical" */,
+				A2AA52BA27A099EE0061F761 /* XCRemoteSwiftPackageReference "CSV.swift" */,
 			);
 			productRefGroup = A2C4C0CB2613E61A0048DB83 /* Products */;
 			projectDirPath = "";
@@ -693,8 +717,10 @@
 				A2449FEF271F797C006B5185 /* TransactionListView.swift in Sources */,
 				A2C2ADBA26D5AF2E00537971 /* ImportAgent.swift in Sources */,
 				A2676C8E267E367900548F06 /* TableToolbar.swift in Sources */,
+				A2AA52BF27A0AE0D0061F761 /* CSVImportAgent.swift in Sources */,
 				A27C1D98271B86F9005339FD /* BucketNavigationView.swift in Sources */,
 				A278085B268BC63900CEA560 /* TransactionTagForm.swift in Sources */,
+				A2AA52B827A0980E0061F761 /* ExportAgent.swift in Sources */,
 				A26B732326909A850082A0F6 /* QueryWrapperView.swift in Sources */,
 				A2AF19BC274468580006C055 /* TemplateListRow.swift in Sources */,
 				A2449FF9272075AA006B5185 /* DatabaseRequest.swift in Sources */,
@@ -704,6 +730,7 @@
 				A20DCD84264EEB510070EB07 /* Tag.swift in Sources */,
 				A20DCD6A264EBC260070EB07 /* Transaction.swift in Sources */,
 				A2EC30A2269743DC00781EC8 /* GlobalState.swift in Sources */,
+				A2AA52B927A098100061F761 /* CSVExportAgent.swift in Sources */,
 				A20DCD75264ED0270070EB07 /* BalanceTable.swift in Sources */,
 				A2449FF727206F13006B5185 /* DatabaseFilter.swift in Sources */,
 				A257FC3126D7ED7600383855 /* PreferenceKeys.swift in Sources */,
@@ -778,6 +805,8 @@
 			files = (
 				A20DCD69264EBC260070EB07 /* Transaction.swift in Sources */,
 				A20781ED265E954C00DE372A /* BucketRequest.swift in Sources */,
+				A2AA52B727A097880061F761 /* CSVExportAgent.swift in Sources */,
+				A2AA52BE27A0AE0D0061F761 /* CSVImportAgent.swift in Sources */,
 				A26B73392690CBAC0082A0F6 /* TransactionView.swift in Sources */,
 				A257FC4326D80BDB00383855 /* ImportAgent.swift in Sources */,
 				A257FC4426D80BDF00383855 /* SPENTLegacyImportAgent.swift in Sources */,
@@ -800,6 +829,7 @@
 				A2EC30A1269743DC00781EC8 /* GlobalState.swift in Sources */,
 				A206D786267C111F00CB094D /* TransactionAttachment.swift in Sources */,
 				A2EC30A9269758AB00781EC8 /* EditAccountListView.swift in Sources */,
+				A2AA52B527A097550061F761 /* ExportAgent.swift in Sources */,
 				A2A56738262879BD009C7E8C /* Util.swift in Sources */,
 				A2F8C092276B9EC600F2B3AF /* QIFImportAgent.swift in Sources */,
 				A276B57B26D887D3003C24E2 /* AppConfiguration.swift in Sources */,
@@ -1110,6 +1140,14 @@
 				minimumVersion = 0.0.8;
 			};
 		};
+		A2AA52BA27A099EE0061F761 /* XCRemoteSwiftPackageReference "CSV.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/yaslab/CSV.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1122,6 +1160,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A21C63D127074D36002D3084 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
 			productName = GRDB;
+		};
+		A2AA52BB27A099EE0061F761 /* CSV */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A2AA52BA27A099EE0061F761 /* XCRemoteSwiftPackageReference "CSV.swift" */;
+			productName = CSV;
 		};
 		A2C2ADA026D5878A00537971 /* SwiftUIKit */ = {
 			isa = XCSwiftPackageProductDependency;

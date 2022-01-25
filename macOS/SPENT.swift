@@ -88,7 +88,10 @@ struct SPENT: App {
                 
                 Menu("Export As") {
                     Button("CSV File") {
-                        alertContext.present(AlertKeys.notImplemented)
+                        let agent = CSVExportAgent()
+                        saveFile(allowedTypes: [], onConfirm: { selectedFile in
+                            executeExportAgent(agent: agent, exportURL: selectedFile, database: dbStore)
+                        }, onCancel: {})
                     }
                 }
                 
@@ -130,6 +133,15 @@ struct SPENT: App {
         } catch {
             print(error)
             alertContext.present(AlertKeys.message(message: "Import Failed. \(error.localizedDescription)"))
+        }
+    }
+    
+    func executeExportAgent(agent: ExportAgent, exportURL: URL, database: DatabaseStore) {
+        do {
+            try agent.exportToURL(url: exportURL, database: database)
+        } catch {
+            print(error)
+            alertContext.present(AlertKeys.message(message: "Export Failed. \(error.localizedDescription)"))
         }
     }
     

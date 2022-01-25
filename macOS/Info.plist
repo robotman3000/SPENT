@@ -57,9 +57,9 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>e40b6a5</string>
+	<string>ba71153</string>
 	<key>GIT_COMMIT_HASH</key>
-	<string>e40b6a5</string>
+	<string>ba71153</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>

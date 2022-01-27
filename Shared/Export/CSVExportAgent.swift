@@ -7,8 +7,10 @@
 
 import Foundation
 import CSV
+import UniformTypeIdentifiers
 
 struct CSVExportAgent : ExportAgent {
+    var allowedTypes: [UTType] = [.commaSeparatedText]
     let TAG_SEPARATOR: String = ";"
     let NULL_MARKER: String = "NULL"
     
@@ -22,22 +24,6 @@ struct CSVExportAgent : ExportAgent {
             //TODO: Implement transaction batch processiong to reduce memory requirements
             // For now we fetch all the transactions in the db at once.
             let transactions = try Transaction.all().orderByPrimaryKey().fetchAll(db)
-            
-            /*
-             var status: StatusTypes
-             var date: Date
-             var sourcePosted: Date?
-             var destPosted: Date?
-             var amount: Int
-             var sourceID: Int64?
-             var destID: Int64?
-             var memo: String = ""
-             var payee: String?
-             
-             static let databaseUUIDEncodingStrategy = DatabaseUUIDEncodingStrategy.string
-             var group: UUID?
-             */
-            
             
             // This is CSV schema v1
             // We exclude all "allocation" transactions from the export for compatibility
@@ -58,8 +44,8 @@ struct CSVExportAgent : ExportAgent {
                         // If the transaction/transfer is between two seperate trees
                         if isRealTransaction(source: sourceBucket, destination: destinationBucket) {
                             // These initial values are valid for a transfer and for a deposit
-                            var bucket = (destinationAccount != nil ? destinationBucket?.name ?? NULL_MARKER : NULL_MARKER)
-                            var account = destinationAccount?.name ?? destinationBucket?.name ?? NULL_MARKER
+                            var bucket: String = (destinationAccount != nil ? destinationBucket?.name ?? NULL_MARKER : NULL_MARKER)
+                            var account: String = destinationAccount?.name ?? destinationBucket?.name ?? NULL_MARKER
                             var amount = transaction.amount
                             var postDate: Date? = transaction.destPosted
                             

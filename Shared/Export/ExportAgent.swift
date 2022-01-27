@@ -9,6 +9,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 protocol ExportAgent {
+    var allowedTypes: [UTType] { get }
     //var communicator: ImportExportCommunicator { get }
     func exportToURL(url: URL, database: DatabaseStore) throws -> Void
 }

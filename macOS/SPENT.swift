@@ -70,6 +70,7 @@ struct SPENT: App {
                             let agent = SPENTLegacyImportAgent()
                             openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
                                 executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
+                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
                             }, onCancel: {})
                         }
                     }
@@ -78,20 +79,30 @@ struct SPENT: App {
                             let agent = SPENTV0ImportAgent()
                             openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
                                 executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
+                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
                             }, onCancel: {})
                         }
                     }
                     Button("CSV File") {
-                        alertContext.present(AlertKeys.notImplemented)
+                        DispatchQueue.main.async {
+                            let agent = CSVImportAgent()
+                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
+                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
+                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
+                            }, onCancel: {})
+                        }
                     }
                 }
                 
                 Menu("Export As") {
                     Button("CSV File") {
-                        let agent = CSVExportAgent()
-                        saveFile(allowedTypes: [], onConfirm: { selectedFile in
-                            executeExportAgent(agent: agent, exportURL: selectedFile, database: dbStore)
-                        }, onCancel: {})
+                        DispatchQueue.main.async {
+                            let agent = CSVExportAgent()
+                            saveFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
+                                executeExportAgent(agent: agent, exportURL: selectedFile, database: dbStore)
+                                alertContext.present(AlertKeys.message(message: "Export finished without errors"))
+                            }, onCancel: {})
+                        }
                     }
                 }
                 

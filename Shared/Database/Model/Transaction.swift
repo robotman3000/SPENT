@@ -12,36 +12,13 @@ import SwiftUI
 struct Transaction: Identifiable, Codable, Hashable {
     var id: Int64?
     var status: StatusTypes
-    var date: Date
-    var sourcePosted: Date?
-    var destPosted: Date?
     var amount: Int
-    var sourceID: Int64?
-    var destID: Int64?
-    var memo: String = ""
-    var payee: String?
-    
-    static let databaseUUIDEncodingStrategy = DatabaseUUIDEncodingStrategy.string
-    var group: UUID?
-
-    var type: TransType = .Invalid
-    
-    private enum CodingKeys: String, CodingKey {
-        case id, status = "Status", date = "TransDate", sourcePosted = "SourcePostDate", destPosted = "DestPostDate", amount = "Amount", sourceID = "SourceBucket", destID = "DestBucket", memo = "Memo", payee = "Payee", group = "Group", type = "V_Type"
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(status)
-        hasher.combine(date)
-        hasher.combine(sourcePosted)
-        hasher.combine(destPosted)
-        hasher.combine(amount)
-        hasher.combine(sourceID)
-        hasher.combine(destID)
-        hasher.combine(memo)
-        hasher.combine(payee)
-    }
+    var payee: String
+    var memo: String
+    var entryDate: Date
+    var postDate: Date?
+    var bucketID: Int64?
+    var accountID: Int64
 }
 
 // SQL Database support
@@ -57,75 +34,13 @@ extension Transaction: FetchableRecord, MutablePersistableRecord {
     enum Columns {
         static let id = Column(CodingKeys.id)
         static let status = Column(CodingKeys.status)
-        static let transdate = Column(CodingKeys.date)
-        static let sourcepostdate = Column(CodingKeys.sourcePosted)
-        static let destpostdate = Column(CodingKeys.destPosted)
         static let amount = Column(CodingKeys.amount)
-        static let sourcebucket = Column(CodingKeys.sourceID)
-        static let destbucket = Column(CodingKeys.destID)
         static let memo = Column(CodingKeys.memo)
         static let payee = Column(CodingKeys.payee)
-        static let group = Column(CodingKeys.group)
-        static let type = Column(CodingKeys.type)
-    }
-    
-    /// Creates a record from a database row
-    init(row: Row) {
-        // For high performance, use numeric indexes that match the
-        // order of Place.databaseSelection
-        id = row[Columns.id]
-        status = row[Columns.status]
-        date = row[Columns.transdate]
-        sourcePosted = row[Columns.sourcepostdate]
-        destPosted = row[Columns.destpostdate]
-        amount = row[Columns.amount]
-        sourceID = row[Columns.sourcebucket]
-        destID = row[Columns.destbucket]
-        memo = row[Columns.memo]
-        payee = row[Columns.payee]
-        group = row[Columns.group]
-        type = TransType.init(rawValue: row[Columns.type] ?? 0) ?? .Invalid
-    }
-    
-    func encode(to container: inout PersistenceContainer) {
-        container[Columns.id] = id
-        container[Columns.status] = status
-        container[Columns.transdate] = date
-        container[Columns.sourcepostdate] = sourcePosted
-        container[Columns.destpostdate] = destPosted
-        container[Columns.amount] = amount
-        container[Columns.sourcebucket] = sourceID
-        container[Columns.destbucket] = destID
-        container[Columns.memo] = memo
-        container[Columns.payee] = payee
-        container[Columns.group] = group
-    }
-}
-
-extension Transaction {
-    static let source = belongsTo(Bucket.self, using: ForeignKey(["SourceBucket"]))
-    var source: QueryInterfaceRequest<Bucket> {
-        request(for: Transaction.source)
-    }
-    
-    static let destination = belongsTo(Bucket.self, using: ForeignKey(["DestBucket"]))
-    var destination: QueryInterfaceRequest<Bucket> {
-        request(for: Transaction.destination)
-    }
-    
-    static let tags = hasMany(Tag.self, through: hasMany(TransactionTag.self, key: "TransactionID"), using: TransactionTag.tag)
-    var tags: QueryInterfaceRequest<Tag> {
-        request(for: Transaction.tags)
-    }
-
-    static let attachments = hasMany(Attachment.self, through: hasMany(TransactionAttachment.self, key: "TransactionID"), using: TransactionAttachment.attachment)
-    var attachments: QueryInterfaceRequest<Attachment> {
-        request(for: Transaction.attachments)
-    }
-    
-    static let splitMembers = hasMany(Transaction.self, using: ForeignKey(["Group"], to: ["Group"]))
-    var splitMembers: QueryInterfaceRequest<Transaction> {
-        request(for: Transaction.splitMembers).filter(Transaction.Columns.sourcebucket != nil && Transaction.Columns.destbucket != nil)
+        static let entryDate = Column(CodingKeys.entryDate)
+        static let postDate = Column(CodingKeys.postDate)
+        static let bucket = Column(CodingKeys.bucketID)
+        static let account = Column(CodingKeys.accountID)
     }
 }
  
@@ -186,7 +101,6 @@ extension Transaction {
     }
 }
 
-
 extension Transaction.StatusTypes: DatabaseValueConvertible { }
 
 // Transaction Type Enum
@@ -218,86 +132,5 @@ extension Transaction {
             case .Split_Head: return "Split Head"
             }
         }
-    }
-    
-    func getType(convertTransfer: Bool = false, bucket: Int64?) -> Transaction.TransType {
-        if sourceID == nil && destID == nil {
-            return .Split_Head
-        }
-        
-        if sourceID != nil && destID != nil && convertTransfer && bucket != nil {
-            if sourceID == bucket {
-                return .Withdrawal
-            }
-            return .Deposit
-        }
-        return type
-    }
-}
-
-extension DerivableRequest where RowDecoder == Transaction {
-    func ownedByBucket(bucket: Int64) -> Self {
-        filter(sql: "SourceBucket == ? OR DestBucket == ?", arguments: [bucket, bucket])
-    }
-    
-    func withTag(tag: Int64) -> Self {
-        filter(sql: "id in (SELECT TransactionID from TransactionTags WHERE TagID == ?)", arguments: [tag])
-    }
-}
-
-// Utility Functions
-extension Transaction {
-    static func newTransaction() -> Transaction {
-        return Transaction(id: nil, status: .Void, date: Date(), sourcePosted: nil, destPosted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: nil, type: .Transfer)
-    }
-    
-    static func newSplitTransaction() -> Transaction {
-        return Transaction(id: nil, status: .Void, date: Date(), sourcePosted: nil, destPosted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: UUID(), type: .Split_Head)
-    }
-    
-    static func newSplitMember(head: Transaction) -> Transaction {
-        return Transaction(id: nil, status: head.status, date: head.date, sourcePosted: nil, destPosted: nil, amount: 0, sourceID: nil, destID: nil, memo: "", payee: nil, group: head.group, type: .Split)
-    }
-    
-    static func getSplitDirection(members: [Transaction]) -> TransType {
-        // TODO: look into a more efficent process
-        var sources = Set<Int64?>()
-        var dests = Set<Int64?>()
-        
-        for member in members {
-            sources.insert(member.sourceID)
-            dests.insert(member.destID)
-            
-            
-        }
-
-        return dests.count >= sources.count ? .Deposit : .Withdrawal
-    }
-    
-    static func amountSum(_ data: [Transaction]) -> Int {
-        //TODO: This function needs to handle deposites and withdrawals correctly
-        var amount = 0
-        
-        for t in data {
-            if t.sourceID == nil && t.destID == nil {
-                continue // Skip the head's amount
-            }
-            amount += t.amount
-        }
-        
-        return amount
-    }
-    
-    static func getSplitMember(_ data: [Transaction], forBucket: Int64?) -> Transaction? {
-        for t in data {
-            // Eliminate the optional value
-            if let bID = forBucket {
-                // and thereby cause nil sources or dests to be ignored
-                if t.sourceID == bID || t.destID == bID {
-                    return t
-                }
-            }
-        }
-        return nil
     }
 }

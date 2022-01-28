@@ -8,17 +8,13 @@
 import Foundation
 import GRDB
 
-struct TransactionAttachment: Identifiable, Codable, Hashable {
+struct TransactionAttachmentMapping: Identifiable, Codable, Hashable {
     var id: Int64?
     var transactionID: Int64
     var attachmentID: Int64
-    
-    private enum CodingKeys: String, CodingKey {
-        case id, transactionID = "TransactionID", attachmentID = "AttachmentID"
-    }
 }
 
-extension TransactionAttachment {
+extension TransactionAttachmentMapping {
     static let transaction = belongsTo(Transaction.self, key: "TransactionID")
     var transaction: QueryInterfaceRequest<Transaction> {
         guard id != nil else {
@@ -38,8 +34,8 @@ extension TransactionAttachment {
 
 
 // SQL Database support
-extension TransactionAttachment: FetchableRecord, MutablePersistableRecord {
-    static var databaseTableName: String = "TransactionAttachments"
+extension TransactionAttachmentMapping: FetchableRecord, MutablePersistableRecord {
+    static var databaseTableName: String = "TransactionAttachmentMap"
     
     // Update auto-incremented id upon successful insertion
     mutating func didInsert(with rowID: Int64, for column: String?) {

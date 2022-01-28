@@ -48,7 +48,7 @@ struct TemplateForm: View {
 
 class TemplateFormModel: FormModel {
     fileprivate var dbtemplate: DBTransactionTemplate
-    fileprivate var template: TransactionTemplate = TransactionTemplate(name: "", memo: "", amount: 0, tags: [])
+    fileprivate var template: JSONTransactionTemplate = JSONTransactionTemplate(name: "", memo: "", amount: 0, tags: [])
     
     var bucketChoices: [Bucket] = []
     

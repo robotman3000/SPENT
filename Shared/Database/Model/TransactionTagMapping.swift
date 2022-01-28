@@ -8,17 +8,13 @@
 import Foundation
 import GRDB
 
-struct TransactionTag: Identifiable, Codable, Hashable {
+struct TransactionTagMapping: Identifiable, Codable, Hashable {
     var id: Int64?
     var transactionID: Int64
     var tagID: Int64
-    
-    private enum CodingKeys: String, CodingKey {
-        case id, transactionID = "TransactionID", tagID = "TagID"
-    }
 }
 
-extension TransactionTag {
+extension TransactionTagMapping {
     static let transaction = belongsTo(Transaction.self, key: "TransactionID")
     var transaction: QueryInterfaceRequest<Transaction> {
         guard id != nil else {
@@ -38,8 +34,8 @@ extension TransactionTag {
 
 
 // SQL Database support
-extension TransactionTag: FetchableRecord, MutablePersistableRecord {
-    static var databaseTableName: String = "TransactionTags"
+extension TransactionTagMapping: FetchableRecord, MutablePersistableRecord {
+    static var databaseTableName: String = "TransactionTagMap"
     
     // Update auto-incremented id upon successful insertion
     mutating func didInsert(with rowID: Int64, for column: String?) {

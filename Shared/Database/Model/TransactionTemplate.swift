@@ -8,10 +8,10 @@
 import Foundation
 import GRDB
 
-struct DBTransactionTemplate: Identifiable, Codable, Hashable {
+struct TransactionTemplate: Identifiable, Codable, Hashable {
     var id: Int64?
     var template: String
-    var templateData: TransactionTemplate? {
+    var templateData: JSONTransactionTemplate? {
         get {
             do {
                 return try decodeTemplate()
@@ -28,7 +28,7 @@ struct DBTransactionTemplate: Identifiable, Codable, Hashable {
 }
 
 // SQL Database support
-extension DBTransactionTemplate: FetchableRecord, MutablePersistableRecord {
+extension TransactionTemplate: FetchableRecord, MutablePersistableRecord {
     static var databaseTableName: String = "TransactionTemplates"
     
     // Update auto-incremented id upon successful insertion
@@ -43,18 +43,18 @@ extension DBTransactionTemplate: FetchableRecord, MutablePersistableRecord {
     }
 }
 
-extension DBTransactionTemplate {
-    static func newTemplate() -> DBTransactionTemplate {
+extension TransactionTemplate {
+    static func newTemplate() -> TransactionTemplate {
         // This should never actually fail so we just ignore the exception
         // If it does the runtime crash will be useful
-        let jsonData = try! JSONEncoder().encode(TransactionTemplate(name: "", memo: "", amount: 0, tags: []))
-        return DBTransactionTemplate(id: nil, template: String(data: jsonData, encoding: .utf8)!)
+        let jsonData = try! JSONEncoder().encode(JSONTransactionTemplate(name: "", memo: "", amount: 0, tags: []))
+        return TransactionTemplate(id: nil, template: String(data: jsonData, encoding: .utf8)!)
     }
     
-    func decodeTemplate() throws -> TransactionTemplate? {
+    func decodeTemplate() throws -> JSONTransactionTemplate? {
         if let jsonData = template.data(using: .utf8) {
             let decoder = JSONDecoder()
-            return try decoder.decode(TransactionTemplate.self, from: jsonData)
+            return try decoder.decode(JSONTransactionTemplate.self, from: jsonData)
         }
         return nil
     }

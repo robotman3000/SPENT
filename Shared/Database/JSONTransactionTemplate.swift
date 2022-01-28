@@ -8,7 +8,7 @@
 import Foundation
 import GRDB
 
-struct TransactionTemplate: Codable, DatabaseValueConvertible {
+struct JSONTransactionTemplate: Codable, DatabaseValueConvertible {
     var templateVersion: TemplateVersion = .v1
     var name: String
     var memo: String
@@ -19,7 +19,7 @@ struct TransactionTemplate: Codable, DatabaseValueConvertible {
     var tags: [String]
 }
 
-extension TransactionTemplate {
+extension JSONTransactionTemplate {
     func renderTransaction(date: Date) -> Transaction {
         let transaction = Transaction(id: nil, status: .Uninitiated, date: date, sourcePosted: nil, destPosted: nil, amount: amount, sourceID: sourceBucket, destID: destinationBucket, memo: memo, payee: payee, group: nil, type: .Invalid)
         // TODO: Tags

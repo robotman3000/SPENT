@@ -12,17 +12,6 @@ struct Attachment: Identifiable, Codable, Hashable {
     var id: Int64?
     var filename: String
     var sha256: String
-    
-    private enum CodingKeys: String, CodingKey {
-        case id, filename = "Filename", sha256 = "SHA256"
-    }
-}
-
-extension Attachment {
-    static let transaction = hasOne(Transaction.self, through: hasOne(TransactionAttachment.self, key: "AttachmentID"), using: TransactionAttachment.transaction)
-    var transaction: QueryInterfaceRequest<Transaction> {
-        request(for: Attachment.transaction)
-    }
 }
 
 // SQL Database support

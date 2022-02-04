@@ -7,30 +7,58 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDB
+
+private struct DatabaseQueueKey: EnvironmentKey {
+    /// The default dbQueue is an empty in-memory database
+    static var defaultValue: DatabaseQueue { DatabaseQueue() }
+}
+
+extension EnvironmentValues {
+    var dbQueue: DatabaseQueue {
+        get { self[DatabaseQueueKey.self] }
+        set { self[DatabaseQueueKey.self] = newValue }
+    }
+}
+
+///// Returns an empty in-memory database for the application.
+//func emptyDatabaseQueue() -> DatabaseQueue {
+//    let dbQueue = DatabaseQueue()
+//    
+//    try! migrator().migrate(dbQueue)
+//   return dbQueue
+//}
+//
+///// Returns an in-memory database that contains one player.
+/////
+///// - parameter playerId: The ID of the inserted player.
+//func populatedDatabaseQueue(playerId: Int64? = nil) -> DatabaseQueue {
+//    let dbQueue = emptyDatabaseQueue()
+//    try! dbQueue.write { db in
+//        // insert a random player (and ignore generated id)
+//        _ = try Player.makeRandom(id: playerId).inserted(db)
+//    }
+//    return dbQueue
+//}
 
 @main
 struct SPENT: App {
-    @State var isActive: Bool = false
+    static var DB_VERSION: Int64 = 6
+    
+    //@State var isActive: Bool = false
     @StateObject var globalState: GlobalState = GlobalState()
-    @StateObject var dbStore: DatabaseStore = DatabaseStore()
     @StateObject var sheetContext: SheetContext = SheetContext()
     @StateObject var alertContext: AlertContext = AlertContext()
     
     var body: some Scene {
-        WindowGroup {
-            if isActive {
-                MainView()
-                    .sheet(context: sheetContext)
-                    .alert(context: alertContext)
-                    .environmentObject(globalState)
-                    .environmentObject(dbStore)
-                    .frame(minWidth: 1000, minHeight: 600)
-            } else {
-                SplashView(showLoading: false, loadDatabase: loadDB)
-                    .frame(minWidth: 1000, minHeight: 600)
-                    .sheet(context: sheetContext)
-                    .alert(context: alertContext)
-            }
+        DocumentGroup(newDocument: SPENTDatabaseDocument()){ file in
+            MainView()
+                .sheet(context: sheetContext)
+                .alert(context: alertContext)
+                .environmentObject(globalState)
+                .environmentObject(file.document.manager)
+                .environment(\.dbQueue, file.document.manager.database)
+                .frame(minWidth: 1000, minHeight: 600)
         }.commands {
             CommandGroup(replacing: .newItem){
                 Button("New Window"){
@@ -43,20 +71,12 @@ struct SPENT: App {
                         sheetContext.present(FormKeys.account(context: sheetContext, account: nil))
                     }
                 }
-                
-                Button("Change Database") {
-                    isActive = false
-                }
             }
             
             CommandGroup(after: .appSettings){
                 Button("Manage Tags"){
                     WindowKeys.TagManager.open()
                 }
-                
-//                Button("Manage Schedules"){
-//                    WindowKeys.ScheduleManager.open()
-//                }
                 
                 Button("Manage Templates"){
                     WindowKeys.TemplateManager.open()
@@ -65,45 +85,45 @@ struct SPENT: App {
             
             CommandGroup(replacing: .importExport) {
                 Menu("Import") {
-                    Button("SPENT Dev Legacy") {
-                        DispatchQueue.main.async {
-                            let agent = SPENTLegacyImportAgent()
-                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
-                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
-                            }, onCancel: {})
-                        }
-                    }
-                    Button("SPENT Dev V0") {
-                        DispatchQueue.main.async {
-                            let agent = SPENTV0ImportAgent()
-                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
-                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
-                            }, onCancel: {})
-                        }
-                    }
-                    Button("CSV File") {
-                        DispatchQueue.main.async {
-                            let agent = CSVImportAgent()
-                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
-                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
-                            }, onCancel: {})
-                        }
-                    }
+//                    Button("SPENT Dev Legacy") {
+//                        DispatchQueue.main.async {
+//                            let agent = SPENTLegacyImportAgent()
+//                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
+//                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
+//                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
+//                            }, onCancel: {})
+//                        }
+//                    }
+//                    Button("SPENT Dev V0") {
+//                        DispatchQueue.main.async {
+//                            let agent = SPENTV0ImportAgent()
+//                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
+//                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
+//                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
+//                            }, onCancel: {})
+//                        }
+//                    }
+//                    Button("CSV File") {
+//                        DispatchQueue.main.async {
+//                            let agent = CSVImportAgent()
+//                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
+//                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
+//                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
+//                            }, onCancel: {})
+//                        }
+//                    }
                 }
                 
                 Menu("Export As") {
-                    Button("CSV File") {
-                        DispatchQueue.main.async {
-                            let agent = CSVExportAgent()
-                            saveFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-                                executeExportAgent(agent: agent, exportURL: selectedFile, database: dbStore)
-                                alertContext.present(AlertKeys.message(message: "Export finished without errors"))
-                            }, onCancel: {})
-                        }
-                    }
+//                    Button("CSV File") {
+//                        DispatchQueue.main.async {
+//                            let agent = CSVExportAgent()
+//                            saveFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
+//                                executeExportAgent(agent: agent, exportURL: selectedFile, database: dbStore)
+//                                alertContext.present(AlertKeys.message(message: "Export finished without errors"))
+//                            }, onCancel: {})
+//                        }
+//                    }
                 }
                 
 //                Button("Export all attachments"){
@@ -120,25 +140,24 @@ struct SPENT: App {
             }
         }
         
-        WindowGroup("Tag Manager") {
-            TagManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
-        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TagManager.rawValue))
+//        WindowGroup("Tag Manager") {
+//            TagManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
+//        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TagManager.rawValue))
         
-//        WindowGroup("Schedule Manager") {
-//            ScheduleManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
-//        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.ScheduleManager.rawValue))
+//        WindowGroup("Template Manager") {
+//            TemplateManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
+//        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TemplateManager.rawValue))
         
-        WindowGroup("Template Manager") {
-            TemplateManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
-        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TemplateManager.rawValue))
-        
-        Settings{
-            SettingsView().environmentObject(globalState).environmentObject(dbStore).frameSize()
-        }
-    
+//        Settings{
+//            if globalState.database != nil {
+//                SettingsView().environmentObject(globalState).environment(\.dbQueue, globalState.database!).frameSize()
+//            } else {
+//                Text("No database is loaded")
+//            }
+//        }
     }
     
-    func executeImportAgent(agent: ImportAgent, importURL: URL, database: DatabaseStore) {
+    func executeImportAgent(agent: ImportAgent, importURL: URL, database: DatabaseQueue) {
         do {
             try agent.importFromURL(url: importURL, database: database)
         } catch {
@@ -147,7 +166,7 @@ struct SPENT: App {
         }
     }
     
-    func executeExportAgent(agent: ExportAgent, exportURL: URL, database: DatabaseStore) {
+    func executeExportAgent(agent: ExportAgent, exportURL: URL, database: DatabaseQueue) {
         do {
             try agent.exportToURL(url: exportURL, database: database)
         } catch {
@@ -156,56 +175,45 @@ struct SPENT: App {
         }
     }
     
-    func loadDB(url: URL, isNew: Bool){
-        do {
-            try setupDBInstance(url: url, skipHashCheck: isNew)
-        } catch {
-            print(error)
-            alertContext.present(AlertKeys.databaseError(message: "Failed to load database!"))
-        }
-    }
+//    func setupDBInstance(url: URL, skipHashCheck: Bool = false) throws {
+//        print("startAccessingSecurityScopedResource")
+//        if url.startAccessingSecurityScopedResource(){
+//            print("OK")
+//            let printQueries = UserDefaults.standard.bool(forKey: PreferenceKeys.debugQueries.rawValue)
+//
+//            let database = try createDBInstance(path: url, trace: printQueries)
+//            if checkDBCommit(database: database) {
+//                self.globalState.database = database
+//            } else {
+//                let gitCommit: String = Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)"
+//
+//                if !skipHashCheck {
+//                    let upgradeMessage = "The current git hash is \(gitCommit), the hash in the database doesn't match. Load Anyway?"
+//                    sheetContext.present(FormKeys.confirmAction(context: sheetContext, message: upgradeMessage, onConfirm: {
+//                        setDBCommit(database: database, commit: gitCommit)
+//                        self.globalState.database = database
+//                    }, onCancel: {
+//                        self.globalState.database = nil
+//                    }))
+//                } else {
+//                    // Assume the answer was yes
+//                    setDBCommit(database: database, commit: gitCommit)
+//                    self.globalState.database = database
+//                }
+//            }
+//        } else {
+//            print("FAIL")
+//        }
+//    }
     
-    func setupDBInstance(url: URL, skipHashCheck: Bool = false) throws {
-        print("startAccessingSecurityScopedResource")
-        if url.startAccessingSecurityScopedResource(){
-            print("OK")
-            let printQueries = UserDefaults.standard.bool(forKey: PreferenceKeys.debugQueries.rawValue)
-            let appDB = try AppDatabase(path: url, trace: printQueries)
-            if checkDBCommit(database: appDB) {
-                dbStore.load(appDB)
-                isActive = true
-            } else {
-                let gitCommit: String = Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)"
-                
-                if !skipHashCheck {
-                    let upgradeMessage = "The current git hash is \(gitCommit), the hash in the database doesn't match. Load Anyway?"
-                    sheetContext.present(FormKeys.confirmAction(context: sheetContext, message: upgradeMessage, onConfirm: {
-                        setDBCommit(database: appDB, commit: gitCommit)
-                        dbStore.load(appDB)
-                        isActive = true
-                    }, onCancel: {
-                        isActive = false
-                    }))
-                } else {
-                    // Assume the answer was yes
-                    setDBCommit(database: appDB, commit: gitCommit)
-                    dbStore.load(appDB)
-                    isActive = true
-                }
-            }
-        } else {
-            print("FAIL")
-        }
-    }
-    
-    func checkDBCommit(database: AppDatabase) -> Bool {
+    func checkDBCommit(database: DatabaseQueue) -> Bool {
         do {
             // Check the saved commit hash against ours before handing the raw db to the db store
-            let config = try database.databaseReader.read { db in
+            let config = try database.read { db in
                 try AppConfiguration.fetch(db)
             }
             let currentHash = Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "1234567890"
-            print("DB Version: \(AppDatabase.DB_VERSION), Loaded Version: \(config.dbVersion)")
+            print("DB Version: \(SPENT.DB_VERSION), Loaded Version: \(config.dbVersion)")
             print("\(config.commitHash) vs. \(currentHash)")
             if config.commitHash == currentHash {
                 if globalState.debugMode {
@@ -222,15 +230,15 @@ struct SPENT: App {
         return false
     }
     
-    func setDBCommit(database: AppDatabase, commit: String){
+    func setDBCommit(database: DatabaseQueue, commit: String){
         do {
-            try database.transaction { db in
+            try database.write { db in
                 var config = try AppConfiguration.fetch(db)
                 
                 // Update some config values
                 try config.updateChanges(db) {
                     $0.commitHash = commit
-                    $0.dbVersion = AppDatabase.DB_VERSION
+                    $0.dbVersion = SPENT.DB_VERSION
                 }
             }
         } catch {
@@ -239,21 +247,25 @@ struct SPENT: App {
         }
     }
     
-    func getRecents() -> [DBFileBookmark] {
-        var bookmarks: [DBFileBookmark] = []
-        if let dbBookmarks = UserDefaults.standard.array(forKey: PreferenceKeys.databaseBookmark.rawValue) as? [Data] {
-            for bookmData in dbBookmarks {
-                var isStale = false
-                if let url = getURLByBookmark(bookmData, isStale: &isStale) {
-                    let bookmark = DBFileBookmark(shortName: url.pathComponents.last ?? url.absoluteString, path: url)
-                    bookmarks.append(bookmark)
-                } else {
-                    print("Recent Bookmark -> URL failed")
-                }
-            }
-        } else {
-            print("Recent Bookmark Failed")
-        }
-        return bookmarks
-    }
+//    func resolve<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> [Type] {
+//        do {
+//            return try databaseReader.read { db in
+//                return try query.fetchAll(db)
+//            }
+//        } catch {
+//            print(error)
+//        }
+//        return []
+//    }
+//
+//    func resolveOne<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> Type? {
+//        do {
+//            return try databaseReader.read { db in
+//                return try query.fetchOne(db)
+//            }
+//        } catch {
+//            print(error)
+//        }
+//        return nil
+//    }
 }

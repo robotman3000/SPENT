@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDB
 
 struct AccountForm: View {
     @StateObject var model: AccountFormModel
@@ -18,8 +19,8 @@ struct AccountForm: View {
         // Form Controls
         Form {
             TextField("Name", text: $model.name)
-            Toggle("Favorite", isOn: $model.isFavorite)
-            TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
+//            Toggle("Favorite", isOn: $model.isFavorite)
+//            TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
         }.frame(minWidth: 250, minHeight: 200)
         
         // Form Lifecycle
@@ -28,20 +29,16 @@ struct AccountForm: View {
 }
 
 class AccountFormModel: FormModel {
-    fileprivate var bucket: Bucket
+    fileprivate var account: Account
     
     @Published var name: String
-    @Published var isFavorite: Bool
-    @Published var memo: String
     
-    init(bucket: Bucket){
-        self.bucket = bucket
-        self.name = bucket.name
-        self.isFavorite = bucket.isFavorite
-        self.memo = bucket.memo
+    init(_ account: Account){
+        self.account = account
+        self.name = account.name
     }
     
-    func loadState(withDatabase: DatabaseStore) throws {}
+    func loadState(withDatabase: Database) throws {}
     
     func validate() throws {
         if name.isEmpty {
@@ -49,15 +46,9 @@ class AccountFormModel: FormModel {
         }
     }
     
-    func submit(withDatabase: DatabaseStore) throws {
-        bucket.name = name
-        bucket.parentID = nil
-        bucket.ancestorID = nil
-        bucket.memo = memo
-        bucket.isFavorite = isFavorite
-        try withDatabase.write { db in
-            try withDatabase.saveBucket(db, &bucket)
-        }
+    func submit(withDatabase: Database) throws {
+        account.name = name
+        try account.save(withDatabase)
     }
 }
 

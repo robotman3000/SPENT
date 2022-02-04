@@ -20,12 +20,12 @@ struct JSONTransactionTemplate: Codable, DatabaseValueConvertible {
 }
 
 extension JSONTransactionTemplate {
-    func renderTransaction(date: Date) -> Transaction {
-        let transaction = Transaction(id: nil, status: .Uninitiated, date: date, sourcePosted: nil, destPosted: nil, amount: amount, sourceID: sourceBucket, destID: destinationBucket, memo: memo, payee: payee, group: nil, type: .Invalid)
-        // TODO: Tags
-        
-        return transaction
-    }
+//    func renderTransaction(date: Date) -> Transaction {
+//        let transaction = Transaction(id: nil, status: .Uninitiated, date: date, sourcePosted: nil, destPosted: nil, amount: amount, sourceID: sourceBucket, destID: destinationBucket, memo: memo, payee: payee, group: nil, type: .Invalid)
+//        // TODO: Tags
+//        
+//        return transaction
+//    }
 }
 
 enum TemplateVersion: Int, Codable {

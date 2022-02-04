@@ -7,15 +7,16 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDB
 
 protocol FormModel: ObservableObject {
-    func loadState(withDatabase: DatabaseStore) throws -> Void
+    func loadState(withDatabase: Database) throws -> Void
     func validate() throws -> Void
-    func submit(withDatabase: DatabaseStore) throws -> Void
+    func submit(withDatabase: Database) throws -> Void
 }
 
 struct FormLifecycle<Model: FormModel>: ViewModifier {
-    @EnvironmentObject fileprivate var databaseStore: DatabaseStore
+    @Environment(\.dbQueue) var database
     @StateObject fileprivate var alertContext: AlertContext = AlertContext()
     @ObservedObject var model: Model
     
@@ -36,7 +37,9 @@ struct FormLifecycle<Model: FormModel>: ViewModifier {
               Button("Done", action: {
                   do {
                       try model.validate()
-                      try model.submit(withDatabase: databaseStore)
+                      try database.write { db in
+                          try model.submit(withDatabase: db)
+                      }
                       onSubmit()
                   } catch {
                       print(error)
@@ -47,7 +50,9 @@ struct FormLifecycle<Model: FormModel>: ViewModifier {
         }.padding()
         .onAppear(perform: {
           do {
-              try model.loadState(withDatabase: databaseStore)
+              try database.read { db in
+                  try model.loadState(withDatabase: db)
+              }
           } catch {
               print(error)
           }
@@ -58,5 +63,5 @@ struct FormLifecycle<Model: FormModel>: ViewModifier {
 extension View {
     func formFooter<Model: FormModel>(_ model: Model, onSubmit: @escaping () -> Void, onCancel: @escaping () -> Void) -> some View {
         modifier(FormLifecycle(model: model, onSubmit: onSubmit, onCancel: onCancel))
-  }
+    }
 }

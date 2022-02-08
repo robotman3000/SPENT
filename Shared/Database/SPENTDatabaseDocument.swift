@@ -29,7 +29,7 @@ struct SPENTDatabaseDocument: FileDocument {
         let printQueries = UserDefaults.standard.bool(forKey: PreferenceKeys.debugQueries.rawValue)
         
         // TODO: Properly handle exceptions from here
-        manager = try! SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: printQueries)
+        manager = try! SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: printQueries, isNewDatabase: true)
     }
     
     init(configuration: ReadConfiguration) throws {
@@ -64,7 +64,7 @@ struct SPENTDatabaseDocument: FileDocument {
 }
 
 extension SPENTDatabaseDocument {
-    private static func createDBManager(bundleURL: URL, trace: Bool = false) throws -> DatabaseManager {
+    private static func createDBManager(bundleURL: URL, trace: Bool = false, isNewDatabase: Bool = false) throws -> DatabaseManager {
         if !FileManager.default.fileExists(atPath: bundleURL.path) {
             try FileManager.default.createDirectory(atPath: bundleURL.path, withIntermediateDirectories: true, attributes: nil)
         }
@@ -72,6 +72,15 @@ extension SPENTDatabaseDocument {
         let dbURL = bundleURL.appendingPathComponent("db.sqlite")
         print("Using DB from path: \(dbURL.path)")
         let queue = try! DatabaseQueue(path: dbURL.path) // Open the DB
+        
+        let gitCommit: String = Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "(NIL)"
+        if !isNewDatabase {
+            // Verify the database is compatible with this version of the program
+            if !checkDBCommit(database: queue) {
+                print("WARNING: The current git hash is \(gitCommit), the hash in the database doesn't match.")
+                // TODO: Abort loading the db if incompatible
+            }
+        }
         
         // Support debugging
         if trace {
@@ -85,6 +94,9 @@ extension SPENTDatabaseDocument {
         // Create/Upgrade the schema to the latest version
         let migrator = SPENTDatabaseDocument.createDBMigrator()
         try! migrator.migrate(queue)
+        
+        // Update the DB commit
+        setDBCommit(database: queue, commit: gitCommit)
         return DatabaseManager(dbQueue: queue)
     }
     
@@ -294,6 +306,44 @@ extension SPENTDatabaseDocument {
         // }
         
         return migrator
+    }
+    
+    private static func checkDBCommit(database: DatabaseQueue) -> Bool {
+        do {
+            // Check the saved commit hash against ours before handing the raw db to the db store
+            let config = try database.read { db in
+                try AppConfiguration.fetch(db)
+            }
+            let currentHash = Bundle.main.object(forInfoDictionaryKey: "GIT_COMMIT_HASH") as? String ?? "1234567890"
+            print("DB Version: \(SPENT.DB_VERSION), Loaded Version: \(config.dbVersion)")
+            print("\(config.commitHash) vs. \(currentHash)")
+            if config.commitHash == currentHash {
+                print("Hash matched")
+                return true
+            }
+        } catch {
+            print(error)
+        }
+        print("Hash didn't match")
+        
+        return false
+    }
+    
+    private static func setDBCommit(database: DatabaseQueue, commit: String){
+        do {
+            try database.write { db in
+                var config = try AppConfiguration.fetch(db)
+                
+                // Update some config values
+                try config.updateChanges(db) {
+                    $0.commitHash = commit
+                    $0.dbVersion = SPENT.DB_VERSION
+                }
+            }
+        } catch {
+            print("Failed to update database commit hash")
+            print(error)
+        }
     }
 }
 

@@ -11,7 +11,7 @@ import SwiftUIKit
 enum FormKeys: SheetProvider {
     case account(context: SheetContext, account: Account?)
 //    case bucket(context: SheetContext, bucket: Bucket?, parent: Bucket?)
-//    case transaction(context: SheetContext, transaction: Transaction?, contextBucket: Int64?)
+    case transaction(context: SheetContext, transaction: Transaction?)
 //    case transfer(context: SheetContext, transaction: Transaction?, contextBucket: Int64?)
 //    case tag(context: SheetContext, tag: Tag?)
 //    //case schedule(context: SheetContext, schedule: Schedule?, onSubmit: (_ data: inout Schedule) -> Void)
@@ -38,13 +38,12 @@ enum FormKeys: SheetProvider {
 //            return BucketForm(model: BucketFormModel(bucket: bucket!, parent: parent),
 //                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
 //            
-//        case .transaction(context: let context, transaction: var transaction, contextBucket: let bucket):
-//            if transaction == nil {
-//                transaction = Transaction.newTransaction()
-//            }
-//            let model = TransactionFormModel(transaction: transaction!, contextBucket: bucket)
-//            return TransactionForm(model: model,
-//                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
+        case .transaction(context: let context, transaction: var transaction):
+            if transaction == nil {
+                transaction = Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
+            }
+            return TransactionForm(model: TransactionFormModel(transaction: transaction!),
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
 //            
 //        case .transfer(context: let context, transaction: var transaction, contextBucket: let bucket):
 //            if transaction == nil {

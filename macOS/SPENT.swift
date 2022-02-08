@@ -21,26 +21,6 @@ extension EnvironmentValues {
     }
 }
 
-///// Returns an empty in-memory database for the application.
-//func emptyDatabaseQueue() -> DatabaseQueue {
-//    let dbQueue = DatabaseQueue()
-//    
-//    try! migrator().migrate(dbQueue)
-//   return dbQueue
-//}
-//
-///// Returns an in-memory database that contains one player.
-/////
-///// - parameter playerId: The ID of the inserted player.
-//func populatedDatabaseQueue(playerId: Int64? = nil) -> DatabaseQueue {
-//    let dbQueue = emptyDatabaseQueue()
-//    try! dbQueue.write { db in
-//        // insert a random player (and ignore generated id)
-//        _ = try Player.makeRandom(id: playerId).inserted(db)
-//    }
-//    return dbQueue
-//}
-
 @main
 struct SPENT: App {
     static var DB_VERSION: Int64 = 6
@@ -105,7 +85,7 @@ struct SPENT: App {
 //                    }
 //                    Button("CSV File") {
 //                        DispatchQueue.main.async {
-//                            let agent = CSVImportAgent()
+//                            let agent = CSVAgent()
 //                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
 //                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
 //                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
@@ -117,7 +97,7 @@ struct SPENT: App {
                 Menu("Export As") {
 //                    Button("CSV File") {
 //                        DispatchQueue.main.async {
-//                            let agent = CSVExportAgent()
+//                            let agent = CSVAgent()
 //                            saveFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
 //                                executeExportAgent(agent: agent, exportURL: selectedFile, database: dbStore)
 //                                alertContext.present(AlertKeys.message(message: "Export finished without errors"))

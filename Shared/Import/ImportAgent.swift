@@ -7,9 +7,10 @@
 
 import Foundation
 import UniformTypeIdentifiers
+import GRDB
 
 protocol ImportAgent {
     //var communicator: ImportExportCommunicator { get }
     var allowedTypes: [UTType] { get }
-    func importFromURL(url: URL, database: DatabaseStore) throws -> Void
+    func importFromURL(url: URL, database: DatabaseQueue) throws -> Void
 }

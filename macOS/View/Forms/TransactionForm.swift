@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDB
 
 struct TransactionForm: View {
     @StateObject var model: TransactionFormModel
@@ -19,22 +20,22 @@ struct TransactionForm: View {
             EnumPicker(label: "Status", selection: $model.status, enumCases: Transaction.StatusTypes.allCases)
 
             Section(){
-                DatePicker("Date", selection: $model.date, displayedComponents: [.date])
+                DatePicker("Date", selection: $model.entryDate, displayedComponents: [.date])
                 if model.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
                     DatePicker("Posting Date", selection: $model.postDate, displayedComponents: [.date])
                 }
             }
 
             HStack{
-                Text("$") // TODO: Localize this text
-                TextField("Amount", text: $model.amount)
+                TextField("Amount $", text: $model.amount)
             }
 
             Section(header:
                         EnumPicker(label: "Type", selection: $model.type, enumCases: [.Deposit, .Withdrawal]).pickerStyle(SegmentedPickerStyle())
             ){
 
-                BucketPicker(label: model.type == .Withdrawal ? "From" : "To", selection: $model.selectedBucket, choices: model.bucketChoices)
+                BucketPicker(label: "Bucket", selection: $model.selectedBucket, choices: model.bucketChoices)
+                AccountPicker(label: model.type == .Withdrawal ? "From" : "To", selection: $model.selectedAccount, choices: model.accountChoices)
             }
 
             Section(){
@@ -51,121 +52,82 @@ class TransactionFormModel: FormModel {
     fileprivate var transaction: Transaction
     
     @Published var status: Transaction.StatusTypes
-    @Published var date: Date
+    @Published var entryDate: Date
     @Published var postDate: Date
-    @Published var sourceID: Int64?
-    @Published var destID: Int64?
     @Published var amount: String
+    @Published var bucketID: Int64?
+    @Published var accountID: Int64?
     @Published var type: Transaction.TransType
     @Published var payee: String
     @Published var memo: String
     
     @Published var selectedBucket: Bucket?
     @Published var bucketChoices: [Bucket]
-   
-    fileprivate let contextBucketID: Int64?
+    
+    @Published var selectedAccount: Account?
+    @Published var accountChoices: [Account]
     
     init(transaction: Transaction, contextBucket: Int64? = nil){
         amount = ""
         type = .Withdrawal
         bucketChoices = []
+        accountChoices = []
         self.transaction = transaction
         self.status = transaction.status
-        self.date = transaction.date
+        self.entryDate = transaction.entryDate
+        self.postDate = transaction.entryDate
         self.memo = transaction.memo
-        
-        payee = transaction.payee ?? ""
-        
-        postDate = Date()
+        self.payee = transaction.payee
         
         if transaction.id != nil {
             // We have an existing transaction
-            type = transaction.type
-            
+            type = transaction.amount < 0 ? .Withdrawal : .Deposit
             amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
-            
-            if transaction.type == .Deposit && transaction.destPosted != nil {
-                postDate = transaction.destPosted!
-            } else if transaction.type == .Withdrawal && transaction.sourcePosted != nil {
-                postDate = transaction.sourcePosted!
-            } else {
-                print("Warning: Transaction with id \(transaction.id ?? -1) is in an invalid state!")
-            }
         }
         
-        self.contextBucketID = contextBucket
+        //self.contextBucketID = contextBucket
     }
     
-    func loadState(withDatabase: DatabaseStore) throws {
+    func loadState(withDatabase: Database) throws {
+        bucketChoices = try Bucket.all().fetchAll(withDatabase)
+        accountChoices = try Account.all().fetchAll(withDatabase)
+        
         if transaction.id != nil {
-            if transaction.sourceID != nil {
-                selectedBucket = withDatabase.database?.resolveOne(transaction.source)
-            }
-
-            if transaction.destID != nil {
-                selectedBucket = withDatabase.database?.resolveOne(transaction.destination)
-            }
-        } else {
-            if let id = contextBucketID {
-                selectedBucket = withDatabase.database?.resolveOne(Bucket.filter(id: id))
-            }
+            selectedBucket = try transaction.bucket.fetchOne(withDatabase)
+            selectedAccount = try transaction.account.fetchOne(withDatabase)
         }
-
-        bucketChoices = withDatabase.database?.resolve(Bucket.all()) ?? []
     }
     
     func validate() throws {
-        if amount.isEmpty || selectedBucket == nil {
+        if amount.isEmpty || selectedAccount == nil {
             throw FormValidationError("Form is missing required values")
         }
 
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            if postDate < date {
+            if postDate < entryDate {
                 // Prevent a transaction that posted before it was made
-                throw FormValidationError("A transaction cannot have a post date before it's creation date")
+                throw FormValidationError("A transaction cannot have a post date before it's entry date")
             }
         }
     }
     
-    func submit(withDatabase: DatabaseStore) throws {
+    func submit(withDatabase: Database) throws {
         transaction.status = status
-        transaction.date = date
-        if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            // If either is null then set them both
-            if (transaction.sourcePosted == nil || transaction.destPosted == nil) {
-                transaction.sourcePosted = postDate
-                transaction.destPosted = postDate
-            } else {
-                transaction.destPosted = postDate
-                transaction.sourcePosted = postDate
-            }
-        } else {
-            transaction.sourcePosted = nil
-            transaction.destPosted = nil
-        }
-
-        if type == .Deposit {
-            transaction.sourceID = nil
-            transaction.destID = selectedBucket?.id
-        }
-
-        if type == .Withdrawal {
-            transaction.sourceID = selectedBucket?.id
-            transaction.destID = nil
-        }
-
-        if payee.isEmpty {
-            transaction.payee = nil
-        } else {
-            transaction.payee = payee
-        }
+        transaction.entryDate = entryDate
+        transaction.payee = payee
         transaction.memo = memo
-
         transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
-
-        try withDatabase.write { db in
-            try withDatabase.saveTransaction(db, &transaction)
+        
+        transaction.bucketID = selectedBucket?.id
+        transaction.accountID = selectedAccount!.id! // This must never be nil when we submit, so crash if it is
+        
+        if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
+            transaction.postDate = postDate
+        } else {
+            transaction.postDate = nil
         }
+        
+        try transaction.save(withDatabase)
     }
 }
 

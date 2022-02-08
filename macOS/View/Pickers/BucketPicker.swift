@@ -21,7 +21,7 @@ struct BucketPicker: View {
                 }
             }
         } else {
-            Text("No Options")
+            Text("No Buckets")
         }
     }
 }

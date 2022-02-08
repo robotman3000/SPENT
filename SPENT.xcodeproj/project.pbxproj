@@ -38,6 +38,9 @@
 		A2180BEA27A8B1030040AC40 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2180BE927A8B1030040AC40 /* DatabaseManager.swift */; };
 		A21C63D327074D36002D3084 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A21C63D227074D36002D3084 /* GRDB */; };
 		A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* CurrencyText.swift */; };
+		A2448EC027ACD5B800530AE0 /* TransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7A2671509B00347205 /* TransactionForm.swift */; };
+		A2448EC227ACDBD700530AE0 /* AccountPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2448EC127ACDBD700530AE0 /* AccountPicker.swift */; };
+		A2448EC327AD910E00530AE0 /* CSVAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52B627A097880061F761 /* CSVAgent.swift */; };
 		A2449FF727206F13006B5185 /* DatabaseFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2449FF627206F13006B5185 /* DatabaseFilter.swift */; };
 		A2449FF9272075AA006B5185 /* DatabaseRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2449FF8272075AA006B5185 /* DatabaseRequest.swift */; };
 		A257FC3126D7ED7600383855 /* PreferenceKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257FC3026D7ED7600383855 /* PreferenceKeys.swift */; };
@@ -118,6 +121,7 @@
 		A230C0C8270CF320000C739F /* TemplateManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateManagerView.swift; sourceTree = "<group>"; };
 		A230C0CA270CF3FB000C739F /* TemplateRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateRequest.swift; sourceTree = "<group>"; };
 		A24033C12672898C00A2B5CE /* CurrencyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyText.swift; sourceTree = "<group>"; };
+		A2448EC127ACDBD700530AE0 /* AccountPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountPicker.swift; sourceTree = "<group>"; };
 		A2449FEE271F797C006B5185 /* TransactionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionListView.swift; sourceTree = "<group>"; };
 		A2449FF0271F7B51006B5185 /* TransactionFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionFilter.swift; sourceTree = "<group>"; };
 		A2449FF2271F7DB1006B5185 /* TransactionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionRequest.swift; sourceTree = "<group>"; };
@@ -154,8 +158,7 @@
 		A2A56737262879BD009C7E8C /* Util.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Util.swift; sourceTree = "<group>"; };
 		A2AA26E1270E937E00794C6C /* DebugUtil.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugUtil.swift; sourceTree = "<group>"; };
 		A2AA52B427A097550061F761 /* ExportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportAgent.swift; sourceTree = "<group>"; };
-		A2AA52B627A097880061F761 /* CSVExportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVExportAgent.swift; sourceTree = "<group>"; };
-		A2AA52BD27A0AE0D0061F761 /* CSVImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVImportAgent.swift; sourceTree = "<group>"; };
+		A2AA52B627A097880061F761 /* CSVAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSVAgent.swift; sourceTree = "<group>"; };
 		A2AF19B9274088810006C055 /* TagListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagListView.swift; sourceTree = "<group>"; };
 		A2AF19BB274468580006C055 /* TemplateListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateListRow.swift; sourceTree = "<group>"; };
 		A2AF19BD274468650006C055 /* TemplateListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateListView.swift; sourceTree = "<group>"; };
@@ -271,7 +274,6 @@
 				A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */,
 				A2C2ADBB26D5B0CE00537971 /* SPENTLegacyImportAgent.swift */,
 				A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */,
-				A2AA52BD27A0AE0D0061F761 /* CSVImportAgent.swift */,
 			);
 			path = Import;
 			sourceTree = "<group>";
@@ -446,7 +448,7 @@
 			isa = PBXGroup;
 			children = (
 				A2AA52B427A097550061F761 /* ExportAgent.swift */,
-				A2AA52B627A097880061F761 /* CSVExportAgent.swift */,
+				A2AA52B627A097880061F761 /* CSVAgent.swift */,
 			);
 			path = Export;
 			sourceTree = "<group>";
@@ -463,6 +465,7 @@
 			children = (
 				A2780865268E55F600CEA560 /* EnumPicker.swift */,
 				A2780862268E4AF900CEA560 /* BucketPicker.swift */,
+				A2448EC127ACDBD700530AE0 /* AccountPicker.swift */,
 			);
 			path = Pickers;
 			sourceTree = "<group>";
@@ -653,6 +656,7 @@
 				A2D4158527AA3F96008A6C52 /* SPENTDatabaseDocument.swift in Sources */,
 				A257FC3926D800EE00383855 /* WindowKeys.swift in Sources */,
 				A2C2ADBA26D5AF2E00537971 /* ImportAgent.swift in Sources */,
+				A2448EC227ACDBD700530AE0 /* AccountPicker.swift in Sources */,
 				A2676C8E267E367900548F06 /* TableToolbar.swift in Sources */,
 				A2AA52B827A0980E0061F761 /* ExportAgent.swift in Sources */,
 				A2449FF9272075AA006B5185 /* DatabaseRequest.swift in Sources */,
@@ -663,6 +667,7 @@
 				A2EC30A2269743DC00781EC8 /* GlobalState.swift in Sources */,
 				A20901E527A35B4800A68252 /* Transfer.swift in Sources */,
 				A2449FF727206F13006B5185 /* DatabaseFilter.swift in Sources */,
+				A2448EC327AD910E00530AE0 /* CSVAgent.swift in Sources */,
 				A257FC3126D7ED7600383855 /* PreferenceKeys.swift in Sources */,
 				A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */,
 				A276B57C26D887D3003C24E2 /* AppConfiguration.swift in Sources */,
@@ -672,6 +677,7 @@
 				A2F18BD026B2E312009BA9F4 /* SplitTransactionMemberList.swift in Sources */,
 				A20901E227A341B600A68252 /* Account.swift in Sources */,
 				A2180BEA27A8B1030040AC40 /* DatabaseManager.swift in Sources */,
+				A2448EC027ACD5B800530AE0 /* TransactionForm.swift in Sources */,
 				A2180BE827A8A7360040AC40 /* FormModel.swift in Sources */,
 				A2AF19C427447A710006C055 /* BucketTreeNode.swift in Sources */,
 				A20781F8266001CC00DE372A /* TransactionTagMapping.swift in Sources */,

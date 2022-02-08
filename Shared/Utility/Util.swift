@@ -10,12 +10,6 @@ import GRDB
 import SwiftUI
 import UniformTypeIdentifiers
 
-extension UTType {
-    static var spentDatabase: UTType {
-        UTType(exportedAs: "io.github.robotman3000.spent-database")
-    }
-}
-
 func openFile(allowedTypes: [UTType], onConfirm: (URL) -> Void, onCancel: () -> Void){
     let panel = NSOpenPanel()
     panel.allowsMultipleSelection = false

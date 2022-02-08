@@ -28,3 +28,7 @@ extension Tag: FetchableRecord, MutablePersistableRecord {
         static let name = Column(CodingKeys.name)
     }
 }
+
+extension Tag {
+    static let transactions = hasMany(Transaction.self, through: hasMany(TransactionTagMapping.self), using: TransactionTagMapping.transaction)
+}

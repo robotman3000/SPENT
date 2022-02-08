@@ -15,12 +15,12 @@ struct Transfer: Identifiable, Codable, Hashable {
 }
 
 extension Transfer {
-    static let source = belongsTo(Transaction.self, key: "SourceTransactionID")
+    static let source = belongsTo(Transaction.self, using: ForeignKey(["SourceTransactionID"]))
     var sourceTransaction: QueryInterfaceRequest<Transaction> {
         Transaction.filter(id: sourceTransactionID)
     }
     
-    static let destination = belongsTo(Transaction.self, key: "DestinationTransactionID")
+    static let destination = belongsTo(Transaction.self, using: ForeignKey(["DestinationTransactionID"]))
     var destinationTransaction: QueryInterfaceRequest<Transaction> {
         Transaction.filter(id: destinationTransactionID)
     }

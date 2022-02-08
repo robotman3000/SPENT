@@ -34,3 +34,8 @@ extension SplitTransaction: FetchableRecord, MutablePersistableRecord {
         static let splitUUID = Column(CodingKeys.splitUUID)
     }
 }
+
+extension SplitTransaction {
+    static let transaction = belongsTo(Transaction.self, using: ForeignKey(["transactionID"]))
+    static let headTransaction = belongsTo(Transaction.self, using: ForeignKey(["splitHeadTransactionID"]))
+}

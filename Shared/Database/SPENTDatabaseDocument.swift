@@ -1,67 +1,91 @@
 //
-//  AppDatabase.swift
-//  SPENT
+//  SPENTDatabaseDocument.swift
+//  macOS
 //
-//  Created by Eric Nims on 5/12/21.
+//  Created by Eric Nims on 6/17/21.
 //
-
-import Combine
-import GRDB
 import Foundation
+import UniformTypeIdentifiers
 import SwiftUI
+import GRDB
 
-/// AppDatabase lets the application access the database.
-///
-/// It applies the pratices recommended at
-/// https://github.com/groue/GRDB.swift/blob/master/Documentation/GoodPracticesForDesigningRecordTypes.md
-struct AppDatabase {
+extension UTType {
+    static var spentDatabase: UTType {
+        UTType(exportedAs: "io.github.robotman3000.spent-database")
+    }
+}
+
+struct SPENTDatabaseDocument: FileDocument {
+    static var readableContentTypes: [UTType] = [.spentDatabase]
+    static var writableContentTypes: [UTType] = [.spentDatabase]
+   
+    let bundleURL: URL
+    let manager: DatabaseManager
     
-    static var DB_VERSION: Int64 = 6
-    var bundlePath: URL?
+    init() {
+        print("Creating a new DB")
+        bundleURL = SPENTDatabaseDocument.generateTempURL() // Path to the DB bundle
+        
+        // TODO: Properly handle exceptions from here
+        manager = try! SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL)
+    }
     
-    func endSecureScope(){
-        print("stopAccessingSecurityScopedResource")
-        if let url = bundlePath {
-            url.stopAccessingSecurityScopedResource()
-            print("OK")
-        } else {
-            print("FAIL")
+    init(configuration: ReadConfiguration) throws {
+        print("Reading existing")
+        bundleURL = SPENTDatabaseDocument.generateTempURL() // Path to the DB bundle
+        
+        // Copy the file being opened to the temp location
+        try configuration.file.write(to: self.bundleURL, options: .atomic, originalContentsURL: nil)
+        
+        try self.manager = SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: true)
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        // This function expects that the implementation will provide the file data
+        // and let the system handle the actual I/O.
+        // The problem is that GRDB doesn't support getting a Data object for a database
+        // so we have to write the db to a temp file and return a FileWrapper for that file
+        if let fileWrapper = configuration.existingFile {
+            print("Saving to existing file from \(bundleURL.absoluteString)")
+            try fileWrapper.read(from: bundleURL, options: .immediate)
+            return fileWrapper
         }
+        
+        print("Saving DB from \(bundleURL.absoluteString)")
+        return try FileWrapper(url: bundleURL, options: .immediate)
     }
     
-    init() throws {
-        print("Using Memory DB")
-        self.dbWriter = DatabaseQueue()
-        try migrator.migrate(dbWriter)
+    private static func generateTempURL() -> URL {
+        return FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".spentdb")
     }
-    
-    init(path: URL, trace: Bool = false) throws {
-        self.bundlePath = path
-        let newURL = path.appendingPathComponent("db.sqlite")
-        print("Using DB from path: \(newURL.path)")
-        self.dbWriter = try DatabaseQueue(path: newURL.path)
+}
+
+extension SPENTDatabaseDocument {
+    private static func createDBManager(bundleURL: URL, trace: Bool = false) throws -> DatabaseManager {
+        if !FileManager.default.fileExists(atPath: bundleURL.path) {
+            try FileManager.default.createDirectory(atPath: bundleURL.path, withIntermediateDirectories: true, attributes: nil)
+        }
+        
+        let dbURL = bundleURL.appendingPathComponent("db.sqlite")
+        print("Using DB from path: \(dbURL.path)")
+        let queue = try! DatabaseQueue(path: dbURL.path) // Open the DB
+        
+        // Support debugging
         if trace {
-            try databaseReader.read { db in
+            try queue.read { db in
                 db.trace(options: .statement) { event in
                     print("SQL: \(event)")
                 }
             }
         }
-        try migrator.migrate(dbWriter)
+        
+        // Create/Upgrade the schema to the latest version
+        let migrator = SPENTDatabaseDocument.createDBMigrator()
+        try! migrator.migrate(queue)
+        return DatabaseManager(dbQueue: queue)
     }
     
-    /// Provides access to the database.
-    ///
-    /// Application can use a `DatabasePool`, while SwiftUI previews and tests
-    /// can use a fast in-memory `DatabaseQueue`.
-    ///
-    /// See https://github.com/groue/GRDB.swift/blob/master/README.md#database-connections
-    private let dbWriter: DatabaseWriter
-    
-    /// The DatabaseMigrator that defines the database schema.
-    ///
-    /// See https://github.com/groue/GRDB.swift/blob/master/Documentation/Migrations.md
-    private var migrator: DatabaseMigrator {
+    private static func createDBMigrator() -> DatabaseMigrator {
         var migrator = DatabaseMigrator()
         
         #if DEBUG
@@ -75,7 +99,7 @@ struct AppDatabase {
 //            db.trace(options: .statement) { event in
 //                print("SQL: \(event)")
 //            }
-//            
+//
             // Create a table
             // See https://github.com/groue/GRDB.swift#create-tables
             try db.create(table: "Accounts") { t in
@@ -270,57 +294,23 @@ struct AppDatabase {
     }
 }
 
-// MARK: - Database Access: Writes
-
-extension AppDatabase {
-    /// A validation error that prevents some players from being saved into
-    /// the database.
-    enum ValidationError: LocalizedError {
-        case missingName
-        
-        var errorDescription: String? {
-            switch self {
-            case .missingName:
-                return "Please provide a name"
-            }
-        }
+// Preview Support
+extension SPENTDatabaseDocument {
+    /// Returns an empty in-memory database for the application.
+    static func emptyDatabaseQueue() -> DatabaseQueue {
+        let dbQueue = DatabaseQueue()
+    
+        try! createDBMigrator().migrate(dbQueue)
+       return dbQueue
     }
     
-    func transaction(_ query: (_ db: Database) throws -> Void) throws {
-        try dbWriter.write { db in
-            try query(db)
+    /// Returns an in-memory database that contains the test data.
+    static func populatedDatabaseQueue() -> DatabaseQueue {
+        let dbQueue = emptyDatabaseQueue()
+        try! dbQueue.write { db in
+            // TODO: Generate the test data
         }
+        return dbQueue
     }
 }
 
-// MARK: - Database Access: Reads
-
-extension AppDatabase {
-    /// Provides a read-only access to the database
-    var databaseReader: DatabaseReader {
-        dbWriter
-    }
-    
-    // TODO: Make this a throwing function
-    func resolve<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> [Type] {
-        do {
-            return try databaseReader.read { db in
-                return try query.fetchAll(db)
-            }
-        } catch {
-            print(error)
-        }
-        return []
-    }
-    
-    func resolveOne<Type: FetchableRecord>(_ query: QueryInterfaceRequest<Type>) -> Type? {
-        do {
-            return try databaseReader.read { db in
-                return try query.fetchOne(db)
-            }
-        } catch {
-            print(error)
-        }
-        return nil
-    }
-}

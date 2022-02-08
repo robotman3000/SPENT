@@ -8,8 +8,6 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @EnvironmentObject var dbStore: DatabaseStore
-    
     private enum Tabs: Hashable {
         case general, buckets, schedules, tags
     }

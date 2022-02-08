@@ -69,6 +69,20 @@ extension Transaction {
             }
         }
         
+        static func fromString(string: String) -> StatusTypes? {
+            switch string {
+            case "Void": return .Void
+            case "Uninitiated": return .Uninitiated
+            case "Scheduled": return .Scheduled
+            case "Submitted": return .Submitted
+            case "Posting": return .Posting
+            case "Complete": return .Complete
+            case "Reconciled": return .Reconciled
+            default:
+                return nil
+            }
+        }
+        
         func getIconView() -> some View {
             VStack (alignment: .center){
                 switch self {
@@ -132,5 +146,44 @@ extension Transaction {
             case .Split_Head: return "Split Head"
             }
         }
+    }
+}
+
+extension Transaction {
+    static let bucket = belongsTo(Bucket.self)
+    var bucket: QueryInterfaceRequest<Bucket> {
+        request(for: Transaction.bucket)
+    }
+    
+    static let account = belongsTo(Account.self)
+    var account: QueryInterfaceRequest<Account> {
+        request(for: Transaction.account)
+    }
+    
+    static let tags = hasMany(Tag.self, through: hasMany(TransactionTagMapping.self), using: TransactionTagMapping.tag)
+    var tags: QueryInterfaceRequest<Tag> {
+        request(for: Transaction.tags)
+    }
+    
+    static let transfer = hasOne(Transfer.self)
+    var transfer: QueryInterfaceRequest<Transfer> {
+        request(for: Transaction.transfer)
+    }
+    
+    static let split = hasOne(SplitTransaction.self)
+    var split: QueryInterfaceRequest<SplitTransaction> {
+        request(for: Transaction.split)
+    }
+    
+    //TODO: Running Balance value
+}
+
+extension DerivableRequest where RowDecoder == Transaction {
+    func filter(account: Account) -> Self {
+        filter(Transaction.Columns.account == account.id)
+    }
+    
+    func filter(bucket: Bucket) -> Self {
+        filter(Transaction.Columns.bucket == bucket.id)
     }
 }

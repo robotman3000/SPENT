@@ -39,13 +39,7 @@ struct SPENT: App {
                 .environmentObject(file.document.manager)
                 .environment(\.dbQueue, file.document.manager.database)
                 .frame(minWidth: 1000, minHeight: 600)
-        }.commands {
-            CommandGroup(replacing: .newItem){
-                Button("New Window"){
-                    WindowKeys.MainWindow.open()
-                }
-            }
-            
+        }.commands {            
             CommandGroup(after: .appSettings){
                 Button("Manage Tags"){
                     WindowKeys.TagManager.open()
@@ -57,17 +51,7 @@ struct SPENT: App {
             }
             
             CommandGroup(replacing: .importExport) {
-                Menu("Import") {
-                    Button("CSV File") {
-                        sheetContext.present(ImportExportViewKeys.importCSV(context: sheetContext, alertContext: alertContext))
-                    }
-                }
-                
-                Menu("Export As") {
-                    Button("CSV File") {
-                        sheetContext.present(ImportExportViewKeys.exportCSV(context: sheetContext, alertContext: alertContext))
-                    }
-                }
+                ImportExportCommands(sheetContext: sheetContext, alertContext: alertContext)
             }
         }
         
@@ -81,6 +65,25 @@ struct SPENT: App {
         
         Settings{
             SettingsView()
+        }
+    }
+}
+
+private struct ImportExportCommands: View {
+    @ObservedObject var sheetContext: SheetContext
+    @ObservedObject var alertContext: AlertContext
+    
+    var body: some View {
+        Menu("Import") {
+            Button("CSV File") {
+                sheetContext.present(ImportExportViewKeys.importCSV(context: sheetContext, alertContext: alertContext))
+            }
+        }
+        
+        Menu("Export As") {
+            Button("CSV File") {
+                sheetContext.present(ImportExportViewKeys.exportCSV(context: sheetContext, alertContext: alertContext))
+            }
         }
     }
 }

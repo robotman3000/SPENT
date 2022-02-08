@@ -13,26 +13,25 @@ import GRDB
 struct MainView: View {
     @StateObject var sheetContext = SheetContext()
     @StateObject var alertContext = AlertContext()
-    @EnvironmentObject var databaseManager: DatabaseManager
     @Query(AllAccounts(), in: \.dbQueue) var accounts: [Account]
     @State var selection: Account?
     
     var body: some View {
         NavigationView {
             VStack {
-                Section(header: Text("Balance")){
-                    if let selectedAccount = _selection.wrappedValue {
-                        Text("Balance of \(selectedAccount.name)").height(100).tag(0)
+                Section(header: Text("Balance")) {
+                    if let selectedAccount = selection {
+                        Text("Balance of \(selectedAccount.name)").height(100)
                     } else {
-                        Text("").height(100).tag(0)
+                        Text("").height(100)
                     }
-                }.collapsible(false)
-                List(selection: $selection) {
+                }
+                List {
                     Section(header: Text("Accounts")){
                         ForEach(accounts) { account in
-                            NavigationLink(destination: AccountTransactionsView(forAccount: account)){
+                            NavigationLink(destination: AccountTransactionsView(forAccount: account), tag: account, selection: $selection){
                                 AccountRow(forAccount: account)
-                            }.contextMenu { AccountContextMenu(sheet: sheetContext, forAccount: account) }.tag(account)
+                            }.contextMenu { AccountContextMenu(sheet: sheetContext, forAccount: account) }
                         }
                     }.collapsible(false)
                 }.listStyle(SidebarListStyle())
@@ -48,7 +47,7 @@ struct MainView: View {
                     })
                 }
             }
-            .frame(minWidth: 300, maxWidth: 400)
+            .frame(minWidth: 300)
             .navigationTitle("Accounts")
         }.sheet(context: sheetContext)
         .alert(context: alertContext)

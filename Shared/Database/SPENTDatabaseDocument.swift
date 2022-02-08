@@ -26,8 +26,10 @@ struct SPENTDatabaseDocument: FileDocument {
         print("Creating a new DB")
         bundleURL = SPENTDatabaseDocument.generateTempURL() // Path to the DB bundle
         
+        let printQueries = UserDefaults.standard.bool(forKey: PreferenceKeys.debugQueries.rawValue)
+        
         // TODO: Properly handle exceptions from here
-        manager = try! SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL)
+        manager = try! SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: printQueries)
     }
     
     init(configuration: ReadConfiguration) throws {
@@ -37,7 +39,8 @@ struct SPENTDatabaseDocument: FileDocument {
         // Copy the file being opened to the temp location
         try configuration.file.write(to: self.bundleURL, options: .atomic, originalContentsURL: nil)
         
-        try self.manager = SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: true)
+        let printQueries = UserDefaults.standard.bool(forKey: PreferenceKeys.debugQueries.rawValue)
+        try self.manager = SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: printQueries)
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {

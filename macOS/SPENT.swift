@@ -45,13 +45,6 @@ struct SPENT: App {
                     WindowKeys.MainWindow.open()
                 }
             }
-            CommandGroup(after: .newItem) {
-                Section{
-                    Button("New Account") {
-                        sheetContext.present(FormKeys.account(context: sheetContext, account: nil))
-                    }
-                }
-            }
             
             CommandGroup(after: .appSettings){
                 Button("Manage Tags"){

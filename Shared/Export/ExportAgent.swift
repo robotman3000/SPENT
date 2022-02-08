@@ -11,6 +11,7 @@ import GRDB
 
 protocol ExportAgent {
     var allowedTypes: [UTType] { get }
+    var displayName: String { get }
     //var communicator: ImportExportCommunicator { get }
     func exportToURL(url: URL, database: DatabaseQueue) throws -> Void
 }

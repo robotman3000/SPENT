@@ -20,20 +20,6 @@ struct MainView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Button("Import CSV File") {
-                    DispatchQueue.main.async {
-                        let agent = CSVAgent()
-                        openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-                            do {
-                                try agent.importFromURL(url: selectedFile, database: databaseManager.database)
-                            } catch {
-                                print(error)
-                                alertContext.present(AlertKeys.message(message: "Import Failed. \(error.localizedDescription)"))
-                            }
-                            alertContext.present(AlertKeys.message(message: "Import finished without errors"))
-                        }, onCancel: {})
-                    }
-                }
                 Section(header: Text("Balance")){
                     if let selectedAccount = _selection.wrappedValue {
                         Text("Balance of \(selectedAccount.name)").height(100).tag(0)

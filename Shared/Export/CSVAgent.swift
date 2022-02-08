@@ -12,6 +12,7 @@ import GRDB
 
 struct CSVAgent : ImportAgent, ExportAgent {
     var allowedTypes: [UTType] = [.commaSeparatedText]
+    var displayName: String = "Import CSV"
     let TAG_SEPARATOR: Character = ";"
     let NULL_MARKER: String = "NULL"
     

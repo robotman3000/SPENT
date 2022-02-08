@@ -47,6 +47,9 @@
 		A257FC3326D7F5C400383855 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257FC3226D7F5C400383855 /* MainView.swift */; };
 		A257FC3926D800EE00383855 /* WindowKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257FC3826D800EE00383855 /* WindowKeys.swift */; };
 		A257FC4326D80BDB00383855 /* ImportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADB926D5AF2E00537971 /* ImportAgent.swift */; };
+		A26591B427B31A430021EFB1 /* ImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26591B327B31A430021EFB1 /* ImportView.swift */; };
+		A26591B627B31D910021EFB1 /* ImportExportViewKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26591B527B31D910021EFB1 /* ImportExportViewKeys.swift */; };
+		A26591B827B323800021EFB1 /* ExportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26591B727B323800021EFB1 /* ExportView.swift */; };
 		A2676C8E267E367900548F06 /* TableToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2676C8C267E367900548F06 /* TableToolbar.swift */; };
 		A26B73392690CBAC0082A0F6 /* TransactionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A26B73382690CBAC0082A0F6 /* TransactionView.swift */; };
 		A276B57B26D887D3003C24E2 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A276B57A26D887D3003C24E2 /* AppConfiguration.swift */; };
@@ -133,6 +136,9 @@
 		A257FC3226D7F5C400383855 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		A257FC3426D7F62400383855 /* TagManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagManagerView.swift; sourceTree = "<group>"; };
 		A257FC3826D800EE00383855 /* WindowKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowKeys.swift; sourceTree = "<group>"; };
+		A26591B327B31A430021EFB1 /* ImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportView.swift; sourceTree = "<group>"; };
+		A26591B527B31D910021EFB1 /* ImportExportViewKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportExportViewKeys.swift; sourceTree = "<group>"; };
+		A26591B727B323800021EFB1 /* ExportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportView.swift; sourceTree = "<group>"; };
 		A2676C72267CD04300548F06 /* TransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsView.swift; sourceTree = "<group>"; };
 		A2676C8C267E367900548F06 /* TableToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableToolbar.swift; sourceTree = "<group>"; };
 		A26B732126909A850082A0F6 /* QueryWrapperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueryWrapperView.swift; sourceTree = "<group>"; };
@@ -422,10 +428,13 @@
 			isa = PBXGroup;
 			children = (
 				A2A5670F262740EC009C7E8C /* SPENT.swift */,
+				A26591B327B31A430021EFB1 /* ImportView.swift */,
+				A26591B727B323800021EFB1 /* ExportView.swift */,
 				A257FC3026D7ED7600383855 /* PreferenceKeys.swift */,
 				A257FC3826D800EE00383855 /* WindowKeys.swift */,
 				A217EA9C26A9C1C2004388FF /* FormKeys.swift */,
 				A217EAA026A9CD57004388FF /* AlertKeys.swift */,
+				A26591B527B31D910021EFB1 /* ImportExportViewKeys.swift */,
 				A26B73322690BDAF0082A0F6 /* View */,
 				A2A56713262740ED009C7E8C /* Assets.xcassets */,
 				A2A56718262740ED009C7E8C /* Info.plist */,
@@ -661,12 +670,15 @@
 				A2AA52B827A0980E0061F761 /* ExportAgent.swift in Sources */,
 				A2449FF9272075AA006B5185 /* DatabaseRequest.swift in Sources */,
 				A2180BE727A8A6F90040AC40 /* AccountForm.swift in Sources */,
+				A26591B827B323800021EFB1 /* ExportView.swift in Sources */,
 				A257FC3326D7F5C400383855 /* MainView.swift in Sources */,
+				A26591B427B31A430021EFB1 /* ImportView.swift in Sources */,
 				A20DCD84264EEB510070EB07 /* Tag.swift in Sources */,
 				A20DCD6A264EBC260070EB07 /* Transaction.swift in Sources */,
 				A2EC30A2269743DC00781EC8 /* GlobalState.swift in Sources */,
 				A20901E527A35B4800A68252 /* Transfer.swift in Sources */,
 				A2449FF727206F13006B5185 /* DatabaseFilter.swift in Sources */,
+				A26591B627B31D910021EFB1 /* ImportExportViewKeys.swift in Sources */,
 				A2448EC327AD910E00530AE0 /* CSVAgent.swift in Sources */,
 				A257FC3126D7ED7600383855 /* PreferenceKeys.swift in Sources */,
 				A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */,

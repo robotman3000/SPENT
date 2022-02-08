@@ -65,58 +65,16 @@ struct SPENT: App {
             
             CommandGroup(replacing: .importExport) {
                 Menu("Import") {
-//                    Button("SPENT Dev Legacy") {
-//                        DispatchQueue.main.async {
-//                            let agent = SPENTLegacyImportAgent()
-//                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-//                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
-//                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
-//                            }, onCancel: {})
-//                        }
-//                    }
-//                    Button("SPENT Dev V0") {
-//                        DispatchQueue.main.async {
-//                            let agent = SPENTV0ImportAgent()
-//                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-//                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
-//                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
-//                            }, onCancel: {})
-//                        }
-//                    }
-//                    Button("CSV File") {
-//                        DispatchQueue.main.async {
-//                            let agent = CSVAgent()
-//                            openFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-//                                executeImportAgent(agent: agent, importURL: selectedFile, database: dbStore)
-//                                alertContext.present(AlertKeys.message(message: "Import finished without errors"))
-//                            }, onCancel: {})
-//                        }
-//                    }
+                    Button("CSV File") {
+                        sheetContext.present(ImportExportViewKeys.importCSV(context: sheetContext, alertContext: alertContext))
+                    }
                 }
                 
                 Menu("Export As") {
-//                    Button("CSV File") {
-//                        DispatchQueue.main.async {
-//                            let agent = CSVAgent()
-//                            saveFile(allowedTypes: agent.allowedTypes, onConfirm: { selectedFile in
-//                                executeExportAgent(agent: agent, exportURL: selectedFile, database: dbStore)
-//                                alertContext.present(AlertKeys.message(message: "Export finished without errors"))
-//                            }, onCancel: {})
-//                        }
-//                    }
+                    Button("CSV File") {
+                        sheetContext.present(ImportExportViewKeys.exportCSV(context: sheetContext, alertContext: alertContext))
+                    }
                 }
-                
-//                Button("Export all attachments"){
-//                    chooseFolder(onConfirm: { url in
-//                        for attachment in dbStore.getAllAttachments() {
-//                            do {
-//                                try dbStore.exportAttachment(destinationURL: url, attachment: attachment)
-//                            } catch {
-//                                print(error)
-//                            }
-//                        }
-//                    }, onCancel: {})
-//                }
             }
         }
         
@@ -135,24 +93,6 @@ struct SPENT: App {
 //                Text("No database is loaded")
 //            }
 //        }
-    }
-    
-    func executeImportAgent(agent: ImportAgent, importURL: URL, database: DatabaseQueue) {
-        do {
-            try agent.importFromURL(url: importURL, database: database)
-        } catch {
-            print(error)
-            alertContext.present(AlertKeys.message(message: "Import Failed. \(error.localizedDescription)"))
-        }
-    }
-    
-    func executeExportAgent(agent: ExportAgent, exportURL: URL, database: DatabaseQueue) {
-        do {
-            try agent.exportToURL(url: exportURL, database: database)
-        } catch {
-            print(error)
-            alertContext.present(AlertKeys.message(message: "Export Failed. \(error.localizedDescription)"))
-        }
     }
     
 //    func setupDBInstance(url: URL, skipHashCheck: Bool = false) throws {

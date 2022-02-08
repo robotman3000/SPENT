@@ -176,7 +176,6 @@
 		A2C2ADB426D58F1F00537971 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A2C2ADB726D58F7D00537971 /* AccountContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountContextMenu.swift; sourceTree = "<group>"; };
 		A2C2ADB926D5AF2E00537971 /* ImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportAgent.swift; sourceTree = "<group>"; };
-		A2C2ADBB26D5B0CE00537971 /* SPENTLegacyImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTLegacyImportAgent.swift; sourceTree = "<group>"; };
 		A2C4C0CA2613E61A0048DB83 /* SPENT.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SPENT.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2C4C0CD2613E61A0048DB83 /* SPENTiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTiOSApp.swift; sourceTree = "<group>"; };
 		A2C4C0D12613E61A0048DB83 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -185,7 +184,6 @@
 		A2C8351026DAE8FE00819F35 /* DBFileBookmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DBFileBookmark.swift; sourceTree = "<group>"; };
 		A2D4158227AA37AF008A6C52 /* DatabaseActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseActions.swift; sourceTree = "<group>"; };
 		A2D4158427AA3F96008A6C52 /* SPENTDatabaseDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTDatabaseDocument.swift; sourceTree = "<group>"; };
-		A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPENTV0ImportAgent.swift; sourceTree = "<group>"; };
 		A2E0F52D26F4043E002EC601 /* TransactionTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTemplate.swift; sourceTree = "<group>"; };
 		A2E0F53226F40BF8002EC601 /* JSONTransactionTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONTransactionTemplate.swift; sourceTree = "<group>"; };
 		A2EC30A0269743DC00781EC8 /* GlobalState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalState.swift; sourceTree = "<group>"; };
@@ -196,7 +194,6 @@
 		A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionForm.swift; sourceTree = "<group>"; tabWidth = 5; };
 		A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitTransactionMemberList.swift; sourceTree = "<group>"; };
 		A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitMemberForm.swift; sourceTree = "<group>"; };
-		A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QIFImportAgent.swift; sourceTree = "<group>"; };
 		A2FE6FE8271B360D000F8F89 /* TemplateFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateFilter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -277,9 +274,6 @@
 			isa = PBXGroup;
 			children = (
 				A2C2ADB926D5AF2E00537971 /* ImportAgent.swift */,
-				A2F8C091276B9EC600F2B3AF /* QIFImportAgent.swift */,
-				A2C2ADBB26D5B0CE00537971 /* SPENTLegacyImportAgent.swift */,
-				A2DFFD1B26ED924700B6CBE6 /* SPENTV0ImportAgent.swift */,
 			);
 			path = Import;
 			sourceTree = "<group>";

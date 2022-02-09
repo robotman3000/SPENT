@@ -34,7 +34,12 @@ struct TransactionForm: View {
                         EnumPicker(label: "Type", selection: $model.type, enumCases: [.Deposit, .Withdrawal]).pickerStyle(SegmentedPickerStyle())
             ){
 
-                BucketPicker(label: "Bucket", selection: $model.selectedBucket, choices: model.bucketChoices)
+                HStack {
+                    BucketPicker(label: "Bucket", selection: $model.selectedBucket, choices: model.bucketChoices)
+                    Button("X"){
+                        model.selectedBucket = nil
+                    }
+                }
                 AccountPicker(label: model.type == .Withdrawal ? "From" : "To", selection: $model.selectedAccount, choices: model.accountChoices)
             }
 
@@ -55,8 +60,6 @@ class TransactionFormModel: FormModel {
     @Published var entryDate: Date
     @Published var postDate: Date
     @Published var amount: String
-    @Published var bucketID: Int64?
-    @Published var accountID: Int64?
     @Published var type: Transaction.TransType
     @Published var payee: String
     @Published var memo: String

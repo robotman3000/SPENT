@@ -95,6 +95,9 @@ extension SPENTDatabaseDocument {
         let migrator = SPENTDatabaseDocument.createDBMigrator()
         try! migrator.migrate(queue)
         
+        // Create the utility views
+        try SPENTDatabaseDocument.createDBViews(database: queue)
+        
         // Update the DB commit
         setDBCommit(database: queue, commit: gitCommit)
         return DatabaseManager(dbQueue: queue)
@@ -189,96 +192,6 @@ extension SPENTDatabaseDocument {
                 t.column("SplitHeadTransactionID", .integer).references("Transactions", onDelete: .restrict).notNull()
                 t.column("SplitUUID", .text).notNull()
             }
-            
-            
-//            // VIEW - Transaction Ancestors
-//            try db.execute(sql: """
-//                CREATE VIEW transactionAncestors AS
-//                SELECT t.id AS id,
-//                       b1.V_Ancestor AS SourceAccount,
-//                       b2.V_Ancestor AS DestAccount,
-//                       IFNULL(b1.V_Ancestor == b2.V_Ancestor, False) AS isAllocation
-//                FROM Transactions t
-//                LEFT JOIN Buckets b1 ON SourceBucket = b1.id
-//                LEFT JOIN Buckets b2 ON DestBucket = b2.id
-//            """)
-
-//            // VIEW - Transaction Amounts (and other useful columns)
-//            try db.execute(sql: """
-//                CREATE VIEW transactionAmounts AS
-//                SELECT id,
-//                       Status,
-//                       -1*Amount AS TrueAmount,
-//                       SourceBucket AS Bucket,
-//                       t.SourceAccount AS Account,
-//                       IFNULL(SourcePostDate, TransDate) AS "Date",
-//                       t.isAllocation
-//                FROM Transactions
-//                JOIN transactionAncestors t USING (id)
-//                WHERE SourceBucket IN (SELECT id FROM Buckets)
-//                UNION ALL
-//                SELECT id,
-//                       Status,
-//                       Amount AS TrueAmount,
-//                       DestBucket AS Bucket,
-//                       t.DestAccount AS Account,
-//                       IFNULL(DestPostDate, TransDate) AS "Date",
-//                       t.isAllocation
-//                FROM Transactions
-//                JOIN transactionAncestors t USING (id)
-//                WHERE DestBucket IN (SELECT id FROM Buckets)
-//            """)
-            
-//            // VIEW - Transaction Running Balance
-//            try db.execute(sql: """
-//                CREATE VIEW transactionBalance AS
-//                SELECT
-//                       ra.id,
-//                       ra.Bucket,
-//                       ra.Account,
-//                       SUM(TrueAmount) FILTER (WHERE Status IN (4, 5, 6)) OVER win1 AS pRunning,
-//                       SUM(TrueAmount) FILTER (WHERE Status IN (1, 3)) OVER win1 AS aRunning
-//                FROM transactionAmounts ra
-//                LEFT JOIN Buckets bt ON bt.id = ra.Bucket
-//                WHERE ra.isAllocation == false
-//                WINDOW win1 AS (PARTITION BY V_Ancestor ORDER BY "Date", ra.id ASC ROWS UNBOUNDED PRECEDING)
-//                ORDER BY "Date" ASC
-//            """)
-            
-//            // VIEW - Bucket Balance
-//            try db.execute(sql: """
-//                CREATE VIEW bucketBalance AS
-//                SELECT DISTINCT
-//                        r.Bucket AS id,
-//                        IFNULL(available, 0)+IFNULL(posted, 0) AS "available",
-//                        IFNULL(posted, 0) AS "posted"
-//                FROM transactionAmounts r
-//                LEFT JOIN (
-//                    SELECT SUM(TrueAmount) AS "available", Bucket
-//                    FROM transactionAmounts
-//                    WHERE Status IN (1, 3)
-//                    GROUP BY Bucket
-//                ) USING (Bucket)
-//                LEFT JOIN (
-//                    SELECT SUM(TrueAmount) AS "posted", Bucket
-//                    FROM transactionAmounts
-//                    WHERE Status IN (4, 5, 6)
-//                    GROUP BY Bucket
-//                ) USING (Bucket)
-//            """)
-//
-//            // VIEW - All Transactions (View optimized for use by the main transactions list)
-//            try db.execute(sql: """
-//                CREATE VIEW allTransactions AS
-//                SELECT
-//                    t.id, t.Status, t.SourceBucket, t.DestBucket, t.Memo, t.Payee, t."Group", t.V_Type,
-//                    ta.TrueAmount AS "Amount", ta.Bucket, ta.Account, ta."Date", ta.isAllocation,
-//                    b.pRunning AS "PostedRunning", b.aRunning AS "AvailableRunning"
-//                FROM Transactions t
-//                JOIN transactionAmounts ta USING (id)
-//                LEFT JOIN transactionBalance b USING (id, Account)
-//                ORDER BY t.id
-//            """)
         }
 
         migrator.registerMigration("DB-Versioning"){ db in
@@ -343,6 +256,28 @@ extension SPENTDatabaseDocument {
         } catch {
             print("Failed to update database commit hash")
             print(error)
+        }
+    }
+    
+    private static func createDBViews(database: DatabaseQueue) throws {
+        try database.write { db in
+            // The running balance column for all transactions grouped by each account
+            try db.execute(sql: """
+            CREATE TEMPORARY VIEW "AccountRunningBalance" AS
+                SELECT SUM(Amount) OVER win1 AS "RunningBalance", AccountID, Id AS "TransactionID" FROM Transactions WINDOW win1 AS (PARTITION BY AccountID ROWS UNBOUNDED PRECEDING)
+            """)
+            
+            // The current balance of the accounts
+            try db.execute(sql: """
+            CREATE TEMPORARY VIEW "AccountBalance" AS
+                SELECT SUM(Amount) AS "Balance", AccountID AS "Id" FROM Transactions GROUP BY AccountID
+            """)
+            
+            // The current balance of the buckets
+            try db.execute(sql: """
+            CREATE TEMPORARY VIEW "BucketBalance" AS
+                SELECT SUM(Amount) AS "Balance", AccountID, BucketID FROM Transactions GROUP BY AccountID, BucketID
+            """)
         }
     }
 }

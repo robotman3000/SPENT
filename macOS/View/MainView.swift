@@ -13,7 +13,7 @@ import GRDB
 struct MainView: View {
     @StateObject var sheetContext = SheetContext()
     @StateObject var alertContext = AlertContext()
-    @Query(AllAccounts(), in: \.dbQueue) var accounts: [Account]
+    @Query(AllAccounts(), in: \.dbQueue) var accounts: [AccountInfo]
     @State var selection: Account?
     
     var body: some View {
@@ -28,10 +28,10 @@ struct MainView: View {
                 }
                 List {
                     Section(header: Text("Accounts")){
-                        ForEach(accounts) { account in
-                            NavigationLink(destination: AccountTransactionsView(forAccount: account), tag: account, selection: $selection){
-                                AccountRow(forAccount: account)
-                            }.contextMenu { AccountContextMenu(sheet: sheetContext, forAccount: account) }
+                        ForEachEnumerated(accounts) { accountInfo in
+                            NavigationLink(destination: AccountTransactionsView(forAccount: accountInfo.account), tag: accountInfo.account, selection: $selection){
+                                AccountRow(forAccount: accountInfo)
+                            }.contextMenu { AccountContextMenu(sheet: sheetContext, forAccount: accountInfo.account) }
                         }
                     }.collapsible(false)
                 }.listStyle(SidebarListStyle())
@@ -63,10 +63,14 @@ struct MainView: View {
 }
 
 struct AccountRow: View {
-    let forAccount: Account
+    let forAccount: AccountInfo
     
     var body: some View {
-        Text(forAccount.name)
+        HStack {
+            Text(forAccount.account.name)
+            Spacer()
+            Text(forAccount.balance.currencyFormat)
+        }
     }
 }
 
@@ -88,18 +92,19 @@ struct AccountContextMenu: View {
 }
 
 struct TransactionRow: View {
-    let forTransaction: Transaction
+    let forTransaction: TransactionInfo
     
     var body: some View {
         HStack {
-            Text(forTransaction.status.getStringName())
-            Text(forTransaction.amount.currencyFormat)
-            Text(forTransaction.entryDate.transactionFormat)
-            Text(forTransaction.postDate?.transactionFormat ?? "N/A")
-            Text(forTransaction.payee)
-            Text(forTransaction.memo)
-            Text("\(forTransaction.bucketID ?? -1)")
-            Text("\(forTransaction.accountID)")
+            Text(forTransaction.transaction.status.getStringName())
+            Text(forTransaction.transaction.amount.currencyFormat)
+            Text(forTransaction.transaction.entryDate.transactionFormat)
+            Text(forTransaction.transaction.postDate?.transactionFormat ?? "N/A")
+            Text(forTransaction.transaction.payee)
+            Text(forTransaction.transaction.memo)
+            Text(forTransaction.bucket?.name ?? "No Bucket")
+            Text(forTransaction.account.name)
+            Text(forTransaction.runningBalance.runningBalance.currencyFormat)
         }
     }
 }
@@ -124,7 +129,7 @@ struct TransactionContextMenu: View {
 struct AccountTransactionsView: View {
     @StateObject var sheetContext = SheetContext()
     let account: Account
-    @Query<AccountTransactions> var transactions: [Transaction]
+    @Query<AccountTransactions> var transactions: [TransactionInfo]
     @State var selection: Transaction?
     
     init(forAccount: Account){
@@ -135,9 +140,9 @@ struct AccountTransactionsView: View {
     var body: some View {
         Text("\(selection?.id! ?? -1)")
         List (selection: $selection){
-            ForEach(transactions){ transaction in
-                TransactionRow(forTransaction: transaction)
-                    .contextMenu { TransactionContextMenu(sheet: sheetContext, forTransaction: transaction) }.tag(transaction)
+            ForEachEnumerated(transactions){ transactionInfo in
+                TransactionRow(forTransaction: transactionInfo)
+                    .contextMenu { TransactionContextMenu(sheet: sheetContext, forTransaction: transactionInfo.transaction) }.tag(transactionInfo.transaction)
             }
         }.toolbar {
             ToolbarItem(placement: .automatic){
@@ -160,5 +165,60 @@ struct MainView_Previews: PreviewProvider {
 
         // Non-empty list
         MainView().environment(\.dbQueue, SPENTDatabaseDocument.populatedDatabaseQueue())
+    }
+}
+
+// Database structs
+struct AccountBalance: Decodable, FetchableRecord, TableRecord {
+    let accountID: Int64
+    let balance: Int
+}
+
+// Swift View specific database structs
+struct AccountInfo: Decodable, FetchableRecord {
+    var account: Account
+    var balance: Int
+}
+
+extension AccountInfo {
+    /// The request for all account infos
+    static func all() -> AdaptedFetchRequest<SQLRequest<AccountInfo>> {
+        let request: SQLRequest<AccountInfo> = """
+            SELECT
+                \(columnsOf: Account.self),
+                \(columnsOf: AccountBalance.self)
+            FROM Accounts
+            LEFT JOIN AccountBalance USING (id)
+            """
+        return request.adapted { db in
+            let adapters = try splittingRowAdapters(columnCounts: [
+                Account.numberOfSelectedColumns(db),
+                AccountBalance.numberOfSelectedColumns(db)])
+            return ScopeAdapter([
+                CodingKeys.account.stringValue: adapters[0],
+                CodingKeys.balance.stringValue: adapters[1]])
+        }
+    }
+    
+    /// Fetches all account infos
+    static func fetchAll(_ db: Database) throws -> [AccountInfo] {
+        try all().fetchAll(db)
+    }
+}
+
+struct AccountRunningBalance: Decodable, FetchableRecord, TableRecord {
+    let runningBalance: Int
+    let accountID: Int64
+    let transactionID: Int64
+}
+
+struct TransactionInfo: Decodable, FetchableRecord {
+    var transaction: Transaction
+    var account: Account
+    var bucket: Bucket?
+    var runningBalance: AccountRunningBalance
+    
+    private enum CodingKeys: String, CodingKey {
+        case transaction, account = "Account", bucket = "Bucket", runningBalance
     }
 }

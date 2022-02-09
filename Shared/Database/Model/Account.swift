@@ -42,14 +42,13 @@ extension Account {
     var buckets: QueryInterfaceRequest<Bucket> {
         request(for: Account.buckets)
     }
-    //TODO: Balance
 }
 
 struct AllAccounts: Queryable {
-    static var defaultValue: [Account] { [] }
-    func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[Account], Error> {
+    static var defaultValue: [AccountInfo] { [] }
+    func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[AccountInfo], Error> {
         ValueObservation
-            .tracking(Account.fetchAll)
+            .tracking(AccountInfo.fetchAll)
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:
             .publisher(in: dbQueue, scheduling: .immediate)
@@ -58,12 +57,31 @@ struct AllAccounts: Queryable {
 }
 
 struct AccountTransactions: Queryable {
-    static var defaultValue: [Transaction] { [] }
+    static var defaultValue: [TransactionInfo] { [] }
     let account: Account
     let bucket: Bucket?
-    func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[Transaction], Error> {
+    func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[TransactionInfo], Error> {
         ValueObservation
-            .tracking(Transaction.all().filter(account: account).fetchAll)
+            .tracking({ db in
+                
+                let runningBalanceCTE = CommonTableExpression(
+                    named: "runningBalance",
+                    request: AccountRunningBalance.all().filter(Column("AccountID") == account.id))
+                
+                let association = Transaction.association(
+                    to: runningBalanceCTE,
+                    on: { left, right in
+                        left[Column("id")] == right[Column("TransactionID")]
+                    })
+                
+                let request = Transaction.all()
+                    .filter(account: account)
+                    .including(required: Transaction.account)
+                    .including(optional: Transaction.bucket)
+                    .with(runningBalanceCTE)
+                    .including(required: association)
+                return try TransactionInfo.fetchAll(db, request)
+            })
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:
             .publisher(in: dbQueue, scheduling: .immediate)

@@ -266,11 +266,21 @@ extension SPENTDatabaseDocument {
             CREATE TEMPORARY VIEW "AccountRunningBalance" AS
                 SELECT SUM(Amount) OVER win1 AS "RunningBalance", AccountID, Id AS "TransactionID" FROM Transactions WINDOW win1 AS (PARTITION BY AccountID ROWS UNBOUNDED PRECEDING)
             """)
-            
             // The current balance of the accounts
             try db.execute(sql: """
             CREATE TEMPORARY VIEW "AccountBalance" AS
-                SELECT SUM(Amount) AS "Balance", AccountID AS "Id" FROM Transactions GROUP BY AccountID
+                WITH
+                "posted" ("Posted", "id") AS (
+                    SELECT SUM(Amount), AccountID FROM Transactions WHERE Status IN (5, 6) GROUP BY AccountID
+                ),
+                "available" ("Available", "id") AS (
+                    SELECT SUM(Amount), AccountID FROM Transactions WHERE Status <> 0 GROUP BY AccountID
+                ),
+                "allocatable" ("Allocatable", "id") AS (
+                    SELECT SUM(Amount), AccountID FROM Transactions WHERE Status <> 0 AND BucketID IS NULL GROUP BY AccountID
+                )
+                SELECT id, IFNULL(Posted, 0) AS "Posted", IFNULL(Available, 0) AS "Available", IFNULL(Allocatable, 0) AS "Allocatable"
+                FROM Accounts LEFT JOIN posted USING (id) LEFT JOIN available USING (id) LEFT JOIN allocatable USING (id)
             """)
             
             // The current balance of the buckets

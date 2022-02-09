@@ -42,6 +42,11 @@ extension Account {
     var buckets: QueryInterfaceRequest<Bucket> {
         request(for: Account.buckets)
     }
+    
+    static let balance = hasOne(AccountBalance.self, key: "abc123")
+    var balance: QueryInterfaceRequest<AccountBalance> {
+        request(for: Account.balance)
+    }
 }
 
 struct AllAccounts: Queryable {
@@ -49,6 +54,10 @@ struct AllAccounts: Queryable {
     func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[AccountInfo], Error> {
         ValueObservation
             .tracking(AccountInfo.fetchAll)
+//            .tracking({ db in
+//                let request = Account.including(required: Account.balance)
+//                return try AccountInfo.fetchAll(db, request)
+//            })
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:
             .publisher(in: dbQueue, scheduling: .immediate)
@@ -85,6 +94,26 @@ struct AccountTransactions: Queryable {
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:
             .publisher(in: dbQueue, scheduling: .immediate)
+            .eraseToAnyPublisher()
+    }
+}
+
+struct AccountBalanceQuery: Queryable {
+    static var defaultValue: AccountBalance = AccountBalance(id: -1, posted: 0, available: 0, allocatable: 0)
+    let account: Account
+    
+    func publisher(in database: DatabaseQueue) -> AnyPublisher<AccountBalance, Error> {
+        ValueObservation
+            .tracking({ db in
+                var balance = try AccountBalance.filter(Column("Id") == account.id).fetchOne(db)
+                if balance == nil {
+                    balance = AccountBalance(id: account.id ?? -1, posted: 0, available: 0, allocatable: 0)
+                }
+                return balance!
+            })
+            // The `.immediate` scheduling feeds the view right on subscription,
+            // and avoids an initial rendering with an empty list:
+            .publisher(in: database, scheduling: .immediate)
             .eraseToAnyPublisher()
     }
 }

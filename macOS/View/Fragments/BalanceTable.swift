@@ -7,23 +7,35 @@
 
 import SwiftUI
 import GRDB
+import GRDBQuery
 
-struct BalanceTable: View {
-    @EnvironmentObject var store: DatabaseStore
-    let forID: Int64?
+struct AccountBalanceView: View {
+    let account: Account
+    @Query<AccountBalanceQuery> var balance: AccountBalance
+    
+    init(forAccount: Account){
+        self._balance = Query(AccountBalanceQuery(account: forAccount), in: \.dbQueue)
+        self.account = forAccount
+    }
     
     var body: some View {
-        if forID != nil && forID! > -1 {
-            AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: forID!), "BalanceTable") { model in
-                Internal_BalanceTable(model: model)
+        VStack (spacing: 15){
+            HStack (spacing: 3){
+                Text("Balance of")
+                Text(account.name).fontWeight(.bold)
             }
-        } else {
-            Internal_BalanceTable(model: nil)
-        }
+            HStack (spacing: 15) {
+                AccountBalanceView.BalanceView(text: "Posted", balance: balance.posted)
+                AccountBalanceView.BalanceView(text: "Available", balance: balance.available)
+            }
+            HStack (spacing: 15) {
+                AccountBalanceView.BalanceView(text: "Allocatable", balance: balance.allocatable)
+                //AccountBalanceView.BalanceView(text: "Available in Tree", balance: 0)
+            }
+        }.padding()
     }
     
     struct BalanceView: View {
-        
         let text: String
         let balance: Int?
         
@@ -47,27 +59,6 @@ struct BalanceTable: View {
             //.cornerRadius(20)
             .clipShape(Rectangle()).cornerRadius(15)
         }
-    }
-}
-
-private struct Internal_BalanceTable: View {
-    let model: BucketModel?
-    
-    var body: some View {
-        VStack (spacing: 15){
-            HStack (spacing: 3){
-                Text("Balance of")
-                Text(model?.bucket.name ?? "nothing").fontWeight(.bold)
-            }
-            HStack (spacing: 15) {
-                BalanceTable.BalanceView(text: "Posted", balance: model?.balance?.posted)
-                BalanceTable.BalanceView(text: "Available", balance: model?.balance?.available)
-            }
-            HStack (spacing: 15) {
-                BalanceTable.BalanceView(text: "Posted in Tree", balance: model?.balance?.postedTree)
-                BalanceTable.BalanceView(text: "Available in Tree", balance: model?.balance?.availableTree)
-            }
-        }.padding()
     }
 }
 

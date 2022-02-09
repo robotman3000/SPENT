@@ -19,11 +19,11 @@ struct MainView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Section(header: Text("Balance")) {
-                    if let selectedAccount = selection {
-                        Text("Balance of \(selectedAccount.name)").height(100)
+                Section {
+                    if let account = selection {
+                        AccountBalanceView(forAccount: account)
                     } else {
-                        Text("").height(100)
+                        Text("Select an account")
                     }
                 }
                 List {
@@ -69,7 +69,7 @@ struct AccountRow: View {
         HStack {
             Text(forAccount.account.name)
             Spacer()
-            Text(forAccount.balance.currencyFormat)
+            Text(forAccount.balance.posted.currencyFormat)
         }
     }
 }
@@ -170,14 +170,19 @@ struct MainView_Previews: PreviewProvider {
 
 // Database structs
 struct AccountBalance: Decodable, FetchableRecord, TableRecord {
-    let accountID: Int64
-    let balance: Int
+    let id: Int64
+    let posted: Int
+    let available: Int
+    let allocatable: Int
+    
+//    static let account = belongsTo(Account.self)
+//    static var databaseTableName: String = "AccountBalance"
 }
 
 // Swift View specific database structs
 struct AccountInfo: Decodable, FetchableRecord {
     var account: Account
-    var balance: Int
+    var balance: AccountBalance
 }
 
 extension AccountInfo {
@@ -199,7 +204,7 @@ extension AccountInfo {
                 CodingKeys.balance.stringValue: adapters[1]])
         }
     }
-    
+
     /// Fetches all account infos
     static func fetchAll(_ db: Database) throws -> [AccountInfo] {
         try all().fetchAll(db)

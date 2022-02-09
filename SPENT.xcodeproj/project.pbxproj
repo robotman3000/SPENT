@@ -43,6 +43,7 @@
 		A2448EC327AD910E00530AE0 /* CSVAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52B627A097880061F761 /* CSVAgent.swift */; };
 		A2449FF727206F13006B5185 /* DatabaseFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2449FF627206F13006B5185 /* DatabaseFilter.swift */; };
 		A2449FF9272075AA006B5185 /* DatabaseRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2449FF8272075AA006B5185 /* DatabaseRequest.swift */; };
+		A25384FA27B416FA004CB3E4 /* BalanceTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DCD74264ED0270070EB07 /* BalanceTable.swift */; };
 		A257FC3126D7ED7600383855 /* PreferenceKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257FC3026D7ED7600383855 /* PreferenceKeys.swift */; };
 		A257FC3326D7F5C400383855 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257FC3226D7F5C400383855 /* MainView.swift */; };
 		A257FC3926D800EE00383855 /* WindowKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257FC3826D800EE00383855 /* WindowKeys.swift */; };
@@ -701,6 +702,7 @@
 				A2780867268E55F600CEA560 /* EnumPicker.swift in Sources */,
 				A20C691F273431B8002A87A3 /* Errors.swift in Sources */,
 				A20B3C9F26558BB400555CF1 /* TagRequest.swift in Sources */,
+				A25384FA27B416FA004CB3E4 /* BalanceTable.swift in Sources */,
 				A278086A268E588000CEA560 /* Stringable.swift in Sources */,
 				A20DCD6D264EBC470070EB07 /* Bucket.swift in Sources */,
 				A2A56739262879BD009C7E8C /* Util.swift in Sources */,

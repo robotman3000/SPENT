@@ -45,8 +45,10 @@ struct CSVAgent : ImportAgent, ExportAgent {
                 
                 // Create the bucket (if present)
                 if let bucketName = record.bucket {
-                    let bucket = Bucket(id: nil, name: bucketName)
-                    buckets.insert(bucket)
+                    if bucketName != NULL_MARKER {
+                        let bucket = Bucket(id: nil, name: bucketName)
+                        buckets.insert(bucket)
+                    }
                 }
                 
                 // Create the tags (if present)

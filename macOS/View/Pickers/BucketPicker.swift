@@ -12,10 +12,14 @@ struct BucketPicker: View {
     var label: String = ""
     @Binding var selection: Bucket?
     let choices: [Bucket]
+    var allowEmpty: Bool = false
     
     var body: some View {
-        if !choices.isEmpty {
+        if !(!allowEmpty && choices.isEmpty) {
             Picker(selection: $selection, label: Text(label)) {
+                if allowEmpty {
+                    Text("").tag(nil as Bucket?)
+                }
                 ForEach(choices, id: \.id) { bucket in
                     Text(bucket.name).tag(bucket as Bucket?)
                 }

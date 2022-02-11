@@ -11,6 +11,7 @@ import GRDB
 enum DatabaseActions: DatabaseAction {
     case deleteAccount(Account)
     case deleteTransaction(Transaction)
+    case deleteBucket(Bucket)
     
     func execute(db: Database) throws {
         switch self {
@@ -18,6 +19,8 @@ enum DatabaseActions: DatabaseAction {
             try deleteAccount(db, account)
         case let .deleteTransaction(transaction):
             try deleteTransaction(db, transaction)
+        case let .deleteBucket(bucket):
+            try deleteBucket(db, bucket)
         }
     }
 }
@@ -29,6 +32,10 @@ extension DatabaseActions {
     
     private func deleteTransaction(_ db: Database, _ transaction: Transaction) throws {
         try transaction.delete(db)
+    }
+    
+    private func deleteBucket(_ db: Database, _ bucket: Bucket) throws {
+        try bucket.delete(db)
     }
 }
 

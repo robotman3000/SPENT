@@ -10,7 +10,7 @@ import SwiftUIKit
 
 enum FormKeys: SheetProvider {
     case account(context: SheetContext, account: Account?)
-//    case bucket(context: SheetContext, bucket: Bucket?, parent: Bucket?)
+    case bucket(context: SheetContext, bucket: Bucket?)
     case transaction(context: SheetContext, transaction: Transaction?)
 //    case transfer(context: SheetContext, transaction: Transaction?, contextBucket: Int64?)
 //    case tag(context: SheetContext, tag: Tag?)
@@ -21,6 +21,7 @@ enum FormKeys: SheetProvider {
 //    case documentList(context: SheetContext, transaction: Transaction)
     case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
     case confirmAction(context: SheetContext, message: String, onConfirm: () -> Void, onCancel: () -> Void)
+    case manageBuckets(context: SheetContext)
     
     var sheet: AnyView {
         switch self {
@@ -30,14 +31,14 @@ enum FormKeys: SheetProvider {
             }
             return AccountForm(model: AccountFormModel(account!),
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
-//            
-//        case .bucket(context: let context, bucket: var bucket, parent: let parent):
-//            if bucket == nil{
-//                bucket = Bucket.newBucket()
-//            }
-//            return BucketForm(model: BucketFormModel(bucket: bucket!, parent: parent),
-//                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
-//            
+            
+        case .bucket(context: let context, bucket: var bucket):
+            if bucket == nil{
+                bucket = Bucket(name: "")
+            }
+            return BucketForm(model: BucketFormModel(bucket: bucket!),
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
+            
         case .transaction(context: let context, transaction: var transaction):
             if transaction == nil {
                 transaction = Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
@@ -114,6 +115,12 @@ enum FormKeys: SheetProvider {
                     Button("Confirm", action: { context.dismiss(); onConfirm() })
                 }
             }).padding().any()
+        case let .manageBuckets(context: context):
+            return BucketManagerView().toolbar(content: {
+                ToolbarItem(placement: .primaryAction){
+                    Button("Done", action: { context.dismiss() })
+                }
+            }).any()
         }
     }
 }

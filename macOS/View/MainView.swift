@@ -128,22 +128,22 @@ struct TransactionContextMenu: View {
 
 struct AccountTransactionsView: View {
     @StateObject var sheetContext = SheetContext()
+    @State var selectedBucket: Bucket? = nil as Bucket?
     let account: Account
-    @Query<AccountTransactions> var transactions: [TransactionInfo]
-    @State var selection: Transaction?
     
     init(forAccount: Account){
-        self._transactions = Query(AccountTransactions(account: forAccount, bucket: nil), in: \.dbQueue)
         self.account = forAccount
     }
     
     var body: some View {
-        Text("\(selection?.id! ?? -1)")
-        List (selection: $selection){
-            ForEachEnumerated(transactions){ transactionInfo in
-                TransactionRow(forTransaction: transactionInfo)
-                    .contextMenu { TransactionContextMenu(sheet: sheetContext, forTransaction: transactionInfo.transaction) }.tag(transactionInfo.transaction)
-            }
+        VStack{
+            // Bucket Toolbar
+            AccountBucketToolbar(forAccount: account, selection: $selectedBucket)
+            
+            // Main transaction list
+            TransactionsList(forAccount: account, forBucket: selectedBucket, sheetContext: sheetContext)
+            
+            // Sorting toolbar
         }.toolbar {
             ToolbarItem(placement: .automatic){
                 Button(action: newTransactionClick, label: {
@@ -153,8 +153,58 @@ struct AccountTransactionsView: View {
         }.sheet(context: sheetContext)
     }
     
+    private struct TransactionsList: View {
+        @ObservedObject var sheetContext: SheetContext
+        @Query<AccountTransactions> var transactions: [TransactionInfo]
+        @State var selection: Transaction?
+        
+        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext){
+            self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket), in: \.dbQueue)
+            self.sheetContext = sheetContext
+        }
+        
+        var body: some View {
+            List (selection: $selection){
+                ForEachEnumerated(transactions){ transactionInfo in
+                    TransactionRow(forTransaction: transactionInfo)
+                        .contextMenu { TransactionContextMenu(sheet: sheetContext, forTransaction: transactionInfo.transaction) }.tag(transactionInfo.transaction)
+                }
+            }
+        }
+    }
+    
     private func newTransactionClick() {
         sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: nil))
+    }
+}
+
+struct AccountBucketToolbar: View {
+    let account: Account
+    @Query<AccountBuckets> var buckets: [Bucket]
+    @Binding var selectedBucket: Bucket?
+    @State private var showingManager: Bool = false
+    init(forAccount: Account, selection: Binding<Bucket?>){
+        self._buckets = Query(AccountBuckets(forAccount: forAccount), in: \.dbQueue)
+        self.account = forAccount
+        self._selectedBucket = selection
+    }
+    
+    var body: some View {
+        HStack {
+            VStack {
+                BucketPicker(label: "Viewing Bucket", selection: $selectedBucket, choices: buckets, allowEmpty: true)
+                Button(action: { showingManager.toggle() }){
+                    Text("Manage")
+                }
+            }
+            Spacer()
+        }.padding()
+        .sheet(isPresented: $showingManager, onDismiss: { print("Manager Dismissed") }) {
+            VStack{
+                BucketManagerView().frame(minWidth: 300, minHeight: 300)
+                Button("Done", action: { showingManager.toggle() })
+            }.padding()
+        }
     }
 }
 

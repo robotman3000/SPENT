@@ -40,7 +40,7 @@ extension Account {
     
     static let buckets = hasMany(Bucket.self, through: transactions, using: Transaction.bucket)
     var buckets: QueryInterfaceRequest<Bucket> {
-        request(for: Account.buckets)
+        request(for: Account.buckets).distinct()
     }
     
     static let balance = hasOne(AccountBalance.self, key: "abc123")
@@ -83,17 +83,33 @@ struct AccountTransactions: Queryable {
                         left[Column("id")] == right[Column("TransactionID")]
                     })
                 
-                let request = Transaction.all()
-                    .filter(account: account)
+                var request = Transaction.all()
                     .including(required: Transaction.account)
                     .including(optional: Transaction.bucket)
                     .with(runningBalanceCTE)
                     .including(required: association)
+                    .filter(account: account)
+                
+                if let bucket = bucket {
+                    request = request.filter(bucket: bucket)
+                }
                 return try TransactionInfo.fetchAll(db, request)
             })
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:
             .publisher(in: dbQueue, scheduling: .immediate)
+            .eraseToAnyPublisher()
+    }
+}
+
+struct AccountBuckets: Queryable {
+    static var defaultValue: [Bucket] = []
+    let forAccount: Account
+    
+    func publisher(in database: DatabaseQueue) -> AnyPublisher<[Bucket], Error> {
+        ValueObservation
+            .tracking(forAccount.buckets.fetchAll)
+            .publisher(in: database, scheduling: .immediate)
             .eraseToAnyPublisher()
     }
 }

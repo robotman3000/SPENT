@@ -44,6 +44,18 @@ extension Bucket {
     //TODO: Balance
 }
 
+struct AllBuckets: Queryable {
+    static var defaultValue: [Bucket] { [] }
+    func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[Bucket], Error> {
+        ValueObservation
+            .tracking(Bucket.fetchAll)
+            // The `.immediate` scheduling feeds the view right on subscription,
+            // and avoids an initial rendering with an empty list:
+            .publisher(in: dbQueue, scheduling: .immediate)
+            .eraseToAnyPublisher()
+    }
+}
+
 struct BucketsForAccount: Queryable {
     static var defaultValue: [Bucket] { [] }
     let account: Account

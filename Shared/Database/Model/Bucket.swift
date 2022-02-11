@@ -59,12 +59,28 @@ struct AllBuckets: Queryable {
 struct BucketsForAccount: Queryable {
     static var defaultValue: [Bucket] { [] }
     let account: Account
+    
     func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[Bucket], Error> {
         ValueObservation
             .tracking(account.buckets.fetchAll)
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:
             .publisher(in: dbQueue, scheduling: .immediate)
+            .eraseToAnyPublisher()
+    }
+}
+
+struct BucketBalanceQuery: Queryable {
+    static var defaultValue: BucketBalance?
+    let forAccount: Account
+    let forBucket: Bucket
+    
+    func publisher(in database: DatabaseQueue) -> AnyPublisher<BucketBalance?, Error> {
+        ValueObservation
+            .tracking(BucketBalance.all().filter(account: forAccount).filter(bucket: forBucket).fetchOne)
+            // The `.immediate` scheduling feeds the view right on subscription,
+            // and avoids an initial rendering with an empty list:
+            .publisher(in: database, scheduling: .immediate)
             .eraseToAnyPublisher()
     }
 }

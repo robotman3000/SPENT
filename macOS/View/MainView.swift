@@ -197,13 +197,34 @@ struct AccountBucketToolbar: View {
                     Text("Manage")
                 }
             }
-            Spacer()
+            if let bucket = selectedBucket {
+                BucketBalanceView(forAccount: account, forBucket: bucket)
+            }
         }.padding()
         .sheet(isPresented: $showingManager, onDismiss: { print("Manager Dismissed") }) {
             VStack{
                 BucketManagerView().frame(minWidth: 300, minHeight: 300)
                 Button("Done", action: { showingManager.toggle() })
             }.padding()
+        }
+    }
+}
+
+struct BucketBalanceView: View {
+    @Query<BucketBalanceQuery> var balance: BucketBalance?
+    
+    init(forAccount: Account, forBucket: Bucket){
+        self._balance = Query(BucketBalanceQuery(forAccount: forAccount, forBucket: forBucket), in: \.dbQueue)
+    }
+    
+    var body: some View {
+        VStack {
+            // Bucket posted and available balance
+            Text("Available: \(balance?.available.currencyFormat ?? "NIL")")
+            Text("Posted: \(balance?.posted.currencyFormat ?? "NIL")")
+            
+            //count open(pending, submitted, complete), planned(uninit)
+            
         }
     }
 }
@@ -228,6 +249,23 @@ struct AccountBalance: Decodable, FetchableRecord, TableRecord {
 //    static let account = belongsTo(Account.self)
 //    static var databaseTableName: String = "AccountBalance"
 }
+
+struct BucketBalance: Decodable, FetchableRecord, TableRecord {
+    let id: Int64
+    let accountId: Int64
+    let posted: Int
+    let available: Int
+}
+extension DerivableRequest where RowDecoder == BucketBalance {
+    func filter(account: Account) -> Self {
+        filter(Column("AccountID") == account.id)
+    }
+    
+    func filter(bucket: Bucket) -> Self {
+        filter(Column("id") == bucket.id)
+    }
+}
+
 
 // Swift View specific database structs
 struct AccountInfo: Decodable, FetchableRecord {

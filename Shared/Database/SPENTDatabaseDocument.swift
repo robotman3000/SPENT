@@ -286,7 +286,15 @@ extension SPENTDatabaseDocument {
             // The current balance of the buckets
             try db.execute(sql: """
             CREATE TEMPORARY VIEW "BucketBalance" AS
-                SELECT SUM(Amount) AS "Balance", AccountID, BucketID FROM Transactions GROUP BY AccountID, BucketID
+                WITH
+                "posted" ("Posted", "AccountID", "id") AS (
+                    SELECT SUM(Amount), AccountID, BucketID FROM Transactions WHERE BucketID IS NOT NULL AND Status IN (5, 6) GROUP BY AccountID, BucketID
+                ),
+                "available" ("Available", "AccountID", "id") AS (
+                    SELECT SUM(Amount), AccountID, BucketID FROM Transactions WHERE BucketID IS NOT NULL AND Status <> 0 GROUP BY AccountID, BucketID
+                )
+                SELECT id, IFNULL(p.AccountID, a.AccountID) AS "AccountID", IFNULL(Posted, 0) AS "Posted", IFNULL(Available, 0) AS "Available" FROM Buckets
+                LEFT JOIN posted p USING (id) LEFT JOIN available a USING (id)
             """)
         }
     }

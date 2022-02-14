@@ -29,7 +29,7 @@ struct MainView: View {
                 List {
                     Section(header: Text("Accounts")){
                         ForEachEnumerated(accounts) { accountInfo in
-                            NavigationLink(destination: AccountTransactionsView(forAccount: accountInfo.account), tag: accountInfo.account, selection: $selection){
+                            NavigationLink(destination: AccountBucketsListView(forAccount: accountInfo.account), tag: accountInfo.account, selection: $selection){
                                 AccountRow(forAccount: accountInfo)
                             }.contextMenu { AccountContextMenu(sheet: sheetContext, forAccount: accountInfo.account) }
                         }
@@ -49,6 +49,10 @@ struct MainView: View {
             }
             .frame(minWidth: 300)
             .navigationTitle("Accounts")
+            
+            Text("Select An Account")
+            Text("To view transactions")
+            
         }.sheet(context: sheetContext)
         .alert(context: alertContext)
     }
@@ -59,6 +63,38 @@ struct MainView: View {
     
     private func newAccountClick() {
         sheetContext.present(FormKeys.account(context: sheetContext, account: nil))
+    }
+}
+
+struct AccountBucketsListView: View {
+    @StateObject var sheetContext = SheetContext()
+    @StateObject var alertContext = AlertContext()
+    @Query<AccountBuckets> var buckets: [Bucket]
+    let account: Account
+    @State var selection: Bucket?
+    
+    init(forAccount: Account){
+        self._buckets = Query(AccountBuckets(forAccount: forAccount), in: \.dbQueue)
+        self.account = forAccount
+    }
+    
+    var body: some View {
+        List {
+            NavigationLink(destination: AccountTransactionsView(forAccount: account, withBucket: nil)){
+                Text("All Transactions")
+            }
+            Divider()
+            ForEach(buckets){ bucket in
+                NavigationLink(destination: AccountTransactionsView(forAccount: account, withBucket: selection), tag: bucket, selection: $selection){
+                    BucketRow(forBucket: bucket)
+                }.contextMenu { BucketContextMenu(sheet: sheetContext, forBucket: bucket) }
+            }
+            
+            if buckets.isEmpty {
+                Text("No Buckets")
+            }
+        }.sheet(context: sheetContext)
+        .alert(context: alertContext)
     }
 }
 
@@ -74,19 +110,15 @@ struct AccountRow: View {
     }
 }
 
-struct AccountContextMenu: View {
-    @EnvironmentObject var databaseManager: DatabaseManager
-    @ObservedObject var sheet: SheetContext
-    let forAccount: Account
+struct BucketRow: View {
+    //TODO: Implement BucketInfo
+    let forBucket: Bucket
     
     var body: some View {
-        Button("Edit account") {
-            sheet.present(FormKeys.account(context: sheet, account: forAccount))
-        }
-        Button("Delete \(forAccount.name)") {
-            databaseManager.action(.deleteAccount(forAccount), onSuccess: {
-                print("deleted account successfully")
-            })
+        HStack {
+            Text(forBucket.name)
+            Spacer()
+            Text(0.currencyFormat)
         }
     }
 }
@@ -109,17 +141,58 @@ struct TransactionRow: View {
     }
 }
 
+struct AccountContextMenu: View {
+    @EnvironmentObject var databaseManager: DatabaseManager
+    @ObservedObject var sheet: SheetContext
+    let forAccount: Account
+    
+    var body: some View {
+        Button("Edit account") {
+            sheet.present(FormKeys.account(context: sheet, account: forAccount))
+        }
+        Button("Delete \(forAccount.name)") {
+            databaseManager.action(.deleteAccount(forAccount), onSuccess: {
+                print("deleted account successfully")
+            })
+        }
+    }
+}
+
+struct BucketContextMenu: View {
+    @EnvironmentObject var databaseManager: DatabaseManager
+    @ObservedObject var sheet: SheetContext
+    let forBucket: Bucket
+    
+    var body: some View {
+        Button("Edit bucket") {
+            sheet.present(FormKeys.bucket(context: sheet, bucket: forBucket))
+        }
+        Button("Delete \(forBucket.name)") {
+            databaseManager.action(.deleteBucket(forBucket), onSuccess: {
+                print("deleted bucket successfully")
+            })
+        }
+    }
+}
+
 struct TransactionContextMenu: View {
     @EnvironmentObject var databaseManager: DatabaseManager
     @ObservedObject var sheet: SheetContext
-    let forTransaction: Transaction
+    let forTransaction: TransactionInfo
     
     var body: some View {
-        Button("Edit transaction") {
-            sheet.present(FormKeys.transaction(context: sheet, transaction: forTransaction))
+        if let transfer = forTransaction.transfer {
+            Button("Edit transfer") {
+                sheet.present(FormKeys.transfer(context: sheet, transfer: transfer))
+            }
         }
+            
+        Button("Edit transaction") {
+            sheet.present(FormKeys.transaction(context: sheet, transaction: forTransaction.transaction))
+        }
+        
         Button("Delete transaction") {
-            databaseManager.action(.deleteTransaction(forTransaction), onSuccess: {
+            databaseManager.action(.deleteTransaction(forTransaction.transaction), onSuccess: {
                 print("deleted transaction successfully")
             })
         }
@@ -128,20 +201,21 @@ struct TransactionContextMenu: View {
 
 struct AccountTransactionsView: View {
     @StateObject var sheetContext = SheetContext()
-    @State var selectedBucket: Bucket? = nil as Bucket?
     let account: Account
+    let bucket: Bucket?
     
-    init(forAccount: Account){
+    init(forAccount: Account, withBucket: Bucket?){
         self.account = forAccount
+        self.bucket = withBucket
     }
     
     var body: some View {
         VStack{
             // Bucket Toolbar
-            AccountBucketToolbar(forAccount: account, selection: $selectedBucket)
+            AccountBucketToolbar(forAccount: account, withBucket: bucket)
             
             // Main transaction list
-            TransactionsList(forAccount: account, forBucket: selectedBucket, sheetContext: sheetContext)
+            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext)
             
             // Sorting toolbar
         }.toolbar {
@@ -149,6 +223,18 @@ struct AccountTransactionsView: View {
                 Button(action: newTransactionClick, label: {
                     Text("New Transaction")
                 })
+            }
+            ToolbarItem(placement: .automatic){
+                Menu{
+                    Button(action: newTransferClick, label: {
+                        Text("New Transfer")
+                    })
+//                    Button(action: newSplitClick, label: {
+//                        Text("New Split")
+//                    })
+                } label: {
+                    Text("+")
+                }
             }
         }.sheet(context: sheetContext)
     }
@@ -167,7 +253,7 @@ struct AccountTransactionsView: View {
             List (selection: $selection){
                 ForEachEnumerated(transactions){ transactionInfo in
                     TransactionRow(forTransaction: transactionInfo)
-                        .contextMenu { TransactionContextMenu(sheet: sheetContext, forTransaction: transactionInfo.transaction) }.tag(transactionInfo.transaction)
+                        .contextMenu { TransactionContextMenu(sheet: sheetContext, forTransaction: transactionInfo) }.tag(transactionInfo.transaction)
                 }
             }
         }
@@ -176,28 +262,38 @@ struct AccountTransactionsView: View {
     private func newTransactionClick() {
         sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: nil))
     }
+    
+    private func newTransferClick() {
+        sheetContext.present(FormKeys.transfer(context: sheetContext, transfer: nil))
+    }
+    
+//    private func newSplitClick() {
+//        sheetContext.present(FormKeys.splitTransaction(context: sheetContext, split: nil))
+//    }
 }
 
 struct AccountBucketToolbar: View {
     let account: Account
+    let bucket: Bucket?
     @Query<AccountBuckets> var buckets: [Bucket]
-    @Binding var selectedBucket: Bucket?
     @State private var showingManager: Bool = false
-    init(forAccount: Account, selection: Binding<Bucket?>){
+    
+    init(forAccount: Account, withBucket: Bucket? = nil){
         self._buckets = Query(AccountBuckets(forAccount: forAccount), in: \.dbQueue)
         self.account = forAccount
-        self._selectedBucket = selection
+        self.bucket = withBucket
+        //self._selectedBucket = selection
     }
     
     var body: some View {
         HStack {
             VStack {
-                BucketPicker(label: "Viewing Bucket", selection: $selectedBucket, choices: buckets, allowEmpty: true)
+                //BucketPicker(label: "Viewing Bucket", selection: $selectedBucket, choices: buckets, allowEmpty: true)
                 Button(action: { showingManager.toggle() }){
                     Text("Manage")
                 }
             }
-            if let bucket = selectedBucket {
+            if let bucket = bucket {
                 BucketBalanceView(forAccount: account, forBucket: bucket)
             }
         }.padding()
@@ -299,6 +395,38 @@ extension AccountInfo {
     }
 }
 
+//struct BucketInfo: Decodable, FetchableRecord {
+//    var account: Account
+//    var bucket: Bucket
+//    var balance: BucketBalance
+//}
+//
+//extension BucketInfo {
+//    /// The request for all account infos
+//    static func all() -> AdaptedFetchRequest<SQLRequest<BucketInfo>> {
+//        let request: SQLRequest<BucketInfo> = """
+//            SELECT
+//                \(columnsOf: Bucket.self),
+//                \(columnsOf: BucketBalance.self)
+//            FROM Buckets
+//            LEFT JOIN BucketBalance USING (id)
+//            """
+//        return request.adapted { db in
+//            let adapters = try splittingRowAdapters(columnCounts: [
+//                Bucket.numberOfSelectedColumns(db),
+//                BucketBalance.numberOfSelectedColumns(db)])
+//            return ScopeAdapter([
+//                CodingKeys.bucket.stringValue: adapters[0],
+//                CodingKeys.balance.stringValue: adapters[1]])
+//        }
+//    }
+//
+//    /// Fetches all account infos
+//    static func fetchAll(_ db: Database) throws -> [BucketInfo] {
+//        try all().fetchAll(db)
+//    }
+//}
+
 struct AccountRunningBalance: Decodable, FetchableRecord, TableRecord {
     let runningBalance: Int
     let accountID: Int64
@@ -309,9 +437,10 @@ struct TransactionInfo: Decodable, FetchableRecord {
     var transaction: Transaction
     var account: Account
     var bucket: Bucket?
+    var transfer: Transfer?
     var runningBalance: AccountRunningBalance
     
     private enum CodingKeys: String, CodingKey {
-        case transaction, account = "Account", bucket = "Bucket", runningBalance
+        case transaction, account = "Account", bucket = "Bucket", transfer = "Transfer", runningBalance
     }
 }

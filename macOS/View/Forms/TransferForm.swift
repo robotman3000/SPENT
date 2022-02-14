@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDB
 
 struct TransferForm: View {
     @StateObject var model: TransferFormModel
@@ -19,7 +20,7 @@ struct TransferForm: View {
             EnumPicker(label: "Status", selection: $model.status, enumCases: Transaction.StatusTypes.allCases)
             
             Section(){
-                DatePicker("Date", selection: $model.date, displayedComponents: [.date])
+                DatePicker("Date", selection: $model.entryDate, displayedComponents: [.date])
                 if model.status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
                     DatePicker("Posting Date", selection: $model.postDate, displayedComponents: [.date])
                 }
@@ -30,8 +31,8 @@ struct TransferForm: View {
                 TextField("Amount", text: $model.amount)
             }
 
-            BucketPicker(label: "From", selection: $model.selectedSource, choices: model.bucketChoices)
-            BucketPicker(label: "To", selection: $model.selectedDest, choices: model.bucketChoices)
+            AccountPicker(label: "From", selection: $model.sourceAccount, choices: model.accountChoices)
+            AccountPicker(label: "To", selection: $model.destinationAccount, choices: model.accountChoices)
             
             Section(){
                 TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
@@ -42,83 +43,62 @@ struct TransferForm: View {
 }
 
 class TransferFormModel: FormModel {
-    fileprivate var transaction: Transaction
-    
-    fileprivate var contextType: Transaction.TransType = .Withdrawal
+    fileprivate var transfer: Transfer?
+    fileprivate var sourceTransaction: Transaction?
+    fileprivate var destinationTransaction: Transaction?
     
     @Published var status: Transaction.StatusTypes
-    @Published var date: Date
+    @Published var entryDate: Date
     @Published var postDate: Date
-    @Published var sourceID: Int64?
-    @Published var destID: Int64?
     @Published var amount: String
-    @Published var type: Transaction.TransType
     @Published var memo: String
     
-    @Published var selectedSource: Bucket?
-    @Published var selectedDest: Bucket?
-    @Published var bucketChoices: [Bucket]
-   
-    fileprivate let contextBucketID: Int64?
+    @Published var sourceAccount: Account?
+    @Published var destinationAccount: Account?
+    @Published var accountChoices: [Account]
     
-    init(transaction: Transaction, contextBucket: Int64? = nil){
-        amount = ""
-        type = .Withdrawal
-        bucketChoices = []
-        self.transaction = transaction
-        self.status = transaction.status
-        self.date = transaction.date
-        self.memo = transaction.memo
+    init(transfer: Transfer?){
+        //TODO: Prevent loading a transfer with a nil id
+        self.transfer = transfer
         
+        status = .Uninitiated
+        entryDate = Date()
         postDate = Date()
-        
-        if transaction.id != nil {
-            // We have an existing transaction
-            type = transaction.type
-            
-            amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
-            contextType = transaction.type
-            if let bucketID = contextBucket {
-                print("Transfer Form: Using context bucket")
-                contextType = transaction.getType(convertTransfer: true, bucket: bucketID)
-            }
-            
-            if contextType == .Deposit && transaction.destPosted != nil {
-                postDate = transaction.destPosted!
-            }
-            
-            if contextType == .Withdrawal && transaction.sourcePosted != nil {
-                postDate = transaction.sourcePosted!
-            }
-        }
-        
-        self.contextBucketID = contextBucket
+        amount = ""
+        memo = ""
+        accountChoices = []
     }
     
-    func loadState(withDatabase: DatabaseStore) throws {
-        if transaction.id != nil {
-            if transaction.sourceID != nil {
-                selectedSource = withDatabase.database?.resolveOne(transaction.source)
-            }
-
-            if transaction.destID != nil {
-                selectedDest = withDatabase.database?.resolveOne(transaction.destination)
-            }
+    func loadState(withDatabase: Database) throws {
+        if let transfer = transfer {
+            let sourceTransaction = try transfer.sourceTransaction.fetchOne(withDatabase)
+            let destinationTransaction = try transfer.destinationTransaction.fetchOne(withDatabase)
+            
+            // TODO: Throw error if either transaction is nil
+            //TODO: Correctly handle when the source and dest values differ by showing nothing but still track the difference
+            status = sourceTransaction!.status
+            entryDate = sourceTransaction!.entryDate
+            postDate = sourceTransaction!.postDate ?? Date()
+            amount = NSDecimalNumber(value: sourceTransaction!.amount).dividing(by: 100).stringValue
+            memo = sourceTransaction!.memo
+            
+            sourceAccount = try sourceTransaction?.account.fetchOne(withDatabase)
+            destinationAccount = try destinationTransaction?.account.fetchOne(withDatabase)
         } else {
-            if let id = contextBucketID {
-                selectedSource = withDatabase.database?.resolveOne(Bucket.filter(id: id))
-            }
+            // This is a new transfer
+            sourceTransaction = Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
+            destinationTransaction = Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
         }
-
-        bucketChoices = withDatabase.database?.resolve(Bucket.all()) ?? []
+    
+        accountChoices = try Account.fetchAll(withDatabase)
     }
     
     func validate() throws {
-        if selectedSource?.id == selectedDest?.id {
+        if sourceAccount?.id == destinationAccount?.id {
             throw FormValidationError("The from and to fields must be different")
         }
         
-        if selectedSource?.id == nil || selectedDest?.id == nil {
+        if sourceAccount?.id == nil || destinationAccount?.id == nil {
             throw FormValidationError("Please provide a value for the From and To fields")
         }
         
@@ -127,44 +107,42 @@ class TransferFormModel: FormModel {
         }
 
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            if postDate < date {
+            if postDate < entryDate {
                 // Prevent a transaction that posted before it was made
                 throw FormValidationError("A transfer cannot have a post date before it's creation date")
             }
         }
     }
     
-    func submit(withDatabase: DatabaseStore) throws {
+    func submit(withDatabase: Database) throws {
+        // Update the transaction from the form data
+        let destinationAmount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
+        let sourceAmount = destinationAmount * -1
+        updateTransaction(&sourceTransaction!, status: status, entryDate: entryDate, postDate: postDate, amount: sourceAmount, memo: memo, account: sourceAccount!)
+        updateTransaction(&destinationTransaction!, status: status, entryDate: entryDate, postDate: postDate, amount: destinationAmount, memo: memo, account: destinationAccount!)
+        
+        // Write to the db
+        try sourceTransaction?.save(withDatabase)
+        try destinationTransaction?.save(withDatabase)
+        
+        if transfer == nil {
+            // Now that the transactions have been saved we can use their newly assigned id's to create the transfer record
+            transfer = Transfer(id: nil, sourceTransactionID: sourceTransaction!.id!, destinationTransactionID: destinationTransaction!.id!)
+            try transfer!.save(withDatabase)
+        }
+    }
+    
+    private func updateTransaction(_ transaction: inout Transaction, status: Transaction.StatusTypes, entryDate: Date, postDate: Date, amount: Int, memo: String, account: Account) {
         transaction.status = status
-        transaction.date = date
+        transaction.entryDate = entryDate
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            // If either is null then set them both
-            // otherwise update based on type
-            if (transaction.sourcePosted == nil || transaction.destPosted == nil) {
-                transaction.sourcePosted = postDate
-                transaction.destPosted = postDate
-            } else {
-                if contextType == .Deposit {
-                    transaction.destPosted = postDate
-                }
-                
-                if contextType == .Withdrawal {
-                    transaction.sourcePosted = postDate
-                }
-            }
+            transaction.postDate = postDate
         } else {
-            transaction.sourcePosted = nil
-            transaction.destPosted = nil
+            transaction.postDate = nil
         }
-
-        transaction.sourceID = selectedSource?.id
-        transaction.destID = selectedDest?.id
-        transaction.payee = nil // Transfers don't need payees
+        transaction.accountID = account.id!
+        transaction.payee = "Account Transfer" // Transfers don't need payees
         transaction.memo = memo
-        transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
-
-        try withDatabase.write { db in
-            try withDatabase.saveTransaction(db, &transaction)
-        }
+        transaction.amount = amount
     }
 }

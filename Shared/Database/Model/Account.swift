@@ -86,6 +86,7 @@ struct AccountTransactions: Queryable {
                 var request = Transaction.all()
                     .including(required: Transaction.account)
                     .including(optional: Transaction.bucket)
+                    //.including(optional: Transaction.transfer)
                     .with(runningBalanceCTE)
                     .including(required: association)
                     .filter(account: account)

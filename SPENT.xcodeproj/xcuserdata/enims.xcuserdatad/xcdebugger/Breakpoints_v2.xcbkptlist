@@ -373,8 +373,8 @@
             filePath = "Shared/Database/Model/Account.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "124"
-            endingLineNumber = "124"
+            startingLineNumber = "125"
+            endingLineNumber = "125"
             landmarkName = "publisher(in:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -389,10 +389,154 @@
             filePath = "Shared/Database/Model/Account.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "128"
-            endingLineNumber = "128"
+            startingLineNumber = "129"
+            endingLineNumber = "129"
             landmarkName = "publisher(in:)"
             landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "8E282411-7C1A-4E26-BBF8-D4F401E34098"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../Library/Developer/Xcode/DerivedData/SPENT-hgqjxqzowhpyexcwifqhcumnculw/SourcePackages/checkouts/GRDB.swift/GRDB/QueryInterface/SQL/SQLForeignKeyRequest.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "25"
+            endingLineNumber = "25"
+            landmarkName = "fetchForeignKeyMapping(_:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "8E282411-7C1A-4E26-BBF8-D4F401E34098 - 82a6ce182698e5b1"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "GRDB.SQLForeignKeyRequest.fetchForeignKeyMapping(GRDB.Database) throws -&gt; Swift.Array&lt;(origin: Swift.String, destination: Swift.String)&gt;"
+                  moduleName = "SPENT"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/enims/Library/Developer/Xcode/DerivedData/SPENT-hgqjxqzowhpyexcwifqhcumnculw/SourcePackages/checkouts/GRDB.swift/GRDB/QueryInterface/SQL/SQLForeignKeyRequest.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "25"
+                  endingLineNumber = "25"
+                  offsetFromSymbolStart = "350">
+               </Location>
+               <Location
+                  uuid = "8E282411-7C1A-4E26-BBF8-D4F401E34098 - 82a6ce182698e5b1"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "GRDB.SQLForeignKeyRequest.fetchForeignKeyMapping(GRDB.Database) throws -&gt; Swift.Array&lt;(origin: Swift.String, destination: Swift.String)&gt;"
+                  moduleName = "SPENT"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/enims/Library/Developer/Xcode/DerivedData/SPENT-hgqjxqzowhpyexcwifqhcumnculw/SourcePackages/checkouts/GRDB.swift/GRDB/QueryInterface/SQL/SQLForeignKeyRequest.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "25"
+                  endingLineNumber = "25"
+                  offsetFromSymbolStart = "392">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "6D770F28-64FD-4773-BF3C-350DCE7335CE"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../Library/Developer/Xcode/DerivedData/SPENT-hgqjxqzowhpyexcwifqhcumnculw/SourcePackages/checkouts/GRDB.swift/GRDB/QueryInterface/SQL/SQLForeignKeyRequest.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "69"
+            endingLineNumber = "69"
+            landmarkName = "fetchForeignKeyMapping(_:)"
+            landmarkType = "7">
+            <Locations>
+               <Location
+                  uuid = "6D770F28-64FD-4773-BF3C-350DCE7335CE - 82a6ce182698f81d"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "GRDB.SQLForeignKeyRequest.fetchForeignKeyMapping(GRDB.Database) throws -&gt; Swift.Array&lt;(origin: Swift.String, destination: Swift.String)&gt;"
+                  moduleName = "SPENT"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/enims/Library/Developer/Xcode/DerivedData/SPENT-hgqjxqzowhpyexcwifqhcumnculw/SourcePackages/checkouts/GRDB.swift/GRDB/QueryInterface/SQL/SQLForeignKeyRequest.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "69"
+                  endingLineNumber = "69"
+                  offsetFromSymbolStart = "1670">
+               </Location>
+               <Location
+                  uuid = "6D770F28-64FD-4773-BF3C-350DCE7335CE - 82a6ce182698f81d"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "GRDB.SQLForeignKeyRequest.fetchForeignKeyMapping(GRDB.Database) throws -&gt; Swift.Array&lt;(origin: Swift.String, destination: Swift.String)&gt;"
+                  moduleName = "SPENT"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/enims/Library/Developer/Xcode/DerivedData/SPENT-hgqjxqzowhpyexcwifqhcumnculw/SourcePackages/checkouts/GRDB.swift/GRDB/QueryInterface/SQL/SQLForeignKeyRequest.swift"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "69"
+                  endingLineNumber = "69"
+                  offsetFromSymbolStart = "2492">
+               </Location>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "FD5BA8AF-9E72-442C-9903-FFDF1F187312"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../Library/Developer/Xcode/DerivedData/SPENT-hgqjxqzowhpyexcwifqhcumnculw/SourcePackages/checkouts/GRDB.swift/GRDB/QueryInterface/SQL/SQLForeignKeyRequest.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "64"
+            endingLineNumber = "64"
+            landmarkName = "fetchForeignKeyMapping(_:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "11AFE438-0938-44DF-B715-BA9AC26664C5"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "../../Library/Developer/Xcode/DerivedData/SPENT-hgqjxqzowhpyexcwifqhcumnculw/SourcePackages/checkouts/GRDB.swift/GRDB/QueryInterface/SQL/SQLForeignKeyRequest.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "36"
+            endingLineNumber = "36"
+            landmarkName = "fetchForeignKeyMapping(_:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "843F18A4-B782-41DD-950E-734919448449"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/MainView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "218"
+            endingLineNumber = "218"
+            landmarkName = "body"
+            landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

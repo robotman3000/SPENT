@@ -12,11 +12,11 @@ enum FormKeys: SheetProvider {
     case account(context: SheetContext, account: Account?)
     case bucket(context: SheetContext, bucket: Bucket?)
     case transaction(context: SheetContext, transaction: Transaction?)
-//    case transfer(context: SheetContext, transaction: Transaction?, contextBucket: Int64?)
+    case transfer(context: SheetContext, transfer: Transfer?)
 //    case tag(context: SheetContext, tag: Tag?)
 //    //case schedule(context: SheetContext, schedule: Schedule?, onSubmit: (_ data: inout Schedule) -> Void)
 //    case transactionTags(context: SheetContext, transaction: Transaction)
-//    case splitTransaction(context: SheetContext, splitHead: Transaction?, contextBucket: Int64?)
+//    case splitTransaction(context: SheetContext, split: SplitTransaction?)
 //    case transactionTemplate(context: SheetContext, template: DBTransactionTemplate?)
 //    case documentList(context: SheetContext, transaction: Transaction)
     case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
@@ -25,34 +25,23 @@ enum FormKeys: SheetProvider {
     
     var sheet: AnyView {
         switch self {
-        case .account(context: let context, account: var account):
-            if account == nil{
-                account = Account(name: "")
-            }
-            return AccountForm(model: AccountFormModel(account!),
+        case let .account(context: context, account: account):
+            return AccountForm(model: AccountFormModel(account ?? Account(name: "")),
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .bucket(context: let context, bucket: var bucket):
-            if bucket == nil{
-                bucket = Bucket(name: "")
-            }
-            return BucketForm(model: BucketFormModel(bucket: bucket!),
+        case let .bucket(context: context, bucket: bucket):
+            return BucketForm(model: BucketFormModel(bucket: bucket ?? Bucket(name: "")),
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
-        case .transaction(context: let context, transaction: var transaction):
-            if transaction == nil {
-                transaction = Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
-            }
-            return TransactionForm(model: TransactionFormModel(transaction: transaction!),
+        case let .transaction(context: context, transaction: transaction):
+            return TransactionForm(model: TransactionFormModel(transaction:
+            transaction ?? Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)),
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
-//            
-//        case .transfer(context: let context, transaction: var transaction, contextBucket: let bucket):
-//            if transaction == nil {
-//                transaction = Transaction.newTransaction()
-//            }
-//            let model = TransferFormModel(transaction: transaction!, contextBucket: bucket)
-//            return TransferForm(model: model,
-//                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
+            
+        case let .transfer(context: context, transfer: transfer):
+            let model = TransferFormModel(transfer: transfer)
+            return TransferForm(model: model,
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
 //            
 //        case .tag(context: let context, tag: var tag):
 //            if tag == nil {
@@ -79,7 +68,7 @@ enum FormKeys: SheetProvider {
 //            return TemplateForm(model: TemplateFormModel(template: template!),
 //                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
 //            
-//        case .splitTransaction(context: let context, splitHead: var head, contextBucket: let bucket):
+//        case .splitTransaction(context: let context, split: let split):
 //            if head == nil {
 //                head = Transaction.newSplitTransaction()
 //            }

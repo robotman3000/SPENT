@@ -30,7 +30,7 @@ struct MainView: View {
                     Section(header: Text("Accounts")){
                         ForEachEnumerated(accounts) { accountInfo in
                             NavigationLink(destination: AccountBucketsListView(forAccount: accountInfo.account), tag: accountInfo.account, selection: $selection){
-                                AccountRow(forAccount: accountInfo)
+                                AccountListRow(model: accountInfo)
                             }.contextMenu { AccountContextMenu(sheet: sheetContext, forAccount: accountInfo.account) }
                         }
                     }.collapsible(false)
@@ -90,18 +90,6 @@ struct AccountBucketsListView: View {
             }
         }.sheet(context: sheetContext)
         .alert(context: alertContext)
-    }
-}
-
-struct AccountRow: View {
-    let forAccount: AccountInfo
-    
-    var body: some View {
-        HStack {
-            Text(forAccount.account.name)
-            Spacer()
-            Text(forAccount.balance.posted.currencyFormat)
-        }
     }
 }
 

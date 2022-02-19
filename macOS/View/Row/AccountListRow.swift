@@ -10,28 +10,16 @@ import Combine
 import GRDB
 import SwiftUIKit
 
-struct BucketListRow: View {
-    @EnvironmentObject var store: DatabaseStore
-    let id: Int64
-    
-    var body: some View {
-        //Text("C").onAppear(perform: {print("appear C")})
-        AsyncContentView(source: BucketFilter.publisher(store.getReader(), forID: id), "BucketListRow") { model in
-            Internal_BucketListRow(model: model)//.onAppear(perform: {print("appear D")})
-        }
-    }
-}
-
-private struct Internal_BucketListRow: View {
-    let model: BucketModel
+struct AccountListRow: View {
+    let model: AccountInfo
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4.0) {
             HStack {
-                Text(model.bucket.name)
+                Text(model.account.name)
                     .font(.headline)
                 Spacer()
-                CurrencyText(amount: model.balance?.posted ?? 0)
+                CurrencyText(amount: model.balance.posted)
                     .font(.headline)
                 
             }

@@ -9,84 +9,56 @@ import SwiftUI
 import SwiftUIKit
 
 struct AccountContextMenu: View {
+    @EnvironmentObject var databaseManager: DatabaseManager
     @ObservedObject var context: SheetContext
     @ObservedObject var aContext: AlertContext
-    @State var model: BucketModel?
-    @EnvironmentObject private var store: DatabaseStore
+    let forAccount: Account
     
     var body: some View {
         Button("New Account"){
             context.present(FormKeys.account(context: context, account: nil))
         }
         
-        if var model = model {
-            if(model.bucket.ancestorID == nil){
-                Button("Edit Account"){
-                    context.present(FormKeys.account(context: context, account: model.bucket))
-                }
-                
-                Button("Delete Account"){
-                    context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-                        do {
-                            try store.write { db in
-                                try store.deleteBucket(db, id: model.bucket.id!)
-                            }
-                        } catch {
-                            aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
-                        }
-                    }))
-                }
-                
-                Divider()
-                
-                Button("Add Bucket"){
-                    context.present(FormKeys.bucket(context: context, bucket: nil, parent: model.bucket))
-                }
-            } else {
-                Button("Edit Bucket"){
-                    context.present(FormKeys.bucket(context: context, bucket: model.bucket, parent: nil))
-                }
-                
-                Button("Delete Bucket"){
-                    context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-                        do {
-                            try store.write { db in
-                                try store.deleteBucket(db, id: model.bucket.id!)
-                            }
-                        } catch {
-                            aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
-                        }
-                    }))
-                }
-            }
-        
-            Divider()
-            
-            Button("Add Transaction"){
-                context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: model.bucket.id))
-            }
-            
-            Button("Add Transfer"){
-                context.present(FormKeys.transfer(context: context, transaction: nil, contextBucket: model.bucket.id))
-            }
-            
-            Button("Add Split"){
-                context.present(FormKeys.splitTransaction(context: context, splitHead: nil, contextBucket: model.bucket.id))
-            }
-            
-            Divider()
-            
-            Button("\(model.bucket.isFavorite ? "Unfavorite" : "Mark as Favorite")"){
-                model.bucket.isFavorite = !model.bucket.isFavorite
-                do {
-                    try store.write { db in
-                        try store.saveBucket(db, &model.bucket)
-                    }
-                } catch {
-                    aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
-                }
-            }
+        Button("Edit \(forAccount.name)"){
+            context.present(FormKeys.account(context: context, account: forAccount))
         }
+        
+        Button("Delete \(forAccount.name)"){
+            context.present(FormKeys.confirmDelete(context: context, message: "",
+                onConfirm: {
+                    databaseManager.action(.deleteAccount(forAccount),
+                    onSuccess: { print("deleted account successfully") },
+                    onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))} )
+            }))
+        }
+        
+        Divider()
+        
+        Button("Add Transaction"){
+            context.present(FormKeys.transaction(context: context, transaction: nil))
+        }
+        
+        Button("Add Transfer"){
+            context.present(FormKeys.transfer(context: context, transfer: nil))
+        }
+        
+//        Button("Add Split"){
+//            context.present(FormKeys.splitTransaction(context: context, splitHead: nil))
+//        }
+        
+//            Divider()
+//
+//            Button("\(model.bucket.isFavorite ? "Unfavorite" : "Mark as Favorite")"){
+//                model.bucket.isFavorite = !model.bucket.isFavorite
+//                do {
+//                    try store.write { db in
+//                        try store.saveBucket(db, &model.bucket)
+//                    }
+//                } catch {
+//                    aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
+//                }
+//            }
+        
     }
 }
 

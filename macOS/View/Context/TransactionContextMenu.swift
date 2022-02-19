@@ -10,42 +10,39 @@ import SwiftUIKit
 import UniformTypeIdentifiers
 
 struct TransactionContextMenu: View {
+    @EnvironmentObject var databaseManager: DatabaseManager
     @ObservedObject var context: SheetContext
     @ObservedObject var aContext: AlertContext
-    @EnvironmentObject var store: DatabaseStore
-    
-    let contextBucket: Int64?
-    var forTransactions: Set<Int64>? = nil
-    let forTransaction: TransactionModel?
-    
-    let onFormDismiss: () -> Void
+    let model: TransactionInfo
+    @Binding var selection: Set<Transaction>
     
     var body: some View {
         
         // Create new
-        _NewTransactionContextButtons(context: context, aContext: aContext, contextBucket: contextBucket, onFormDismiss: onFormDismiss)
+        _NewTransactionContextButtons(context: context, aContext: aContext)
 
-        if let model = forTransaction {
-            
-            // Edit
-            Section {
-                if model.transaction.type == .Transfer {
-                    Button("Edit Transfer") {
-                        context.present(FormKeys.transfer(context: context, transaction: model.transaction, contextBucket: contextBucket))
-                    }
-                } else if model.transaction.type == .Split_Head {
-                    Button("Edit Split"){
-                        context.present(FormKeys.splitTransaction(context: context, splitHead: model.transaction, contextBucket: contextBucket))
-                    }
-                } else {
-                    Button("Edit Transaction") {
-                        context.present(FormKeys.transaction(context: context, transaction: model.transaction, contextBucket: contextBucket))
-                    }
+        // Edit
+        Section {
+            if let transfer = model.transfer {
+                Button("Edit Transfer") {
+                    context.present(FormKeys.transfer(context: context, transfer: transfer))
                 }
             }
+
+//            if model.transaction.type == .Split_Head {
+//                Button("Edit Split"){
+//                    context.present(FormKeys.splitTransaction(context: context, splitHead: model.transaction, contextBucket: contextBucket))
+//                }
+//            }
             
-            // Metadata
-            Section {
+            Button("Edit Transaction") {
+                context.present(FormKeys.transaction(context: context, transaction: model.transaction))
+            }
+            
+        }
+
+        // Metadata
+        Section {
 //                Button("Add Document") {
 //                            //[UTType.plainText]
 //                    openFile(allowedTypes: [.data], onConfirm: { url in
@@ -82,103 +79,72 @@ struct TransactionContextMenu: View {
 //                Button("View Documents") {
 //                    context.present(FormKeys.documentList(context: context, transaction: model.transaction))
 //                }
-                
-                Button("Set Tags") {
-                    context.present(FormKeys.transactionTags(context: context, transaction: model.transaction))
-                }
-            }
             
-            // Transaction Status
-            Section{
-                Button("Close Selected"){
-                    markSelectionAs(newStatus: .Reconciled, filter: [.Void], transactions: [model])
-                    onFormDismiss()
+//            Button("Set Tags") {
+//                context.present(FormKeys.transactionTags(context: context, transaction: model.transaction))
+//            }
+        }
+        
+        // Transaction Status
+        Section{
+            Button("Close Selected"){
+                databaseManager.action(.setTransactionsStatus(.Reconciled, Array(selection).filter({ item in
+                    item.status != .Void
+                })))
+                selection.removeAll()
+            }
+            Menu("Mark As"){
+                Button("Void"){
+                    databaseManager.action(.setTransactionsStatus(.Void, Array(selection)))
+                    selection.removeAll()
                 }
-                Menu("Mark As"){
-                    Button("Void"){
-                        markSelectionAs(newStatus: .Void, transactions: [model])
-                        onFormDismiss()
-                    }
-                    Button("Complete"){
-                        markSelectionAs(newStatus: .Complete, transactions: [model])
-                        onFormDismiss()
-                    }
-                    Button("Reconciled"){
-                        markSelectionAs(newStatus: .Reconciled, transactions: [model])
-                        onFormDismiss()
-                    }
+                Button("Complete"){
+                    databaseManager.action(.setTransactionsStatus(.Complete, Array(selection)))
+                    selection.removeAll()
+                }
+                Button("Reconciled"){
+                    databaseManager.action(.setTransactionsStatus(.Reconciled, Array(selection)))
+                    selection.removeAll()
                 }
             }
-            
-            // Delete
-            Button("Delete Selected") {
-                context.present(FormKeys.confirmDelete(context: context, message: "", onConfirm: {
-                    do {
-                        try store.write { db in
-                            try store.deleteTransactions(db, ids: [model.transaction.id!])
-                        }
-                    } catch {
-                        aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
-                    }
-                }))
-            }
+        }
+        
+        // Delete
+        //TODO: Support multiselect
+        Button("Delete Transaction") {
+            context.present(FormKeys.confirmDelete(context: context, message: "",
+                onConfirm: {
+                    databaseManager.action(.deleteTransaction(model.transaction),
+                    onSuccess: { print("deleted transaction successfully") },
+                    onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))} )
+            }))
+        }
 
-            Section{
-                Button("Debug Info") {
-                    aContext.present(AlertKeys.message(message: forTransaction.debugDescription))
-                }
-            }
-        }
-        Button("Debug Selection") {
-            if let selection = forTransactions {
-                print(selection.debugDescription)
-            } else {
-                print("No large selection")
-            }
-        }
-    }
-    
-    func markSelectionAs(newStatus: Transaction.StatusTypes, filter: [Transaction.StatusTypes] = [], transactions: [TransactionModel]){
-        var transactionsUpdated: [Transaction] = []
-        for t in transactions {
-            if filter.isEmpty || !filter.contains(t.transaction.status) {
-                var tr = t.transaction
-                tr.status = newStatus
-                transactionsUpdated.append(tr)
-            }
-        }
-        do {
-            try store.write { db in
-                try store.saveTransactions(db, &transactionsUpdated)
-            }
-        } catch {
-            print(error)
-            aContext.present(AlertKeys.databaseError(message: error.localizedDescription))
-        }
+//        Section{
+//            Button("Debug Info") {
+//                aContext.present(AlertKeys.message(message: model.debugDescription))
+//            }
+//        }
     }
 }
 
 struct _NewTransactionContextButtons: View {
     @ObservedObject var context: SheetContext
     @ObservedObject var aContext: AlertContext
-    @EnvironmentObject var store: DatabaseStore
-
-    let contextBucket: Int64?
-    let onFormDismiss: () -> Void
     
     var body: some View{
         Section{
             Button("Add Transaction") {
-                context.present(FormKeys.transaction(context: context, transaction: nil, contextBucket: contextBucket))
+                context.present(FormKeys.transaction(context: context, transaction: nil))
             }
 
             Button("Add Transfer"){
-                context.present(FormKeys.transfer(context: context, transaction: nil, contextBucket: contextBucket))
+                context.present(FormKeys.transfer(context: context, transfer: nil))
             }
 
-            Button("Add Split"){
-                context.present(FormKeys.splitTransaction(context: context, splitHead: nil, contextBucket: contextBucket))
-            }
+//            Button("Add Split"){
+//                context.present(FormKeys.splitTransaction(context: context, splitHead: nil))
+//            }
         }
     }
 }
@@ -188,3 +154,30 @@ struct _NewTransactionContextButtons: View {
 //        TransactionRowContextMenu()
 //    }
 //}
+
+/*
+ 
+ struct TransactionContextMenu: View {
+     @EnvironmentObject var databaseManager: DatabaseManager
+     @ObservedObject var sheet: SheetContext
+     let forTransaction: TransactionInfo
+     
+     var body: some View {
+         if let transfer = forTransaction.transfer {
+             Button("Edit transfer") {
+                 sheet.present(FormKeys.transfer(context: sheet, transfer: transfer))
+             }
+         }
+             
+         Button("Edit transaction") {
+             sheet.present(FormKeys.transaction(context: sheet, transaction: forTransaction.transaction))
+         }
+         
+         Button("Delete transaction") {
+             databaseManager.action(.deleteTransaction(forTransaction.transaction), onSuccess: {
+                 print("deleted transaction successfully")
+             })
+         }
+     }
+ }
+ */

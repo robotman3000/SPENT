@@ -31,10 +31,15 @@ struct MainView: View {
                         ForEachEnumerated(accounts) { accountInfo in
                             NavigationLink(destination: AccountBucketsListView(forAccount: accountInfo.account), tag: accountInfo.account, selection: $selection){
                                 AccountListRow(model: accountInfo)
-                            }.contextMenu { AccountContextMenu(sheet: sheetContext, forAccount: accountInfo.account) }
+                            }.contextMenu { AccountContextMenu(context: sheetContext, aContext: alertContext, forAccount: accountInfo.account) }
                         }
                     }.collapsible(false)
                 }.listStyle(SidebarListStyle())
+                .contextMenu {
+                    Button("New Account"){
+                        sheetContext.present(FormKeys.account(context: sheetContext, account: nil))
+                    }
+                }
             }.toolbar(){
                 ToolbarItem(placement: .navigation) {
                     Button(action: toggleSidebar, label: {
@@ -48,8 +53,8 @@ struct MainView: View {
             EmptyView()
             EmptyView()
             
-        }.sheet(context: sheetContext)
-        .alert(context: alertContext)
+        }.alert(context: alertContext)
+        .sheet(context: sheetContext)
     }
     
     private func toggleSidebar() {
@@ -66,7 +71,7 @@ struct AccountBucketsListView: View {
     @StateObject var alertContext = AlertContext()
     @Query<AccountBuckets> var buckets: [BucketInfo]
     let account: Account
-    @State var selection: Bucket?
+    @State var selection: Bucket? = nil as Bucket?
     
     init(forAccount: Account){
         self._buckets = Query(AccountBuckets(forAccount: forAccount), in: \.dbQueue)
@@ -81,8 +86,8 @@ struct AccountBucketsListView: View {
             Divider()
             ForEachEnumerated(buckets){ bucketInfo in
                 NavigationLink(destination: AccountTransactionsView(forAccount: account, withBucket: selection), tag: bucketInfo.bucket, selection: $selection){
-                    BucketRow(forBucket: bucketInfo)
-                }.contextMenu { BucketContextMenu(sheet: sheetContext, forBucket: bucketInfo.bucket) }
+                    BucketListRow(forBucket: bucketInfo)
+                }.contextMenu { BucketContextMenu(sheet: sheetContext, alertContext: alertContext, forBucket: bucketInfo.bucket) }
             }
             
             if buckets.isEmpty {
@@ -93,97 +98,9 @@ struct AccountBucketsListView: View {
     }
 }
 
-struct BucketRow: View {
-    let forBucket: BucketInfo
-    
-    var body: some View {
-        HStack {
-            Text(forBucket.bucket.name)
-            Spacer()
-            Text(forBucket.balance.available.currencyFormat)
-        }
-    }
-}
-
-struct TransactionRow: View {
-    let forTransaction: TransactionInfo
-    
-    var body: some View {
-        HStack {
-            Text(forTransaction.transaction.status.getStringName())
-            Text(forTransaction.transaction.amount.currencyFormat)
-            //Text(forTransaction.transType.type)
-            Text(forTransaction.transaction.entryDate.transactionFormat)
-            Text(forTransaction.transaction.postDate?.transactionFormat ?? "N/A")
-            Text(forTransaction.transaction.payee)
-            Text(forTransaction.transaction.memo)
-            Text(forTransaction.bucket?.name ?? "No Bucket")
-            Text(forTransaction.account.name)
-            Text(forTransaction.runningBalance.runningBalance.currencyFormat)
-        }
-    }
-}
-
-struct AccountContextMenu: View {
-    @EnvironmentObject var databaseManager: DatabaseManager
-    @ObservedObject var sheet: SheetContext
-    let forAccount: Account
-    
-    var body: some View {
-        Button("Edit account") {
-            sheet.present(FormKeys.account(context: sheet, account: forAccount))
-        }
-        Button("Delete \(forAccount.name)") {
-            databaseManager.action(.deleteAccount(forAccount), onSuccess: {
-                print("deleted account successfully")
-            })
-        }
-    }
-}
-
-struct BucketContextMenu: View {
-    @EnvironmentObject var databaseManager: DatabaseManager
-    @ObservedObject var sheet: SheetContext
-    let forBucket: Bucket
-    
-    var body: some View {
-        Button("Edit bucket") {
-            sheet.present(FormKeys.bucket(context: sheet, bucket: forBucket))
-        }
-        Button("Delete \(forBucket.name)") {
-            databaseManager.action(.deleteBucket(forBucket), onSuccess: {
-                print("deleted bucket successfully")
-            })
-        }
-    }
-}
-
-struct TransactionContextMenu: View {
-    @EnvironmentObject var databaseManager: DatabaseManager
-    @ObservedObject var sheet: SheetContext
-    let forTransaction: TransactionInfo
-    
-    var body: some View {
-        if let transfer = forTransaction.transfer {
-            Button("Edit transfer") {
-                sheet.present(FormKeys.transfer(context: sheet, transfer: transfer))
-            }
-        }
-            
-        Button("Edit transaction") {
-            sheet.present(FormKeys.transaction(context: sheet, transaction: forTransaction.transaction))
-        }
-        
-        Button("Delete transaction") {
-            databaseManager.action(.deleteTransaction(forTransaction.transaction), onSuccess: {
-                print("deleted transaction successfully")
-            })
-        }
-    }
-}
-
 struct AccountTransactionsView: View {
     @StateObject var sheetContext = SheetContext()
+    @StateObject var alertContext = AlertContext()
     let account: Account
     let bucket: Bucket?
     
@@ -198,27 +115,34 @@ struct AccountTransactionsView: View {
             AccountBucketToolbar(forAccount: account, withBucket: bucket)
             
             // Main transaction list
-            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext)
+            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext, alertContext: alertContext)
             
         }.sheet(context: sheetContext)
+        .alert(context: alertContext)
     }
     
     private struct TransactionsList: View {
         @ObservedObject var sheetContext: SheetContext
+        @ObservedObject var alertContext: AlertContext
         @Query<AccountTransactions> var transactions: [TransactionInfo]
-        @State var selection: Transaction?
+        @State var selection = Set<Transaction>()
         
-        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext){
+        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext){
             self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket), in: \.dbQueue)
             self.sheetContext = sheetContext
+            self.alertContext = alertContext
         }
         
         var body: some View {
             List (selection: $selection){
                 ForEachEnumerated(transactions){ transactionInfo in
-                    TransactionRow(forTransaction: transactionInfo)
-                        .contextMenu { TransactionContextMenu(sheet: sheetContext, forTransaction: transactionInfo) }.tag(transactionInfo.transaction)
+                    TransactionListRow(model: transactionInfo)
+                        .contextMenu {
+                            TransactionContextMenu(context: sheetContext, aContext: alertContext, model: transactionInfo, selection: $selection)
+                        }.tag(transactionInfo.transaction)
                 }
+            }.contextMenu {
+                _NewTransactionContextButtons(context: sheetContext, aContext: alertContext)
             }
         }
     }

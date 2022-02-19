@@ -24,10 +24,6 @@ extension Account: FetchableRecord, MutablePersistableRecord {
         id = rowID
     }
     
-//    private enum CodingKeys: String, CodingKey {
-//        case id, name = "Name"
-//    }
-    
     // Define database columns from CodingKeys
     enum Columns {
         static let id = Column(CodingKeys.id)
@@ -58,10 +54,6 @@ struct AllAccounts: Queryable {
     func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[AccountInfo], Error> {
         ValueObservation
             .tracking(AccountInfo.fetchAll)
-//            .tracking({ db in
-//                let request = Account.including(required: Account.balance)
-//                return try AccountInfo.fetchAll(db, request)
-//            })
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:
             .publisher(in: dbQueue, scheduling: .immediate)
@@ -87,12 +79,23 @@ struct AccountTransactions: Queryable {
                         left[Column("id")] == right[Column("TransactionID")]
                     })
                 
+                let transactionTypeCTE = CommonTableExpression(
+                    named: "transType",
+                    sql: "SELECT * FROM TransactionType")
+                
+                let typeAssociation = Transaction.association(
+                    to: transactionTypeCTE,
+                    on: { left, right in
+                        left[Column("id")] == right[Column("id")]
+                    })
+                
                 var request = Transaction.all()
                     .including(required: Transaction.account)
                     .including(optional: Transaction.bucket)
-                    //.including(optional: Transaction.transfer)
                     .with(runningBalanceCTE)
                     .including(required: association)
+                    .with(transactionTypeCTE)
+                    .including(required: typeAssociation)
                     .filter(account: account)
                 
                 if let bucket = bucket {
@@ -114,27 +117,11 @@ struct AccountBuckets: Queryable {
     func publisher(in database: DatabaseQueue) -> AnyPublisher<[BucketInfo], Error> {
         //TODO: This implementation may be causing GRDB to run the query every time the view changes
         ValueObservation
-//            .tracking({ db in
-//                let buckets = try forAccount.buckets.fetchAll(db)
-//                var bucketInfo: [BucketInfo] = []
-//                for bucket in buckets {
-//                    let balance = try BucketBalance.all().filter(account: forAccount).filter(bucket: bucket).fetchOne(db)
-//                    assert(balance != nil)
-//                    bucketInfo.append(BucketInfo(account: forAccount, bucket: bucket, balance: balance!))
-//                }
-//                return bucketInfo
-//            })
             .tracking(BucketBalance.all()
                         .filter(account: forAccount)
                         .including(required: BucketBalance.bucket)
                         .including(required: BucketBalance.account)
                         .asRequest(of: BucketInfo.self)
-//                        .adapted({ db in
-//                            let adapters = splittingRowAdapters(columnCounts: [
-//                                4])
-//                            return ScopeAdapter([
-//                                "BucketBalance": adapters[0]])
-//                        })
                         .fetchAll)
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:

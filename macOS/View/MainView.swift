@@ -124,6 +124,7 @@ struct TransactionRow: View {
         HStack {
             Text(forTransaction.transaction.status.getStringName())
             Text(forTransaction.transaction.amount.currencyFormat)
+            Text(forTransaction.transType.type)
             Text(forTransaction.transaction.entryDate.transactionFormat)
             Text(forTransaction.transaction.postDate?.transactionFormat ?? "N/A")
             Text(forTransaction.transaction.payee)
@@ -175,9 +176,9 @@ struct TransactionContextMenu: View {
     let forTransaction: TransactionInfo
     
     var body: some View {
-        if let transfer = forTransaction.transfer {
+        if forTransaction.transType.type == "Transfer" {
             Button("Edit transfer") {
-                sheet.present(FormKeys.transfer(context: sheet, transfer: transfer))
+                sheet.present(FormKeys.transfer(context: sheet, transfer: nil))
             }
         }
             
@@ -316,7 +317,6 @@ extension DerivableRequest where RowDecoder == BucketBalance {
     }
 }
 
-
 // Swift View specific database structs
 struct AccountInfo: Decodable, FetchableRecord {
     var account: Account
@@ -394,14 +394,20 @@ struct AccountRunningBalance: Decodable, FetchableRecord, TableRecord {
     let transactionID: Int64
 }
 
+struct TransactionType: Decodable, FetchableRecord, TableRecord {
+    let id: Int64
+    let type: String
+}
+
 struct TransactionInfo: Decodable, FetchableRecord {
     var transaction: Transaction
     var account: Account
     var bucket: Bucket?
-    var transfer: Transfer?
+    //var transfer: Transfer?
     var runningBalance: AccountRunningBalance
+    var transType: TransactionType
     
     private enum CodingKeys: String, CodingKey {
-        case transaction, account = "Account", bucket = "Bucket", transfer = "Transfer", runningBalance
+        case transaction, account = "Account", bucket = "Bucket", runningBalance, transType
     }
 }

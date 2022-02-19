@@ -266,6 +266,7 @@ extension SPENTDatabaseDocument {
             CREATE TEMPORARY VIEW "AccountRunningBalance" AS
                 SELECT SUM(Amount) OVER win1 AS "RunningBalance", AccountID, Id AS "TransactionID" FROM Transactions WINDOW win1 AS (PARTITION BY AccountID ROWS UNBOUNDED PRECEDING)
             """)
+            
             // The current balance of the accounts
             try db.execute(sql: """
             CREATE TEMPORARY VIEW "AccountBalance" AS
@@ -301,6 +302,20 @@ extension SPENTDatabaseDocument {
                 )
                 SELECT BucketID, AccountID, IFNULL(Posted, 0) AS "Posted", IFNULL(Available, 0) AS "Available" FROM AllBuckets
                 JOIN posted USING (AccountID, BucketID) JOIN available USING (AccountID, BucketID)
+            """)
+            
+            // The datatype of each transaction
+            try db.execute(sql: """
+            CREATE TEMPORARY VIEW "TransactionType" AS
+                SELECT Transactions.id, Transfers.id AS "TransferID", SplitTransactions.id AS "SplitID", CASE
+                    WHEN (SourceTransactionID IS NOT NULL OR DestinationTransactionID IS NOT NULL) THEN 'Transfer'
+                    WHEN (TransactionID IS NOT NULL OR SplitHeadTransactionID IS NOT NULL) THEN 'Split'
+                    WHEN (Amount < 0) THEN 'Withdrawal'
+                    WHEN (Amount >= 0) THEN 'Deposit'
+                    ELSE 'Transaction' END AS "Type"
+                FROM Transactions
+                LEFT JOIN Transfers ON SourceTransactionID == Transactions.id OR DestinationTransactionID == Transactions.id
+                LEFT JOIN SplitTransactions ON TransactionID == Transactions.id OR SplitHeadTransactionID == Transactions.id
             """)
         }
     }

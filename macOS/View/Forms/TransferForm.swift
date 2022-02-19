@@ -79,11 +79,14 @@ class TransferFormModel: FormModel {
             status = sourceTransaction!.status
             entryDate = sourceTransaction!.entryDate
             postDate = sourceTransaction!.postDate ?? Date()
-            amount = NSDecimalNumber(value: sourceTransaction!.amount).dividing(by: 100).stringValue
+            amount = NSDecimalNumber(value: abs(sourceTransaction!.amount)).dividing(by: 100).stringValue
             memo = sourceTransaction!.memo
             
             sourceAccount = try sourceTransaction?.account.fetchOne(withDatabase)
             destinationAccount = try destinationTransaction?.account.fetchOne(withDatabase)
+            
+            self.sourceTransaction = sourceTransaction
+            self.destinationTransaction = destinationTransaction
         } else {
             // This is a new transfer
             sourceTransaction = Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
@@ -116,7 +119,7 @@ class TransferFormModel: FormModel {
     
     func submit(withDatabase: Database) throws {
         // Update the transaction from the form data
-        let destinationAmount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
+        let destinationAmount = abs(NSDecimalNumber(string: amount).multiplying(by: 100).intValue)
         let sourceAmount = destinationAmount * -1
         updateTransaction(&sourceTransaction!, status: status, entryDate: entryDate, postDate: postDate, amount: sourceAmount, memo: memo, account: sourceAccount!)
         updateTransaction(&destinationTransaction!, status: status, entryDate: entryDate, postDate: postDate, amount: destinationAmount, memo: memo, account: destinationAccount!)

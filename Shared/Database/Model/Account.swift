@@ -68,7 +68,6 @@ struct AccountTransactions: Queryable {
     func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[TransactionInfo], Error> {
         ValueObservation
             .tracking({ db in
-                
                 let runningBalanceCTE = CommonTableExpression(
                     named: "runningBalance",
                     request: AccountRunningBalance.all().filter(Column("AccountID") == account.id))
@@ -79,14 +78,15 @@ struct AccountTransactions: Queryable {
                         left[Column("id")] == right[Column("TransactionID")]
                     })
                 
-                let transactionTypeCTE = CommonTableExpression(
-                    named: "transType",
-                    sql: "SELECT * FROM TransactionType")
+                let transferCTE = CommonTableExpression(
+                    named: "transfer",
+                    sql: "SELECT * FROM Transfers")
                 
                 let typeAssociation = Transaction.association(
-                    to: transactionTypeCTE,
+                    to: transferCTE,
                     on: { left, right in
-                        left[Column("id")] == right[Column("id")]
+                        left[Column("id")] == right[Column("SourceTransactionID")] ||
+                        left[Column("id")] == right[Column("DestinationTransactionID")]
                     })
                 
                 var request = Transaction.all()
@@ -94,8 +94,8 @@ struct AccountTransactions: Queryable {
                     .including(optional: Transaction.bucket)
                     .with(runningBalanceCTE)
                     .including(required: association)
-                    .with(transactionTypeCTE)
-                    .including(required: typeAssociation)
+                    .with(transferCTE)
+                    .including(optional: typeAssociation)
                     .filter(account: account)
                 
                 if let bucket = bucket {

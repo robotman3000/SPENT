@@ -283,18 +283,24 @@ extension SPENTDatabaseDocument {
                 FROM Accounts LEFT JOIN posted USING (id) LEFT JOIN available USING (id) LEFT JOIN allocatable USING (id)
             """)
             
+            // The list of all posible account-bucket combinations
+            try db.execute(sql: """
+            CREATE TEMPORARY VIEW "AllBuckets" AS
+                SELECT a.id AS "AccountID", b.id AS "BucketID" FROM Buckets b CROSS JOIN Accounts a
+            """)
+            
             // The current balance of the buckets
             try db.execute(sql: """
             CREATE TEMPORARY VIEW "BucketBalance" AS
                 WITH
-                "posted" ("Posted", "AccountID", "id") AS (
+                "posted" ("Posted", "AccountID", "BucketID") AS (
                     SELECT SUM(Amount), AccountID, BucketID FROM Transactions WHERE BucketID IS NOT NULL AND Status IN (5, 6) GROUP BY AccountID, BucketID
                 ),
-                "available" ("Available", "AccountID", "id") AS (
+                "available" ("Available", "AccountID", "BucketID") AS (
                     SELECT SUM(Amount), AccountID, BucketID FROM Transactions WHERE BucketID IS NOT NULL AND Status <> 0 GROUP BY AccountID, BucketID
                 )
-                SELECT id, IFNULL(p.AccountID, a.AccountID) AS "AccountID", IFNULL(Posted, 0) AS "Posted", IFNULL(Available, 0) AS "Available" FROM Buckets
-                LEFT JOIN posted p USING (id) LEFT JOIN available a USING (id)
+                SELECT BucketID, AccountID, IFNULL(Posted, 0) AS "Posted", IFNULL(Available, 0) AS "Available" FROM AllBuckets
+                JOIN posted USING (AccountID, BucketID) JOIN available USING (AccountID, BucketID)
             """)
         }
     }

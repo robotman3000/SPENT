@@ -39,14 +39,27 @@ struct SPENT: App {
                 .environmentObject(file.document.manager)
                 .environment(\.dbQueue, file.document.manager.database)
                 .frame(minWidth: 1000, minHeight: 600)
-        }.commands {            
+        }.commands {
             CommandGroup(after: .appSettings){
-                Button("Manage Tags"){
-                    WindowKeys.TagManager.open()
+                Button("Database"){
+                    sheetContext.present(FormKeys.manageDatabase(context: sheetContext))
                 }
-                
-                Button("Manage Templates"){
-                    WindowKeys.TemplateManager.open()
+            }
+            
+            CommandGroup(after: .newItem){
+                Menu("Create") {
+                    Button("Account"){
+                        sheetContext.present(FormKeys.account(context: sheetContext, account: nil))
+                    }
+                    Button("Bucket"){
+                        sheetContext.present(FormKeys.bucket(context: sheetContext, bucket: nil))
+                    }
+                    Button("Transaction"){
+                        sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: nil))
+                    }
+                    Button("Transfer"){
+                        sheetContext.present(FormKeys.transfer(context: sheetContext, transfer: nil))
+                    }
                 }
             }
             
@@ -54,14 +67,6 @@ struct SPENT: App {
                 ImportExportCommands(sheetContext: sheetContext, alertContext: alertContext)
             }
         }
-        
-//        WindowGroup("Tag Manager") {
-//            TagManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
-//        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TagManager.rawValue))
-        
-//        WindowGroup("Template Manager") {
-//            TemplateManagerView().environmentObject(globalState).environmentObject(dbStore).frame(minWidth: 300, minHeight: 300)
-//        }.handlesExternalEvents(matching: Set(arrayLiteral: WindowKeys.TemplateManager.rawValue))
         
         Settings{
             SettingsView()

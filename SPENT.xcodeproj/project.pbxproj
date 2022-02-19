@@ -75,6 +75,7 @@
 		A2AA52B827A0980E0061F761 /* ExportAgent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AA52B427A097550061F761 /* ExportAgent.swift */; };
 		A2AA52BC27A099EE0061F761 /* CSV in Frameworks */ = {isa = PBXBuildFile; productRef = A2AA52BB27A099EE0061F761 /* CSV */; };
 		A2AF19C427447A710006C055 /* BucketTreeNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2AF19C327447A710006C055 /* BucketTreeNode.swift */; };
+		A2BDCB1827BB162D001054B4 /* DatabaseManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2BDCB1727BB162D001054B4 /* DatabaseManagerView.swift */; };
 		A2C2ADA126D5878A00537971 /* SwiftUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = A2C2ADA026D5878A00537971 /* SwiftUIKit */; };
 		A2C2ADB326D58F0200537971 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */; };
 		A2C2ADB526D58F1F00537971 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2C2ADB426D58F1F00537971 /* SettingsView.swift */; };
@@ -176,6 +177,7 @@
 		A2AF19BF27446A760006C055 /* TagFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagFilter.swift; sourceTree = "<group>"; };
 		A2AF19C1274479DD0006C055 /* BucketTreeFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketTreeFilter.swift; sourceTree = "<group>"; };
 		A2AF19C327447A710006C055 /* BucketTreeNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BucketTreeNode.swift; sourceTree = "<group>"; };
+		A2BDCB1727BB162D001054B4 /* DatabaseManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerView.swift; sourceTree = "<group>"; };
 		A2C2ADAD26D58B9300537971 /* TransactionContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionContextMenu.swift; sourceTree = "<group>"; };
 		A2C2ADB226D58F0200537971 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A2C2ADB426D58F1F00537971 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -441,6 +443,7 @@
 				A2A56719262740ED009C7E8C /* macOS.entitlements */,
 				A2A56715262740ED009C7E8C /* Preview Content */,
 				A2C8351026DAE8FE00819F35 /* DBFileBookmark.swift */,
+				A2BDCB1727BB162D001054B4 /* DatabaseManagerView.swift */,
 			);
 			path = macOS;
 			sourceTree = "<group>";
@@ -684,6 +687,7 @@
 				A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */,
 				A276B57C26D887D3003C24E2 /* AppConfiguration.swift in Sources */,
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
+				A2BDCB1827BB162D001054B4 /* DatabaseManagerView.swift in Sources */,
 				A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */,
 				A20901F227A4800B00A68252 /* FormKeys.swift in Sources */,
 				A2F18BD026B2E312009BA9F4 /* SplitTransactionMemberList.swift in Sources */,

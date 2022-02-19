@@ -41,17 +41,12 @@ struct MainView: View {
                         Image(systemName: "sidebar.left")
                     })
                 }
-                ToolbarItem(placement: .automatic) {
-                    Button(action: newAccountClick, label: {
-                        Text("New Account")
-                    })
-                }
             }
             .frame(minWidth: 300)
             .navigationTitle("Accounts")
             
-            Text("Select An Account")
-            Text("To view transactions")
+            EmptyView()
+            EmptyView()
             
         }.sheet(context: sheetContext)
         .alert(context: alertContext)
@@ -69,7 +64,7 @@ struct MainView: View {
 struct AccountBucketsListView: View {
     @StateObject var sheetContext = SheetContext()
     @StateObject var alertContext = AlertContext()
-    @Query<AccountBuckets> var buckets: [Bucket]
+    @Query<AccountBuckets> var buckets: [BucketInfo]
     let account: Account
     @State var selection: Bucket?
     
@@ -84,10 +79,10 @@ struct AccountBucketsListView: View {
                 Text("All Transactions")
             }
             Divider()
-            ForEach(buckets){ bucket in
-                NavigationLink(destination: AccountTransactionsView(forAccount: account, withBucket: selection), tag: bucket, selection: $selection){
-                    BucketRow(forBucket: bucket)
-                }.contextMenu { BucketContextMenu(sheet: sheetContext, forBucket: bucket) }
+            ForEachEnumerated(buckets){ bucketInfo in
+                NavigationLink(destination: AccountTransactionsView(forAccount: account, withBucket: selection), tag: bucketInfo.bucket, selection: $selection){
+                    BucketRow(forBucket: bucketInfo)
+                }.contextMenu { BucketContextMenu(sheet: sheetContext, forBucket: bucketInfo.bucket) }
             }
             
             if buckets.isEmpty {
@@ -111,14 +106,13 @@ struct AccountRow: View {
 }
 
 struct BucketRow: View {
-    //TODO: Implement BucketInfo
-    let forBucket: Bucket
+    let forBucket: BucketInfo
     
     var body: some View {
         HStack {
-            Text(forBucket.name)
+            Text(forBucket.bucket.name)
             Spacer()
-            Text(0.currencyFormat)
+            Text(forBucket.balance.available.currencyFormat)
         }
     }
 }
@@ -217,25 +211,6 @@ struct AccountTransactionsView: View {
             // Main transaction list
             TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext)
             
-            // Sorting toolbar
-        }.toolbar {
-            ToolbarItem(placement: .automatic){
-                Button(action: newTransactionClick, label: {
-                    Text("New Transaction")
-                })
-            }
-            ToolbarItem(placement: .automatic){
-                Menu{
-                    Button(action: newTransferClick, label: {
-                        Text("New Transfer")
-                    })
-//                    Button(action: newSplitClick, label: {
-//                        Text("New Split")
-//                    })
-                } label: {
-                    Text("+")
-                }
-            }
         }.sheet(context: sheetContext)
     }
     
@@ -258,51 +233,26 @@ struct AccountTransactionsView: View {
             }
         }
     }
-    
-    private func newTransactionClick() {
-        sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: nil))
-    }
-    
-    private func newTransferClick() {
-        sheetContext.present(FormKeys.transfer(context: sheetContext, transfer: nil))
-    }
-    
-//    private func newSplitClick() {
-//        sheetContext.present(FormKeys.splitTransaction(context: sheetContext, split: nil))
-//    }
 }
 
 struct AccountBucketToolbar: View {
     let account: Account
     let bucket: Bucket?
-    @Query<AccountBuckets> var buckets: [Bucket]
+    @Query<AccountBuckets> var buckets: [BucketInfo]
     @State private var showingManager: Bool = false
     
     init(forAccount: Account, withBucket: Bucket? = nil){
         self._buckets = Query(AccountBuckets(forAccount: forAccount), in: \.dbQueue)
         self.account = forAccount
         self.bucket = withBucket
-        //self._selectedBucket = selection
     }
     
     var body: some View {
         HStack {
-            VStack {
-                //BucketPicker(label: "Viewing Bucket", selection: $selectedBucket, choices: buckets, allowEmpty: true)
-                Button(action: { showingManager.toggle() }){
-                    Text("Manage")
-                }
-            }
             if let bucket = bucket {
                 BucketBalanceView(forAccount: account, forBucket: bucket)
             }
         }.padding()
-        .sheet(isPresented: $showingManager, onDismiss: { print("Manager Dismissed") }) {
-            VStack{
-                BucketManagerView().frame(minWidth: 300, minHeight: 300)
-                Button("Done", action: { showingManager.toggle() })
-            }.padding()
-        }
     }
 }
 
@@ -347,18 +297,22 @@ struct AccountBalance: Decodable, FetchableRecord, TableRecord {
 }
 
 struct BucketBalance: Decodable, FetchableRecord, TableRecord {
-    let id: Int64
+    let bucketId: Int64
     let accountId: Int64
     let posted: Int
     let available: Int
+    
+    static let account = hasOne(Account.self, using: ForeignKey(["id"], to: ["AccountID"]))
+    static let bucket = hasOne(Bucket.self, using: ForeignKey(["id"], to: ["BucketID"]))
 }
+
 extension DerivableRequest where RowDecoder == BucketBalance {
     func filter(account: Account) -> Self {
         filter(Column("AccountID") == account.id)
     }
     
     func filter(bucket: Bucket) -> Self {
-        filter(Column("id") == bucket.id)
+        filter(Column("BucketID") == bucket.id)
     }
 }
 
@@ -395,29 +349,36 @@ extension AccountInfo {
     }
 }
 
-//struct BucketInfo: Decodable, FetchableRecord {
-//    var account: Account
-//    var bucket: Bucket
-//    var balance: BucketBalance
-//}
-//
+struct BucketInfo: Decodable, FetchableRecord {
+    var balance: BucketBalance
+    var account: Account
+    var bucket: Bucket
+    
+    private enum CodingKeys: String, CodingKey {
+        case balance, account = "Account", bucket = "Bucket"
+    }
+}
+
 //extension BucketInfo {
-//    /// The request for all account infos
+//    /// The request for all bucket infos except the buckets that "don't exist" I.E. The buckets without any transactions
 //    static func all() -> AdaptedFetchRequest<SQLRequest<BucketInfo>> {
 //        let request: SQLRequest<BucketInfo> = """
 //            SELECT
 //                \(columnsOf: Bucket.self),
-//                \(columnsOf: BucketBalance.self)
-//            FROM Buckets
-//            LEFT JOIN BucketBalance USING (id)
-//            """
+//                \(columnsOf: BucketBalance.self),
+//                \(columnsOf: Account.self)
+//            FROM BucketBalance
+//            JOIN Buckets ON ("Buckets".id == BucketID) JOIN Accounts ON ("Accounts".id == AccountID)
+//        """
 //        return request.adapted { db in
 //            let adapters = try splittingRowAdapters(columnCounts: [
 //                Bucket.numberOfSelectedColumns(db),
-//                BucketBalance.numberOfSelectedColumns(db)])
+//                BucketBalance.numberOfSelectedColumns(db),
+//                Account.numberOfSelectedColumns(db)])
 //            return ScopeAdapter([
 //                CodingKeys.bucket.stringValue: adapters[0],
-//                CodingKeys.balance.stringValue: adapters[1]])
+//                CodingKeys.balance.stringValue: adapters[1],
+//                CodingKeys.account.stringValue: adapters[2]])
 //        }
 //    }
 //

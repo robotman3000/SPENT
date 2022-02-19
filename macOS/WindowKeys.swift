@@ -9,9 +9,7 @@ import SwiftUI
 
 enum WindowKeys: String, CaseIterable {
     case MainWindow = ""
-    case TagManager = "tagManager"
-    case ScheduleManager = "scheduleManager"
-    case TemplateManager = "templateManager"
+    case DatabaseManager = "databaseManager"
     
     func open(){
         if let url = URL(string: "SPENT://\(self.rawValue)") {

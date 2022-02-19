@@ -22,6 +22,7 @@ enum FormKeys: SheetProvider {
     case confirmDelete(context: SheetContext, message: String, onConfirm: () -> Void)
     case confirmAction(context: SheetContext, message: String, onConfirm: () -> Void, onCancel: () -> Void)
     case manageBuckets(context: SheetContext)
+    case manageDatabase(context: SheetContext)
     
     var sheet: AnyView {
         switch self {
@@ -106,7 +107,13 @@ enum FormKeys: SheetProvider {
             }).padding().any()
         case let .manageBuckets(context: context):
             return BucketManagerView().toolbar(content: {
-                ToolbarItem(placement: .primaryAction){
+                ToolbarItem(placement: .confirmationAction){
+                    Button("Done", action: { context.dismiss() })
+                }
+            }).any()
+        case let .manageDatabase(context: context):
+            return DatabaseManagerView().toolbar(content: {
+                ToolbarItem(placement: .confirmationAction){
                     Button("Done", action: { context.dismiss() })
                 }
             }).any()

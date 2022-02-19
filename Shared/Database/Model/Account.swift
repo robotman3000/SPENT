@@ -24,6 +24,10 @@ extension Account: FetchableRecord, MutablePersistableRecord {
         id = rowID
     }
     
+//    private enum CodingKeys: String, CodingKey {
+//        case id, name = "Name"
+//    }
+    
     // Define database columns from CodingKeys
     enum Columns {
         static let id = Column(CodingKeys.id)
@@ -43,7 +47,7 @@ extension Account {
         request(for: Account.buckets).distinct()
     }
     
-    static let balance = hasOne(AccountBalance.self, key: "abc123")
+    static let balance = hasOne(AccountBalance.self)
     var balance: QueryInterfaceRequest<AccountBalance> {
         request(for: Account.balance)
     }
@@ -104,12 +108,36 @@ struct AccountTransactions: Queryable {
 }
 
 struct AccountBuckets: Queryable {
-    static var defaultValue: [Bucket] = []
+    static var defaultValue: [BucketInfo] = []
     let forAccount: Account
     
-    func publisher(in database: DatabaseQueue) -> AnyPublisher<[Bucket], Error> {
+    func publisher(in database: DatabaseQueue) -> AnyPublisher<[BucketInfo], Error> {
+        //TODO: This implementation may be causing GRDB to run the query every time the view changes
         ValueObservation
-            .tracking(forAccount.buckets.fetchAll)
+//            .tracking({ db in
+//                let buckets = try forAccount.buckets.fetchAll(db)
+//                var bucketInfo: [BucketInfo] = []
+//                for bucket in buckets {
+//                    let balance = try BucketBalance.all().filter(account: forAccount).filter(bucket: bucket).fetchOne(db)
+//                    assert(balance != nil)
+//                    bucketInfo.append(BucketInfo(account: forAccount, bucket: bucket, balance: balance!))
+//                }
+//                return bucketInfo
+//            })
+            .tracking(BucketBalance.all()
+                        .filter(account: forAccount)
+                        .including(required: BucketBalance.bucket)
+                        .including(required: BucketBalance.account)
+                        .asRequest(of: BucketInfo.self)
+//                        .adapted({ db in
+//                            let adapters = splittingRowAdapters(columnCounts: [
+//                                4])
+//                            return ScopeAdapter([
+//                                "BucketBalance": adapters[0]])
+//                        })
+                        .fetchAll)
+            // The `.immediate` scheduling feeds the view right on subscription,
+            // and avoids an initial rendering with an empty list:
             .publisher(in: database, scheduling: .immediate)
             .eraseToAnyPublisher()
     }

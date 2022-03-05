@@ -53,7 +53,12 @@ struct MainView: View {
             .navigationTitle("Accounts")
             
             EmptyView()
-            EmptyView()
+            
+            if let account = selection {
+                AccountTransactionsView(forAccount: account, withBucket: nil)
+            } else {
+                EmptyView()
+            }
         }
     }
     

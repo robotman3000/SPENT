@@ -34,30 +34,7 @@ struct AccountContextMenu: View {
         
         Divider()
         
-        Button("Add Transaction"){
-            context.present(FormKeys.transaction(context: context, transaction: nil))
-        }
-        
-        Button("Add Transfer"){
-            context.present(FormKeys.transfer(context: context, transfer: nil))
-        }
-        
-//        Button("Add Split"){
-//            context.present(FormKeys.splitTransaction(context: context, splitHead: nil))
-//        }
-        
-//            Divider()
-//
-//            Button("\(model.bucket.isFavorite ? "Unfavorite" : "Mark as Favorite")"){
-//                model.bucket.isFavorite = !model.bucket.isFavorite
-//                do {
-//                    try store.write { db in
-//                        try store.saveBucket(db, &model.bucket)
-//                    }
-//                } catch {
-//                    aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))
-//                }
-//            }
+        _NewTransactionContextButtons(context: context, aContext: aContext)
         
     }
 }

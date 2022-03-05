@@ -35,7 +35,7 @@ struct TransactionContextMenu: View {
                 }
             }
             
-            Button("Edit Transaction") {
+            Button(model.type == .Transfer || model.type == .Split ? "Edit As Transaction" : "Edit Transaction") {
                 context.present(FormKeys.transaction(context: context, transaction: model.transaction))
             }
             
@@ -137,17 +137,20 @@ struct _NewTransactionContextButtons: View {
     
     var body: some View{
         Section{
-            Button("Add Transaction") {
-                context.present(FormKeys.transaction(context: context, transaction: nil))
-            }
+            Menu("New") {
+                Button("Transaction") {
+                    context.present(FormKeys.transaction(context: context, transaction: nil))
+                }
 
-            Button("Add Transfer"){
-                context.present(FormKeys.transfer(context: context, transfer: nil))
-            }
+                Button("Transfer"){
+                    context.present(FormKeys.transfer(context: context, transfer: nil))
+                }
 
-//            Button("Add Split"){
-//                context.present(FormKeys.splitTransaction(context: context, splitHead: nil))
-//            }
+                Button("Split"){
+                    context.present(FormKeys.splitTransaction(context: context, split: nil))
+                }
+            }
+            
         }
     }
 }

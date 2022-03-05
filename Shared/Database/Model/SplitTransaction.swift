@@ -37,5 +37,22 @@ extension SplitTransaction: FetchableRecord, MutablePersistableRecord {
 
 extension SplitTransaction {
     static let transaction = belongsTo(Transaction.self, using: ForeignKey(["transactionID"]))
+    var transaction: QueryInterfaceRequest<Transaction> {
+        request(for: SplitTransaction.transaction)
+    }
+    
     static let headTransaction = belongsTo(Transaction.self, using: ForeignKey(["splitHeadTransactionID"]))
+    var headTransaction: QueryInterfaceRequest<Transaction> {
+        request(for: SplitTransaction.headTransaction)
+    }
+    
+    var members: QueryInterfaceRequest<SplitTransaction> {
+        SplitTransaction.all().filter(splitUUID: self.splitUUID).filter(Columns.transactionID != Columns.splitHeadTransactionID)
+    }
+}
+
+extension DerivableRequest where RowDecoder == SplitTransaction {
+    func filter(splitUUID: UUID) -> Self {
+        filter(SplitTransaction.Columns.splitUUID == splitUUID.uuidString)
+    }
 }

@@ -22,7 +22,7 @@ struct TransactionListRow: View {
                 
                 // Payee or Type
                 HStack{
-                    Text(model.transaction.payee.isEmpty ? /*model.transaction.type.getStringName()*/ "TODO: Type" : model.transaction.payee)
+                    Text(model.transaction.payee.isEmpty ? model.type.getStringName() : model.transaction.payee)
                     Spacer()
                 }.frame(minWidth: 100, maxWidth: 150)
                     

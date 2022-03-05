@@ -46,38 +46,6 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "E8AA35CA-3404-440D-9F20-73207061359F"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "139"
-            endingLineNumber = "139"
-            landmarkName = "deleteSplitMember(_:_:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "4431BE8B-0DC2-4F9F-839F-A71CE6E14FB8"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "137"
-            endingLineNumber = "137"
-            landmarkName = "deleteSplitMember(_:_:)"
-            landmarkType = "7">
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
             uuid = "E19BB0B2-643E-4CAE-9C9B-5A40E7E6A037"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
@@ -373,8 +341,8 @@
             filePath = "Shared/Database/Model/Account.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "140"
-            endingLineNumber = "140"
+            startingLineNumber = "153"
+            endingLineNumber = "153"
             landmarkName = "publisher(in:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -389,8 +357,8 @@
             filePath = "Shared/Database/Model/Account.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "144"
-            endingLineNumber = "144"
+            startingLineNumber = "157"
+            endingLineNumber = "157"
             landmarkName = "publisher(in:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -693,8 +661,8 @@
             filePath = "Shared/Database/Model/Account.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "120"
-            endingLineNumber = "120"
+            startingLineNumber = "133"
+            endingLineNumber = "133"
             landmarkName = "publisher(in:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -725,42 +693,10 @@
             filePath = "Shared/Database/Model/Account.swift"
             startingColumnNumber = "26"
             endingColumnNumber = "26"
-            startingLineNumber = "115"
-            endingLineNumber = "115"
-            landmarkName = "forAccount"
+            startingLineNumber = "127"
+            endingLineNumber = "127"
+            landmarkName = "defaultValue"
             landmarkType = "24">
-            <Locations>
-               <Location
-                  uuid = "3242AFDE-4B27-4868-BD0E-2F7A396D0583 - 5c1f5e157cde6184"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "SPENT.AccountBuckets.publisher(in: GRDB.DatabaseQueue) -&gt; Combine.AnyPublisher&lt;Swift.Array&lt;SPENT.BucketInfo&gt;, Swift.Error&gt;"
-                  moduleName = "SPENT"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/enims/Xcode/SPENT-Git/Shared/Database/Model/Account.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "138"
-                  endingLineNumber = "138"
-                  offsetFromSymbolStart = "1646">
-               </Location>
-               <Location
-                  uuid = "3242AFDE-4B27-4868-BD0E-2F7A396D0583 - edf4eb39a2748379"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "implicit closure #2 (GRDB.Database) throws -&gt; Swift.Array&lt;SPENT.BucketInfo&gt; in implicit closure #1 (GRDB.QueryInterfaceRequest&lt;SPENT.BucketInfo&gt;) -&gt; (GRDB.Database) throws -&gt; Swift.Array&lt;SPENT.BucketInfo&gt; in SPENT.AccountBuckets.publisher(in: GRDB.DatabaseQueue) -&gt; Combine.AnyPublisher&lt;Swift.Array&lt;SPENT.BucketInfo&gt;, Swift.Error&gt;"
-                  moduleName = "SPENT"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/enims/Xcode/SPENT-Git/Shared/Database/Model/Account.swift"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "138"
-                  endingLineNumber = "138"
-                  offsetFromSymbolStart = "71">
-               </Location>
-            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -821,8 +757,8 @@
             filePath = "macOS/View/Forms/TransferForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "73"
-            endingLineNumber = "73"
+            startingLineNumber = "66"
+            endingLineNumber = "66"
             landmarkName = "loadState(withDatabase:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -837,8 +773,8 @@
             filePath = "macOS/View/Forms/TransferForm.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "89"
-            endingLineNumber = "89"
+            startingLineNumber = "82"
+            endingLineNumber = "82"
             landmarkName = "loadState(withDatabase:)"
             landmarkType = "7">
          </BreakpointContent>
@@ -857,6 +793,166 @@
             endingLineNumber = "31"
             landmarkName = "body"
             landmarkType = "24">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "4DC66565-B149-40D7-BC1D-F6AE8B4D1178"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "39"
+            endingColumnNumber = "39"
+            startingLineNumber = "128"
+            endingLineNumber = "128"
+            landmarkName = "deleteSplitMember(_:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "98D232B2-FCB8-450B-81D5-585D77656271"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "120"
+            endingLineNumber = "120"
+            landmarkName = "deleteSplitMember(_:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "C094CD3D-575A-4D77-BE60-3E3AB5F586E8"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "168"
+            endingLineNumber = "168"
+            landmarkName = "loadState(withDatabase:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "D07FFC47-81CF-4B73-83BF-18E09347C73B"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Context/TransactionContextMenu.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "32"
+            endingLineNumber = "32"
+            landmarkName = "body"
+            landmarkType = "24">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "21848E1C-6CB5-4A20-9D21-E4A3142A0D4B"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Shared/Database/Model/Account.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "117"
+            endingLineNumber = "117"
+            landmarkName = "publisher(in:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "05C531E0-D470-4B67-BF86-978C8085BA91"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Shared/Database/Model/Account.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "99"
+            endingLineNumber = "99"
+            landmarkName = "publisher(in:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "2CCA4F2C-3F71-4752-910B-6AD2AE4652BD"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "143"
+            endingLineNumber = "143"
+            landmarkName = "loadState(withDatabase:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "254E6F24-3490-4A7E-B91A-B6B539617E4A"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Forms/SplitTransactionForm.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "207"
+            endingLineNumber = "207"
+            landmarkName = "submit(withDatabase:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "A61E0AB8-1BB9-40B1-A8F9-76C0B74EA2E8"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Shared/Database/DatabaseActions.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "25"
+            endingLineNumber = "25"
+            landmarkName = "execute(db:)"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "985014EB-5774-4C33-8EBB-0070F29612E0"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Shared/Database/DatabaseActions.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "55"
+            endingLineNumber = "55"
+            landmarkName = "deleteSplitTransaction(_:_:)"
+            landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

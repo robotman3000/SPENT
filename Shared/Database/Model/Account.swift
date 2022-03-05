@@ -72,7 +72,7 @@ struct AccountTransactions: Queryable {
                     named: "runningBalance",
                     request: AccountRunningBalance.all().filter(Column("AccountID") == account.id))
                 
-                let association = Transaction.association(
+                let runningBalanceAssoc = Transaction.association(
                     to: runningBalanceCTE,
                     on: { left, right in
                         left[Column("id")] == right[Column("TransactionID")]
@@ -82,26 +82,39 @@ struct AccountTransactions: Queryable {
                     named: "transfer",
                     sql: "SELECT * FROM Transfers")
                 
-                let typeAssociation = Transaction.association(
+                let transferAssoc = Transaction.association(
                     to: transferCTE,
                     on: { left, right in
                         left[Column("id")] == right[Column("SourceTransactionID")] ||
                         left[Column("id")] == right[Column("DestinationTransactionID")]
                     })
                 
+                let splitCTE = CommonTableExpression(
+                    named: "split",
+                    sql: "SELECT * FROM SplitTransactions")
+                
+                let splitAssoc = Transaction.association(
+                    to: splitCTE,
+                    on: { left, right in
+                        left[Column("id")] == right[Column("TransactionID")]
+                    })
+                
                 var request = Transaction.all()
                     .including(required: Transaction.account)
                     .including(optional: Transaction.bucket)
-                    .with(runningBalanceCTE)
-                    .including(required: association)
                     .with(transferCTE)
-                    .including(optional: typeAssociation)
+                    .including(optional: splitAssoc)
+                    .with(runningBalanceCTE)
+                    .including(optional: transferAssoc)
+                    .with(splitCTE)
+                    .including(required: runningBalanceAssoc)
                     .filter(account: account)
                 
                 if let bucket = bucket {
                     request = request.filter(bucket: bucket)
                 }
-                return try TransactionInfo.fetchAll(db, request)
+                let result = try TransactionInfo.fetchAll(db, request)
+                return result
             })
             // The `.immediate` scheduling feeds the view right on subscription,
             // and avoids an initial rendering with an empty list:

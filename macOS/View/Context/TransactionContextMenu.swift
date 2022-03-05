@@ -29,11 +29,11 @@ struct TransactionContextMenu: View {
                 }
             }
 
-//            if model.transaction.type == .Split_Head {
-//                Button("Edit Split"){
-//                    context.present(FormKeys.splitTransaction(context: context, splitHead: model.transaction, contextBucket: contextBucket))
-//                }
-//            }
+            if let split = model.split {
+                Button("Edit Split"){
+                    context.present(FormKeys.splitTransaction(context: context, split: split))
+                }
+            }
             
             Button("Edit Transaction") {
                 context.present(FormKeys.transaction(context: context, transaction: model.transaction))
@@ -114,7 +114,10 @@ struct TransactionContextMenu: View {
         Button("Delete Transaction") {
             context.present(FormKeys.confirmDelete(context: context, message: "",
                 onConfirm: {
-                    databaseManager.action(.deleteTransaction(model.transaction),
+                    let deleteAction = model.split != nil && model.split!.transactionID == model.split!.splitHeadTransactionID ?
+                        DatabaseActions.deleteSplitTransaction(model.split!) :
+                        DatabaseActions.deleteTransaction(model.transaction)
+                    databaseManager.action(deleteAction,
                     onSuccess: { print("deleted transaction successfully") },
                     onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))} )
             }))

@@ -7,13 +7,14 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDB
 
 struct SplitMemberForm: View {
-    @State var model: SplitMemberModel
+    @State var model: SplitMemberFormModel
     let choices: [Bucket]
     
-    let onSubmit: (_ model: SplitMemberModel) -> Void
-    let onDelete: (_ model: SplitMemberModel) -> Void
+    let onSubmit: (_ model: SplitMemberFormModel) -> Void
+    let onDelete: (_ model: SplitMemberFormModel) -> Void
     let onCancel: () -> Void
     
     var body: some View {
@@ -49,19 +50,41 @@ struct SplitMemberForm: View {
     }
 }
 
-struct SplitMemberModel: Identifiable, Hashable {
+struct SplitMemberFormModel: Identifiable, Hashable {
+    /// Random UUID for identifiable requirement; This is not the Split UUID from the database
     var id: UUID = UUID()
+    var editStatus: EditStatus = .inMemory
+    let splitUUID: UUID
     
-    let transaction: Transaction?
-    var amount: String
+    var split: SplitTransaction?
+    var transaction: Transaction
+    var amount: String = ""
     var bucket: Bucket?
-    var memo: String
+    var memo: String = ""
     
-    init(transaction: Transaction?, bucket: Bucket?){
-        self.transaction = transaction
-        self.amount = NSDecimalNumber(value: transaction?.amount ?? 0).dividing(by: 100).stringValue
-        self.bucket = bucket
-        self.memo = transaction?.memo ?? ""
+    init(splitUUID: UUID){
+        self.transaction = Transaction(id: nil, status: .Void, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
+        self.editStatus = .inMemory
+        self.splitUUID = splitUUID
+    }
+    
+    init(withDatabase: Database, model: SplitTransaction) throws {
+        self.split = model
+        self.splitUUID = model.splitUUID
+        let dbTransaction = try model.transaction.fetchOne(withDatabase)
+        guard dbTransaction != nil else {
+            throw FormInitializeError("Failed to load transaction for split member with id \(model.id.debugDescription)")
+        }
+        
+        self.transaction = dbTransaction!
+        self.amount = NSDecimalNumber(value: abs(transaction.amount)).dividing(by: 100).stringValue
+        self.bucket = try self.transaction.bucket.fetchOne(withDatabase)
+        self.memo = transaction.memo
+        self.editStatus = .databaseClean
+    }
+    
+    enum EditStatus {
+        case databaseClean, databaseModified, databaseDeleted, inMemory, memoryDelete
     }
 }
 

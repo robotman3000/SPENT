@@ -47,26 +47,19 @@ class TransferFormModel: FormModel {
     fileprivate var sourceTransaction: Transaction?
     fileprivate var destinationTransaction: Transaction?
     
-    @Published var status: Transaction.StatusTypes
-    @Published var entryDate: Date
-    @Published var postDate: Date
-    @Published var amount: String
-    @Published var memo: String
+    @Published var status: Transaction.StatusTypes = .Uninitiated
+    @Published var entryDate: Date = Date()
+    @Published var postDate: Date = Date()
+    @Published var amount: String = ""
+    @Published var memo: String = ""
     
     @Published var sourceAccount: Account?
     @Published var destinationAccount: Account?
-    @Published var accountChoices: [Account]
+    @Published var accountChoices: [Account] = []
     
     init(transfer: Transfer?){
         //TODO: Prevent loading a transfer with a nil id
         self.transfer = transfer
-        
-        status = .Uninitiated
-        entryDate = Date()
-        postDate = Date()
-        amount = ""
-        memo = ""
-        accountChoices = []
     }
     
     func loadState(withDatabase: Database) throws {

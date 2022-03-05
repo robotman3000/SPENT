@@ -98,6 +98,7 @@
 		A2EC30A42697544800781EC8 /* AccountNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EC30A32697544800781EC8 /* AccountNavigation.swift */; };
 		A2EC30A72697571C00781EC8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EC30A62697571C00781EC8 /* SettingsView.swift */; };
 		A2EC30A9269758AB00781EC8 /* EditAccountListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EC30A8269758AB00781EC8 /* EditAccountListView.swift */; };
+		A2ECFBB027CFC827001937CF /* SplitTransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCC26B2DF82009BA9F4 /* SplitTransactionForm.swift */; };
 		A2EE03FA268518BF0092F63E /* iOSTransactionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2EE03F9268518BF0092F63E /* iOSTransactionListView.swift */; };
 		A2F18BD026B2E312009BA9F4 /* SplitTransactionMemberList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */; };
 		A2F18BD226B496E1009BA9F4 /* SplitMemberForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */; };
@@ -722,6 +723,7 @@
 				A20901E827A35B8400A68252 /* SplitTransaction.swift in Sources */,
 				A25DC96727B56D5900A6BCF4 /* BucketForm.swift in Sources */,
 				A2AA26E3270E937E00794C6C /* DebugUtil.swift in Sources */,
+				A2ECFBB027CFC827001937CF /* SplitTransactionForm.swift in Sources */,
 				A2F593C627B81473001DEC64 /* TransferForm.swift in Sources */,
 				A206D787267C111F00CB094D /* TransactionAttachmentMapping.swift in Sources */,
 				A217EAA126A9CD57004388FF /* AlertKeys.swift in Sources */,

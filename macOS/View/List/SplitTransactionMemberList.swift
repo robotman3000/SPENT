@@ -40,7 +40,7 @@ import SwiftUIKit
 //}
 
 struct Internal_SplitTransactionMemberListRow: View {
-    let model: SplitMemberModel
+    let model: SplitMemberFormModel
     
     var body: some View {
         HStack(alignment: .center){

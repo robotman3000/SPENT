@@ -7,10 +7,11 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDB
 
 struct SplitTransactionForm: View {
     @StateObject var model: SplitTransactionFormModel
-    @State var selected: SplitMemberModel?
+    @State var selected: SplitMemberFormModel?
     
     var splitAmount: Int {
         get {
@@ -39,8 +40,7 @@ struct SplitTransactionForm: View {
             }
             
             Section(header: EnumPicker(label: "Type", selection: $model.type, enumCases: [.Deposit, .Withdrawal]).pickerStyle(SegmentedPickerStyle())){
-                BucketPicker(label: model.type == .Deposit ? "From" : "To", selection: $model.selectedBucket, choices: model.bucketChoices.filter( {item in item.isAccount()} ))
-                    .disabled(model.head.id != nil) // TODO: Quick fix for issues arising from changing head bucket after creation
+                AccountPicker(label: model.type == .Deposit ? "From" : "To", selection: $model.selectedAccount, choices: model.accountChoices)
             }
             
             Section(){
@@ -53,24 +53,19 @@ struct SplitTransactionForm: View {
             
             Section(){
                 Button("+"){
-                    if model.selectedBucket != nil {
-                        let member = SplitMemberModel(transaction: nil, bucket: nil)
-                        selected = member
-                    } else {
-                        print("Ignoring button click; Head bucket isn't set")
-                    }
+                    selected = SplitMemberFormModel(splitUUID: model.splitUUID)
                 }
                 List(selection: $selected) {
-                    if model.members.isEmpty {
+                    if model.members.filter({ $0.editStatus != .databaseDeleted }).isEmpty {
                         Text("No Items")
                     }
                     
-                    ForEach(model.members, id: \.self){ member in
+                    ForEach(model.members.filter({ $0.editStatus != .databaseDeleted }), id: \.self){ member in
                         Internal_SplitTransactionMemberListRow(model: member)
                     }
                 }.labelStyle(DefaultLabelStyle())
                 .popover(item: $selected) { member in
-                    SplitMemberForm(model: member, choices: model.bucketChoices.filter({item in item.ancestorID == model.selectedBucket?.id}), onSubmit: { member in
+                    SplitMemberForm(model: member, choices: model.bucketChoices, onSubmit: { member in
                         model.updateSplitMember(member)
                         selected = nil
                     }, onDelete: { member in
@@ -83,7 +78,6 @@ struct SplitTransactionForm: View {
             }
             
             Section(){
-                TextField("Payee", text: $model.payee)
                 TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
             
@@ -94,109 +88,94 @@ struct SplitTransactionForm: View {
 }
 
 class SplitTransactionFormModel: FormModel {
-    @Published var head: Transaction
-    @Published var members: [SplitMemberModel] = []
+    var splitUUID: UUID = UUID()
+    fileprivate var split: SplitTransaction?
+    fileprivate var headTransaction: Transaction?
+    @Published var members: [SplitMemberFormModel] = []
     
+    @Published var accountChoices: [Account] = []
     @Published var bucketChoices: [Bucket] = []
-    @Published var selectedBucket: Bucket?
-    
-    @Published var payee: String
-    @Published var memo: String
+    @Published var selectedAccount: Account?
     @Published var type: Transaction.TransType = .Deposit
+    
+    @Published var memo: String = ""
     @Published var amount: String = "0"
-    @Published var date: Date
-    @Published var status: Transaction.StatusTypes
-    
-    var deletedMembers: [Int64] = []
-    
-    fileprivate let contextBucketID: Int64?
-    
-    init(head: Transaction, contextBucket: Int64? = nil){
-        self.head = head
-        payee = head.payee ?? ""
-        memo = head.memo
-        amount = NSDecimalNumber(value: head.amount).dividing(by: 100).stringValue
-        date = head.date
-        status = head.status
-        
-        self.contextBucketID = contextBucket
+    @Published var date: Date = Date()
+    @Published var status: Transaction.StatusTypes = .Void
+
+    init(model: SplitTransaction?){
+        self.split = model
     }
     
-    func updateSplitMember(_ member: SplitMemberModel){
-       // First delete any old version
-        deleteSplitMember(member, true)
-        
-        // Add the new member to the array
+    func updateSplitMember(_ member: SplitMemberFormModel){
+        if let index = members.firstIndex(where: { $0.id == member.id }) {
+            // Delete the old version
+            members.remove(at: index)
+        }
+        // Insert the new/created version
         members.append(member)
     }
     
-    func deleteSplitMember(_ member: SplitMemberModel, _ isUpdate: Bool = false){
-        var deleteIndex: Int? = nil
-        var deletedId: Int64?
-        for (index, element) in members.enumerated() {
-            if element.id == member.id {
-                deletedId = member.transaction?.id
-                deleteIndex = index
-                break
+    func deleteSplitMember(_ member: SplitMemberFormModel){
+        if let index = members.firstIndex(where: { $0.id == member.id }) {
+            if members[index].editStatus == .inMemory {
+                members[index].editStatus = .memoryDelete
+            } else {
+                members[index].editStatus = .databaseDeleted
             }
         }
         
-        if let index = deleteIndex {
-            members.remove(at: index)
-        }
-        
-        if !isUpdate && deletedId != nil {
-            // Add the id to the list of deleted members
-            deletedMembers.append(deletedId!)
-        }
+        members.removeAll(where: { $0.editStatus == .memoryDelete })
     }
     
-    func loadState(withDatabase: DatabaseStore) throws {
-        let rawMembers = withDatabase.database?.resolve(head.splitMembers) ?? []
-        
-        // Determine the split direction
-        // We check only the first member because in a valid split all
-        // the members will share the same source or destination account
-        if let member = rawMembers.first {
-            // The split has at least one member
-            let bucket = withDatabase.database?.resolveOne(member.source)
+    func loadState(withDatabase: Database) throws {
+        if let split = split {
+            splitUUID = split.splitUUID
             
-            guard bucket != nil else {
-                // This member is invalid since it's source was null
-                throw FormInitializeError("Member bucket was nil")
-            }
+            // The split is pre-existing.
+            // Load the split head
+            headTransaction = try split.headTransaction.fetchOne(withDatabase)
             
-            type = bucket!.isAccount() ? .Deposit : .Withdrawal
+            // Load the other split members
+            let dbMembers = try split.members.fetchAll(withDatabase)
             
-            let query = type == .Deposit ? member.source : member.destination
-            selectedBucket = withDatabase.database?.resolveOne(query)
+            // Wrap the database objects in a container
+            members = try dbMembers.map({ dbMember in
+                // This container fetches the associated transactions from the db for each member
+                try SplitMemberFormModel(withDatabase: withDatabase, model: dbMember)
+            })
+            
+            // Load the selected account
+            selectedAccount = try headTransaction?.account.fetchOne(withDatabase)
+        } else {
+            // We must create a new split but we can't make it here because we don't have the foreign key values yet.
+            
+            // Create a new head transaction for the split
+            headTransaction = Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
         }
         
-        // Extract the relevant properties from the split members
-        for rawMember in rawMembers {
-            let bucket = withDatabase.database?.resolveOne(type == .Deposit ? rawMember.destination : rawMember.source)
-            members.append(SplitMemberModel(transaction: rawMember, bucket: bucket))
+        guard headTransaction != nil else {
+            throw FormInitializeError("Head Transaction cannot be nil")
         }
         
-//        if selectedBucket == nil {
-//            if let id = contextBucketID {
-//                selectedBucket = withDatabase.database?.resolveOne(Bucket.filter(id: id))
-//
-//            }
-//        }
+        // Load the head transaction state
+        memo = headTransaction!.memo
+        amount = NSDecimalNumber(value: abs(headTransaction!.amount)).dividing(by: 100).stringValue
+        date = headTransaction!.entryDate
+        status = headTransaction!.status
         
-        bucketChoices = withDatabase.database?.resolve(Bucket.all()) ?? []
+        // The deposit and withdrawal values aren't backwards. It's relative to the head transaction
+        type = (headTransaction!.amount <= 0 ? .Deposit : .Withdrawal)
+        
+        // Fetch select box choices
+        accountChoices = try Account.all().fetchAll(withDatabase)
+        bucketChoices = try Bucket.all().fetchAll(withDatabase)
     }
     
     func validate() throws {
         // nil protection
-        if amount.isEmpty || selectedBucket == nil || members.isEmpty {
+        if amount.isEmpty || selectedAccount == nil || members.isEmpty {
             throw FormValidationError("Form is missing required values")
-        }
-        
-        // selectedBucket must be an account
-        if !selectedBucket!.isAccount() {
-            throw FormValidationError("Invalid value")
         }
         
         for member in members {
@@ -204,15 +183,7 @@ class SplitTransactionFormModel: FormModel {
                 throw FormValidationError("Invalid value")
             }
             
-            // the bucket of the members must be a bucket
-            if member.bucket!.isAccount() {
-                throw FormValidationError("Invalid value")
-            }
-            
-            // The bucket of the member must be a child of the head account
-            if member.bucket!.ancestorID! != selectedBucket!.id! {
-                throw FormValidationError("Invalid value")
-            }
+            //TODO: Include any other validation of the members here
         }
         // TODO: Prevent over spending a split
 //        if (headAmount - splitAmount < 0){
@@ -220,61 +191,52 @@ class SplitTransactionFormModel: FormModel {
 //        }
     }
     
-    func submit(withDatabase: DatabaseStore) throws {
-        if payee.isEmpty {
-            head.payee = nil
-        } else {
-            head.payee = payee
+    func submit(withDatabase: Database) throws {
+        guard headTransaction != nil else {
+            throw FormValidationError("Split transaction head cannot be nil")
         }
-        head.memo = memo
-        head.status = status
-        head.date = date
         
-        // The split head must be inert except for the amount
-        // which is used to calculcate the max split amount
-        head.sourcePosted = nil
-        head.destPosted = nil
-        head.sourceID = nil
-        head.destID = nil
-        head.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
+        let destinationAmount = abs(NSDecimalNumber(string: amount).multiplying(by: 100).intValue)
+        let sourceAmount = destinationAmount * -1
         
-        var newSplit: [Transaction] = []
-        newSplit.append(head)
+        headTransaction!.memo = memo
+        headTransaction!.status = status
+        headTransaction!.entryDate = date
+        headTransaction!.accountID = selectedAccount!.id!
+        print(self.type)
+        headTransaction!.amount = (type == .Deposit ? sourceAmount : destinationAmount)
+        print(headTransaction!.amount)
+        try headTransaction!.save(withDatabase)
         
-        for index in members.indices {
-            // If member is nil then create a new backing transaction
-            var member: Transaction = members[index].transaction ?? Transaction.newSplitMember(head: head)
-            
-            // Ensure that the members adhear to the state rules
-            member.status = head.status
-            member.date = head.date
-            member.sourcePosted = head.sourcePosted
-            member.destPosted = head.destPosted
-            member.group = head.group
-            member.payee = head.payee
-            
-            if type == .Deposit {
-                member.sourceID = selectedBucket!.id!
-                member.destID = members[index].bucket!.id!
+        for var member in members {
+            if member.editStatus == .databaseDeleted {
+                // The schema uses cascade delete to automatically clean up the leftover split transaction entry
+                try member.transaction.delete(withDatabase)
             } else {
-                member.sourceID = members[index].bucket!.id!
-                member.destID = selectedBucket!.id!
+                let destinationAmount = abs(NSDecimalNumber(string: member.amount).multiplying(by: 100).intValue)
+                let sourceAmount = destinationAmount * -1
+                
+                member.transaction.status = status
+                member.transaction.entryDate = date
+                member.transaction.accountID = selectedAccount!.id!
+                
+                member.transaction.amount = (type == .Deposit ? destinationAmount : sourceAmount)
+                member.transaction.bucketID = member.bucket!.id!
+                member.transaction.memo = member.memo
+                
+                try member.transaction.save(withDatabase)
+                
+                if member.editStatus == .inMemory {
+                    // Create a split transaction record for this new transaction
+                    var splitMember = SplitTransaction(id: nil, transactionID: member.transaction.id!, splitHeadTransactionID: headTransaction!.id!, splitUUID: member.splitUUID)
+                    try splitMember.save(withDatabase)
+                }
             }
-            
-            member.amount = NSDecimalNumber(string: members[index].amount).multiplying(by: 100).intValue
-            member.memo = members[index].memo
-            
-            newSplit.append(member)
         }
         
-        try withDatabase.write { db in
-            // Delete any deleted split members
-            if !deletedMembers.isEmpty {
-                try withDatabase.deleteTransactions(db, ids: deletedMembers)
-            }
-            
-            // Update the remaining
-            try withDatabase.saveTransactions(db, &newSplit)
+        if split == nil {
+            var splitHead = SplitTransaction(id: nil, transactionID: headTransaction!.id!, splitHeadTransactionID: headTransaction!.id!, splitUUID: splitUUID)
+            try splitHead.save(withDatabase)
         }
     }
 }

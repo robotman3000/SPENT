@@ -80,9 +80,9 @@ struct TransactionContextMenu: View {
 //                    context.present(FormKeys.documentList(context: context, transaction: model.transaction))
 //                }
             
-//            Button("Set Tags") {
-//                context.present(FormKeys.transactionTags(context: context, transaction: model.transaction))
-//            }
+            Button("Set Tags") {
+                context.present(FormKeys.transactionTags(context: context, transaction: model.transaction))
+            }
         }
         
         // Transaction Status
@@ -160,30 +160,3 @@ struct _NewTransactionContextButtons: View {
 //        TransactionRowContextMenu()
 //    }
 //}
-
-/*
- 
- struct TransactionContextMenu: View {
-     @EnvironmentObject var databaseManager: DatabaseManager
-     @ObservedObject var sheet: SheetContext
-     let forTransaction: TransactionInfo
-     
-     var body: some View {
-         if let transfer = forTransaction.transfer {
-             Button("Edit transfer") {
-                 sheet.present(FormKeys.transfer(context: sheet, transfer: transfer))
-             }
-         }
-             
-         Button("Edit transaction") {
-             sheet.present(FormKeys.transaction(context: sheet, transaction: forTransaction.transaction))
-         }
-         
-         Button("Delete transaction") {
-             databaseManager.action(.deleteTransaction(forTransaction.transaction), onSuccess: {
-                 print("deleted transaction successfully")
-             })
-         }
-     }
- }
- */

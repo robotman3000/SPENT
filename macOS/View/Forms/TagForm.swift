@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDB
 
 struct TagForm: View {
     @StateObject var model: TagFormModel
@@ -18,8 +19,6 @@ struct TagForm: View {
         Form {
             Section(){
                 TextField("Name", text: $model.name)
-                Toggle("Favorite", isOn: $model.isFavorite)
-                TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
             }
         }.frame(minWidth: 250, minHeight: 200)
         .formFooter(model, onSubmit: onSubmit, onCancel: onCancel)
@@ -30,17 +29,13 @@ class TagFormModel: FormModel {
     fileprivate var tag: Tag
     
     @Published var name: String
-    @Published var isFavorite: Bool
-    @Published var memo: String
     
     init(tag: Tag){
         self.tag = tag
         self.name = tag.name
-        self.isFavorite = tag.isFavorite
-        self.memo = tag.memo
     }
     
-    func loadState(withDatabase: DatabaseStore) throws {}
+    func loadState(withDatabase: Database) throws {}
     
     func validate() throws {
         if name.isEmpty {
@@ -48,16 +43,8 @@ class TagFormModel: FormModel {
         }
     }
     
-    func submit(withDatabase: DatabaseStore) throws {
+    func submit(withDatabase: Database) throws {
         tag.name = name
-        tag.isFavorite = isFavorite
-        tag.memo = memo
-        try withDatabase.write({ db in
-            try withDatabase.saveTag(db, &tag)
-        })
-    }
-    
-    func isNew() -> Bool {
-        return tag.id == nil
+        try tag.save(withDatabase)
     }
 }

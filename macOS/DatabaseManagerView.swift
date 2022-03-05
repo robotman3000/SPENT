@@ -20,6 +20,11 @@ struct DatabaseManagerView: View {
                 Label("Templates", systemImage: "paper")
                 Text("Templates")
             }
+            
+            TagManagerView().tabItem {
+                Label("Tags", systemImage: "tag")
+                Text("Tags")
+            }
         }.frame(minWidth: 300, minHeight: 300).padding()
     }
 }

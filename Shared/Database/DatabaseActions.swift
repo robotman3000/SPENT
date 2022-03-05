@@ -13,7 +13,9 @@ enum DatabaseActions: DatabaseAction {
     case deleteTransaction(Transaction)
     case deleteSplitTransaction(SplitTransaction)
     case deleteBucket(Bucket)
+    case deleteTag(Tag)
     case setTransactionsStatus(Transaction.StatusTypes, [Transaction])
+    case setTransactionTags(Transaction, [Tag])
     
     func execute(db: Database) throws {
         switch self {
@@ -25,8 +27,12 @@ enum DatabaseActions: DatabaseAction {
             try deleteSplitTransaction(db, split)
         case let .deleteBucket(bucket):
             try deleteBucket(db, bucket)
+        case let .deleteTag(tag):
+            try deleteTag(db, tag)
         case let .setTransactionsStatus(toStatus, forTransactions):
             try setTransactionsStatus(db, toStatus, forTransactions)
+        case let .setTransactionTags(transaction, tags):
+            try setTransactionTags(db, transaction, tags)
         }
     }
 }
@@ -59,12 +65,24 @@ extension DatabaseActions {
         try bucket.delete(db)
     }
     
+    private func deleteTag(_ db: Database, _ tag: Tag) throws {
+        try tag.delete(db)
+    }
+    
     private func setTransactionsStatus(_ db: Database, _ toStatus: Transaction.StatusTypes, _ forTransactions: [Transaction]) throws {
         for var transaction in forTransactions {
             //TODO: What if the transaction is actually a transfer?
             transaction.status = toStatus
             try transaction.save(db)
         }
+    }
+    
+    private func setTransactionTags(_ db: Database, _ forTransaction: Transaction, _ withTags: [Tag]) throws {
+        try TransactionTagMapping.filter(TransactionTagMapping.Columns.transactionID == forTransaction.id!).deleteAll(db)
+        try withTags.forEach({ tag in
+            var tTag = TransactionTagMapping(id: nil, transactionID: forTransaction.id!, tagID: tag.id!)
+            try tTag.save(db)
+        })
     }
 }
 

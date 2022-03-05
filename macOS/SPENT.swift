@@ -63,6 +63,9 @@ struct SPENT: App {
                     Button("Split Transaction"){
                         sheetContext.present(FormKeys.splitTransaction(context: sheetContext, split: nil))
                     }
+                    Button("Tag"){
+                        sheetContext.present(FormKeys.tag(context: sheetContext, tag: nil))
+                    }
                 }
             }
             

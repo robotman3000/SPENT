@@ -7,6 +7,8 @@
 
 import Foundation
 import GRDB
+import GRDBQuery
+import Combine
 
 struct Tag: Identifiable, Codable, Hashable {
     var id: Int64?
@@ -31,4 +33,16 @@ extension Tag: FetchableRecord, MutablePersistableRecord {
 
 extension Tag {
     static let transactions = hasMany(Transaction.self, through: hasMany(TransactionTagMapping.self), using: TransactionTagMapping.transaction)
+}
+
+struct AllTags: Queryable {
+    static var defaultValue: [Tag] { [] }
+    func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[Tag], Error> {
+        ValueObservation
+            .tracking(Tag.fetchAll)
+            // The `.immediate` scheduling feeds the view right on subscription,
+            // and avoids an initial rendering with an empty list:
+            .publisher(in: dbQueue, scheduling: .immediate)
+            .eraseToAnyPublisher()
+    }
 }

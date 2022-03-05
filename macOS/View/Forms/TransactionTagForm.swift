@@ -6,8 +6,7 @@
 //
 
 import SwiftUI
-
-import SwiftUI
+import GRDB
 
 struct TransactionTagForm: View {
     @StateObject var model: TransactionTagFormModel
@@ -35,18 +34,16 @@ class TransactionTagFormModel: FormModel {
         self.transaction = transaction
     }
     
-    func loadState(withDatabase: DatabaseStore) throws {
-        let tags = withDatabase.database?.resolve(transaction.tags) ?? []
+    func loadState(withDatabase: Database) throws {
+        let tags = try transaction.tags.fetchAll(withDatabase)
         self.tags = Set(tags)
-        choices = withDatabase.database?.resolve(Tag.all()) ?? []
+        choices = try Tag.all().fetchAll(withDatabase)
     }
     
     func validate() throws {}
     
-    func submit(withDatabase: DatabaseStore) throws {
-        try withDatabase.write { db in
-            try withDatabase.setTransactionTags(db, transaction: transaction, tags: Array(tags))
-        }
+    func submit(withDatabase: Database) throws {
+        try DatabaseActions.setTransactionTags(transaction, Array(tags)).execute(db: withDatabase)
     }
 }
 

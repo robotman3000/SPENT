@@ -323,6 +323,7 @@ struct TransactionInfo: Decodable, FetchableRecord {
     var transfer: Transfer?
     var split: SplitTransaction?
     var runningBalance: AccountRunningBalance
+    var tags: [Tag]
     
     var type: Transaction.TransType {
         if split != nil {
@@ -342,6 +343,6 @@ struct TransactionInfo: Decodable, FetchableRecord {
     //var transType: TransactionType
     
     private enum CodingKeys: String, CodingKey {
-        case transaction, account = "Account", bucket = "Bucket", runningBalance, transfer, split
+        case transaction, account = "Account", bucket = "Bucket", runningBalance, transfer, split, tags = "Tags"
     }
 }

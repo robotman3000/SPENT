@@ -15,20 +15,14 @@ struct TransactionTagMapping: Identifiable, Codable, Hashable {
 }
 
 extension TransactionTagMapping {
-    static let transaction = belongsTo(Transaction.self, key: "TransactionID")
+    static let transaction = belongsTo(Transaction.self)
     var transaction: QueryInterfaceRequest<Transaction> {
-        guard id != nil else {
-            return Transaction.none()
-        }
-        return Transaction.filter(id: transactionID)
+        request(for: TransactionTagMapping.transaction)
     }
     
-    static let tag = belongsTo(Tag.self, key: "TagID")
+    static let tag = belongsTo(Tag.self)
     var tag: QueryInterfaceRequest<Tag> {
-        guard id != nil else {
-            return Tag.none()
-        }
-        return Tag.filter(id: tagID)
+        request(for: TransactionTagMapping.tag)
     }
 }
 

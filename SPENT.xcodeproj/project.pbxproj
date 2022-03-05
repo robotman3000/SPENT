@@ -103,6 +103,9 @@
 		A2F18BD026B2E312009BA9F4 /* SplitTransactionMemberList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BCF26B2E312009BA9F4 /* SplitTransactionMemberList.swift */; };
 		A2F18BD226B496E1009BA9F4 /* SplitMemberForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F18BD126B496E1009BA9F4 /* SplitMemberForm.swift */; };
 		A2F593C627B81473001DEC64 /* TransferForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A217EAA226A9D7A0004388FF /* TransferForm.swift */; };
+		A2FB3D3327D3ACE2002BF38A /* TagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2487765265582A7002D7D9F /* TagForm.swift */; };
+		A2FB3D3427D3ACE5002BF38A /* TransactionTagForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2780859268BC63900CEA560 /* TransactionTagForm.swift */; };
+		A2FB3D3527D3B245002BF38A /* TagManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A257FC3426D7F62400383855 /* TagManagerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -690,6 +693,7 @@
 				A26591B427B31A430021EFB1 /* ImportView.swift in Sources */,
 				A20DCD84264EEB510070EB07 /* Tag.swift in Sources */,
 				A20DCD6A264EBC260070EB07 /* Transaction.swift in Sources */,
+				A2FB3D3327D3ACE2002BF38A /* TagForm.swift in Sources */,
 				A2EC30A2269743DC00781EC8 /* GlobalState.swift in Sources */,
 				A20901E527A35B4800A68252 /* Transfer.swift in Sources */,
 				A2449FF727206F13006B5185 /* DatabaseFilter.swift in Sources */,
@@ -702,6 +706,7 @@
 				A2BDCB1827BB162D001054B4 /* DatabaseManagerView.swift in Sources */,
 				A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */,
 				A20901F227A4800B00A68252 /* FormKeys.swift in Sources */,
+				A2FB3D3527D3B245002BF38A /* TagManagerView.swift in Sources */,
 				A2F18BD026B2E312009BA9F4 /* SplitTransactionMemberList.swift in Sources */,
 				A20901E227A341B600A68252 /* Account.swift in Sources */,
 				A25DC96427B56B8E00A6BCF4 /* BucketManagerView.swift in Sources */,
@@ -716,6 +721,7 @@
 				A20901F027A47FAE00A68252 /* JSONTransactionTemplate.swift in Sources */,
 				A2C8351126DAE8FE00819F35 /* DBFileBookmark.swift in Sources */,
 				A2B2869A27C1894100173FE7 /* BucketContextMenu.swift in Sources */,
+				A2FB3D3427D3ACE5002BF38A /* TransactionTagForm.swift in Sources */,
 				A2D4158327AA37AF008A6C52 /* DatabaseActions.swift in Sources */,
 				A2C2ADB326D58F0200537971 /* GeneralSettingsView.swift in Sources */,
 				A2B2869527C1817F00173FE7 /* TransactionListRow.swift in Sources */,

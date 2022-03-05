@@ -13,9 +13,9 @@ enum FormKeys: SheetProvider {
     case bucket(context: SheetContext, bucket: Bucket?)
     case transaction(context: SheetContext, transaction: Transaction?)
     case transfer(context: SheetContext, transfer: Transfer?)
-//    case tag(context: SheetContext, tag: Tag?)
+    case tag(context: SheetContext, tag: Tag?)
 //    //case schedule(context: SheetContext, schedule: Schedule?, onSubmit: (_ data: inout Schedule) -> Void)
-//    case transactionTags(context: SheetContext, transaction: Transaction)
+    case transactionTags(context: SheetContext, transaction: Transaction)
     case splitTransaction(context: SheetContext, split: SplitTransaction?)
 //    case transactionTemplate(context: SheetContext, template: DBTransactionTemplate?)
 //    case documentList(context: SheetContext, transaction: Transaction)
@@ -43,25 +43,22 @@ enum FormKeys: SheetProvider {
             let model = TransferFormModel(transfer: transfer)
             return TransferForm(model: model,
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
-//            
-//        case .tag(context: let context, tag: var tag):
-//            if tag == nil {
-//                tag = Tag.newTag()
-//            }
-//            return TagForm(model: TagFormModel(tag: tag!),
-//                           onSubmit: { context.dismiss() }, onCancel: { context.dismiss() } ).any()
-//            
+            
+        case let .tag(context: context, tag: tag):
+            return TagForm(model: TagFormModel(tag: tag ?? Tag(id: nil, name: "")),
+                           onSubmit: { context.dismiss() }, onCancel: { context.dismiss() } ).any()
+         
 ////        case .schedule(context: let context, schedule: var schedule, onSubmit: let handleSubmit):
 ////            if schedule == nil {
 ////                schedule = Schedule.newSchedule()
 ////            }
 ////            return EmptyView().any()
 ////            //return ScheduleForm(schedule: schedule!, onSubmit: handleSubmit, onCancel: { context.dismiss() }).padding().any()
-//            
-//        case .transactionTags(context: let context, transaction: let transaction):
-//            return TransactionTagForm(model: TransactionTagFormModel(transaction: transaction),
-//                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
-//            
+           
+        case let .transactionTags(context: context, transaction: transaction):
+            return TransactionTagForm(model: TransactionTagFormModel(transaction: transaction),
+                                onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
+         
 //        case .transactionTemplate(context: let context, template: var template):
 //            if template == nil {
 //                template = DBTransactionTemplate.newTemplate()

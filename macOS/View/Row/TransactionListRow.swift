@@ -80,13 +80,13 @@ struct TransactionListRow: View {
                     //}
                     Spacer()
                     //if showTags {
-//                        ForEach(model.tags, id: \.self){ tag in
-//                            Text(tag.name).fontWeight(.bold).frame(minWidth: 50)
-//                                .font(.caption)
-//                                .padding(3)
-//                                .background(Color.gray)
-//                                .cornerRadius(50)
-//                        }
+                        ForEach(model.tags, id: \.self){ tag in
+                            Text(tag.name).fontWeight(.bold).frame(minWidth: 50)
+                                .font(.caption)
+                                .padding(3)
+                                .background(Color.gray)
+                                .cornerRadius(50)
+                        }
                     //}
                 }
             //}

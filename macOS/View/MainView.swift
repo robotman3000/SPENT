@@ -47,14 +47,14 @@ struct MainView: View {
                     })
                 }
             }
+            .alert(context: alertContext)
+            .sheet(context: sheetContext)
             .frame(minWidth: 300)
             .navigationTitle("Accounts")
             
             EmptyView()
             EmptyView()
-            
-        }.alert(context: alertContext)
-        .sheet(context: sheetContext)
+        }
     }
     
     private func toggleSidebar() {

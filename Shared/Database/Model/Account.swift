@@ -99,7 +99,7 @@ struct AccountTransactions: Queryable {
                         left[Column("id")] == right[Column("TransactionID")]
                     })
                 
-                var request = Transaction.all()
+                var request = Transaction.all().order(sql: "IFNULL(PostDate, EntryDate) DESC")
                     .including(required: Transaction.account)
                     .including(optional: Transaction.bucket)
                     .including(all: Transaction.tags)

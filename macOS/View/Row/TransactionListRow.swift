@@ -11,6 +11,7 @@ import SwiftUIKit
 struct TransactionListRow: View {
     @Environment(\.colorScheme) var colorScheme
     let model: TransactionInfo
+    var showRunning: Bool = false
     
     var body: some View {
         VStack (alignment: .leading){
@@ -63,12 +64,12 @@ struct TransactionListRow: View {
                 }.frame(minWidth: 80, maxWidth: .infinity)
                 
                 // Running Balance
-                //if showRunning {
+                if showRunning {
                     HStack{
                         Spacer()
                         Text(model.runningBalance.runningBalance.currencyFormat)
                     }.frame(minWidth: 70, maxWidth: 80)
-                //}
+                }
             }
             
             // Tags and Memo

@@ -131,17 +131,19 @@ struct AccountTransactionsView: View {
         @ObservedObject var alertContext: AlertContext
         @Query<AccountTransactions> var transactions: [TransactionInfo]
         @State var selection = Set<Transaction>()
+        let showRunningBalance: Bool
         
         init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext){
             self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket), in: \.dbQueue)
             self.sheetContext = sheetContext
             self.alertContext = alertContext
+            self.showRunningBalance = forBucket == nil
         }
         
         var body: some View {
             List (selection: $selection){
                 ForEachEnumerated(transactions){ transactionInfo in
-                    TransactionListRow(model: transactionInfo)
+                    TransactionListRow(model: transactionInfo, showRunning: showRunningBalance)
                         .contextMenu {
                             TransactionContextMenu(context: sheetContext, aContext: alertContext, model: transactionInfo, selection: $selection)
                         }.tag(transactionInfo.transaction)

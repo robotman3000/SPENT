@@ -257,6 +257,7 @@ extension AccountInfo {
                 \(columnsOf: AccountBalance.self)
             FROM Accounts
             LEFT JOIN AccountBalance USING (id)
+            ORDER BY Accounts.Name ASC
             """
         return request.adapted { db in
             let adapters = try splittingRowAdapters(columnCounts: [

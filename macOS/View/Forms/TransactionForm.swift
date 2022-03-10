@@ -92,8 +92,8 @@ class TransactionFormModel: FormModel {
     }
     
     func loadState(withDatabase: Database) throws {
-        bucketChoices = try Bucket.all().fetchAll(withDatabase)
-        accountChoices = try Account.all().fetchAll(withDatabase)
+        bucketChoices = try Bucket.all().order(Bucket.Columns.name.asc).fetchAll(withDatabase)
+        accountChoices = try Account.all().order(Account.Columns.name.asc).fetchAll(withDatabase)
         
         if transaction.id != nil {
             selectedBucket = try transaction.bucket.fetchOne(withDatabase)

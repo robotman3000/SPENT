@@ -168,8 +168,8 @@ class SplitTransactionFormModel: FormModel {
         type = (headTransaction!.amount <= 0 ? .Deposit : .Withdrawal)
         
         // Fetch select box choices
-        accountChoices = try Account.all().fetchAll(withDatabase)
-        bucketChoices = try Bucket.all().fetchAll(withDatabase)
+        accountChoices = try Account.all().order(Bucket.Columns.name.asc).fetchAll(withDatabase)
+        bucketChoices = try Bucket.all().order(Account.Columns.name.asc).fetchAll(withDatabase)
     }
     
     func validate() throws {
@@ -203,9 +203,7 @@ class SplitTransactionFormModel: FormModel {
         headTransaction!.status = status
         headTransaction!.entryDate = date
         headTransaction!.accountID = selectedAccount!.id!
-        print(self.type)
         headTransaction!.amount = (type == .Deposit ? sourceAmount : destinationAmount)
-        print(headTransaction!.amount)
         try headTransaction!.save(withDatabase)
         
         for var member in members {

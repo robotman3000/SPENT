@@ -138,6 +138,7 @@ struct AccountBuckets: Queryable {
         ValueObservation
             .tracking(BucketBalance.all()
                         .filter(account: forAccount)
+                        .order(literal: "Buckets.Name ASC")
                         .including(required: BucketBalance.bucket)
                         .including(required: BucketBalance.account)
                         .asRequest(of: BucketInfo.self)

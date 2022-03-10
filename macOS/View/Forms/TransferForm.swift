@@ -86,7 +86,7 @@ class TransferFormModel: FormModel {
             destinationTransaction = Transaction(id: nil, status: .Uninitiated, amount: 0, payee: "", memo: "", entryDate: Date(), postDate: nil, bucketID: nil, accountID: -1)
         }
     
-        accountChoices = try Account.fetchAll(withDatabase)
+        accountChoices = try Account.order(Account.Columns.name.asc).fetchAll(withDatabase)
     }
     
     func validate() throws {

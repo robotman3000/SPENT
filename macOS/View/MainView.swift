@@ -104,6 +104,7 @@ struct AccountBucketsListView: View {
 }
 
 struct AccountTransactionsView: View {
+    @EnvironmentObject var globalState: GlobalState
     @StateObject var sheetContext = SheetContext()
     @StateObject var alertContext = AlertContext()
     let account: Account
@@ -120,7 +121,9 @@ struct AccountTransactionsView: View {
             AccountBucketToolbar(forAccount: account, withBucket: bucket)
             
             // Main transaction list
-            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext, alertContext: alertContext)
+            
+            //TODO: changing the value of showAllocations currently causes the entire transaction list to be recreated. Is there a more lightweight solution?
+            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext, alertContext: alertContext, showAllocations: globalState.showAllocations)
             
         }.sheet(context: sheetContext)
         .alert(context: alertContext)
@@ -133,8 +136,8 @@ struct AccountTransactionsView: View {
         @State var selection = Set<Transaction>()
         let showRunningBalance: Bool
         
-        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext){
-            self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket), in: \.dbQueue)
+        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext, showAllocations: Bool = true){
+            self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket, excludeAllocations: !showAllocations), in: \.dbQueue)
             self.sheetContext = sheetContext
             self.alertContext = alertContext
             self.showRunningBalance = forBucket == nil
@@ -156,6 +159,7 @@ struct AccountTransactionsView: View {
 }
 
 struct AccountBucketToolbar: View {
+    @EnvironmentObject var globalState: GlobalState
     let account: Account
     let bucket: Bucket?
     @Query<AccountBuckets> var buckets: [BucketInfo]
@@ -169,6 +173,8 @@ struct AccountBucketToolbar: View {
     
     var body: some View {
         HStack {
+            Toggle("Show Allocations", isOn: $globalState.showAllocations)
+            Spacer()
             if let bucket = bucket {
                 BucketBalanceView(forAccount: account, forBucket: bucket)
             }

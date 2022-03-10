@@ -65,6 +65,7 @@ struct AccountTransactions: Queryable {
     static var defaultValue: [TransactionInfo] { [] }
     let account: Account
     let bucket: Bucket?
+    var excludeAllocations: Bool = true
     func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[TransactionInfo], Error> {
         ValueObservation
             .tracking({ db in
@@ -110,6 +111,10 @@ struct AccountTransactions: Queryable {
                     .with(splitCTE)
                     .including(required: runningBalanceAssoc)
                     .filter(account: account)
+                
+                if excludeAllocations {
+                    request = request.filter(literal: "SplitUUID IS NULL")
+                }
                 
                 if let bucket = bucket {
                     request = request.filter(bucket: bucket)

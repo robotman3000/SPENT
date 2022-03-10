@@ -78,7 +78,7 @@ class TransactionFormModel: FormModel {
         self.transaction = transaction
         self.status = transaction.status
         self.entryDate = transaction.entryDate
-        self.postDate = transaction.entryDate
+        self.postDate = transaction.postDate ?? Date()
         self.memo = transaction.memo
         self.payee = transaction.payee
         

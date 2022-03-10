@@ -127,6 +127,13 @@ struct AccountTransactionsView: View {
             
         }.sheet(context: sheetContext)
         .alert(context: alertContext)
+        .toolbar {
+            ToolbarItem(placement: .automatic){
+                Button("New Transaction"){
+                    sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: nil))
+                }
+            }
+        }
     }
     
     private struct TransactionsList: View {

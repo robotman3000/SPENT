@@ -129,9 +129,17 @@ struct AccountTransactionsView: View {
         .alert(context: alertContext)
         .toolbar {
             ToolbarItem(placement: .automatic){
-                Button("New Transaction"){
-                    sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: nil))
-                }
+                Menu (content: {
+                    Button("New Transaction"){
+                        sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: nil))
+                    }
+                    Button("New Transfer"){
+                        sheetContext.present(FormKeys.transfer(context: sheetContext, transfer: nil))
+                    }
+                    Button("New Split"){
+                        sheetContext.present(FormKeys.splitTransaction(context: sheetContext, split: nil))
+                    }
+                }, label: { Image(systemName: "plus") })
             }
         }
     }

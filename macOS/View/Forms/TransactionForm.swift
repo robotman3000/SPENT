@@ -85,7 +85,7 @@ class TransactionFormModel: FormModel {
         if transaction.id != nil {
             // We have an existing transaction
             type = transaction.amount < 0 ? .Withdrawal : .Deposit
-            amount = NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue
+            amount = NSDecimalNumber(value: abs(transaction.amount)).dividing(by: 100).stringValue
         }
         
         //self.contextBucketID = contextBucket
@@ -119,7 +119,9 @@ class TransactionFormModel: FormModel {
         transaction.entryDate = entryDate
         transaction.payee = payee
         transaction.memo = memo
-        transaction.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
+        
+        let amount = abs(NSDecimalNumber(string: self.amount).multiplying(by: 100).intValue)
+        transaction.amount = type == .Withdrawal ? amount * -1 : amount
         
         transaction.bucketID = selectedBucket?.id
         transaction.accountID = selectedAccount!.id! // This must never be nil when we submit, so crash if it is

@@ -70,6 +70,10 @@ struct TransactionListRow: View {
                         Text(model.runningBalance.runningBalance.currencyFormat)
                     }.frame(minWidth: 70, maxWidth: 80)
                 }
+                
+                if model.transaction.status.rawValue > Transaction.StatusTypes.Posting.rawValue && model.transaction.postDate == nil {
+                    Image(systemName: "exclamationmark.triangle")
+                }
             }
             
             // Tags and Memo

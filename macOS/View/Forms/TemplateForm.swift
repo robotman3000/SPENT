@@ -7,7 +7,7 @@
 
 import SwiftUI
 import SwiftUIKit
-import AudioToolbox
+import GRDB
 
 struct TemplateForm: View {
     @StateObject var model: TemplateFormModel
@@ -25,15 +25,16 @@ struct TemplateForm: View {
             }
 
             Section(header:
-                        EnumPicker(label: "Type", selection: $model.type, enumCases: [.Deposit, .Withdrawal, .Transfer]).pickerStyle(SegmentedPickerStyle())
+                        EnumPicker(label: "Type", selection: $model.type, enumCases: [.Deposit, .Withdrawal]).pickerStyle(SegmentedPickerStyle())
             ){
-                if model.type == .Transfer || model.type == .Withdrawal {
-                    BucketPicker(label: "From", selection: $model.selectedSource, choices: model.bucketChoices)
+
+                HStack {
+                    BucketPicker(label: "Bucket", selection: $model.bucket, choices: model.bucketChoices)
+                    Button("X"){
+                        model.bucket = nil
+                    }
                 }
-                
-                if model.type == .Transfer || model.type == .Deposit {
-                    BucketPicker(label: "To", selection: $model.selectedDest, choices: model.bucketChoices)
-                }
+                AccountPicker(label: model.type == .Withdrawal ? "From" : "To", selection: $model.account, choices: model.accountChoices)
             }
             
             Section(){
@@ -47,13 +48,14 @@ struct TemplateForm: View {
 }
 
 class TemplateFormModel: FormModel {
-    fileprivate var dbtemplate: DBTransactionTemplate
+    fileprivate var dbtemplate: TransactionTemplate
     fileprivate var template: JSONTransactionTemplate = JSONTransactionTemplate(name: "", memo: "", amount: 0, tags: [])
     
     var bucketChoices: [Bucket] = []
+    var accountChoices: [Account] = []
     
-    @Published var selectedSource: Bucket?
-    @Published var selectedDest: Bucket?
+    @Published var account: Account?
+    @Published var bucket: Bucket?
     
     @Published var name: String = ""
     @Published var type: Transaction.TransType = .Withdrawal
@@ -61,12 +63,13 @@ class TemplateFormModel: FormModel {
     @Published var payee: String = ""
     @Published var memo: String = ""
     
-    init(template: DBTransactionTemplate){
+    init(template: TransactionTemplate){
         self.dbtemplate = template
     }
     
-    func loadState(withDatabase: DatabaseStore) throws {
-        bucketChoices = withDatabase.database?.resolve(Bucket.all()) ?? []
+    func loadState(withDatabase: Database) throws {
+        bucketChoices = try Bucket.fetchAll(withDatabase)
+        accountChoices = try Account.fetchAll(withDatabase)
         
         if let templateObj = try dbtemplate.decodeTemplate() {
             template = templateObj
@@ -74,40 +77,26 @@ class TemplateFormModel: FormModel {
             name = template.name
             payee = template.payee ?? ""
             memo = template.memo
-            type = ( (template.sourceBucket == template.destinationBucket) && template.sourceBucket != nil ? .Transfer : template.sourceBucket == nil ? .Deposit : .Withdrawal)
-            amount = NSDecimalNumber(value: template.amount).dividing(by: 100).stringValue
+            amount = NSDecimalNumber(value: abs(template.amount)).dividing(by: 100).stringValue
+            type = template.amount < 0 ? .Withdrawal : .Deposit
             
-            if let sourceID = template.sourceBucket {
-                selectedSource = withDatabase.database?.resolveOne(Bucket.filter(id: sourceID))
-            }
-            
-            if let destID = template.destinationBucket {
-                selectedDest = withDatabase.database?.resolveOne(Bucket.filter(id: destID))
-            }
+            account = template.account != nil ? try Account.fetchOne(withDatabase, id: template.account!) : nil
+            bucket = template.bucket != nil ? try Bucket.fetchOne(withDatabase, id: template.bucket!) : nil
         } else {
             throw FormInitializeError("Failed to decode template")
         }
     }
     
     func validate() throws {
-        if amount.isEmpty || (selectedSource == nil && selectedDest == nil) {
+        if amount.isEmpty || account == nil {
             throw FormValidationError("Form is missing required values")
         }
     }
     
-    func submit(withDatabase: DatabaseStore) throws {
+    func submit(withDatabase: Database) throws {
         template.name = name
-        
-        template.sourceBucket = selectedSource?.id
-        template.destinationBucket = selectedDest?.id
-        
-        if type == .Deposit {
-            template.sourceBucket = nil
-        }
-        
-        if type == .Withdrawal {
-            template.destinationBucket = nil
-        }
+        template.account = account?.id
+        template.bucket = bucket?.id
         
         if payee.isEmpty {
             template.payee = nil
@@ -116,15 +105,11 @@ class TemplateFormModel: FormModel {
         }
         
         template.memo = memo
-        
-        template.amount = NSDecimalNumber(string: amount).multiplying(by: 100).intValue
+        template.amount = abs(NSDecimalNumber(string: amount).multiplying(by: 100).intValue) * (type == .Withdrawal ? -1 : 1)
      
         let jsonData = try JSONEncoder().encode(template)
         dbtemplate.template = String(data: jsonData, encoding: .utf8) ?? ""
-        
-        try withDatabase.write { db in
-            try withDatabase.saveTemplate(db, &dbtemplate)
-        }
+        try dbtemplate.save(withDatabase)
     }
 }
 

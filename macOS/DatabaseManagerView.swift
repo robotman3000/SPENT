@@ -16,7 +16,7 @@ struct DatabaseManagerView: View {
                 Text("Buckets")
             }
             
-            Text("Template Manager").tabItem {
+            TemplateManagerView().tabItem {
                 Label("Templates", systemImage: "paper")
                 Text("Templates")
             }

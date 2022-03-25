@@ -82,11 +82,8 @@ class TransactionFormModel: FormModel {
         self.memo = transaction.memo
         self.payee = transaction.payee
         
-        if transaction.id != nil {
-            // We have an existing transaction
-            type = transaction.amount < 0 ? .Withdrawal : .Deposit
-            amount = NSDecimalNumber(value: abs(transaction.amount)).dividing(by: 100).stringValue
-        }
+        type = transaction.amount < 0 ? .Withdrawal : .Deposit
+        amount = NSDecimalNumber(value: abs(transaction.amount)).dividing(by: 100).stringValue
         
         //self.contextBucketID = contextBucket
     }
@@ -94,11 +91,9 @@ class TransactionFormModel: FormModel {
     func loadState(withDatabase: Database) throws {
         bucketChoices = try Bucket.all().order(Bucket.Columns.name.asc).fetchAll(withDatabase)
         accountChoices = try Account.all().order(Account.Columns.name.asc).fetchAll(withDatabase)
-        
-        if transaction.id != nil {
-            selectedBucket = try transaction.bucket.fetchOne(withDatabase)
-            selectedAccount = try transaction.account.fetchOne(withDatabase)
-        }
+
+        selectedBucket = try transaction.bucket.fetchOne(withDatabase)
+        selectedAccount = try transaction.account.fetchOne(withDatabase)
     }
     
     func validate() throws {

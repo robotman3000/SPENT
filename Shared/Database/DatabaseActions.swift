@@ -14,6 +14,7 @@ enum DatabaseActions: DatabaseAction {
     case deleteSplitTransaction(SplitTransaction)
     case deleteBucket(Bucket)
     case deleteTag(Tag)
+    case deleteTransactionTemplate(TransactionTemplate)
     case setTransactionsStatus(Transaction.StatusTypes, [Transaction])
     case setTransactionTags(Transaction, [Tag])
     
@@ -29,6 +30,8 @@ enum DatabaseActions: DatabaseAction {
             try deleteBucket(db, bucket)
         case let .deleteTag(tag):
             try deleteTag(db, tag)
+        case let .deleteTransactionTemplate(template):
+            try deleteTransactionTemplate(db, template)
         case let .setTransactionsStatus(toStatus, forTransactions):
             try setTransactionsStatus(db, toStatus, forTransactions)
         case let .setTransactionTags(transaction, tags):
@@ -67,6 +70,10 @@ extension DatabaseActions {
     
     private func deleteTag(_ db: Database, _ tag: Tag) throws {
         try tag.delete(db)
+    }
+    
+    private func deleteTransactionTemplate(_ db: Database, _ template: TransactionTemplate) throws {
+        try template.delete(db)
     }
     
     private func setTransactionsStatus(_ db: Database, _ toStatus: Transaction.StatusTypes, _ forTransactions: [Transaction]) throws {

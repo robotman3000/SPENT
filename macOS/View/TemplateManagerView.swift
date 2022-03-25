@@ -7,44 +7,55 @@
 
 import SwiftUI
 import SwiftUIKit
+import GRDBQuery
 
 struct TemplateManagerView: View {
-    @EnvironmentObject fileprivate var store: DatabaseStore
-    @State var selected: Int64?
-    @State var filter: String = ""
+    @Query(AllTemplates(), in: \.dbQueue) var templates: [TransactionTemplate]
+    @State var selected: TransactionTemplate? = nil as TransactionTemplate?
     @StateObject private var sheetContext = SheetContext()
-    @StateObject private var alertContext = AlertContext()
+    @StateObject private var aContext = AlertContext()
     
     var body: some View {
-        if store.database != nil {
-            VStack{
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button(action: {
-                            sheetContext.present(FormKeys.transactionTemplate(context: sheetContext, template: nil))
-                        }) {
-                            Image(systemName: "plus")
-                        }
-                        TextField("", text: $filter).disabled(true)
-                        Spacer()
+        VStack{
+            VStack {
+                HStack {
+                    Button(action: {
+                        sheetContext.present(FormKeys.transactionTemplate(context: sheetContext, template: nil))
+                    }) {
+                        Image(systemName: "plus")
                     }
                     Spacer()
-                }.height(32)
-                
-                QueryWrapperView(source: TemplateFilter()){ templateIDs in
-                    TemplateListView(ids: templateIDs)
                 }
-            }.sheet(context: sheetContext).alert(context: alertContext)
-        } else {
-            Text("No database is loaded")
+            }.padding()
+            
+            List(selection: $selected) {
+                ForEach(templates){ template in
+                    Text(template.getName()).contextMenu { ContextMenu(sheet: sheetContext, forTemplate: template) }.tag(template)
+                }
+            }
+        }.sheet(context: sheetContext).alert(context: aContext)
+    }
+    
+    private struct ContextMenu: View {
+        @EnvironmentObject var databaseManager: DatabaseManager
+        @ObservedObject var sheet: SheetContext
+        let forTemplate: TransactionTemplate
+        
+        var body: some View {
+            Button("Edit template") {
+                sheet.present(FormKeys.transactionTemplate(context: sheet, template: forTemplate))
+            }
+            Button("Delete template") {
+                databaseManager.action(.deleteTransactionTemplate(forTemplate), onSuccess: {
+                    print("deleted template successfully")
+                })
+            }
         }
     }
 }
 
-struct TemplateManagerView_Previews: PreviewProvider {
-    static var previews: some View {
-        TemplateManagerView()
-    }
-}
+//struct TemplateManagerView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        TemplateManagerView()
+//    }
+//}

@@ -7,6 +7,8 @@
 
 import Foundation
 import GRDB
+import Combine
+import GRDBQuery
 
 struct TransactionTemplate: Identifiable, Codable, Hashable {
     var id: Int64?
@@ -23,7 +25,7 @@ struct TransactionTemplate: Identifiable, Codable, Hashable {
     }
     
     private enum CodingKeys: String, CodingKey {
-        case id, template = "Template"
+        case id, template = "TemplateData"
     }
 }
 
@@ -58,4 +60,35 @@ extension TransactionTemplate {
         }
         return nil
     }
+    
+    func getName() -> String {
+        do {
+            let data = try decodeTemplate()
+            if let data = data {
+                return data.name
+            }
+        } catch {}
+        return "Decoding Error"
+    }
+    
+    func render() -> Transaction? {
+        do {
+            let data = try decodeTemplate()
+            return data?.renderTransaction(date: Date())
+        } catch {}
+        return nil
+    }
 }
+
+struct AllTemplates: Queryable {
+    static var defaultValue: [TransactionTemplate] { [] }
+    func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[TransactionTemplate], Error> {
+        ValueObservation
+            .tracking(TransactionTemplate.fetchAll)
+            // The `.immediate` scheduling feeds the view right on subscription,
+            // and avoids an initial rendering with an empty list:
+            .publisher(in: dbQueue, scheduling: .immediate)
+            .eraseToAnyPublisher()
+    }
+}
+

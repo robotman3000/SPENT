@@ -37,6 +37,8 @@
 		A2180BE827A8A7360040AC40 /* FormModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20C691B27330E5A002A87A3 /* FormModel.swift */; };
 		A2180BEA27A8B1030040AC40 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2180BE927A8B1030040AC40 /* DatabaseManager.swift */; };
 		A21C63D327074D36002D3084 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A21C63D227074D36002D3084 /* GRDB */; };
+		A22E625B27EE09B800C748BB /* TemplateForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C6270CEB55000C739F /* TemplateForm.swift */; };
+		A22E625C27EE0DDA00C748BB /* TemplateManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C8270CF320000C739F /* TemplateManagerView.swift */; };
 		A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* CurrencyText.swift */; };
 		A2448EC027ACD5B800530AE0 /* TransactionForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20DAF7A2671509B00347205 /* TransactionForm.swift */; };
 		A2448EC227ACDBD700530AE0 /* AccountPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2448EC127ACDBD700530AE0 /* AccountPicker.swift */; };
@@ -700,6 +702,7 @@
 				A26591B627B31D910021EFB1 /* ImportExportViewKeys.swift in Sources */,
 				A2448EC327AD910E00530AE0 /* CSVAgent.swift in Sources */,
 				A257FC3126D7ED7600383855 /* PreferenceKeys.swift in Sources */,
+				A22E625B27EE09B800C748BB /* TemplateForm.swift in Sources */,
 				A2780864268E4AF900CEA560 /* BucketPicker.swift in Sources */,
 				A276B57C26D887D3003C24E2 /* AppConfiguration.swift in Sources */,
 				A2A56736262747A8009C7E8C /* SplashView.swift in Sources */,
@@ -732,6 +735,7 @@
 				A2ECFBB027CFC827001937CF /* SplitTransactionForm.swift in Sources */,
 				A2F593C627B81473001DEC64 /* TransferForm.swift in Sources */,
 				A206D787267C111F00CB094D /* TransactionAttachmentMapping.swift in Sources */,
+				A22E625C27EE0DDA00C748BB /* TemplateManagerView.swift in Sources */,
 				A217EAA126A9CD57004388FF /* AlertKeys.swift in Sources */,
 				A2780867268E55F600CEA560 /* EnumPicker.swift in Sources */,
 				A20C691F273431B8002A87A3 /* Errors.swift in Sources */,

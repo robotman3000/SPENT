@@ -139,7 +139,25 @@ struct AccountTransactionsView: View {
                     Button("New Split"){
                         sheetContext.present(FormKeys.splitTransaction(context: sheetContext, split: nil))
                     }
+                    Divider()
+                    Menu(content: {
+                        TemplateButtonList(sheetContext: sheetContext)
+                    }, label: { Text("Templates") })
+                    
                 }, label: { Image(systemName: "plus") })
+            }
+        }
+    }
+    
+    private struct TemplateButtonList: View {
+        @Query(AllTemplates(), in: \.dbQueue) var templates: [TransactionTemplate]
+        @StateObject var sheetContext = SheetContext()
+        
+        var body: some View {
+            ForEach(templates) { template in
+                Button(template.getName()){
+                    sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: template.render()))
+                }
             }
         }
     }

@@ -14,18 +14,18 @@ struct JSONTransactionTemplate: Codable, DatabaseValueConvertible {
     var memo: String
     var payee: String?
     var amount: Int
-    var sourceBucket: Int64?
-    var destinationBucket: Int64?
+    var account: Int64?
+    var bucket: Int64?
     var tags: [String]
 }
 
 extension JSONTransactionTemplate {
-//    func renderTransaction(date: Date) -> Transaction {
-//        let transaction = Transaction(id: nil, status: .Uninitiated, date: date, sourcePosted: nil, destPosted: nil, amount: amount, sourceID: sourceBucket, destID: destinationBucket, memo: memo, payee: payee, group: nil, type: .Invalid)
-//        // TODO: Tags
-//        
-//        return transaction
-//    }
+    func renderTransaction(date: Date) -> Transaction {
+        let transaction = Transaction(id: nil, status: .Uninitiated, amount: amount, payee: payee ?? "", memo: memo, entryDate: date, postDate: nil, bucketID: bucket, accountID: account ?? -1)
+        // TODO: Tags
+        
+        return transaction
+    }
 }
 
 enum TemplateVersion: Int, Codable {

@@ -65,10 +65,12 @@ struct TransactionListRow: View {
                 
                 // Running Balance
                 if showRunning {
-                    HStack{
-                        Spacer()
-                        Text(model.runningBalance.runningBalance.currencyFormat)
-                    }.frame(minWidth: 70, maxWidth: 80)
+                    if let balance = model.runningBalance?.runningBalance {
+                        HStack{
+                            Spacer()
+                            Text(balance.currencyFormat)
+                        }.frame(minWidth: 70, maxWidth: 80)
+                    }
                 }
                 
                 if model.transaction.status.rawValue > Transaction.StatusTypes.Posting.rawValue && model.transaction.postDate == nil {

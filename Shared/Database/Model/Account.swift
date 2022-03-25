@@ -109,7 +109,7 @@ struct AccountTransactions: Queryable {
                     .with(runningBalanceCTE)
                     .including(optional: transferAssoc)
                     .with(splitCTE)
-                    .including(required: runningBalanceAssoc)
+                    .including(optional: runningBalanceAssoc)
                     .filter(account: account)
                 
                 if excludeAllocations {

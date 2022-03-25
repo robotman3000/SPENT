@@ -264,7 +264,13 @@ extension SPENTDatabaseDocument {
             // The running balance column for all transactions grouped by each account
             try db.execute(sql: """
             CREATE TEMPORARY VIEW "AccountRunningBalance" AS
-                SELECT SUM(Amount) OVER win1 AS "RunningBalance", AccountID, Id AS "TransactionID" FROM Transactions WINDOW win1 AS (PARTITION BY AccountID ROWS UNBOUNDED PRECEDING)
+                SELECT SUM(DailyChange) OVER win1 AS "RunningBalance", AccountID, TransactionID FROM (
+                    SELECT SUM(Amount) AS "DailyChange", PostDate, AccountID, Id AS "TransactionID" FROM Transactions
+                    WHERE PostDate IS NOT NULL
+                    AND Transactions.Id NOT IN (SELECT TransactionID FROM SplitTransactions)
+                    AND Transactions.Status IN (5, 6)
+                    GROUP BY AccountID, PostDate
+                ) WINDOW win1 AS (PARTITION BY AccountID ROWS UNBOUNDED PRECEDING)
             """)
             
             // The current balance of the accounts

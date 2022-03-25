@@ -348,7 +348,7 @@ struct BucketInfo: Decodable, FetchableRecord {
 //}
 
 struct AccountRunningBalance: Decodable, FetchableRecord, TableRecord {
-    let runningBalance: Int
+    let runningBalance: Int?
     let accountID: Int64
     let transactionID: Int64
 }
@@ -364,7 +364,7 @@ struct TransactionInfo: Decodable, FetchableRecord {
     var bucket: Bucket?
     var transfer: Transfer?
     var split: SplitTransaction?
-    var runningBalance: AccountRunningBalance
+    var runningBalance: AccountRunningBalance?
     var tags: [Tag]
     
     var type: Transaction.TransType {

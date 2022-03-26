@@ -149,6 +149,70 @@ extension Transaction {
     }
 }
 
+// Sorting enums
+extension Transaction {
+    enum Ordering: Int, Identifiable, CaseIterable, Stringable {
+        case byEntryDate
+        case byPostDate
+        case byPayee
+        case byMemo
+        case byBucket
+        case byAccount
+        case byStatus
+        case byAmount
+        
+        var id: Int { self.rawValue }
+        
+        func getStringName() -> String {
+            switch self {
+            case .byEntryDate: return "Entry Date"
+            case .byPostDate: return "Post Date"
+            case .byPayee: return "Payee"
+            case .byMemo: return "Memo"
+            case .byBucket: return "Bucket"
+            case .byAccount: return "Account"
+            case .byStatus: return "Status"
+            case .byAmount: return "Amount"
+            }
+        }
+        
+        func getOrdering(_ direction: OrderDirection = .ascending) -> SQLOrdering {
+            var column: Column
+            switch self {
+            case .byEntryDate: column = Transaction.Columns.entryDate
+            case .byPostDate: column = Transaction.Columns.postDate
+            case .byPayee: column = Transaction.Columns.payee
+            case .byMemo: column = Transaction.Columns.memo
+            case .byBucket: column = Transaction.Columns.bucket
+            case .byAccount: column = Transaction.Columns.account
+            case .byStatus: column = Transaction.Columns.status
+            case .byAmount: column = Transaction.Columns.amount
+            }
+            
+            switch direction {
+            case .ascending:
+                return column.asc
+            case .descending:
+                return column.desc
+            }
+        }
+    }
+
+    enum OrderDirection: String, Identifiable, CaseIterable, Stringable {
+        case ascending
+        case descending
+        
+        var id: String { self.rawValue }
+        
+        func getStringName() -> String {
+            switch self {
+            case .ascending: return "Ascending"
+            case .descending: return "Descending"
+            }
+        }
+    }
+}
+
 extension Transaction {
     static let bucket = belongsTo(Bucket.self)
     var bucket: QueryInterfaceRequest<Bucket> {

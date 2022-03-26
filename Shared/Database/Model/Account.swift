@@ -66,6 +66,9 @@ struct AccountTransactions: Queryable {
     let account: Account
     let bucket: Bucket?
     var excludeAllocations: Bool = true
+    var direction: Transaction.OrderDirection = .ascending
+    var ordering: Transaction.Ordering = .byPostDate
+    
     func publisher(in dbQueue: DatabaseQueue) -> AnyPublisher<[TransactionInfo], Error> {
         ValueObservation
             .tracking({ db in
@@ -119,6 +122,9 @@ struct AccountTransactions: Queryable {
                 if let bucket = bucket {
                     request = request.filter(bucket: bucket)
                 }
+                
+                request = request.order(ordering.getOrdering(direction))
+                
                 let result = try TransactionInfo.fetchAll(db, request)
                 return result
             })

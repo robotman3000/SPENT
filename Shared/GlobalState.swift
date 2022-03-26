@@ -15,8 +15,8 @@ class GlobalState: ObservableObject {
     
     @Published var showAllocations: Bool = true
     
-//    @Published var sorting = TransactionFilter.Ordering.byDate
-//    @Published var sortDirection = TransactionFilter.OrderDirection.descending
+    @Published var sorting = Transaction.Ordering.byPostDate
+    @Published var sortDirection = Transaction.OrderDirection.descending
     
     // Not able to be changed during runtime
     var debugMode: Bool = false

@@ -73,8 +73,12 @@ struct TransactionListRow: View {
                     }
                 }
                 
-                if model.transaction.status.rawValue > Transaction.StatusTypes.Posting.rawValue && model.transaction.postDate == nil {
-                    Image(systemName: "exclamationmark.triangle")
+                if model.transaction.status.rawValue > Transaction.StatusTypes.Posting.rawValue && model.split == nil && model.transaction.postDate == nil {
+                    Image(systemName: "exclamationmark.triangle").help("Post date is missing")
+                }
+                
+                if model.split != nil && model.transaction.postDate != nil {
+                    Image(systemName: "exclamationmark.triangle").help("Non-null post date")
                 }
             }
             

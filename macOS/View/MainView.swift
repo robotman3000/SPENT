@@ -159,6 +159,10 @@ struct AccountTransactionsView: View {
                     sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: template.render()))
                 }
             }
+            
+            if templates.isEmpty {
+                Text("No Templates").disabled(true)
+            }
         }
     }
     
@@ -170,6 +174,8 @@ struct AccountTransactionsView: View {
         let showRunningBalance: Bool
         
         init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext, showAllocations: Bool = true, orderBy: Transaction.Ordering, orderDirection: Transaction.OrderDirection){
+            selection = Set<Transaction>()
+            
             self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket, excludeAllocations: !showAllocations, direction: orderDirection, ordering: orderBy), in: \.dbQueue)
             self.sheetContext = sheetContext
             self.alertContext = alertContext
@@ -187,6 +193,30 @@ struct AccountTransactionsView: View {
             }.contextMenu {
                 _NewTransactionContextButtons(context: sheetContext, aContext: alertContext)
             }
+            TransactionInfoBar(selection: selection)
+        }
+    }
+    
+    private struct TransactionInfoBar: View {
+        let selection: Set<Transaction>
+        var selectionTotal: Int {
+            get {
+                var sum = 0
+                for item in selection {
+                    sum += item.amount
+                }
+                return sum
+            }
+        }
+        
+        var body: some View {
+            HStack{
+                // Selection Count
+                Text("\(selection.count) selected")
+                
+                // Selection Amount Sum
+                Text("Sum: \(selectionTotal.currencyFormat)")
+            }.padding()
         }
     }
 }
@@ -207,11 +237,10 @@ struct AccountBucketToolbar: View {
     var body: some View {
         HStack {
             Toggle("Show Allocations", isOn: $globalState.showAllocations)
-            Spacer()
             VStack {
                 EnumPicker(label: "Sort By", selection: $globalState.sorting, enumCases: [.byPostDate, .byEntryDate, .byAmount, .byBucket, .byMemo, .byPayee, .byStatus])
                 EnumPicker(label: "", selection: $globalState.sortDirection, enumCases: Transaction.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
-            }
+            }.frame(maxWidth: 200)
             //TextField("", text: $stringFilter)
             Spacer()
             if let bucket = bucket {

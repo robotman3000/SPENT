@@ -17,6 +17,7 @@ enum DatabaseActions: DatabaseAction {
     case deleteTransactionTemplate(TransactionTemplate)
     case setTransactionsStatus(Transaction.StatusTypes, [Transaction])
     case setTransactionTags(Transaction, [Tag])
+    case setTransactionPostDate(Date?, Transaction)
     
     func execute(db: Database) throws {
         switch self {
@@ -36,6 +37,8 @@ enum DatabaseActions: DatabaseAction {
             try setTransactionsStatus(db, toStatus, forTransactions)
         case let .setTransactionTags(transaction, tags):
             try setTransactionTags(db, transaction, tags)
+        case let .setTransactionPostDate(newDate, transaction):
+            try setTransactionPostDate(db, newDate, transaction)
         }
     }
 }
@@ -90,6 +93,12 @@ extension DatabaseActions {
             var tTag = TransactionTagMapping(id: nil, transactionID: forTransaction.id!, tagID: tag.id!)
             try tTag.save(db)
         })
+    }
+    
+    private func setTransactionPostDate(_ db: Database, _ toDate: Date?, _ forTransaction: Transaction) throws {
+        var transaction = forTransaction
+        transaction.postDate = toDate
+        try transaction.save(db)
     }
 }
 

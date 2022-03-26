@@ -83,27 +83,32 @@ struct TransactionContextMenu: View {
             Button("Set Tags") {
                 context.present(FormKeys.transactionTags(context: context, transaction: model.transaction))
             }
+            
+            Button("Clear Post Date") {
+                databaseManager.action(.setTransactionPostDate(nil, model.transaction))
+            }
         }
         
         // Transaction Status
         Section{
+            let array = selection.isEmpty ? [model.transaction] : Array(selection)
             Button("Close Selected"){
-                databaseManager.action(.setTransactionsStatus(.Reconciled, Array(selection).filter({ item in
+                databaseManager.action(.setTransactionsStatus(.Reconciled, Array(array).filter({ item in
                     item.status != .Void
                 })))
                 selection.removeAll()
             }
             Menu("Mark As"){
                 Button("Void"){
-                    databaseManager.action(.setTransactionsStatus(.Void, Array(selection)))
+                    databaseManager.action(.setTransactionsStatus(.Void, Array(array)))
                     selection.removeAll()
                 }
                 Button("Complete"){
-                    databaseManager.action(.setTransactionsStatus(.Complete, Array(selection)))
+                    databaseManager.action(.setTransactionsStatus(.Complete, Array(array)))
                     selection.removeAll()
                 }
                 Button("Reconciled"){
-                    databaseManager.action(.setTransactionsStatus(.Reconciled, Array(selection)))
+                    databaseManager.action(.setTransactionsStatus(.Reconciled, Array(array)))
                     selection.removeAll()
                 }
             }

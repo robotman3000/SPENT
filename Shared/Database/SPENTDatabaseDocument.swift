@@ -269,7 +269,7 @@ extension SPENTDatabaseDocument {
                     WHERE PostDate IS NOT NULL
                     AND Transactions.Id NOT IN (SELECT TransactionID FROM SplitTransactions)
                     AND Transactions.Status IN (5, 6)
-                    GROUP BY AccountID, PostDate
+                    GROUP BY AccountID, date(PostDate)
                 ) WINDOW win1 AS (PARTITION BY AccountID ROWS UNBOUNDED PRECEDING)
             """)
             

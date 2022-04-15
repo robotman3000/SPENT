@@ -284,8 +284,8 @@ struct BucketBalanceView: View {
     var body: some View {
         VStack {
             // Bucket posted and available balance
-            Text("Available: \(balance?.available.currencyFormat ?? "NIL")")
-            Text("Posted: \(balance?.posted.currencyFormat ?? "NIL")")
+            Text("Available: \(balance?.available.currencyFormat ?? "NIL")").foregroundColor(balance?.available ?? 0 < 0 ? .red : .black)
+            Text("Posted: \(balance?.posted.currencyFormat ?? "NIL")").foregroundColor(balance?.posted ?? 0 < 0 ? .red : .black)
             
             //count open(pending, submitted, complete), planned(uninit)
             

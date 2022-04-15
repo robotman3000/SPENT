@@ -12,6 +12,7 @@ struct TransactionListRow: View {
     @Environment(\.colorScheme) var colorScheme
     let model: TransactionInfo
     var showRunning: Bool = false
+    var showEntryDate: Bool = false
     
     var body: some View {
         VStack (alignment: .leading){
@@ -29,8 +30,12 @@ struct TransactionListRow: View {
                     
                 // Date
                 HStack {
-                    if let postDate = model.transaction.postDate  {
-                        Text(postDate.transactionFormat)
+                    if !showEntryDate {
+                        if let postDate = model.transaction.postDate  {
+                            Text(postDate.transactionFormat)
+                        } else {
+                            Text(model.transaction.entryDate.transactionFormat)
+                        }
                     } else {
                         Text(model.transaction.entryDate.transactionFormat)
                     }

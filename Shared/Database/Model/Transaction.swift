@@ -191,9 +191,9 @@ extension Transaction {
             
             switch direction {
             case .ascending:
-                return column.asc
+                return column.ascNullsLast
             case .descending:
-                return column.desc
+                return column.descNullsFirst
             }
         }
     }

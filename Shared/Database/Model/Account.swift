@@ -103,7 +103,7 @@ struct AccountTransactions: Queryable {
                         left[Column("id")] == right[Column("TransactionID")]
                     })
                 
-                var request = Transaction.all().order(sql: "IFNULL(PostDate, EntryDate) DESC")
+                var request = Transaction.all()
                     .including(required: Transaction.account)
                     .including(optional: Transaction.bucket)
                     .including(all: Transaction.tags)
@@ -123,7 +123,11 @@ struct AccountTransactions: Queryable {
                     request = request.filter(bucket: bucket)
                 }
                 
-                request = request.order(ordering.getOrdering(direction))
+                if ordering != .byPostDate {
+                    request = request.order(ordering.getOrdering(direction))
+                } else {
+                    request = request.order(sql: "IFNULL(PostDate, EntryDate) " + (direction == .ascending ? "ASC" : "DESC"))
+                }
                 
                 let result = try TransactionInfo.fetchAll(db, request)
                 return result

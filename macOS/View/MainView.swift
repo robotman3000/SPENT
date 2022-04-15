@@ -172,6 +172,7 @@ struct AccountTransactionsView: View {
         @Query<AccountTransactions> var transactions: [TransactionInfo]
         @State var selection = Set<Transaction>()
         let showRunningBalance: Bool
+        let showEntryDate: Bool
         
         init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext, showAllocations: Bool = true, orderBy: Transaction.Ordering, orderDirection: Transaction.OrderDirection){
             selection = Set<Transaction>()
@@ -180,12 +181,13 @@ struct AccountTransactionsView: View {
             self.sheetContext = sheetContext
             self.alertContext = alertContext
             self.showRunningBalance = forBucket == nil && orderBy == .byPostDate
+            self.showEntryDate = orderBy == .byEntryDate
         }
         
         var body: some View {
             List (selection: $selection){
                 ForEachEnumerated(transactions){ transactionInfo in
-                    TransactionListRow(model: transactionInfo, showRunning: showRunningBalance)
+                    TransactionListRow(model: transactionInfo, showRunning: showRunningBalance, showEntryDate: showEntryDate)
                         .contextMenu {
                             TransactionContextMenu(context: sheetContext, aContext: alertContext, model: transactionInfo, selection: $selection)
                         }.tag(transactionInfo.transaction)

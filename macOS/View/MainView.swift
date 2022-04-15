@@ -123,7 +123,7 @@ struct AccountTransactionsView: View {
             // Main transaction list
             
             //TODO: changing the value of showAllocations currently causes the entire transaction list to be recreated. Is there a more lightweight solution?
-            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext, alertContext: alertContext, showAllocations: globalState.showAllocations, orderBy: globalState.sorting, orderDirection: globalState.sortDirection)
+            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext, alertContext: alertContext, showAllocations: globalState.showAllocations, showCleared: globalState.showCleared, orderBy: globalState.sorting, orderDirection: globalState.sortDirection)
             
         }.sheet(context: sheetContext)
         .alert(context: alertContext)
@@ -174,10 +174,10 @@ struct AccountTransactionsView: View {
         let showRunningBalance: Bool
         let showEntryDate: Bool
         
-        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext, showAllocations: Bool = true, orderBy: Transaction.Ordering, orderDirection: Transaction.OrderDirection){
+        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext, showAllocations: Bool = true, showCleared: Bool = true, orderBy: Transaction.Ordering, orderDirection: Transaction.OrderDirection){
             selection = Set<Transaction>()
             
-            self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket, excludeAllocations: !showAllocations, direction: orderDirection, ordering: orderBy), in: \.dbQueue)
+            self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket, excludeAllocations: !showAllocations, excludeCleared: !showCleared, direction: orderDirection, ordering: orderBy), in: \.dbQueue)
             self.sheetContext = sheetContext
             self.alertContext = alertContext
             self.showRunningBalance = forBucket == nil && orderBy == .byPostDate
@@ -238,7 +238,10 @@ struct AccountBucketToolbar: View {
     
     var body: some View {
         HStack {
-            Toggle("Show Allocations", isOn: $globalState.showAllocations)
+            VStack(alignment: .leading) {
+                Toggle("Show Allocations", isOn: $globalState.showAllocations)
+                Toggle("Show Cleared", isOn: $globalState.showCleared)
+            }
             VStack {
                 EnumPicker(label: "Sort By", selection: $globalState.sorting, enumCases: [.byPostDate, .byEntryDate, .byAmount, .byBucket, .byMemo, .byPayee, .byStatus])
                 EnumPicker(label: "", selection: $globalState.sortDirection, enumCases: Transaction.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())

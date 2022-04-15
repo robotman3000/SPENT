@@ -14,6 +14,7 @@ class GlobalState: ObservableObject {
     @Published var showMemo: Bool = false
     
     @Published var showAllocations: Bool = true
+    @Published var showCleared: Bool = true
     
     @Published var sorting = Transaction.Ordering.byPostDate
     @Published var sortDirection = Transaction.OrderDirection.descending

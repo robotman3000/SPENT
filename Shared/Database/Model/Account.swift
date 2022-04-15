@@ -66,6 +66,7 @@ struct AccountTransactions: Queryable {
     let account: Account
     let bucket: Bucket?
     var excludeAllocations: Bool = true
+    var excludeCleared: Bool = true
     var direction: Transaction.OrderDirection = .ascending
     var ordering: Transaction.Ordering = .byPostDate
     
@@ -117,6 +118,10 @@ struct AccountTransactions: Queryable {
                 
                 if excludeAllocations {
                     request = request.filter(literal: "SplitUUID IS NULL")
+                }
+
+                if excludeCleared {
+                    request = request.filter(literal: "Status NOT IN (0, 6)")
                 }
                 
                 if let bucket = bucket {

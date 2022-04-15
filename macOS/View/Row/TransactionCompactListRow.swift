@@ -1,19 +1,18 @@
 //
-//  TransactionListRow.swift
-//  SPENT
+//  TransactionCompactListRow.swift
+//  macOS
 //
-//  Created by Eric Nims on 10/16/21.
+//  Created by Eric Nims on 4/15/22.
 //
 
 import SwiftUI
 import SwiftUIKit
 
-struct TransactionListRow: View {
+struct TransactionCompactListRow: View {
     @Environment(\.colorScheme) var colorScheme
     let model: TransactionInfo
     var showRunning: Bool = false
     var showEntryDate: Bool = false
-    var rowMode: TransactionRowMode = .full
     
     var body: some View {
         VStack (alignment: .leading){
@@ -69,10 +68,6 @@ struct TransactionListRow: View {
                     Spacer()
                 }.frame(minWidth: 80, maxWidth: .infinity)
                 
-                if rowMode == .compact {
-                    TransactionTagsView(tags: model.tags)
-                }
-                
                 // Running Balance
                 if showRunning {
                     if let balance = model.runningBalance?.runningBalance {
@@ -90,31 +85,6 @@ struct TransactionListRow: View {
                 if model.split != nil && model.transaction.postDate != nil {
                     Image(systemName: "exclamationmark.triangle").help("Non-null post date")
                 }
-            }
-            
-            // Tags and Memo
-            if rowMode == .full {
-                HStack {
-                    Text("").frame(width: 16)
-                    Text(model.transaction.memo).help(model.transaction.memo)
-                    Spacer()
-                    TransactionTagsView(tags: model.tags)
-                }
-            }
-            Spacer()
-        }
-    }
-    
-    private struct TransactionTagsView: View {
-        let tags: [Tag]
-        
-        var body: some View {
-            ForEach(tags, id: \.self){ tag in
-                Text(tag.name).fontWeight(.bold).frame(minWidth: 50)
-                    .font(.caption)
-                    .padding(3)
-                    .background(Color.gray)
-                    .cornerRadius(50)
             }
         }
     }

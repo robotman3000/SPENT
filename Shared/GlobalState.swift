@@ -18,6 +18,7 @@ class GlobalState: ObservableObject {
     
     @Published var sorting = Transaction.Ordering.byPostDate
     @Published var sortDirection = Transaction.OrderDirection.descending
+    @Published var transRowMode = TransactionRowMode.full
     
     // Not able to be changed during runtime
     var debugMode: Bool = false

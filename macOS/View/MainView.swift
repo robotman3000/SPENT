@@ -123,7 +123,7 @@ struct AccountTransactionsView: View {
             // Main transaction list
             
             //TODO: changing the value of showAllocations currently causes the entire transaction list to be recreated. Is there a more lightweight solution?
-            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext, alertContext: alertContext, showAllocations: globalState.showAllocations, showCleared: globalState.showCleared, orderBy: globalState.sorting, orderDirection: globalState.sortDirection)
+            TransactionsList(forAccount: account, forBucket: bucket, sheetContext: sheetContext, alertContext: alertContext, showAllocations: globalState.showAllocations, showCleared: globalState.showCleared, rowMode: globalState.transRowMode, orderBy: globalState.sorting, orderDirection: globalState.sortDirection)
             
         }.sheet(context: sheetContext)
         .alert(context: alertContext)
@@ -173,8 +173,9 @@ struct AccountTransactionsView: View {
         @State var selection = Set<Transaction>()
         let showRunningBalance: Bool
         let showEntryDate: Bool
+        let rowMode: TransactionRowMode
         
-        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext, showAllocations: Bool = true, showCleared: Bool = true, orderBy: Transaction.Ordering, orderDirection: Transaction.OrderDirection){
+        init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext, showAllocations: Bool = true, showCleared: Bool = true, rowMode: TransactionRowMode, orderBy: Transaction.Ordering, orderDirection: Transaction.OrderDirection){
             selection = Set<Transaction>()
             
             self._transactions = Query(AccountTransactions(account: forAccount, bucket: forBucket, excludeAllocations: !showAllocations, excludeCleared: !showCleared, direction: orderDirection, ordering: orderBy), in: \.dbQueue)
@@ -182,12 +183,13 @@ struct AccountTransactionsView: View {
             self.alertContext = alertContext
             self.showRunningBalance = forBucket == nil && orderBy == .byPostDate
             self.showEntryDate = orderBy == .byEntryDate
+            self.rowMode = rowMode
         }
         
         var body: some View {
             List (selection: $selection){
                 ForEachEnumerated(transactions){ transactionInfo in
-                    TransactionListRow(model: transactionInfo, showRunning: showRunningBalance, showEntryDate: showEntryDate)
+                    TransactionListRow(model: transactionInfo, showRunning: showRunningBalance, showEntryDate: showEntryDate, rowMode: rowMode)
                         .contextMenu {
                             TransactionContextMenu(context: sheetContext, aContext: alertContext, model: transactionInfo, selection: $selection)
                         }.tag(transactionInfo.transaction)
@@ -246,12 +248,29 @@ struct AccountBucketToolbar: View {
                 EnumPicker(label: "Sort By", selection: $globalState.sorting, enumCases: [.byPostDate, .byEntryDate, .byAmount, .byBucket, .byMemo, .byPayee, .byStatus])
                 EnumPicker(label: "", selection: $globalState.sortDirection, enumCases: Transaction.OrderDirection.allCases).pickerStyle(SegmentedPickerStyle())
             }.frame(maxWidth: 200)
+            VStack {
+                EnumPicker(label: "", selection: $globalState.transRowMode, enumCases: TransactionRowMode.allCases).pickerStyle(SegmentedPickerStyle())
+            }.frame(maxWidth: 200)
             //TextField("", text: $stringFilter)
             Spacer()
             if let bucket = bucket {
                 BucketBalanceView(forAccount: account, forBucket: bucket)
             }
         }.padding()
+    }
+}
+
+enum TransactionRowMode: String, Identifiable, CaseIterable, Stringable {
+    case compact
+    case full
+    
+    var id: String { self.rawValue }
+    
+    func getStringName() -> String {
+        switch self {
+        case .compact: return "Compact"
+        case .full: return "Full"
+        }
     }
 }
 

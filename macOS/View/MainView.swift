@@ -100,6 +100,11 @@ struct AccountBucketsListView: View {
             }
         }.sheet(context: sheetContext)
         .alert(context: alertContext)
+        .contextMenu {
+            Button("New Bucket"){
+                sheetContext.present(FormKeys.bucket(context: sheetContext, bucket: nil))
+            }
+        }
     }
 }
 

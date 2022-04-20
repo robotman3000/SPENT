@@ -15,6 +15,9 @@ struct BucketContextMenu: View {
     let forBucket: Bucket
     
     var body: some View {
+        Button("New Bucket"){
+            sheet.present(FormKeys.bucket(context: sheet, bucket: nil))
+        }
         Button("Edit \(forBucket.name)") {
             sheet.present(FormKeys.bucket(context: sheet, bucket: forBucket))
         }

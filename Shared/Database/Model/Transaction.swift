@@ -83,6 +83,18 @@ extension Transaction {
             }
         }
         
+        func getHighlightColor() -> Color? {
+            switch self {
+            case .Void: return .black.opacity(0.3)
+            case .Uninitiated: return .green.opacity(0.3)
+            case .Scheduled: return .red.opacity(0.3)
+            case .Submitted: return .red.opacity(0.3)
+            case .Posting: return .red.opacity(0.3)
+            case .Complete: return nil
+            case .Reconciled: return nil
+            }
+        }
+        
         func getIconView() -> some View {
             VStack (alignment: .center){
                 switch self {

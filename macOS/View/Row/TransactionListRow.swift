@@ -14,7 +14,7 @@ struct TransactionListRow: View {
     var showRunning: Bool = false
     var showEntryDate: Bool = false
     var rowMode: TransactionRowMode = .full
-    
+
     var body: some View {
         VStack (alignment: .leading){
             Spacer()
@@ -102,7 +102,7 @@ struct TransactionListRow: View {
                 }
             }
             Spacer()
-        }
+        }.listRowBackground(model.transaction.status.getHighlightColor())
     }
     
     private struct TransactionTagsView: View {

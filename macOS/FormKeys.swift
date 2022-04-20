@@ -30,7 +30,7 @@ enum FormKeys: SheetProvider {
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
         case let .bucket(context: context, bucket: bucket):
-            return BucketForm(model: BucketFormModel(bucket: bucket ?? Bucket(name: "")),
+            return BucketForm(model: BucketFormModel(bucket: bucket ?? Bucket(name: "", category: "")),
                                 onSubmit: { context.dismiss() }, onCancel: { context.dismiss() }).any()
             
         case let .transaction(context: context, transaction: transaction):

@@ -13,6 +13,7 @@ import Combine
 struct Bucket: Identifiable, Codable, Hashable {
     var id: Int64?
     var name: String
+    var category: String
 }
 
 // SQL Database support
@@ -28,6 +29,7 @@ extension Bucket: FetchableRecord, MutablePersistableRecord {
     enum Columns {
         static let id = Column(CodingKeys.id)
         static let name = Column(CodingKeys.name)
+        static let category = Column(CodingKeys.category)
     }
 }
 

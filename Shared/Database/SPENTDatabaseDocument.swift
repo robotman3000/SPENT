@@ -213,6 +213,13 @@ extension SPENTDatabaseDocument {
                 t.column("dbVersion", .integer).notNull()
             }
         }
+        
+        migrator.registerMigration("Bucket Categories", migrate: { db in
+            try db.alter(table: "Buckets") { t in
+                t.add(column: "Category", .text).notNull().defaults(to: "")
+            }
+        })
+        
         // Migrations for future application versions will be inserted here:
         // migrator.registerMigration(...) { db in
         //     ...

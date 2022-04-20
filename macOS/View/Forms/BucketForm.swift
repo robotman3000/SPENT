@@ -18,6 +18,7 @@ struct BucketForm: View {
     var body: some View {
         Form {
             TextField("Name", text: $model.name)
+            TextField("Category", text: $model.category)
         }.frame(minWidth: 250, minHeight: 250)
         .formFooter(model, onSubmit: onSubmit, onCancel: onCancel)
     }
@@ -27,10 +28,12 @@ class BucketFormModel: FormModel {
     fileprivate var bucket: Bucket
     
     @Published var name: String
+    @Published var category: String
     
     init(bucket: Bucket){
         self.bucket = bucket
         self.name = bucket.name
+        self.category = bucket.category
     }
     
     func loadState(withDatabase: Database) throws {}
@@ -43,6 +46,7 @@ class BucketFormModel: FormModel {
     
     func submit(withDatabase: Database) throws {
         bucket.name = name
+        bucket.category = category
         try bucket.save(withDatabase)
     }
 }

@@ -89,7 +89,7 @@ struct AccountBucketsListView: View {
                 Text("All Transactions")
             }
             Divider()
-            ForEachEnumerated(buckets){ bucketInfo in
+            ForEachEnumerated(buckets.sorted(by: { a, b in a.bucket.category < b.bucket.category })){ bucketInfo in
                 NavigationLink(destination: AccountTransactionsView(forAccount: account, withBucket: selection), tag: bucketInfo.bucket, selection: $selection){
                     BucketListRow(forBucket: bucketInfo)
                 }.contextMenu { BucketContextMenu(sheet: sheetContext, alertContext: alertContext, forBucket: bucketInfo.bucket) }

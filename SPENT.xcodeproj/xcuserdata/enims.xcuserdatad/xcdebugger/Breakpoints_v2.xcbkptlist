@@ -165,10 +165,26 @@
             filePath = "macOS/View/MainView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "177"
-            endingLineNumber = "177"
-            landmarkName = "init(forAccount:forBucket:sheetContext:alertContext:showAllocations:orderBy:orderDirection:)"
+            startingLineNumber = "184"
+            endingLineNumber = "184"
+            landmarkName = "init(forAccount:forBucket:sheetContext:alertContext:showAllocations:showCleared:rowMode:orderBy:orderDirection:)"
             landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "968B401E-6E33-4155-AC95-5B0D359B549F"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "macOS/View/Row/BucketListRow.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "15"
+            endingLineNumber = "15"
+            landmarkName = "body"
+            landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

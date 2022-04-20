@@ -47,14 +47,13 @@ struct Internal_SplitTransactionMemberListRow: View {
             VStack (alignment: .leading) {
                 HStack{
                     Text("\(model.bucket?.name ?? "NIL")")
-                    Spacer()
                 }
                 HStack{
                     // TODO: Properly format the currency value
                     Text("$\(model.amount)").bold()
                     Spacer()
                 }
-            }.frame(width: 150)
+            }.frame(minWidth: 50)
             Text(model.memo).help(model.memo)
             Spacer()
         }

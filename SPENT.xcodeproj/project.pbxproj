@@ -36,6 +36,7 @@
 		A2180BE827A8A7360040AC40 /* FormModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20C691B27330E5A002A87A3 /* FormModel.swift */; };
 		A2180BEA27A8B1030040AC40 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2180BE927A8B1030040AC40 /* DatabaseManager.swift */; };
 		A21C63D327074D36002D3084 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A21C63D227074D36002D3084 /* GRDB */; };
+		A22B027F2809E1A600A265F5 /* TransactionCompactListRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A22B027E2809E1A600A265F5 /* TransactionCompactListRow.swift */; };
 		A22E625B27EE09B800C748BB /* TemplateForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C6270CEB55000C739F /* TemplateForm.swift */; };
 		A22E625C27EE0DDA00C748BB /* TemplateManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A230C0C8270CF320000C739F /* TemplateManagerView.swift */; };
 		A24033C22672898C00A2B5CE /* CurrencyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24033C12672898C00A2B5CE /* CurrencyText.swift */; };
@@ -126,6 +127,7 @@
 		A217EAA226A9D7A0004388FF /* TransferForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferForm.swift; sourceTree = "<group>"; };
 		A2180BE927A8B1030040AC40 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		A22727DF2616341900814696 /* iOS.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = iOS.entitlements; sourceTree = "<group>"; };
+		A22B027E2809E1A600A265F5 /* TransactionCompactListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCompactListRow.swift; sourceTree = "<group>"; };
 		A230C0C6270CEB55000C739F /* TemplateForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateForm.swift; sourceTree = "<group>"; };
 		A230C0C8270CF320000C739F /* TemplateManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateManagerView.swift; sourceTree = "<group>"; };
 		A24033C12672898C00A2B5CE /* CurrencyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyText.swift; sourceTree = "<group>"; };
@@ -286,6 +288,7 @@
 			children = (
 				A27C1D8D271B846B005339FD /* AccountListRow.swift */,
 				A27C1D90271B847C005339FD /* TransactionListRow.swift */,
+				A22B027E2809E1A600A265F5 /* TransactionCompactListRow.swift */,
 				A2B2869727C1890100173FE7 /* BucketListRow.swift */,
 			);
 			path = Row;
@@ -604,6 +607,7 @@
 				A2D4158527AA3F96008A6C52 /* SPENTDatabaseDocument.swift in Sources */,
 				A257FC3926D800EE00383855 /* WindowKeys.swift in Sources */,
 				A2C2ADBA26D5AF2E00537971 /* ImportAgent.swift in Sources */,
+				A22B027F2809E1A600A265F5 /* TransactionCompactListRow.swift in Sources */,
 				A2448EC227ACDBD700530AE0 /* AccountPicker.swift in Sources */,
 				A2676C8E267E367900548F06 /* TableToolbar.swift in Sources */,
 				A2AA52B827A0980E0061F761 /* ExportAgent.swift in Sources */,
@@ -720,7 +724,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.robotman3000.SPENT;
 				PRODUCT_NAME = SPENT;
 				SDKROOT = macosx;
@@ -750,7 +754,7 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = io.github.robotman3000.SPENT;
 				PRODUCT_NAME = SPENT;
 				SDKROOT = macosx;

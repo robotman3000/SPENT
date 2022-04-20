@@ -20,7 +20,7 @@ struct TagForm: View {
             Section(){
                 TextField("Name", text: $model.name)
             }
-        }.frame(minWidth: 250, minHeight: 200)
+        }.frame(minWidth: 250, minHeight: 20)
         .formFooter(model, onSubmit: onSubmit, onCancel: onCancel)
     }
 }

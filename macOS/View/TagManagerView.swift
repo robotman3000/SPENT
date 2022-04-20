@@ -26,7 +26,7 @@ struct TagManagerView: View {
                     }) {
                         Image(systemName: "plus")
                     }
-                    TextField("", text: $filter)
+                    //TextField("", text: $filter)
                     Spacer()
                 }
             }.padding()

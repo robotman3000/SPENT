@@ -102,7 +102,7 @@ class TransactionFormModel: FormModel {
         }
 
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            if postDate < entryDate {
+            if Calendar.current.compare(entryDate, to: postDate, toGranularity: .day) == .orderedDescending {
                 // Prevent a transaction that posted before it was made
                 throw FormValidationError("A transaction cannot have a post date before it's entry date")
             }

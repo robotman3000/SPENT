@@ -103,7 +103,8 @@ class TransferFormModel: FormModel {
         }
 
         if status.rawValue >= Transaction.StatusTypes.Complete.rawValue {
-            if postDate < entryDate {
+            // If entryDate is greater than postDate
+            if Calendar.current.compare(entryDate, to: postDate, toGranularity: .day) == .orderedDescending {
                 // Prevent a transaction that posted before it was made
                 throw FormValidationError("A transfer cannot have a post date before it's creation date")
             }

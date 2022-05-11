@@ -40,6 +40,13 @@ struct TransactionContextMenu: View {
             }
             
         }
+        
+        // Copy/Paste Options
+        Section {
+            Button("Duplicate") {
+                databaseManager.action(.duplicateTransaction(model.transaction))
+            }.disabled(model.type != .Deposit && model.type != .Withdrawal)
+        }
 
         // Metadata
         Section {

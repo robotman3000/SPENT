@@ -19,6 +19,8 @@ enum DatabaseActions: DatabaseAction {
     case setTransactionTags(Transaction, [Tag])
     case setTransactionPostDate(Date?, Transaction)
     
+    case duplicateTransaction(Transaction)
+    
     func execute(db: Database) throws {
         switch self {
         case let .deleteAccount(account):
@@ -39,6 +41,8 @@ enum DatabaseActions: DatabaseAction {
             try setTransactionTags(db, transaction, tags)
         case let .setTransactionPostDate(newDate, transaction):
             try setTransactionPostDate(db, newDate, transaction)
+        case let .duplicateTransaction(transaction):
+            try duplicate(db, transaction)
         }
     }
 }
@@ -99,6 +103,12 @@ extension DatabaseActions {
         var transaction = forTransaction
         transaction.postDate = toDate
         try transaction.save(db)
+    }
+    
+    private func duplicate(_ db: Database, _ transaction: Transaction) throws {
+        var trans = transaction // Clone the struct (Structs are value types not reference types)
+        trans.id = nil // Clear the id so it will get a new one
+        try trans.save(db)
     }
 }
 

@@ -10,5 +10,5 @@ import Foundation
 enum PreferenceKeys: String {
     case debugMode
     case debugQueries
-    case databaseBookmark
+    case highlightRowsByStatus
 }

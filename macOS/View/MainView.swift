@@ -179,6 +179,7 @@ struct AccountTransactionsView: View {
         let showRunningBalance: Bool
         let showEntryDate: Bool
         let rowMode: TransactionRowMode
+        let highlightRows = UserDefaults.standard.bool(forKey: PreferenceKeys.highlightRowsByStatus.rawValue)
         
         init(forAccount: Account, forBucket: Bucket?, sheetContext: SheetContext, alertContext: AlertContext, showAllocations: Bool = true, showCleared: Bool = true, rowMode: TransactionRowMode, orderBy: Transaction.Ordering, orderDirection: Transaction.OrderDirection){
             selection = Set<Transaction>()
@@ -194,7 +195,8 @@ struct AccountTransactionsView: View {
         var body: some View {
             List (selection: $selection){
                 ForEachEnumerated(transactions){ transactionInfo in
-                    TransactionListRow(model: transactionInfo, showRunning: showRunningBalance, showEntryDate: showEntryDate, rowMode: rowMode)
+                    
+                    TransactionListRow(model: transactionInfo, showRunning: showRunningBalance, showEntryDate: showEntryDate, rowMode: rowMode, enableHighlight: highlightRows)
                         .contextMenu {
                             TransactionContextMenu(context: sheetContext, aContext: alertContext, model: transactionInfo, selection: $selection)
                         }.tag(transactionInfo.transaction)

@@ -1,5 +1,5 @@
 //
-//  DatabaseActions.swift
+//  DatabaseAction.swift
 //  macOS
 //
 //  Created by Eric Nims on 2/1/22.
@@ -8,56 +8,85 @@
 import Foundation
 import GRDB
 
-enum DatabaseActions: DatabaseAction {
-    case deleteAccount(Account)
-    case deleteTransaction(Transaction)
-    case deleteSplitTransaction(SplitTransaction)
-    case deleteBucket(Bucket)
-    case deleteTag(Tag)
-    case deleteTransactionTemplate(TransactionTemplate)
-    case setTransactionsStatus(Transaction.StatusTypes, [Transaction])
-    case setTransactionTags(Transaction, [Tag])
-    case setTransactionPostDate(Date?, Transaction)
+protocol DatabaseAction {
+    func execute(db: Database) throws
+}
+
+class BaseDatabaseAction: DatabaseAction {
+    func execute(db: Database) throws {}
     
-    case duplicateTransaction(Transaction)
+    func undo(db: Database) throws {}
+}
+
+class DuplicateTransactionAction: BaseDatabaseAction {
+    let transaction: Transaction
     
-    func execute(db: Database) throws {
-        switch self {
-        case let .deleteAccount(account):
-            try deleteAccount(db, account)
-        case let .deleteTransaction(transaction):
-            try deleteTransaction(db, transaction)
-        case let .deleteSplitTransaction(split):
-            try deleteSplitTransaction(db, split)
-        case let .deleteBucket(bucket):
-            try deleteBucket(db, bucket)
-        case let .deleteTag(tag):
-            try deleteTag(db, tag)
-        case let .deleteTransactionTemplate(template):
-            try deleteTransactionTemplate(db, template)
-        case let .setTransactionsStatus(toStatus, forTransactions):
-            try setTransactionsStatus(db, toStatus, forTransactions)
-        case let .setTransactionTags(transaction, tags):
-            try setTransactionTags(db, transaction, tags)
-        case let .setTransactionPostDate(newDate, transaction):
-            try setTransactionPostDate(db, newDate, transaction)
-        case let .duplicateTransaction(transaction):
-            try duplicate(db, transaction)
-        }
+    init(transaction: Transaction){
+        self.transaction = transaction
+    }
+    
+    override func execute(db: Database) throws {
+        var trans = transaction // Clone the struct (Structs are value types not reference types)
+        trans.id = nil // Clear the id so it will get a new one
+        try trans.save(db)
     }
 }
 
-extension DatabaseActions {
-    private func deleteAccount(_ db: Database, _ account: Account) throws {
-        try account.delete(db)
+class DeleteAccountAction: BaseDatabaseAction {
+    let account: Account
+    
+    init(account: Account){
+        self.account = account
     }
     
-    private func deleteTransaction(_ db: Database, _ transaction: Transaction) throws {
+    override func execute(db: Database) throws {
+        try account.delete(db)
+    }
+}
+
+class DeleteBucketAction: BaseDatabaseAction {
+    let bucket: Bucket
+    
+    init(bucket: Bucket){
+        self.bucket = bucket
+    }
+    
+    override func execute(db: Database) throws {
+        try bucket.delete(db)
+    }
+}
+
+class DeleteTransactionAction: BaseDatabaseAction {
+    let transaction: Transaction
+    
+    init(transaction: Transaction){
+        self.transaction = transaction
+    }
+    
+    override func execute(db: Database) throws {
         //TODO: What if the transaction is actually a transfer?
         try transaction.delete(db)
     }
+}
 
-    private func deleteSplitTransaction(_ db: Database, _ split: SplitTransaction) throws {
+class DeleteTransferAction: BaseDatabaseAction {
+    let transfer: Transfer
+    
+    init(transfer: Transfer){
+        self.transfer = transfer
+    }
+    
+    //TODO: Impl execute
+}
+
+class DeleteSplitTransactionAction: BaseDatabaseAction {
+    let split: SplitTransaction
+    
+    init(split: SplitTransaction){
+        self.split = split
+    }
+    
+    override func execute(db: Database) throws {
         // Fetch all the split transaction records with the same uuid
         let splits = try SplitTransaction.filter(SplitTransaction.Columns.splitUUID == split.splitUUID.uuidString).fetchAll(db)
         
@@ -70,48 +99,81 @@ extension DatabaseActions {
         // Delete the transactions
         try Transaction.filter(ids: transactionIDs).deleteAll(db)
     }
+}
+
+class DeleteTagAction: BaseDatabaseAction {
+    let tag: Tag
     
-    private func deleteBucket(_ db: Database, _ bucket: Bucket) throws {
-        try bucket.delete(db)
+    init(tag: Tag){
+        self.tag = tag
     }
     
-    private func deleteTag(_ db: Database, _ tag: Tag) throws {
+    override func execute(db: Database) throws {
         try tag.delete(db)
     }
     
-    private func deleteTransactionTemplate(_ db: Database, _ template: TransactionTemplate) throws {
-        try template.delete(db)
+}
+
+class DeleteTransactionTemplateAction: BaseDatabaseAction {
+    let template: TransactionTemplate
+    
+    init(template: TransactionTemplate){
+        self.template = template
     }
     
-    private func setTransactionsStatus(_ db: Database, _ toStatus: Transaction.StatusTypes, _ forTransactions: [Transaction]) throws {
+    override func execute(db: Database) throws {
+        try template.delete(db)
+    }
+}
+
+class SetTransactionsStatusAction: BaseDatabaseAction {
+    let forTransactions: [Transaction]
+    let toStatus: Transaction.StatusTypes
+    
+    init(status: Transaction.StatusTypes, transactions: [Transaction]){
+        self.forTransactions = transactions
+        self.toStatus = status
+    }
+    
+    override func execute(db: Database) throws {
         for var transaction in forTransactions {
             //TODO: What if the transaction is actually a transfer?
             transaction.status = toStatus
             try transaction.save(db)
         }
     }
+}
+
+class SetTransactionTagsAction: BaseDatabaseAction {
+    let forTransaction: Transaction
+    let withTags: [Tag]
     
-    private func setTransactionTags(_ db: Database, _ forTransaction: Transaction, _ withTags: [Tag]) throws {
+    init(transaction: Transaction, tags: [Tag]){
+        self.forTransaction = transaction
+        self.withTags = tags
+    }
+    
+    override func execute(db: Database) throws {
         try TransactionTagMapping.filter(TransactionTagMapping.Columns.transactionID == forTransaction.id!).deleteAll(db)
         try withTags.forEach({ tag in
             var tTag = TransactionTagMapping(id: nil, transactionID: forTransaction.id!, tagID: tag.id!)
             try tTag.save(db)
         })
     }
+}
+
+class SetTransactionPostDateAction: BaseDatabaseAction {
+    let forTransaction: Transaction
+    let toDate: Date?
     
-    private func setTransactionPostDate(_ db: Database, _ toDate: Date?, _ forTransaction: Transaction) throws {
+    init(transaction: Transaction, date: Date?){
+        self.forTransaction = transaction
+        self.toDate = date
+    }
+    
+    override func execute(db: Database) throws {
         var transaction = forTransaction
         transaction.postDate = toDate
         try transaction.save(db)
     }
-    
-    private func duplicate(_ db: Database, _ transaction: Transaction) throws {
-        var trans = transaction // Clone the struct (Structs are value types not reference types)
-        trans.id = nil // Clear the id so it will get a new one
-        try trans.save(db)
-    }
-}
-
-protocol DatabaseAction {
-    func execute(db: Database) throws
 }

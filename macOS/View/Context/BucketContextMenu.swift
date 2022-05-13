@@ -24,7 +24,7 @@ struct BucketContextMenu: View {
         Button("Delete \(forBucket.name)") {
             sheet.present(FormKeys.confirmDelete(context: sheet, message: "",
                 onConfirm: {
-                    databaseManager.action(.deleteBucket(forBucket),
+                databaseManager.action(DeleteBucketAction(bucket: forBucket),
                     onSuccess: { print("deleted bucket successfully") },
                     onError: { error in alertContext.present(AlertKeys.databaseError(message: error.localizedDescription ))} )
             }))

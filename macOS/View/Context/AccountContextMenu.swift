@@ -26,7 +26,7 @@ struct AccountContextMenu: View {
         Button("Delete \(forAccount.name)"){
             context.present(FormKeys.confirmDelete(context: context, message: "",
                 onConfirm: {
-                    databaseManager.action(.deleteAccount(forAccount),
+                databaseManager.action(DeleteAccountAction(account: forAccount),
                     onSuccess: { print("deleted account successfully") },
                     onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))} )
             }))

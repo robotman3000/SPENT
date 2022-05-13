@@ -49,7 +49,7 @@ struct TagManagerView: View {
                 sheet.present(FormKeys.tag(context: sheet, tag: forTag))
             }
             Button("Delete \(forTag.name)") {
-                databaseManager.action(.deleteTag(forTag), onSuccess: {
+                databaseManager.action(DeleteTagAction(tag: forTag), onSuccess: {
                     print("deleted tag successfully")
                 })
             }

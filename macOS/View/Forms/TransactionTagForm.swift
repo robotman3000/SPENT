@@ -43,7 +43,7 @@ class TransactionTagFormModel: FormModel {
     func validate() throws {}
     
     func submit(withDatabase: Database) throws {
-        try DatabaseActions.setTransactionTags(transaction, Array(tags)).execute(db: withDatabase)
+        try SetTransactionTagsAction(transaction: transaction, tags: Array(tags)).execute(db: withDatabase)
     }
 }
 

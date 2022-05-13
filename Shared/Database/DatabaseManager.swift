@@ -15,7 +15,7 @@ class DatabaseManager: ObservableObject {
         self.database = dbQueue
     }
 
-    func action(_ action: DatabaseActions, onSuccess: () -> Void = {}, onError: (_: Error) -> Void = {_ in}) {
+    func action(_ action: DatabaseAction, onSuccess: () -> Void = {}, onError: (_: Error) -> Void = {_ in}) {
         self.action(actions: [action], onSuccess: onSuccess, onError: onError)
     }
     
@@ -34,6 +34,42 @@ class DatabaseManager: ObservableObject {
         } catch {
             print(error)
             onError(error)
+        }
+        //undoableAction(actions: actions, undoManager: nil, onSuccess: onSuccess, onError: onError)
+    }
+    
+    func undoableAction(_ action: BaseDatabaseAction, _ undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_: Error) -> Void = {_ in}) {
+        self.undoableAction(actions: [action], undoManager: undoManager, onSuccess: onSuccess, onError: onError)
+    }
+    
+    func undoableAction(action: BaseDatabaseAction, undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_: Error) -> Void = {_ in}) {
+        self.undoableAction(actions: [action], undoManager: undoManager, onSuccess: onSuccess, onError: onError)
+    }
+    
+    func undoableAction(actions: [BaseDatabaseAction], undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_ error: Error) -> Void = {_ in}) {
+        
+        do {
+            try self.database.write { db in
+                undoManager?.beginUndoGrouping()
+                for action in actions {
+                    undoManager?.registerUndo(withTarget: action) {
+                        print("Undoing action")
+                        do {
+                            try $0.undo(db: db)
+                        } catch {
+                            print(error)
+                            assert(false, "Warning: Errors occured while performing an undo operation!!!")
+                        }
+                    }
+                    try action.execute(db: db)
+                }
+                undoManager?.endUndoGrouping()
+            }
+            onSuccess()
+        } catch {
+            print(error)
+            onError(error)
+            undoManager?.removeAllActions()
         }
     }
 }

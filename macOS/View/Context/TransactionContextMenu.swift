@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 
 struct TransactionContextMenu: View {
     @EnvironmentObject var databaseManager: DatabaseManager
+    @Environment(\.undoManager) var undoManager
     @ObservedObject var context: SheetContext
     @ObservedObject var aContext: AlertContext
     let model: TransactionInfo
@@ -44,7 +45,7 @@ struct TransactionContextMenu: View {
         // Copy/Paste Options
         Section {
             Button("Duplicate") {
-                databaseManager.action(.duplicateTransaction(model.transaction))
+                databaseManager.undoableAction(DuplicateTransactionAction(transaction: model.transaction), undoManager)
             }.disabled(model.type != .Deposit && model.type != .Withdrawal)
         }
 
@@ -92,7 +93,7 @@ struct TransactionContextMenu: View {
             }
             
             Button("Clear Post Date") {
-                databaseManager.action(.setTransactionPostDate(nil, model.transaction))
+                databaseManager.action(SetTransactionPostDateAction(transaction: model.transaction, date: nil))
             }
         }
         
@@ -100,22 +101,22 @@ struct TransactionContextMenu: View {
         Section{
             let array = selection.isEmpty ? [model.transaction] : Array(selection)
             Button("Close Selected"){
-                databaseManager.action(.setTransactionsStatus(.Reconciled, Array(array).filter({ item in
+                databaseManager.action(SetTransactionsStatusAction(status: .Reconciled, transactions: Array(array).filter({ item in
                     item.status != .Void
                 })))
                 selection.removeAll()
             }
             Menu("Mark As"){
                 Button("Void"){
-                    databaseManager.action(.setTransactionsStatus(.Void, Array(array)))
+                    databaseManager.action(SetTransactionsStatusAction(status: .Void, transactions: Array(array)))
                     selection.removeAll()
                 }
                 Button("Complete"){
-                    databaseManager.action(.setTransactionsStatus(.Complete, Array(array)))
+                    databaseManager.action(SetTransactionsStatusAction(status: .Complete, transactions: Array(array)))
                     selection.removeAll()
                 }
                 Button("Reconciled"){
-                    databaseManager.action(.setTransactionsStatus(.Reconciled, Array(array)))
+                    databaseManager.action(SetTransactionsStatusAction(status: .Reconciled, transactions: Array(array)))
                     selection.removeAll()
                 }
             }
@@ -127,8 +128,8 @@ struct TransactionContextMenu: View {
             context.present(FormKeys.confirmDelete(context: context, message: "",
                 onConfirm: {
                     let deleteAction = model.split != nil && model.split!.transactionID == model.split!.splitHeadTransactionID ?
-                        DatabaseActions.deleteSplitTransaction(model.split!) :
-                        DatabaseActions.deleteTransaction(model.transaction)
+                        DeleteSplitTransactionAction(split: model.split!) :
+                        DeleteTransactionAction(transaction: model.transaction)
                     databaseManager.action(deleteAction,
                     onSuccess: { print("deleted transaction successfully") },
                     onError: { error in aContext.present(AlertKeys.databaseError(message: error.localizedDescription ))} )

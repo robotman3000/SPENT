@@ -46,7 +46,7 @@ struct TemplateManagerView: View {
                 sheet.present(FormKeys.transactionTemplate(context: sheet, template: forTemplate))
             }
             Button("Delete template") {
-                databaseManager.action(.deleteTransactionTemplate(forTemplate), onSuccess: {
+                databaseManager.action(DeleteTransactionTemplateAction(template: forTemplate), onSuccess: {
                     print("deleted template successfully")
                 })
             }

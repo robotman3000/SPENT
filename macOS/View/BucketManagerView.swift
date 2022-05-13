@@ -47,7 +47,7 @@ struct BucketManagerView: View {
                 sheet.present(FormKeys.bucket(context: sheet, bucket: forBucket))
             }
             Button("Delete \(forBucket.name)") {
-                databaseManager.action(.deleteBucket(forBucket), onSuccess: {
+                databaseManager.action(DeleteBucketAction(bucket: forBucket), onSuccess: {
                     print("deleted bucket successfully")
                 })
             }

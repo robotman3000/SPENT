@@ -9,6 +9,18 @@ import UniformTypeIdentifiers
 import SwiftUI
 import GRDB
 
+private struct DatabaseQueueKey: EnvironmentKey {
+    /// The default dbQueue is an empty in-memory database
+    static var defaultValue: DatabaseQueue { DatabaseQueue() }
+}
+
+extension EnvironmentValues {
+    var dbQueue: DatabaseQueue {
+        get { self[DatabaseQueueKey.self] }
+        set { self[DatabaseQueueKey.self] = newValue }
+    }
+}
+
 extension UTType {
     static var spentDatabase: UTType {
         UTType(exportedAs: "io.github.robotman3000.spent-database")

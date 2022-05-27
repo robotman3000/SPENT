@@ -14,6 +14,12 @@ struct Bucket: Identifiable, Codable, Hashable {
     var id: Int64?
     var name: String
     var category: String
+    
+    var displayName: String {
+        get {
+            return (category.isEmpty ? "" : category + " > ") + name
+        }
+    }
 }
 
 // SQL Database support

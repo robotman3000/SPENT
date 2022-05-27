@@ -12,7 +12,7 @@ struct BucketListRow: View {
     
     var body: some View {
         HStack {
-            Text((forBucket.bucket.category.isEmpty ? "" : forBucket.bucket.category + " > ") + forBucket.bucket.name)
+            Text(forBucket.bucket.displayName)
             Spacer()
             Text(forBucket.balance.available.currencyFormat).foregroundColor(forBucket.balance.available < 0 ? .red : .gray)
         }

@@ -21,7 +21,7 @@ struct BucketPicker: View {
                     Text("").tag(nil as Bucket?)
                 }
                 ForEach(choices, id: \.id) { bucket in
-                    Text(bucket.name).tag(bucket as Bucket?)
+                    Text(bucket.displayName).tag(bucket as Bucket?)
                 }
             }
         } else {

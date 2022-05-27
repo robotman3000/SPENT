@@ -54,7 +54,7 @@ struct TransactionListRow: View {
                 HStack {
                     VStack{
                         HStack {
-                            Text(model.bucket?.name ?? "No Bucket")
+                            Text(model.bucket?.displayName ?? "No Bucket")
                                 .foregroundColor(.gray)
                                 .font(.subheadline)
                                 .fontWeight(.medium)

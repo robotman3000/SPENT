@@ -31,7 +31,7 @@ struct BucketManagerView: View {
             
             List(selection: $selected) {
                 ForEach(buckets){ bucket in
-                    Text(bucket.name).contextMenu { ContextMenu(sheet: sheetContext, forBucket: bucket) }.tag(bucket)
+                    Text(bucket.displayName).contextMenu { ContextMenu(sheet: sheetContext, forBucket: bucket) }.tag(bucket)
                 }
             }
         }.sheet(context: sheetContext).alert(context: aContext)

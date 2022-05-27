@@ -10,12 +10,13 @@
 			<key>CFBundleTypeName</key>
 			<string>SPENT Database</string>
 			<key>LSHandlerRank</key>
-			<string>Default</string>
+			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>io.github.robotman3000.spent-database</string>
 			</array>
 		</dict>
+		<dict/>
 	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
@@ -68,8 +69,7 @@
 		<dict>
 			<key>UTTypeConformsTo</key>
 			<array>
-				<string>public.data</string>
-				<string>public.database</string>
+				<string>com.apple.package</string>
 			</array>
 			<key>UTTypeDescription</key>
 			<string>SPENT Database</string>

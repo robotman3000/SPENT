@@ -38,32 +38,23 @@ class DatabaseManager: ObservableObject {
         //undoableAction(actions: actions, undoManager: nil, onSuccess: onSuccess, onError: onError)
     }
     
-    func undoableAction(_ action: BaseDatabaseAction, _ undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_: Error) -> Void = {_ in}) {
+    func undoableAction(_ action: BaseUndoableDatabaseAction, _ undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_: Error) -> Void = {_ in}) {
         self.undoableAction(actions: [action], undoManager: undoManager, onSuccess: onSuccess, onError: onError)
     }
     
-    func undoableAction(action: BaseDatabaseAction, undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_: Error) -> Void = {_ in}) {
+    func undoableAction(action: BaseUndoableDatabaseAction, undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_: Error) -> Void = {_ in}) {
         self.undoableAction(actions: [action], undoManager: undoManager, onSuccess: onSuccess, onError: onError)
     }
     
-    func undoableAction(actions: [BaseDatabaseAction], undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_ error: Error) -> Void = {_ in}) {
+    func undoableAction(actions: [BaseUndoableDatabaseAction], undoManager: UndoManager?, onSuccess: () -> Void = {}, onError: (_ error: Error) -> Void = {_ in}) {
         
         do {
             try self.database.write { db in
-                undoManager?.beginUndoGrouping()
+                //undoManager?.beginUndoGrouping()
                 for action in actions {
-                    undoManager?.registerUndo(withTarget: action) {
-                        print("Undoing action")
-                        do {
-                            try $0.undo(db: db)
-                        } catch {
-                            print(error)
-                            assert(false, "Warning: Errors occured while performing an undo operation!!!")
-                        }
-                    }
-                    try action.execute(db: db)
+                    try action.executeUndoable(db: db, undoManager: undoManager)
                 }
-                undoManager?.endUndoGrouping()
+                //undoManager?.endUndoGrouping()
             }
             onSuccess()
         } catch {

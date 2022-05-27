@@ -12,13 +12,24 @@ protocol DatabaseAction {
     func execute(db: Database) throws
 }
 
-class BaseDatabaseAction: DatabaseAction {
-    func execute(db: Database) throws {}
-    
-    func undo(db: Database) throws {}
+protocol UndoableDatabaseAction {
+    func executeUndoable(db: Database, undoManager: UndoManager?) throws
+    func registerUndoWithMangager(undoManager: UndoManager?)
 }
 
-class DuplicateTransactionAction: BaseDatabaseAction {
+class BaseUndoableDatabaseAction: BaseDatabaseAction, UndoableDatabaseAction {
+    func executeUndoable(db: Database, undoManager: UndoManager?) throws {
+        self.registerUndoWithMangager(undoManager: undoManager)
+        try self.execute(db: db)
+    }
+    func registerUndoWithMangager(undoManager: UndoManager?) {}
+}
+
+class BaseDatabaseAction: DatabaseAction {
+    func execute(db: Database) throws {}
+}
+
+class DuplicateTransactionAction: BaseUndoableDatabaseAction {
     let transaction: Transaction
     
     init(transaction: Transaction){
@@ -29,6 +40,17 @@ class DuplicateTransactionAction: BaseDatabaseAction {
         var trans = transaction // Clone the struct (Structs are value types not reference types)
         trans.id = nil // Clear the id so it will get a new one
         try trans.save(db)
+    }
+    
+    override func registerUndoWithMangager(undoManager: UndoManager?) {
+        undoManager?.registerUndo(withTarget: self) {
+            $0.undo()
+        }
+        undoManager?.setActionName("Duplicate Transaction")
+    }
+    
+    private func undo(){
+        print("Undo action worked!")
     }
 }
 

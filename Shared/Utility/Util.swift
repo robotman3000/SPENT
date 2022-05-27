@@ -10,6 +10,7 @@ import GRDB
 import SwiftUI
 import UniformTypeIdentifiers
 
+#if os(macOS)
 func openFile(allowedTypes: [UTType], onConfirm: (URL) -> Void, onCancel: () -> Void){
     let panel = NSOpenPanel()
     panel.allowsMultipleSelection = false
@@ -64,6 +65,7 @@ func getURLByBookmark(_ data: Data, isStale: inout Bool) -> URL? {
     }
     return nil
 }
+#endif
 
 public func genHash(_ items: [AnyHashable]) -> Int{
     var hasher = Hasher()

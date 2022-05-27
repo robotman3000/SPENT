@@ -15,5 +15,5 @@ struct AccountBalance: Decodable, FetchableRecord, TableRecord {
     let allocatable: Int
     
 //    static let account = belongsTo(Account.self)
-//    static var databaseTableName: String = "AccountBalance"
+    static var databaseTableName: String = "AccountBalance"
 }

@@ -41,7 +41,7 @@ struct SPENTDatabaseDocument: FileDocument {
         let printQueries = UserDefaults.standard.bool(forKey: PreferenceKeys.debugQueries.rawValue)
         
         // TODO: Properly handle exceptions from here
-        manager = try! SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: printQueries, isNewDatabase: true)
+        manager = try! SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: true, isNewDatabase: true)
     }
     
     init(configuration: ReadConfiguration) throws {
@@ -52,7 +52,7 @@ struct SPENTDatabaseDocument: FileDocument {
         try configuration.file.write(to: self.bundleURL, options: .atomic, originalContentsURL: nil)
         
         let printQueries = UserDefaults.standard.bool(forKey: PreferenceKeys.debugQueries.rawValue)
-        try self.manager = SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: printQueries)
+        try self.manager = SPENTDatabaseDocument.createDBManager(bundleURL: bundleURL, trace: true)
     }
 
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {

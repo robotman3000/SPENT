@@ -45,7 +45,9 @@ struct TransactionContextMenu: View {
         // Copy/Paste Options
         Section {
             Button("Duplicate") {
-                databaseManager.undoableAction(DuplicateTransactionAction(transaction: model.transaction), undoManager)
+                let action = DuplicateTransactionAction(transaction: model.transaction)
+                action.registerUndoWithMangager(undoManager: undoManager)
+                databaseManager.undoableAction(action, undoManager)
             }.disabled(model.type != .Deposit && model.type != .Withdrawal)
         }
 

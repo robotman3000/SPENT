@@ -166,7 +166,7 @@ struct AccountBuckets: Queryable {
 }
 
 struct AccountBalanceQuery: Queryable {
-    static var defaultValue: AccountBalance = AccountBalance(id: -1, posted: 0, available: 0, allocatable: 0)
+    static var defaultValue: AccountBalance = AccountBalance(id: -1, posted: 0, available: 0, allocatable: 0, estimated: 0)
     let account: Account
     
     func publisher(in database: DatabaseQueue) -> AnyPublisher<AccountBalance, Error> {
@@ -174,7 +174,7 @@ struct AccountBalanceQuery: Queryable {
             .tracking({ db in
                 var balance = try AccountBalance.filter(Column("Id") == account.id).fetchOne(db)
                 if balance == nil {
-                    balance = AccountBalance(id: account.id ?? -1, posted: 0, available: 0, allocatable: 0)
+                    balance = AccountBalance(id: account.id ?? -1, posted: 0, available: 0, allocatable: 0, estimated: 0)
                 }
                 return balance!
             })

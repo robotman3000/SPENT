@@ -300,13 +300,16 @@ extension SPENTDatabaseDocument {
                     SELECT SUM(Amount), AccountID FROM Transactions WHERE Status IN (5, 6) GROUP BY AccountID
                 ),
                 "available" ("Available", "id") AS (
-                    SELECT SUM(Amount), AccountID FROM Transactions WHERE Status <> 0 GROUP BY AccountID
+                    SELECT SUM(Amount), AccountID FROM Transactions WHERE Status > 3 GROUP BY AccountID
                 ),
                 "allocatable" ("Allocatable", "id") AS (
                     SELECT SUM(Amount), AccountID FROM Transactions WHERE Status <> 0 AND BucketID IS NULL GROUP BY AccountID
+                ),
+                "estimated" ("Estimated", "id") AS (
+                    SELECT SUM(Amount), AccountID FROM Transactions WHERE Status <> 0 GROUP BY AccountID
                 )
-                SELECT id, IFNULL(Posted, 0) AS "Posted", IFNULL(Available, 0) AS "Available", IFNULL(Allocatable, 0) AS "Allocatable"
-                FROM Accounts LEFT JOIN posted USING (id) LEFT JOIN available USING (id) LEFT JOIN allocatable USING (id)
+                SELECT id, IFNULL(Posted, 0) AS "Posted", IFNULL(Available, 0) AS "Available", IFNULL(Allocatable, 0) AS "Allocatable", IFNULL(Estimated, 0) AS "Estimated"
+                FROM Accounts LEFT JOIN posted USING (id) LEFT JOIN available USING (id) LEFT JOIN allocatable USING (id) LEFT JOIN estimated USING (id)
             """)
             
             // The list of all posible account-bucket combinations

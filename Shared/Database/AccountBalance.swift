@@ -13,6 +13,7 @@ struct AccountBalance: Decodable, FetchableRecord, TableRecord {
     let posted: Int
     let available: Int
     let allocatable: Int
+    let estimated: Int
     
 //    static let account = belongsTo(Account.self)
     static var databaseTableName: String = "AccountBalance"

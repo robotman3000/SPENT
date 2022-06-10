@@ -32,7 +32,7 @@ struct AccountBalanceView: View {
             }
             HStack (spacing: 15) {
                 AccountBalanceView.BalanceView(text: "Allocatable", balance: balance.allocatable)
-                //AccountBalanceView.BalanceView(text: "Available in Tree", balance: 0)
+                AccountBalanceView.BalanceView(text: "Estimated", balance: balance.estimated)
             }
         }.padding()
     }

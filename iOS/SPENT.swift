@@ -13,57 +13,69 @@ import GRDBQuery
 struct SPENT: App {
     static var DB_VERSION: Int64 = 6
     
-    //@State var isActive: Bool = false
-    @StateObject var globalState: GlobalState = GlobalState()
-    @StateObject var sheetContext: SheetContext = SheetContext()
-    @StateObject var alertContext: AlertContext = AlertContext()
-    
     var body: some Scene {
         DocumentGroup(newDocument: SPENTDatabaseDocument()){ file in
-            Text(file.document.manager.database.path)
             MainView()
-                .sheet(context: sheetContext)
-                .alert(context: alertContext)
-                .environmentObject(globalState)
                 .environmentObject(file.document.manager)
                 .environment(\.dbQueue, file.document.manager.database)
-                //.frame(minWidth: 1000, minHeight: 600)
         }
     }
 }
 
 struct MainView: View {
+    var body: some View {
+        NavigationView {
+            List{
+                AccountsList()
+            }
+        }.navigationTitle("Accounts")
+    }
+}
+struct AccountsList: View {
+    @EnvironmentObject var dbManager: DatabaseManager
     @StateObject var sheetContext = SheetContext()
     @StateObject var alertContext = AlertContext()
+    
     @Query(AllAccounts(), in: \.dbQueue) var accounts: [AccountInfo]
     
     @State var selection: Account?
     
     var body: some View {
-        NavigationView {
-            VStack {
-                List{
-                    Section(header: Text("Accounts")){
-                        ForEachEnumerated(accounts) { accountInfo in
-                            NavigationLink(destination: AccountTransactionsView(forAccount: accountInfo.account, withBucket: nil), tag: accountInfo.account, selection: $selection){
-                                HStack{
-                                    AccountListRow(model: accountInfo)
-                                }
-                            }
-                        }
-                        
-                        if accounts.count == 0 {
-                            Text("No Accounts")
-                        }
+        Section (){
+            ForEachEnumerated(accounts) { accountInfo in
+                NavigationLink(destination: AccountTransactionsView(forAccount: accountInfo.account, withBucket: nil)
+                    .environment(\.dbQueue, dbManager.database),
+                               tag: accountInfo.account, selection: $selection){
+                    HStack{
+                        AccountListRow(model: accountInfo)
+                    }
+                }.contextMenu {
+                    Button("Delete Account"){
+                        dbManager.action(DeleteAccountAction(account: accountInfo.account))
                     }
                 }
             }
-        }
+            
+            if accounts.count == 0 {
+                Text("No Accounts")
+            }
+        }.toolbar {
+            ToolbarItem {
+                Button(action: {
+                    sheetContext.present(FormKeys.account(context: sheetContext, account: nil))
+                }) {
+                    Image(systemName: "plus")
+                }
+            }
+        }.sheet(context: sheetContext)
+        .alert(context: alertContext)
     }
 }
 
 struct AccountTransactionsView: View {
     @EnvironmentObject var globalState: GlobalState
+    @StateObject var sheetContext = SheetContext()
+    @StateObject var alertContext = AlertContext()
     let account: Account
     let bucket: Bucket?
     
@@ -76,14 +88,46 @@ struct AccountTransactionsView: View {
         Section {
             AccountBalanceView(forAccount: account)
             TransactionsList(forAccount: account, forBucket: nil, orderBy: .byPostDate, orderDirection: .ascending)
+        }.navigationTitle(account.name)
+        .toolbar {
+            ToolbarItem {
+                Menu {
+                    Section{
+                        Button(action: {
+                            //print("Create Transaction")
+                            sheetContext.present(FormKeys.transaction(context: sheetContext, transaction: nil))
+                        }) {
+                            Text("Add Transaction")
+                            Image(systemName: "plus")
+                        }
+                        Button(action: {
+                            print("Create Transaction")
+                            //context.present(FormKeys.account(context: context, account: nil))
+                        }) {
+                            Text("Add Transfer")
+                            Image(systemName: "plus")
+                        }
+                    }
+                    
+                    Button(action: {
+                        print("Create Acount")
+                        //context.present(FormKeys.account(context: context, account: nil))
+                    }) {
+                        Text("Filter")
+                        Image(systemName: "line.3.horizontal.circle")
+                    }
+                } label: {
+                    Image(systemName: "line.3.horizontal.circle")
+               }
+            }
         }
-        
+        .sheet(context: sheetContext)
+        .alert(context: alertContext)
     }
 }
 
 import GRDB
 private struct TransactionsList: View {
-    @Environment(\.dbQueue) var queue: DatabaseQueue
     @Query<AccountTransactions> var transactions: [TransactionInfo]
     @State var selection = Set<Transaction>()
     let showRunningBalance: Bool
@@ -99,7 +143,6 @@ private struct TransactionsList: View {
     }
     
     var body: some View {
-        Text(queue.path)
         List (selection: $selection){
             ForEachEnumerated(transactions){ transactionInfo in
                 
@@ -107,6 +150,6 @@ private struct TransactionsList: View {
                 Text(transactionInfo.transaction.memo)
                     .tag(transactionInfo.transaction)
             }
-        }
+        }.listStyle(.plain)
     }
 }

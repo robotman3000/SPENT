@@ -64,7 +64,7 @@ extension Transaction {
             case .Scheduled: return "Scheduled"
             case .Submitted: return "Submitted"
             case .Posting: return "Posting"
-            case .Complete: return "Complete"
+            case .Complete: return "Cleared"
             case .Reconciled: return "Reconciled"
             }
         }
@@ -76,7 +76,7 @@ extension Transaction {
             case "Scheduled": return .Scheduled
             case "Submitted": return .Submitted
             case "Posting": return .Posting
-            case "Complete": return .Complete
+            case "Cleared": return .Complete
             case "Reconciled": return .Reconciled
             default:
                 return nil

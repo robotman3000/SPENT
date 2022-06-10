@@ -47,7 +47,10 @@ struct FormLifecycle<Model: FormModel>: ViewModifier {
                   }
               })
           }
-        }.padding()
+        }
+        #if os(macOS)
+        .padding()
+        #endif
         .onAppear(perform: {
           do {
               try database.read { db in

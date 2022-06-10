@@ -20,10 +20,12 @@ struct AccountBalanceView: View {
     
     var body: some View {
         VStack (spacing: 15){
+            #if os(macOS)
             HStack (spacing: 3){
                 Text("Balance of")
                 Text(account.name).fontWeight(.bold)
             }
+            #endif
             HStack (spacing: 15) {
                 AccountBalanceView.BalanceView(text: "Posted", balance: balance.posted)
                 AccountBalanceView.BalanceView(text: "Available", balance: balance.available)

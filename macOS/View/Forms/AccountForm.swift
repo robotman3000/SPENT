@@ -21,34 +21,13 @@ struct AccountForm: View {
             TextField("Name", text: $model.name)
 //            Toggle("Favorite", isOn: $model.isFavorite)
 //            TextEditor(text: $model.memo).border(Color.gray, width: /*@START_MENU_TOKEN@*/1/*@END_MENU_TOKEN@*/)
-        }.frame(minWidth: 250, minHeight: 20)
+        }
         
+        #if os(macOS)
+        .frame(minWidth: 250, minHeight: 20)
+        #endif
         // Form Lifecycle
         .formFooter(model, onSubmit: onSubmit, onCancel: onCancel)
-    }
-}
-
-class AccountFormModel: FormModel {
-    fileprivate var account: Account
-    
-    @Published var name: String
-    
-    init(_ account: Account){
-        self.account = account
-        self.name = account.name
-    }
-    
-    func loadState(withDatabase: Database) throws {}
-    
-    func validate() throws {
-        if name.isEmpty {
-            throw FormValidationError("Please provide a name")
-        }
-    }
-    
-    func submit(withDatabase: Database) throws {
-        account.name = name
-        try account.save(withDatabase)
     }
 }
 

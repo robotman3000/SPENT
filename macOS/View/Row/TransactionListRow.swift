@@ -42,7 +42,7 @@ struct TransactionListRow: View {
                         Text(model.transaction.entryDate.transactionFormat)
                     }
                     Spacer()
-                }.frame(minWidth: 90, maxWidth: 90)
+                }.frame(minWidth: 95, maxWidth: 95)
                 
                 // Amount
                 HStack {

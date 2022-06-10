@@ -54,11 +54,11 @@ struct MainView: View {
             
             EmptyView()
             
-            if let account = selection {
-                AccountTransactionsView(forAccount: account, withBucket: nil)
-            } else {
+            //if let account = selection {
+            //    AccountTransactionsView(forAccount: account, withBucket: nil)
+            //} else {
                 EmptyView()
-            }
+            //}
         }
     }
     

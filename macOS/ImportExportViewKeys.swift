@@ -13,6 +13,7 @@ import GRDB
 enum ImportExportViewKeys: SheetProvider {
     case importCSV(context: SheetContext, alertContext: AlertContext)
     case exportCSV(context: SheetContext, alertContext: AlertContext)
+    case exportCSVSelection(context: SheetContext, alertContext: AlertContext, selection: [Transaction])
     
     var sheet: AnyView {
         ImportExportViewWrapper { database in
@@ -21,6 +22,8 @@ enum ImportExportViewKeys: SheetProvider {
                 ImportView(agent: CSVAgent(), database: database, alertContext: alertContext, onFinished: { context.dismiss() }, onCancel: { context.dismiss() })
             case let .exportCSV(context: context, alertContext: alertContext):
                 ExportView(agent: CSVAgent(), database: database, alertContext: alertContext, onFinished: { context.dismiss() }, onCancel: { context.dismiss() })
+            case let .exportCSVSelection(context: context, alertContext: alertContext, selection: selection):
+                ExportView(agent: CSVAgent(selection: selection), database: database, alertContext: alertContext, onFinished: { context.dismiss() }, onCancel: { context.dismiss() })
             }
         }.any()
     }

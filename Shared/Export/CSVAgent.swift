@@ -11,10 +11,13 @@ import UniformTypeIdentifiers
 import GRDB
 
 struct CSVAgent : ImportAgent, ExportAgent {
+    var selection: [Transaction] = []
     var allowedTypes: [UTType] = [.commaSeparatedText]
     var displayName: String = "CSV"
     let TAG_SEPARATOR: Character = ";"
-    let NULL_MARKER: String = "NULL"
+    //let NULL_MARKER: String = "NULL"
+    
+    
     
     func importFromURL(url: URL, database: DatabaseQueue) throws {
         
@@ -45,7 +48,7 @@ struct CSVAgent : ImportAgent, ExportAgent {
                 
                 // Create the bucket (if present)
                 if let bucketName = record.bucket {
-                    if bucketName != NULL_MARKER {
+                    if !bucketName.isEmpty {
                         let bucket = Bucket(id: nil, name: bucketName, category: "")
                         buckets.insert(bucket)
                     }
@@ -82,7 +85,7 @@ struct CSVAgent : ImportAgent, ExportAgent {
                 
                 var transaction = Transaction(id: nil,
                                               status: mapStatusName(record.status),
-                                              amount: record.amount,
+                                              amount: NSDecimalNumber(string: record.amount).multiplying(by: 100).intValue,
                                               payee: record.payee ?? "",
                                               memo: record.memo,
                                               entryDate: entryDate!,
@@ -96,28 +99,33 @@ struct CSVAgent : ImportAgent, ExportAgent {
         })
     }
     
+    private func getFullSelection(database: Database) throws -> [Transaction] {
+        // The csv contains all the transations in the db. All foreign key vales are resolved and converted to a string representaion.
+        //TODO: Implement transaction batch processiong to reduce memory requirements
+        // For now we fetch all the transactions in the db at once.
+        let transactions = try Transaction.fetchAll(database, sql: """
+            WITH "excludeList" ("id") AS (
+                SELECT TransactionID FROM SplitTransactions
+            )
+            SELECT * FROM Transactions WHERE id NOT IN (SELECT * FROM excludeList)
+        """)
+        return transactions
+    }
+
     func exportToURL(url: URL, database: DatabaseQueue) throws {
         try database.read { db in
             let stream = OutputStream(toFileAtPath: url.path, append: false)!
             let csv = try CSVWriter(stream: stream)
-
-            // The csv contains all the transations in the db. All foreign key vales are resolved and converted to a string representaion.
-
-            //TODO: Implement transaction batch processiong to reduce memory requirements
-            
-            // For now we fetch all the transactions in the db at once.
-            let transactions = try Transaction.fetchAll(db, sql: """
-                WITH "excludeList" ("id") AS (
-                    SELECT TransactionID FROM SplitTransactions
-                )
-                SELECT * FROM Transactions WHERE id NOT IN (SELECT * FROM excludeList)
-            """)
-
             // This is CSV schema v1
             // We exclude all "allocation" transactions from the export for compatibility since they only apply to this program
             // We also represent transfers as two transactions
             try csv.write(row: ["status", "amount", "date", "postDate", "bucket", "account", "memo", "payee", "tags"])
 
+            var transactions = selection
+            if selection.isEmpty {
+                transactions = try getFullSelection(database: db)
+            }
+            
             for transaction in transactions {
                 do {
                     let bucket = try transaction.bucket.fetchOne(db)
@@ -125,11 +133,11 @@ struct CSVAgent : ImportAgent, ExportAgent {
                     let tags = try transaction.tags.fetchAll(db)
                     let tagNames = tags.map({ tag in tag.name })
                     try csv.write(row: [transaction.status.getStringName(),
-                                        "\(transaction.amount)",
+                                        NSDecimalNumber(value: transaction.amount).dividing(by: 100).stringValue,
                                         transaction.entryDate.transactionFormat,
-                                        transaction.postDate?.transactionFormat ?? NULL_MARKER,
-                                        bucket?.name ?? NULL_MARKER,
-                                        account?.name ?? NULL_MARKER,
+                                        transaction.postDate?.transactionFormat ?? "",
+                                        bucket?.name ?? "",
+                                        account?.name ?? "",
                                         transaction.memo,
                                         transaction.payee,
                                         tagNames.joined(separator: "\(TAG_SEPARATOR)")
@@ -142,7 +150,7 @@ struct CSVAgent : ImportAgent, ExportAgent {
             csv.stream.close()
         }
     }
-
+    
     func mapStatusName(_ statusName: String) -> Transaction.StatusTypes {
         // Update the status names
         if statusName == "Complete" {
@@ -164,7 +172,7 @@ struct CSVAgent : ImportAgent, ExportAgent {
 
 private struct CSVTransactionRow_V1: Decodable {
     let status: String
-    let amount: Int
+    let amount: String
     let date: String
     let postDate: String?
     let bucket: String?

@@ -108,6 +108,11 @@ struct TransactionContextMenu: View {
                 })))
                 selection.removeAll()
             }
+            if (array.count > 1){
+                Button("Export Selected to CSV"){
+                    context.present(ImportExportViewKeys.exportCSVSelection(context: context, alertContext: aContext, selection: array))
+                }
+            }
             Menu("Mark As"){
                 Button("Void"){
                     databaseManager.action(SetTransactionsStatusAction(status: .Void, transactions: Array(array)))

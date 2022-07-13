@@ -8,7 +8,8 @@
 import Foundation
 import GRDB
 
-struct BucketInfo: Decodable, FetchableRecord {
+struct BucketInfo: Decodable, FetchableRecord, Identifiable {
+    let id = UUID()
     var balance: BucketBalance
     var account: Account
     var bucket: Bucket
